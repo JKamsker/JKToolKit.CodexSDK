@@ -25,7 +25,7 @@ public class CodexClientStartSessionTests
         var clientOptions = Options.Create(new CodexClientOptions { StartTimeout = startTimeout });
         var sessionOptions = new CodexSessionOptions(workingDirectory: workingDirectory, prompt: "hello world");
 
-        var sessionId = SessionId.Parse("session-123");
+        var sessionId = SessionId.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
         var escapedWorkingDirectory = workingDirectory.Replace("\\", "\\\\");
         var lines = new[]
         {
@@ -36,10 +36,10 @@ public class CodexClientStartSessionTests
             """{"timestamp":"2025-11-20T22:00:04Z","type":"token_count","payload":{"input_tokens":10,"output_tokens":5,"reasoning_output_tokens":2}}"""
         };
 
-        using var process = FakeProcessLauncher.CreateLongLivedProcess();
+        using var process = FakeProcessLauncher.CreateLongLivedProcess(sessionId.Value);
 
         var launcher = new FakeProcessLauncher(process);
-        var locator = new FakeSessionLocator("C:\\sessions\\rollout-session-123.jsonl");
+        var locator = new FakeSessionLocator($"C:\\sessions\\rollout-{sessionId}.jsonl");
         var tailer = new FakeTailer(lines);
         var parser = new NCodexSDK.Infrastructure.JsonlEventParser(LoggerFactory.CreateLogger<NCodexSDK.Infrastructure.JsonlEventParser>());
         var pathProvider = new FakePathProvider("C:\\sessions");
@@ -96,7 +96,7 @@ public class CodexClientStartSessionTests
         try
         {
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => client.StartSessionAsync(sessionOptions));
-            Assert.Contains("session_meta", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("session id", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -160,16 +160,17 @@ public class CodexClientStartSessionTests
             return Task.FromResult(process.ExitCode);
         }
 
-        public static Process CreateLongLivedProcess()
+        public static Process CreateLongLivedProcess(string? sessionId = null)
         {
             var isWindows = OperatingSystem.IsWindows();
+            var sid = sessionId ?? "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
             // Keep the process alive for a short while so tests can interact with it
             var psi = isWindows
                 ? new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = "/c ping -n 30 127.0.0.1 >NUL",
+                    Arguments = $"/c ping -n 2 127.0.0.1 >NUL & echo session id: {sid} & ping -n 30 127.0.0.1 >NUL",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -179,7 +180,7 @@ public class CodexClientStartSessionTests
                 : new ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    Arguments = "-c \"sleep 30\"",
+                    Arguments = $"-c \"sleep 0.2; echo \\\"session id: {sid}\\\"; sleep 30\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,

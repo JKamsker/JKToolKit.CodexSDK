@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using NCodexSDK.Abstractions;
@@ -501,63 +502,53 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
 
     private async Task<SessionId?> CaptureSessionIdAsync(Process process, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        // var sw = Stopwatch.StartNew();
-        var tcs = new TaskCompletionSource<SessionId?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(timeout);
 
-        void Handler(object? _, DataReceivedEventArgs e)
+        var stdoutTask = ReadSessionIdFromStreamAsync(process.StartInfo.RedirectStandardOutput ? process.StandardOutput : null, timeoutCts.Token);
+        var stderrTask = ReadSessionIdFromStreamAsync(process.StartInfo.RedirectStandardError ? process.StandardError : null, timeoutCts.Token);
+
+        var completed = await Task.WhenAny(stdoutTask, stderrTask).ConfigureAwait(false);
+        var result = await completed.ConfigureAwait(false);
+        if (result is not null)
         {
-            // Console.WriteLine($"[{sw.Elapsed}] Output: {e.Data}");
-            if (string.IsNullOrWhiteSpace(e.Data))
-            {
-                return;
-            }
-
-            var match = SessionIdRegex.Match(e.Data);
-            if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
-            {
-                // sw.Stop();
-                // var processExit = process.HasExited ? $" Process exited with code {process.ExitCode}." : string.Empty;
-                tcs.TrySetResult(sessionId);
-            }
+            return result;
         }
 
-        process.OutputDataReceived += Handler;
-        process.ErrorDataReceived += Handler;
+        var otherTask = ReferenceEquals(completed, stdoutTask) ? stderrTask : stdoutTask;
+        return await otherTask.ConfigureAwait(false);
+    }
+
+    private static async Task<SessionId?> ReadSessionIdFromStreamAsync(StreamReader? reader, CancellationToken cancellationToken)
+    {
+        if (reader is null)
+        {
+            return null;
+        }
 
         try
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
-                process.BeginOutputReadLine();
-            }
-            catch (InvalidOperationException)
-            { /* already reading */
-            }
+                var line = await reader.ReadLineAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+                if (line is null)
+                {
+                    break;
+                }
 
-            try
-            {
-                process.BeginErrorReadLine();
+                var match = SessionIdRegex.Match(line);
+                if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
+                {
+                    return sessionId;
+                }
             }
-            catch (InvalidOperationException)
-            { /* already reading */
-            }
-
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(timeout);
-
-            var completed = await Task.WhenAny(tcs.Task, Task.Delay(Timeout.Infinite, timeoutCts.Token)).ConfigureAwait(false);
-            if (completed == tcs.Task)
-            {
-                return await tcs.Task.ConfigureAwait(false);
-            }
-
-            return null;
         }
-        finally
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            process.OutputDataReceived -= Handler;
-            process.ErrorDataReceived -= Handler;
+            // ignore cancellation to allow caller to consume other stream
         }
+
+        return null;
     }
 
     private static readonly Regex SessionIdRegex = new(@"session id:\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
