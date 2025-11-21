@@ -1,4 +1,6 @@
-# Codex .NET SDK
+# <img src="res/logo.png" align="left" width="120" height="120" /> Codex .NET SDK
+
+<br clear="left"/>
 
 A strongly-typed .NET client library for interacting with the Codex CLI, enabling programmatic control of AI coding sessions with full event streaming and session management.
 
