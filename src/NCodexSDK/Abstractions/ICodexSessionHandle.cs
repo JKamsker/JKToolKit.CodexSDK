@@ -94,4 +94,32 @@ public interface ICodexSessionHandle : IAsyncDisposable
     /// it only cancels the wait operation.
     /// </remarks>
     Task<int> WaitForExitAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Attempts to gracefully terminate the associated Codex process and waits for it to exit.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the termination/wait operation.</param>
+    /// <returns>
+    /// A task whose result is the process exit code. Returns <c>-1</c> if a forceful kill was required.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown when called on a non-live session.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the session handle has been disposed.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    Task<int> ExitAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Registers a callback that is invoked when the associated process exits.
+    /// </summary>
+    /// <param name="callback">The callback to invoke with the process exit code.</param>
+    /// <returns>
+    /// An <see cref="IDisposable"/> that can be used to unsubscribe the callback. If the process
+    /// already exited at registration time, the callback is invoked immediately and the returned
+    /// disposable is a no-op.
+    /// </returns>
+    /// <remarks>
+    /// This method is only valid for live sessions; registering on a non-live session will throw.
+    /// Callbacks are invoked on a thread-pool thread, and exceptions thrown by callbacks are swallowed
+    /// and logged by the implementation.
+    /// </remarks>
+    IDisposable OnExit(Action<int> callback);
 }

@@ -67,6 +67,7 @@ public class CancellationAndCleanupTests : IDisposable
             process: null,
             processLauncher: null,
             processExitTimeout: _clientOptions.ProcessExitTimeout,
+            idleTimeout: null,
             _handleLogger);
 
         using var cts = new CancellationTokenSource();
@@ -112,6 +113,7 @@ public class CancellationAndCleanupTests : IDisposable
             longRunning,
             processLauncher,
             _clientOptions.ProcessExitTimeout,
+            idleTimeout: null,
             _handleLogger);
 
         var sw = Stopwatch.StartNew();
@@ -148,6 +150,7 @@ public class CancellationAndCleanupTests : IDisposable
             process: null,
             processLauncher: null,
             processExitTimeout: _clientOptions.ProcessExitTimeout,
+            idleTimeout: null,
             _handleLogger);
 
         await handle.DisposeAsync();

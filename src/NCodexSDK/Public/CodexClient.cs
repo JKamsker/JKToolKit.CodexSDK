@@ -243,6 +243,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 process,
                 _processLauncher,
                 _clientOptions.ProcessExitTimeout,
+                options.IdleTimeout,
                 _loggerFactory.CreateLogger<CodexSessionHandle>()
             );
         }
@@ -321,6 +322,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 process,
                 _processLauncher,
                 _clientOptions.ProcessExitTimeout,
+                options.IdleTimeout,
                 _loggerFactory.CreateLogger<CodexSessionHandle>()
             );
         }
@@ -437,6 +439,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             process: null,
             _processLauncher,
             _clientOptions.ProcessExitTimeout,
+            idleTimeout: null,
             _loggerFactory.CreateLogger<CodexSessionHandle>()
         );
     }

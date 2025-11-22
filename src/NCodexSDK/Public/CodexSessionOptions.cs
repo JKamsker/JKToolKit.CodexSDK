@@ -19,6 +19,7 @@ public class CodexSessionOptions
     private CodexModel _model = CodexModel.Default;
     private CodexReasoningEffort _reasoningEffort = CodexReasoningEffort.Medium;
     private IReadOnlyList<string> _additionalOptions = Array.Empty<string>();
+    private TimeSpan? _idleTimeout;
 
     /// <summary>
     /// Gets or sets the working directory where the Codex session will run.
@@ -138,6 +139,32 @@ public class CodexSessionOptions
     public string? CodexBinaryPath { get; set; }
 
     /// <summary>
+    /// Gets or sets the idle timeout after which the Codex process will be terminated.
+    /// </summary>
+    /// <remarks>
+    /// When set, the Codex process is automatically terminated once at least one event has been
+    /// observed from the session stream and no additional events arrive for the configured duration.
+    /// A null value disables idle termination for the session (default).
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when attempting to set a non-null timeout that is less than or equal to <see cref="TimeSpan.Zero"/>.
+    /// </exception>
+    public TimeSpan? IdleTimeout
+    {
+        get => _idleTimeout;
+        set
+        {
+            if (value.HasValue && value.Value <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(
+                    nameof(IdleTimeout),
+                    value,
+                    "Idle timeout, when set, must be greater than zero.");
+
+            _idleTimeout = value;
+        }
+    }
+
+    /// <summary>
     /// Creates a new instance of CodexSessionOptions.
     /// </summary>
     /// <remarks>
@@ -194,6 +221,11 @@ public class CodexSessionOptions
             throw new InvalidOperationException(
                 "ReasoningEffort 'xhigh' is only supported with model 'gpt-5.1-codex-max'.");
         }
+
+        if (IdleTimeout.HasValue && IdleTimeout.Value <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException("IdleTimeout, when set, must be greater than zero.");
+        }
     }
 
     /// <summary>
@@ -212,7 +244,8 @@ public class CodexSessionOptions
             Model = Model,
             ReasoningEffort = ReasoningEffort,
             AdditionalOptions = new List<string>(AdditionalOptions),
-            CodexBinaryPath = CodexBinaryPath
+            CodexBinaryPath = CodexBinaryPath,
+            IdleTimeout = IdleTimeout
         };
     }
 }
