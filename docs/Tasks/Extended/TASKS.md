@@ -11,12 +11,12 @@ Source spec: `docs/Tasks/Extended/Spec.md`
 
 ## Milestone 2 — App-server minimal happy path
 
-- [ ] Add `NCodexSDK.AppServer` project + wire into `NCodexSDK.sln`
-- [ ] Implement `CodexAppServerClient` (start, initialize+initialized, `thread/start`, `turn/start`, `turn/interrupt`, escape hatch)
-- [ ] Implement typed notification mapping + unknown fallback
-- [ ] Implement per-turn streaming via `CodexTurnHandle` (`Events`, `Completion`, `InterruptAsync`)
-- [ ] Add approvals hook (`IAppServerApprovalHandler`) + built-ins (always approve/deny; console prompt demo-only)
-- [ ] Add `NCodexSDK.AppServer.Demo` console app
+- [x] Add `NCodexSDK.AppServer` project + wire into `NCodexSDK.sln`
+- [x] Implement `CodexAppServerClient` (start, initialize+initialized, `thread/start`, `turn/start`, `turn/interrupt`, escape hatch)
+- [x] Implement typed notification mapping + unknown fallback
+- [x] Implement per-turn streaming via `CodexTurnHandle` (`Events`, `Completion`, `InterruptAsync`)
+- [x] Add approvals hook (`IAppServerApprovalHandler`) + built-ins (always approve/deny; console prompt demo-only)
+- [x] Add `NCodexSDK.AppServer.Demo` console app
 
 ## Milestone 3 — MCP server minimal happy path
 
