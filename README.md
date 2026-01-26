@@ -6,6 +6,12 @@
 
 A strongly-typed .NET client library for interacting with the Codex CLI, enabling programmatic control of AI coding sessions with full event streaming and session management.
 
+Per-library documentation:
+
+- Core: `src/NCodexSDK/README.md`
+- App server: `src/NCodexSDK.AppServer/README.md`
+- MCP server: `src/NCodexSDK.McpServer/README.md`
+
 ## Installation
 
 ### Prerequisites
