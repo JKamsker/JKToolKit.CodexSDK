@@ -146,7 +146,13 @@ Then resolve `ICodexAppServerClientFactory` and call `StartAsync()`.
 Run:
 
 ```bash
-dotnet run --project src/NCodexSDK.AppServer.Demo -- "<repo-path>"
+dotnet run --project src/NCodexSDK.AppServer.Demo -- --demo stream --repo "<repo-path>"
+```
+
+Approval demo (restrictive allow-list):
+
+```bash
+dotnet run --project src/NCodexSDK.AppServer.Demo -- --demo approve --timeout-seconds 30
 ```
 
 ## Troubleshooting

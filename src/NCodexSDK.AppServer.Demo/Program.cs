@@ -1,69 +1,83 @@
-using NCodexSDK.AppServer;
-using NCodexSDK.AppServer.Notifications;
-using NCodexSDK.Public.Models;
+using NCodexSDK.AppServer.Demo.Demos;
 
-var repoPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
+namespace NCodexSDK.AppServer.Demo;
 
-int? timeoutSeconds = null;
-for (var i = 0; i < args.Length; i++)
+public static class Program
 {
-    if (string.Equals(args[i], "--timeout-seconds", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length &&
-        int.TryParse(args[i + 1], out var parsed))
+    public static async Task<int> Main(string[] args)
     {
-        timeoutSeconds = parsed;
-        break;
-    }
-}
+        var demoName = GetArgValue(args, "--demo") ?? "stream";
+        var repoPath = GetArgValue(args, "--repo") ?? GetFirstNonOptionArg(args) ?? Directory.GetCurrentDirectory();
 
-if (timeoutSeconds is null &&
-    int.TryParse(Environment.GetEnvironmentVariable("CODEX_DEMO_TIMEOUT_SECONDS"), out var envTimeout))
-{
-    timeoutSeconds = envTimeout;
-}
+        var timeoutSeconds = TryGetTimeoutSeconds(args) ??
+            (int.TryParse(Environment.GetEnvironmentVariable("CODEX_DEMO_TIMEOUT_SECONDS"), out var envTimeout)
+                ? envTimeout
+                : (int?)null);
 
-using var cts = new CancellationTokenSource();
-if (timeoutSeconds is > 0)
-{
-    cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds.Value));
-}
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true;
-    cts.Cancel();
-};
-
-await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
-{
-    DefaultClientInfo = new("ncodexsdk-demo", "NCodexSDK AppServer Demo", "1.0.0"),
-}, cts.Token);
-
-var thread = await codex.StartThreadAsync(new ThreadStartOptions
-{
-    Model = CodexModel.Gpt51Codex,
-    Cwd = repoPath,
-    ApprovalPolicy = CodexApprovalPolicy.Never,
-    Sandbox = CodexSandboxMode.WorkspaceWrite
-}, cts.Token);
-
-await using var turn = await codex.StartTurnAsync(thread.Id, new TurnStartOptions
-{
-    Input = [TurnInputItem.Text("Summarize this repo.")],
-}, cts.Token);
-
-try
-{
-    await foreach (var ev in turn.Events(cts.Token))
-    {
-        if (ev is AgentMessageDeltaNotification delta)
+        using var cts = new CancellationTokenSource();
+        if (timeoutSeconds is > 0)
         {
-            Console.Write(delta.Delta);
+            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds.Value));
+        }
+
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            cts.Cancel();
+        };
+
+        try
+        {
+            IAppServerDemo demo = demoName.ToLowerInvariant() switch
+            {
+                "stream" or "basic" => new StreamingDemo(),
+                "approve" or "approval" => new ManualApprovalDemo(),
+                _ => throw new ArgumentException($"Unknown demo '{demoName}'. Use --demo stream|approve.")
+            };
+
+            await demo.RunAsync(repoPath, cts.Token);
+            return 0;
+        }
+        catch (OperationCanceledException)
+        {
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
+            return 1;
         }
     }
 
-    var completed = await turn.Completion;
-    Console.WriteLine($"\nDone: {completed.Status}");
-}
-catch (OperationCanceledException)
-{
-    // Treat Ctrl+C / cancellation as a normal exit for the demo.
+    private static int? TryGetTimeoutSeconds(string[] args)
+    {
+        var value = GetArgValue(args, "--timeout-seconds");
+        return int.TryParse(value, out var parsed) ? parsed : (int?)null;
+    }
+
+    private static string? GetArgValue(string[] args, string name)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                return args[i + 1];
+            }
+        }
+
+        return null;
+    }
+
+    private static string? GetFirstNonOptionArg(string[] args)
+    {
+        foreach (var arg in args)
+        {
+            if (!arg.StartsWith("-", StringComparison.Ordinal))
+            {
+                return arg;
+            }
+        }
+
+        return null;
+    }
 }
