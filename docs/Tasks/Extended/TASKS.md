@@ -20,11 +20,11 @@ Source spec: `docs/Tasks/Extended/Spec.md`
 
 ## Milestone 3 — MCP server minimal happy path
 
-- [ ] Add `NCodexSDK.McpServer` project + wire into `NCodexSDK.sln`
-- [ ] Implement MCP handshake + minimal methods (`tools/list`, `tools/call`)
-- [ ] Implement `CodexMcpServerClient` wrapper methods (`ListToolsAsync`, `StartSessionAsync`, `ReplyAsync`, escape hatch)
-- [ ] Add elicitation handling (`IMcpElicitationHandler`) with safe defaults
-- [ ] Add `NCodexSDK.McpServer.Demo` console app
+- [x] Add `NCodexSDK.McpServer` project + wire into `NCodexSDK.sln`
+- [x] Implement MCP handshake + minimal methods (`tools/list`, `tools/call`)
+- [x] Implement `CodexMcpServerClient` wrapper methods (`ListToolsAsync`, `StartSessionAsync`, `ReplyAsync`, escape hatch)
+- [x] Add elicitation handling (`IMcpElicitationHandler`) with safe defaults
+- [x] Add `NCodexSDK.McpServer.Demo` console app
 
 ## Milestone 4 — Unified config enums
 
