@@ -4,10 +4,10 @@ Source spec: `docs/Tasks/Extended/Spec.md`
 
 ## Milestone 1 — Shared core
 
-- [ ] Add `StdioProcess` host (stdout JSONL reader, stderr drain, graceful shutdown)
-- [ ] Add `ProcessLaunchOptions` + `CodexLaunch` helpers (supports `npx -y codex …` style)
-- [ ] Add `JsonRpcConnection` (request/response, notifications, server requests, include/omit `jsonrpc`)
-- [ ] Add internal routing/backpressure via `System.Threading.Channels`
+- [x] Add `StdioProcess` host (stdout JSONL reader, stderr drain, graceful shutdown)
+- [x] Add `ProcessLaunchOptions` + `CodexLaunch` helpers (supports `npx -y codex …` style)
+- [x] Add `JsonRpcConnection` (request/response, notifications, server requests, include/omit `jsonrpc`)
+- [x] Add internal routing/backpressure via `System.Threading.Channels`
 
 ## Milestone 2 — App-server minimal happy path
 
@@ -43,4 +43,3 @@ Source spec: `docs/Tasks/Extended/Spec.md`
 - [ ] Update `README.md` with app-server + mcp-server usage and decision guide
 - [ ] Add schema generation helper script (manual, not part of build)
 - [ ] Document generated DTO strategy (optional) and keep public API handwritten
-
