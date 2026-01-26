@@ -74,7 +74,6 @@ internal static class ProcessStartInfoBuilder
             throw new ArgumentException("Executable path cannot be null or whitespace.", nameof(executablePath));
         }
 
-        ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
 
@@ -105,6 +104,76 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("resume");
         startInfo.ArgumentList.Add(sessionId.Value);
         startInfo.ArgumentList.Add("-");
+
+        return startInfo;
+    }
+
+    /// <summary>
+    /// Creates a configured <see cref="ProcessStartInfo"/> for <c>codex review</c>.
+    /// </summary>
+    /// <param name="executablePath">Resolved Codex executable path.</param>
+    /// <param name="options">Validated review options.</param>
+    /// <returns>Populated <see cref="ProcessStartInfo"/> ready for launch.</returns>
+    public static ProcessStartInfo CreateReview(string executablePath, CodexReviewOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            throw new ArgumentException("Executable path cannot be null or whitespace.", nameof(executablePath));
+        }
+
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = executablePath,
+            WorkingDirectory = options.WorkingDirectory,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        // `--cd` is a global option (before the subcommand).
+        startInfo.ArgumentList.Add("-C");
+        startInfo.ArgumentList.Add(options.WorkingDirectory);
+
+        startInfo.ArgumentList.Add("review");
+
+        if (options.Uncommitted)
+        {
+            startInfo.ArgumentList.Add("--uncommitted");
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.BaseBranch))
+        {
+            startInfo.ArgumentList.Add("--base");
+            startInfo.ArgumentList.Add(options.BaseBranch);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.CommitSha))
+        {
+            startInfo.ArgumentList.Add("--commit");
+            startInfo.ArgumentList.Add(options.CommitSha);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Title))
+        {
+            startInfo.ArgumentList.Add("--title");
+            startInfo.ArgumentList.Add(options.Title);
+        }
+
+        foreach (var option in options.AdditionalOptions)
+        {
+            startInfo.ArgumentList.Add(option);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Prompt))
+        {
+            // Use stdin for prompt to avoid escaping issues.
+            startInfo.ArgumentList.Add("-");
+        }
 
         return startInfo;
     }

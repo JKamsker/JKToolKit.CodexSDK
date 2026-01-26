@@ -364,6 +364,104 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
         return ProcessStartInfoBuilder.CreateResume(codexPath, sessionId, options);
     }
 
+    /// <inheritdoc />
+    public async Task<Process> StartReviewAsync(
+        CodexReviewOptions options,
+        CodexClientOptions clientOptions,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(clientOptions);
+
+        var startInfo = CreateReviewStartInfo(options, clientOptions);
+        var argumentPreview = ProcessStartInfoBuilder.FormatArguments(startInfo);
+        _logger.LogDebug(
+            "Starting Codex review process with executable {Executable} and arguments: {Arguments}",
+            startInfo.FileName,
+            argumentPreview);
+
+        var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+        try
+        {
+            if (!process.Start())
+            {
+                throw new InvalidOperationException("Failed to start Codex review process. The process may not have started successfully.");
+            }
+
+            _logger.LogInformation(
+                "Codex review process started successfully with PID: {ProcessId}",
+                process.Id);
+
+            await WriteOptionalPromptAndCloseStdinAsync(process, options.Prompt, cancellationToken).ConfigureAwait(false);
+
+            return process;
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch (Exception killEx)
+            {
+                _logger.LogTrace(killEx, "Error killing Codex review process after cancellation");
+            }
+            finally
+            {
+                process.Dispose();
+            }
+
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error starting Codex review process");
+
+            var stderr = await TryReadStandardErrorAsync(process).ConfigureAwait(false);
+            var wrapped = new InvalidOperationException(
+                CreateDiagnosticMessage(stderr, startInfo.FileName),
+                ex);
+
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                process.Dispose();
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogWarning(cleanupEx, "Error during process cleanup after review start failure");
+            }
+
+            throw wrapped;
+        }
+    }
+
+    internal ProcessStartInfo CreateReviewStartInfo(
+        CodexReviewOptions options,
+        CodexClientOptions clientOptions)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(clientOptions);
+
+        options.Validate();
+        clientOptions.Validate();
+
+        var codexPath = _pathProvider.GetCodexExecutablePath(
+            options.CodexBinaryPath ?? clientOptions.CodexExecutablePath);
+
+        _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
+
+        return ProcessStartInfoBuilder.CreateReview(codexPath, options);
+    }
+
     /// <summary>
     /// Writes the prompt to the process's standard input and closes the stream.
     /// </summary>
@@ -398,6 +496,33 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
             throw new InvalidOperationException(
                 "Failed to write prompt to Codex process stdin.",
                 ex);
+        }
+    }
+
+    private async Task WriteOptionalPromptAndCloseStdinAsync(
+        Process process,
+        string? prompt,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(prompt))
+            {
+                await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            process.StandardInput.Close();
+            _logger.LogTrace("Closed stdin for process {ProcessId}", process.Id);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error writing optional prompt to process {ProcessId}", process.Id);
+            throw new InvalidOperationException("Failed to write optional prompt to Codex process stdin.", ex);
         }
     }
 

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using NCodexSDK.Abstractions;
 using NCodexSDK.Infrastructure;
@@ -83,6 +84,104 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
 
         return _sessionLocator.ListSessionsAsync(sessionsRoot, filter, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<CodexReviewResult> ReviewAsync(CodexReviewOptions options, CancellationToken cancellationToken = default)
+    {
+        return await ReviewAsync(options, standardOutputWriter: null, standardErrorWriter: null, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Runs a non-interactive code review and optionally mirrors Codex output as it is produced.
+    /// </summary>
+    /// <param name="options">Review configuration including scope and optional instructions.</param>
+    /// <param name="standardOutputWriter">Optional writer that receives stdout as it is emitted.</param>
+    /// <param name="standardErrorWriter">Optional writer that receives stderr as it is emitted.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="CodexReviewResult"/> containing captured stdout/stderr and exit code.</returns>
+    public async Task<CodexReviewResult> ReviewAsync(
+        CodexReviewOptions options,
+        TextWriter? standardOutputWriter,
+        TextWriter? standardErrorWriter,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        _clientOptions.Validate();
+        options.Validate();
+
+        using var process = await _processLauncher.StartReviewAsync(options, _clientOptions, cancellationToken).ConfigureAwait(false);
+
+        var stdoutCapture = new StringBuilder();
+        var stderrCapture = new StringBuilder();
+
+        var pumpStdoutTask = PumpStreamAsync(process.StandardOutput, standardOutputWriter, stdoutCapture, cancellationToken);
+        var pumpStderrTask = PumpStreamAsync(process.StandardError, standardErrorWriter, stderrCapture, cancellationToken);
+
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            await Task.WhenAll(pumpStdoutTask, pumpStderrTask).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            TryKill(process);
+
+            try
+            {
+                await Task.WhenAll(pumpStdoutTask, pumpStderrTask).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Best-effort cleanup.
+            }
+
+            throw;
+        }
+
+        return new CodexReviewResult(process.ExitCode, stdoutCapture.ToString().TrimEnd(), stderrCapture.ToString().TrimEnd());
+    }
+
+    private static async Task PumpStreamAsync(
+        StreamReader reader,
+        TextWriter? mirror,
+        StringBuilder capture,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new char[4096];
+        while (true)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+            if (read == 0)
+            {
+                break;
+            }
+
+            capture.Append(buffer, 0, read);
+
+            if (mirror is not null)
+            {
+                await mirror.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                await mirror.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static void TryKill(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // Best-effort.
+        }
     }
 
     /// <summary>

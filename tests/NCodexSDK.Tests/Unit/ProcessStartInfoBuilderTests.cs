@@ -198,6 +198,73 @@ public class ProcessStartInfoBuilderTests
         }
     }
 
+    [Fact]
+    public void CreateReviewStartInfo_BuildsExpectedArguments_WithCommitAndPrompt()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexReviewOptions(workingDirectory)
+            {
+                CommitSha = "9a8ff41389e6684f222fb982f50efc04b59e0d50",
+                Title = "Optional title",
+                Prompt = "Focus on correctness and security.",
+                AdditionalOptions = new[] { "--enable", "experimental_feature" }
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
+
+            startInfo.FileName.Should().Be("codex-default");
+            startInfo.WorkingDirectory.Should().Be(workingDirectory);
+            startInfo.ArgumentList.Should().Equal(
+                "-C",
+                workingDirectory,
+                "review",
+                "--commit",
+                "9a8ff41389e6684f222fb982f50efc04b59e0d50",
+                "--title",
+                "Optional title",
+                "--enable",
+                "experimental_feature",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateReviewStartInfo_BuildsExpectedArguments_WithUncommittedWithoutPrompt()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexReviewOptions(workingDirectory)
+            {
+                Uncommitted = true
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
+
+            startInfo.ArgumentList.Should().Equal(
+                "-C",
+                workingDirectory,
+                "review",
+                "--uncommitted");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"codex-tests-{Guid.NewGuid():N}");

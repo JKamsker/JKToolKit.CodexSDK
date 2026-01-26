@@ -92,6 +92,20 @@ Console.WriteLine($"Tokens:   {limits.TokensRemaining}/{limits.TokensLimit}");
 Console.WriteLine($"Resets:   {limits.RequestsResetAt}");
 ```
 
+### Running Code Reviews
+
+Run Codex's non-interactive reviewer against a specific commit (or use <c>Uncommitted</c>/<c>BaseBranch</c>):
+
+```csharp
+var review = await client.ReviewAsync(new CodexReviewOptions("<repo-dir>")
+{
+    CommitSha = "9a8ff41389e6684f222fb982f50efc04b59e0d50",
+    Prompt = "Focus on correctness, security, and performance."
+});
+
+Console.WriteLine(review.StandardOutput);
+```
+
 ### Handling Complex Responses
 
 The `ResponseItemEvent` normalizes payloads (reasoning, messages, function calls) while preserving raw JSON for future compatibility.
@@ -165,6 +179,12 @@ A sample console application is included at `src/NCodexSDK.Demo`.
 
 ```bash
 dotnet run --project src/NCodexSDK.Demo -- "Your prompt here"
+```
+
+There is also a review demo that forwards to `codex review` via the SDK:
+
+```bash
+dotnet run --project src/NCodexSDK.Demo.Review -- --commit 9a8ff41389e6684f222fb982f50efc04b59e0d50
 ```
 
 ## Troubleshooting

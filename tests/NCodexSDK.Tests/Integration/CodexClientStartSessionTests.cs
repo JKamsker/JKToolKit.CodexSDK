@@ -151,6 +151,11 @@ public class CodexClientStartSessionTests
             return Task.FromResult(_process);
         }
 
+        public Task<Process> StartReviewAsync(CodexReviewOptions options, CodexClientOptions clientOptions, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_process);
+        }
+
         public Task<int> TerminateProcessAsync(Process process, TimeSpan timeout, CancellationToken cancellationToken)
         {
             if (!process.HasExited)

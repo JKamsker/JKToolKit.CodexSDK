@@ -15,6 +15,7 @@ namespace NCodexSDK.Tests.TestHelpers;
 public class MockCodexProcessLauncher : ICodexProcessLauncher
 {
     private readonly List<SessionStartCapture> _capturedStarts = new();
+    private readonly List<ReviewStartCapture> _capturedReviews = new();
     private readonly List<ProcessTerminationCapture> _capturedTerminations = new();
 
     /// <summary>
@@ -58,6 +59,11 @@ public class MockCodexProcessLauncher : ICodexProcessLauncher
     public IReadOnlyList<SessionStartCapture> CapturedStarts => _capturedStarts;
 
     /// <summary>
+    /// Gets the list of captured review invocations.
+    /// </summary>
+    public IReadOnlyList<ReviewStartCapture> CapturedReviews => _capturedReviews;
+
+    /// <summary>
     /// Gets the list of captured process termination invocations.
     /// </summary>
     public IReadOnlyList<ProcessTerminationCapture> CapturedTerminations => _capturedTerminations;
@@ -75,6 +81,7 @@ public class MockCodexProcessLauncher : ICodexProcessLauncher
     public void Reset()
     {
         _capturedStarts.Clear();
+        _capturedReviews.Clear();
         _capturedTerminations.Clear();
         SimulateStartFailure = false;
         StartFailureException = null;
@@ -132,6 +139,36 @@ public class MockCodexProcessLauncher : ICodexProcessLauncher
     {
         // For testing, reuse StartSessionAsync behavior.
         return StartSessionAsync(options, clientOptions, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Process> StartReviewAsync(
+        CodexReviewOptions options,
+        CodexClientOptions clientOptions,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(clientOptions);
+
+        var capture = new ReviewStartCapture
+        {
+            Options = options,
+            ClientOptions = clientOptions,
+            Timestamp = DateTimeOffset.UtcNow
+        };
+        _capturedReviews.Add(capture);
+
+        if (StartDelay > TimeSpan.Zero)
+        {
+            await Task.Delay(StartDelay, cancellationToken);
+        }
+
+        if (SimulateStartFailure)
+        {
+            throw StartFailureException ?? new InvalidOperationException("Simulated start failure");
+        }
+
+        return CreateMockProcess();
     }
 
     /// <inheritdoc />
@@ -198,6 +235,16 @@ public class MockCodexProcessLauncher : ICodexProcessLauncher
     public class SessionStartCapture
     {
         public required CodexSessionOptions Options { get; init; }
+        public required CodexClientOptions ClientOptions { get; init; }
+        public required DateTimeOffset Timestamp { get; init; }
+    }
+
+    /// <summary>
+    /// Represents a captured review start invocation.
+    /// </summary>
+    public class ReviewStartCapture
+    {
+        public required CodexReviewOptions Options { get; init; }
         public required CodexClientOptions ClientOptions { get; init; }
         public required DateTimeOffset Timestamp { get; init; }
     }

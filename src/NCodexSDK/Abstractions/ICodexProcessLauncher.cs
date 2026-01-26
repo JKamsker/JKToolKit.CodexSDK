@@ -61,6 +61,18 @@ public interface ICodexProcessLauncher
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Starts a Codex CLI process in <c>review</c> mode.
+    /// </summary>
+    /// <param name="options">Review options controlling what to review and optional instructions.</param>
+    /// <param name="clientOptions">Client-wide options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The started Codex process.</returns>
+    Task<Process> StartReviewAsync(
+        CodexReviewOptions options,
+        CodexClientOptions clientOptions,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Terminates a Codex CLI process gracefully, with forceful termination as a fallback.
     /// </summary>
     /// <param name="process">The process to terminate.</param>

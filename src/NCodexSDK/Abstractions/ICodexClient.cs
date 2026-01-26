@@ -174,4 +174,12 @@ public interface ICodexClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The latest <see cref="RateLimits"/> if available; otherwise null.</returns>
     Task<RateLimits?> GetRateLimitsAsync(bool noCache = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs a non-interactive code review using <c>codex review</c>.
+    /// </summary>
+    /// <param name="options">Review configuration including scope and optional instructions.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="CodexReviewResult"/> containing stdout/stderr and exit code.</returns>
+    Task<CodexReviewResult> ReviewAsync(CodexReviewOptions options, CancellationToken cancellationToken = default);
 }
