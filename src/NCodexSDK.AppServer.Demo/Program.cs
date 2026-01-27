@@ -6,7 +6,7 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var demoName = GetArgValue(args, "--demo") ?? "stream";
+        var demoName = GetArgValue(args, "--demo") ?? "approve";
         var repoPath = GetArgValue(args, "--repo") ?? GetFirstNonOptionArg(args) ?? Directory.GetCurrentDirectory();
 
         var timeoutSeconds = TryGetTimeoutSeconds(args) ??
