@@ -1,6 +1,12 @@
 # NCodexSDK.McpServer
 
-NCodexSDK.McpServer is an add-on library that integrates with **`codex mcp-server`**, exposing Codex as a minimal **MCP tool provider** over stdio JSON-RPC.
+`NCodexSDK.McpServer` is a namespace/module in the main `NCòdexSDK` package that integrates with **`codex mcp-server`**, exposing Codex as a minimal **MCP tool provider** over stdio JSON-RPC.
+
+See also:
+
+- Docs index: [`docs/README.md`](../README.md)
+- App Server docs: [`docs/AppServer/README.md`](../AppServer/README.md)
+- Core (`codex exec`) docs: [`src/NCodexSDK/README.md`](../../src/NCodexSDK/README.md)
 
 Use it when you want to treat Codex as “just another tool” in an MCP-like architecture:
 
@@ -65,6 +71,12 @@ Models:
 
 ## Getting Started
 
+### Install
+
+```bash
+dotnet add package NCòdexSDK
+```
+
 ```csharp
 using NCodexSDK.McpServer;
 using NCodexSDK.Public.Models;
@@ -123,4 +135,3 @@ dotnet run --project src/NCodexSDK.McpServer.Demo -- "<repo-path>"
 - If `tools/list` returns empty: verify the server completed handshake and that Codex CLI supports `mcp-server`.
 - If you get approvals/elicitation requests: configure `ElicitationHandler` or set `ApprovalPolicy = Never`.
 - If the process exits early: check stderr output; ensure the CLI is present on PATH.
-

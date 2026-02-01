@@ -1,6 +1,12 @@
 # NCodexSDK.AppServer
 
-NCodexSDK.AppServer is an add-on library that integrates with **`codex app-server`**, a long-running **JSON-RPC-over-stdio** mode of the Codex CLI.
+`NCodexSDK.AppServer` is a namespace/module in the main `NCòdexSDK` package that integrates with **`codex app-server`**, a long-running **JSON-RPC-over-stdio** mode of the Codex CLI.
+
+See also:
+
+- Docs index: [`docs/README.md`](../README.md)
+- MCP Server docs: [`docs/McpServer/README.md`](../McpServer/README.md)
+- Core (`codex exec`) docs: [`src/NCodexSDK/README.md`](../../src/NCodexSDK/README.md)
 
 Use it when you need **deep, event-driven integration**:
 
@@ -72,6 +78,12 @@ The library maps a small must-have subset of notifications into typed records:
 
 - .NET 10 SDK
 - Codex CLI installed
+
+### Install
+
+```bash
+dotnet add package NCòdexSDK
+```
 
 ### Minimal example (thread + turn + streaming deltas)
 
@@ -160,4 +172,3 @@ dotnet run --project src/NCodexSDK.AppServer.Demo -- --demo approve --timeout-se
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
 - If you hit interactive prompts unexpectedly: configure an `ApprovalHandler` or set `ApprovalPolicy = Never`.
-

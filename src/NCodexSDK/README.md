@@ -6,10 +6,16 @@ NCodexSDK is a .NET client library that wraps the **Codex CLI** as a local subpr
 - Resuming/attaching to existing sessions by session id / log path
 - Running non-interactive reviews (`codex review`) through the same process-launch infrastructure
 
-If you want Codex’s newer stdio JSON-RPC modes, see:
+This package also includes two stdio JSON-RPC integrations:
 
-- `src/NCodexSDK.AppServer/README.md` (`codex app-server`)
-- `src/NCodexSDK.McpServer/README.md` (`codex mcp-server`)
+- `NCodexSDK.AppServer` (`codex app-server`)
+- `NCodexSDK.McpServer` (`codex mcp-server`)
+
+Docs live under `docs/`:
+
+- [`docs/README.md`](../../docs/README.md)
+- [`docs/AppServer/README.md`](../../docs/AppServer/README.md)
+- [`docs/McpServer/README.md`](../../docs/McpServer/README.md)
 
 ## What This Library Is (and isn’t)
 
