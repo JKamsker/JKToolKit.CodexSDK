@@ -1,4 +1,4 @@
-# Feature Specification: NCodexSDK - CLI Wrapper Library
+# Feature Specification: JKToolKit.CodexSDK - CLI Wrapper Library
 
 **Feature Branch**: `001-codex-dotnet-wrapper`  
 **Created**: November 20, 2025  

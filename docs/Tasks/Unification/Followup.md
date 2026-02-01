@@ -7,18 +7,18 @@
 
 ## ✅ What you *did* complete (hard merge)
 
-* **Deleted the dedicated library projects**: there is **no** `src/NCodexSDK.AppServer/NCodexSDK.AppServer.csproj` or `src/NCodexSDK.McpServer/NCodexSDK.McpServer.csproj` anymore.
+* **Deleted the dedicated library projects**: there is **no** `src/JKToolKit.CodexSDK.AppServer/JKToolKit.CodexSDK.AppServer.csproj` or `src/JKToolKit.CodexSDK.McpServer/JKToolKit.CodexSDK.McpServer.csproj` anymore.
 * AppServer/McpServer code is now under:
 
-  * `src/NCodexSDK/AppServer/*`
-  * `src/NCodexSDK/McpServer/*`
-* `NCodexSDK.sln` no longer references the deleted projects.
+  * `src/JKToolKit.CodexSDK/AppServer/*`
+  * `src/JKToolKit.CodexSDK/McpServer/*`
+* `JKToolKit.CodexSDK.sln` no longer references the deleted projects.
 * `InternalsVisibleTo` was cleaned up correctly (only tests remain):
-  `src/NCodexSDK/Properties/AssemblyInfo.cs`
+  `src/JKToolKit.CodexSDK/Properties/AssemblyInfo.cs`
 * Demos reference the unified core project:
 
-  * `src/NCodexSDK.AppServer.Demo/*.csproj` → `ProjectReference ..\NCodexSDK\NCodexSDK.csproj`
-  * `src/NCodexSDK.McpServer.Demo/*.csproj` → same
+  * `src/JKToolKit.CodexSDK.AppServer.Demo/*.csproj` → `ProjectReference ..\JKToolKit.CodexSDK\JKToolKit.CodexSDK.csproj`
+  * `src/JKToolKit.CodexSDK.McpServer.Demo/*.csproj` → same
 
 So the “one library” goal is basically achieved.
 
@@ -30,7 +30,7 @@ This is the biggest concrete issue I found.
 
 ### Current code
 
-`src/NCodexSDK/Public/Models/CodexModel.cs` now says:
+`src/JKToolKit.CodexSDK/Public/Models/CodexModel.cs` now says:
 
 * `Default => "gpt-5.2"`
 * `Gpt51Codex => "gpt-5.2-codex"`
@@ -40,7 +40,7 @@ This is the biggest concrete issue I found.
 
 ### Tests still expect the old values
 
-`tests/NCodexSDK.Tests/Unit/CodexModelTests.cs` expects:
+`tests/JKToolKit.CodexSDK.Tests/Unit/CodexModelTests.cs` expects:
 
 * `Default == "gpt-5.1-codex-max"`
 * `Gpt51Codex == "gpt-5.1-codex"`
@@ -69,18 +69,18 @@ Even though everything is now in one assembly, the infrastructure is still dupli
 
 ### Duplicate bootstrap logic
 
-* `src/NCodexSDK/AppServer/CodexAppServerClient.cs` (`StartAsync`) creates:
+* `src/JKToolKit.CodexSDK/AppServer/CodexAppServerClient.cs` (`StartAsync`) creates:
 
   * `RealFileSystem`
   * `DefaultCodexPathProvider`
   * `StdioProcessFactory`
   * `JsonRpcConnection`
-* `src/NCodexSDK/McpServer/CodexMcpServerClient.cs` does the same.
+* `src/JKToolKit.CodexSDK/McpServer/CodexMcpServerClient.cs` does the same.
 
 And then the DI factories do similar wiring again:
 
-* `src/NCodexSDK/AppServer/CodexAppServerClientFactory.cs`
-* `src/NCodexSDK/McpServer/CodexMcpServerClientFactory.cs`
+* `src/JKToolKit.CodexSDK/AppServer/CodexAppServerClientFactory.cs`
+* `src/JKToolKit.CodexSDK/McpServer/CodexMcpServerClientFactory.cs`
 
 If your goal is “shared where possible,” you still want the shared `Stdio+JsonRpc` bootstrap helper (one internal class both modes call).
 
@@ -90,9 +90,9 @@ If your goal is “shared where possible,” you still want the shared `Stdio+Js
 
 Right now you have three extension classes each registering common services:
 
-* `src/NCodexSDK/Public/ServiceCollectionExtensions.cs` (`AddCodexClient`)
-* `src/NCodexSDK/AppServer/ServiceCollectionExtensions.cs` (`AddCodexAppServerClient`)
-* `src/NCodexSDK/McpServer/ServiceCollectionExtensions.cs` (`AddCodexMcpServerClient`)
+* `src/JKToolKit.CodexSDK/Public/ServiceCollectionExtensions.cs` (`AddCodexClient`)
+* `src/JKToolKit.CodexSDK/AppServer/ServiceCollectionExtensions.cs` (`AddCodexAppServerClient`)
+* `src/JKToolKit.CodexSDK/McpServer/ServiceCollectionExtensions.cs` (`AddCodexMcpServerClient`)
 
 Each one repeats:
 
@@ -123,15 +123,15 @@ In `.github/workflows/ci.yml`, the “Prepare NuGet README” step rewrites **re
 
 But your package readme is configured from the **project**:
 
-* `src/NCodexSDK/NCodexSDK.csproj` → `<PackageReadmeFile>README.md</PackageReadmeFile>`
-* and packs `src/NCodexSDK/README.md`
+* `src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj` → `<PackageReadmeFile>README.md</PackageReadmeFile>`
+* and packs `src/JKToolKit.CodexSDK/README.md`
 
 So the CI rewrite step is currently **not affecting the readme that gets embedded** in the NuGet package.
 
 Not fatal, but either:
 
 * remove the step, or
-* update it to rewrite `src/NCodexSDK/README.md` instead.
+* update it to rewrite `src/JKToolKit.CodexSDK/README.md` instead.
 
 ---
 
@@ -139,8 +139,8 @@ Not fatal, but either:
 
 Core references `Microsoft.Extensions.*` **9.0.0** packages, while demos reference `Microsoft.Extensions.Logging.Console` **8.0.0**:
 
-* `src/NCodexSDK.AppServer.Demo/NCodexSDK.AppServer.Demo.csproj`
-* `src/NCodexSDK.McpServer.Demo/NCodexSDK.McpServer.Demo.csproj`
+* `src/JKToolKit.CodexSDK.AppServer.Demo/JKToolKit.CodexSDK.AppServer.Demo.csproj`
+* `src/JKToolKit.CodexSDK.McpServer.Demo/JKToolKit.CodexSDK.McpServer.Demo.csproj`
 
 This might still work, but it’s cleaner to align them (especially if you’re standardizing around .NET 10 + latest extensions).
 

@@ -1,6 +1,6 @@
-# <img src="res/logo.png" align="left" width="120" height="120" /> NCodexSDK
+# <img src="res/logo.png" align="left" width="120" height="120" /> JKToolKit.CodexSDK
 
-[![CI](https://github.com/JKamsker/NCodexSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/NCodexSDK/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/badge/Nuget-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK)
+[![CI](https://github.com/JKamsker/JKToolKit.CodexSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/JKToolKit.CodexSDK/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/badge/Nuget-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK)
 
 <br clear="left"/>
 
@@ -12,7 +12,7 @@ It supports three integration styles:
 - **`codex app-server`**: JSON-RPC server mode (threads/turns/items + streaming deltas + approvals)
 - **`codex mcp-server`**: MCP tool provider mode (`tools/list`, `tools/call` → `codex` / `codex-reply`)
 
-`NCodexSDK.AppServer` and `NCodexSDK.McpServer` are now **part of the core `JKToolKit.CodexSDK` package** (same assembly / same install).
+`JKToolKit.CodexSDK.AppServer` and `JKToolKit.CodexSDK.McpServer` are now **part of the core `JKToolKit.CodexSDK` package** (same assembly / same install).
 
 ## Installation
 
@@ -27,15 +27,15 @@ It supports three integration styles:
 dotnet add package JKToolKit.CodexSDK
 ```
 
-> Upgrading from older versions: replace `NCòdexSDK` with `JKToolKit.CodexSDK` and remove `NCòdexSDK.AppServer` / `NCòdexSDK.McpServer` package references (if you had them). The namespaces remain `NCodexSDK.AppServer` and `NCodexSDK.McpServer`.
+> Upgrading from older versions: replace `NCodexSDK` with `JKToolKit.CodexSDK` and remove `NCodexSDK.AppServer` / `NCodexSDK.McpServer` package references (if you had them). The namespaces remain `JKToolKit.CodexSDK.AppServer` and `JKToolKit.CodexSDK.McpServer`.
 
 ## Quickstart (`codex exec`)
 
 Fastest way to start a session and stream events:
 
 ```csharp
-using NCodexSDK.Public;
-using NCodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Public.Models;
 
 var clientOptions = new CodexClientOptions();
 await using var client = new CodexClient(clientOptions);
@@ -78,9 +78,9 @@ Codex offers two stdio JSON-RPC modes that this repo supports:
 ## `codex app-server` (deep integration)
 
 ```csharp
-using NCodexSDK.AppServer;
-using NCodexSDK.AppServer.Notifications;
-using NCodexSDK.Public.Models;
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.Public.Models;
 
 await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
 {
@@ -111,8 +111,8 @@ Console.WriteLine($"\nDone: {(await turn.Completion).Status}");
 ## `codex mcp-server` (Codex as a tool)
 
 ```csharp
-using NCodexSDK.McpServer;
-using NCodexSDK.Public.Models;
+using JKToolKit.CodexSDK.McpServer;
+using JKToolKit.CodexSDK.Public.Models;
 
 await using var codex = await CodexMcpServerClient.StartAsync(new CodexMcpServerClientOptions());
 
@@ -137,10 +137,10 @@ Console.WriteLine(followUp.Text);
 Demos (console apps):
 
 ```bash
-dotnet run --project src/NCodexSDK.Demo -- "Your prompt here"
-dotnet run --project src/NCodexSDK.Demo.Review -- --commit <sha>
-dotnet run --project src/NCodexSDK.AppServer.Demo -- "<repo-path>"
-dotnet run --project src/NCodexSDK.McpServer.Demo -- "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- "Your prompt here"
+dotnet run --project src/JKToolKit.CodexSDK.Demo.Review -- --commit <sha>
+dotnet run --project src/JKToolKit.CodexSDK.AppServer.Demo -- "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.McpServer.Demo -- "<repo-path>"
 ```
 
 ## Documentation
@@ -148,11 +148,11 @@ dotnet run --project src/NCodexSDK.McpServer.Demo -- "<repo-path>"
 - Start here: [`docs/README.md`](docs/README.md)
 - App Server docs: [`docs/AppServer/README.md`](docs/AppServer/README.md)
 - MCP Server docs: [`docs/McpServer/README.md`](docs/McpServer/README.md)
-- NuGet package README: [`src/NCodexSDK/README.md`](src/NCodexSDK/README.md)
+- NuGet package README: [`src/JKToolKit.CodexSDK/README.md`](src/JKToolKit.CodexSDK/README.md)
 
 ## Troubleshooting
 
-  * **File locked during build:** Stop any running demo processes: `Get-Process NCodexSDK.Demo | Stop-Process -Force`
+  * **File locked during build:** Stop any running demo processes: `Get-Process JKToolKit.CodexSDK.Demo | Stop-Process -Force`
   * **Session log not found:** Ensure Codex CLI is installed and `%USERPROFILE%\.codex\sessions` exists.
   * **Process launch fails:** Verify `codex` is on your PATH by running `codex --version`.
 

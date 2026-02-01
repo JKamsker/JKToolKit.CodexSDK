@@ -3,7 +3,7 @@ Below is a concrete, “engineering-plan level” roadmap to add **first-class s
 * `codex app-server` (JSONL / JSON-RPC over stdio, **no** `"jsonrpc":"2.0"` field) ([OpenAI Developers][1])
 * `codex mcp-server` (standard MCP over stdio; `tools/list` exposes `codex` + `codex-reply`) ([OpenAI Developers][2])
 
-…into **NCodexSDK**, while keeping it **clean**, **maintainable**, and **.NET-native**.
+…into **JKToolKit.CodexSDK**, while keeping it **clean**, **maintainable**, and **.NET-native**.
 
 ---
 
@@ -11,7 +11,7 @@ Below is a concrete, “engineering-plan level” roadmap to add **first-class s
 
 ### Goals
 
-1. **Two new “connection-style” clients** in NCodexSDK:
+1. **Two new “connection-style” clients** in JKToolKit.CodexSDK:
 
    * `CodexAppServerClient` → deep integration & streaming turn/item events. ([OpenAI Developers][1])
    * `CodexMcpServerClient` → Codex as a tool provider via MCP (`tools/list` / `tools/call`). ([OpenAI Developers][2])
@@ -37,10 +37,10 @@ Below is a concrete, “engineering-plan level” roadmap to add **first-class s
 
 ### Recommended: add two optional subpackages (best maintainability)
 
-Keep the existing `NCodexSDK` package (exec/resume + JSONL log tailing) untouched, and add:
+Keep the existing `JKToolKit.CodexSDK` package (exec/resume + JSONL log tailing) untouched, and add:
 
-* `NCodexSDK.AppServer`
-* `NCodexSDK.McpServer`
+* `JKToolKit.CodexSDK.AppServer`
+* `JKToolKit.CodexSDK.McpServer`
 
 Why:
 
@@ -50,7 +50,7 @@ Why:
 
 **Solution changes**
 
-* Add new projects under `src/` and add them to `NCodexSDK.sln`.
+* Add new projects under `src/` and add them to `JKToolKit.CodexSDK.sln`.
 * Add new test projects or extend existing test project with new test suites.
 
 > If you strongly prefer “one NuGet package”, you can still keep them as separate namespaces in the same assembly—but the multi-package approach is the most maintainable over time.
@@ -310,7 +310,7 @@ Plan:
 1. Add a `scripts/` helper that runs schema generation (manual step, not part of normal builds).
 2. Use `NJsonSchema` (or similar) to generate DTOs into:
 
-   * `src/NCodexSDK.AppServer/Generated/*`
+   * `src/JKToolKit.CodexSDK.AppServer/Generated/*`
 3. Keep your public API *handwritten* and stable.
 4. Use generated DTOs internally to deserialize `result` payloads when available; fall back to `JsonElement` for unknowns.
 
@@ -412,7 +412,7 @@ Plan:
 
 ---
 
-## 5) Clean integration with existing NCodexSDK
+## 5) Clean integration with existing JKToolKit.CodexSDK
 
 ### 5.1 Keep existing `CodexClient` intact
 
@@ -499,12 +499,12 @@ If you want true end-to-end tests:
 
 ### 7.2 Add demos
 
-Add two console demos (parallel to existing `NCodexSDK.Demo`):
+Add two console demos (parallel to existing `JKToolKit.CodexSDK.Demo`):
 
-* `NCodexSDK.AppServer.Demo`
+* `JKToolKit.CodexSDK.AppServer.Demo`
 
   * start client, create thread, start turn, stream deltas, print final
-* `NCodexSDK.McpServer.Demo`
+* `JKToolKit.CodexSDK.McpServer.Demo`
 
   * list tools, run `codex`, extract threadId, run `codex-reply`
 
@@ -622,7 +622,7 @@ These shapes are “.NET-native” (options classes, async APIs, turn handles) w
 
 ---
 
-If you want, I can take this plan and map it directly onto **the existing NCodexSDK folder structure and naming conventions** (exact namespaces, which classes should be `internal`, which should be public, and where to plug into the current DI registrations), but the outline above is already designed to drop cleanly into the repo you shared.
+If you want, I can take this plan and map it directly onto **the existing JKToolKit.CodexSDK folder structure and naming conventions** (exact namespaces, which classes should be `internal`, which should be public, and where to plug into the current DI registrations), but the outline above is already designed to drop cleanly into the repo you shared.
 
 [1]: https://developers.openai.com/codex/app-server "https://developers.openai.com/codex/app-server"
 [2]: https://developers.openai.com/codex/guides/agents-sdk/ "https://developers.openai.com/codex/guides/agents-sdk/"

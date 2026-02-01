@@ -1,6 +1,6 @@
-# Research Findings: NCodexSDK Implementation
+# Research Findings: JKToolKit.CodexSDK Implementation
 
-**Feature**: NCodexSDK - CLI Wrapper Library  
+**Feature**: JKToolKit.CodexSDK - CLI Wrapper Library  
 **Date**: November 20, 2025  
 **Phase**: Phase 0 - Research & Discovery
 

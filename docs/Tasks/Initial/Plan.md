@@ -1,6 +1,6 @@
 Here’s a concrete plan for a **new .NET 10 library** that cleanly wraps the Codex CLI and its JSONL session logs.
 
-I’ll call it **`NCodexSDK`** in this plan, but you can rename it however you like.
+I’ll call it **`JKToolKit.CodexSDK`** in this plan, but you can rename it however you like.
 
 ---
 
@@ -69,8 +69,8 @@ Single main project, optionally plus a test project:
 
 ```text
 src/
-  NCodexSDK/
-    NCodexSDK.csproj
+  JKToolKit.CodexSDK/
+    JKToolKit.CodexSDK.csproj
     Public/
       CodexClient.cs
       CodexClientOptions.cs
@@ -96,7 +96,7 @@ src/
       IJsonlEventParser.cs
       ILoggerAdapter.cs (optional)
 tests/
-  NCodexSDK.Tests/
+  JKToolKit.CodexSDK.Tests/
 ```
 
 Target frameworks: `net10.0` (and optionally multi‑target `net8.0/net9.0` for compatibility).

@@ -1,12 +1,12 @@
-# NCodexSDK.AppServer
+# JKToolKit.CodexSDK.AppServer
 
-`NCodexSDK.AppServer` is a namespace/module in the main `NCòdexSDK` package that integrates with **`codex app-server`**, a long-running **JSON-RPC-over-stdio** mode of the Codex CLI.
+`JKToolKit.CodexSDK.AppServer` is a namespace/module in the main `JKToolKit.CodexSDK` package that integrates with **`codex app-server`**, a long-running **JSON-RPC-over-stdio** mode of the Codex CLI.
 
 See also:
 
 - Docs index: [`docs/README.md`](../README.md)
 - MCP Server docs: [`docs/McpServer/README.md`](../McpServer/README.md)
-- Core (`codex exec`) docs: [`src/NCodexSDK/README.md`](../../src/NCodexSDK/README.md)
+- Core (`codex exec`) docs: [`src/JKToolKit.CodexSDK/README.md`](../../src/JKToolKit.CodexSDK/README.md)
 
 Use it when you need **deep, event-driven integration**:
 
@@ -37,7 +37,7 @@ When you start a turn, you typically want to:
 2. Stream events until `turn/completed`
 3. Stop or interrupt the turn if needed
 
-NCodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
+JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
 
 ## How It Works Internally
 
@@ -82,15 +82,15 @@ The library maps a small must-have subset of notifications into typed records:
 ### Install
 
 ```bash
-dotnet add package NCòdexSDK
+dotnet add package JKToolKit.CodexSDK
 ```
 
 ### Minimal example (thread + turn + streaming deltas)
 
 ```csharp
-using NCodexSDK.AppServer;
-using NCodexSDK.AppServer.Notifications;
-using NCodexSDK.Public.Models;
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.Public.Models;
 
 await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
 {
@@ -149,7 +149,7 @@ Then resolve `ICodexAppServerClientFactory` and call `StartAsync()`.
 
 ## Demos
 
-- `src/NCodexSDK.AppServer.Demo` shows:
+- `src/JKToolKit.CodexSDK.AppServer.Demo` shows:
   - starting the client
   - creating a thread
   - starting a turn
@@ -158,13 +158,13 @@ Then resolve `ICodexAppServerClientFactory` and call `StartAsync()`.
 Run:
 
 ```bash
-dotnet run --project src/NCodexSDK.AppServer.Demo -- --demo stream --repo "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.AppServer.Demo -- --demo stream --repo "<repo-path>"
 ```
 
 Approval demo (restrictive allow-list):
 
 ```bash
-dotnet run --project src/NCodexSDK.AppServer.Demo -- --demo approve --timeout-seconds 30
+dotnet run --project src/JKToolKit.CodexSDK.AppServer.Demo -- --demo approve --timeout-seconds 30
 ```
 
 ## Troubleshooting

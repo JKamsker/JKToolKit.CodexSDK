@@ -1,6 +1,6 @@
 # Documentation
 
-This repo ships **one NuGet package**: `NCòdexSDK`. It provides three ways to integrate with the Codex CLI:
+This repo ships **one NuGet package**: `JKToolKit.CodexSDK`. It provides three ways to integrate with the Codex CLI:
 
 | Mode | What you get | When to use |
 |---|---|---|
@@ -17,8 +17,8 @@ This repo ships **one NuGet package**: `NCòdexSDK`. It provides three ways to i
 
 ## Upgrading from split packages
 
-If you previously installed `NCòdexSDK.AppServer` and/or `NCòdexSDK.McpServer`, you can remove them and keep only `NCòdexSDK`. The namespaces remain `NCodexSDK.AppServer` and `NCodexSDK.McpServer`.
+If you previously installed `NCodexSDK.AppServer` and/or `NCodexSDK.McpServer`, you can remove them and keep only `JKToolKit.CodexSDK`. The namespaces remain `JKToolKit.CodexSDK.AppServer` and `JKToolKit.CodexSDK.McpServer`.
 
 ## NuGet package README
 
-The README embedded in the NuGet package lives at [`src/NCodexSDK/README.md`](../src/NCodexSDK/README.md).
+The README embedded in the NuGet package lives at [`src/JKToolKit.CodexSDK/README.md`](../src/JKToolKit.CodexSDK/README.md).

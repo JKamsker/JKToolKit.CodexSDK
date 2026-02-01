@@ -1,6 +1,6 @@
-# Data Model: NCodexSDK
+# Data Model: JKToolKit.CodexSDK
 
-**Feature**: NCodexSDK - CLI Wrapper Library  
+**Feature**: JKToolKit.CodexSDK - CLI Wrapper Library  
 **Date**: November 20, 2025  
 **Phase**: Phase 1 - Design & Contracts
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document defines the core data structures and entities used in the NCodexSDK library. All entities are designed as immutable records where possible to ensure thread-safety and predictable behavior.
+This document defines the core data structures and entities used in the JKToolKit.CodexSDK library. All entities are designed as immutable records where possible to ensure thread-safety and predictable behavior.
 
 ---
 

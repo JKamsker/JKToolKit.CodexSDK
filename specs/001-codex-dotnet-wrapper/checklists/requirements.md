@@ -1,4 +1,4 @@
-# Specification Quality Checklist: NCodexSDK - CLI Wrapper Library
+# Specification Quality Checklist: JKToolKit.CodexSDK - CLI Wrapper Library
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning  
 **Created**: November 20, 2025  

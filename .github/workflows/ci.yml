@@ -37,13 +37,13 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Restore
-        run: dotnet restore NCodexSDK.sln
+        run: dotnet restore JKToolKit.CodexSDK.sln
 
       - name: Build
-        run: dotnet build NCodexSDK.sln --configuration Release --no-restore
+        run: dotnet build JKToolKit.CodexSDK.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test NCodexSDK.sln --configuration Release --no-build --framework ${{ matrix.framework }} --logger \"trx;LogFileName=test-results.trx\"
+        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release --no-build --framework ${{ matrix.framework }} --logger \"trx;LogFileName=test-results.trx\"
 
       - name: Prepare NuGet README
         if: matrix.os == 'ubuntu-latest'
@@ -51,7 +51,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          path = Path("src/NCodexSDK/README.md")
+          path = Path("src/JKToolKit.CodexSDK/README.md")
           lines = path.read_text(encoding="utf-8").splitlines()
           out = []
           for line in lines:
@@ -59,7 +59,7 @@ jobs:
             if stripped.startswith("<br"):
               continue
             if line.startswith("# <img"):
-              out.append("# NCodexSDK")
+              out.append("# JKToolKit.CodexSDK")
               continue
             out.append(line)
 
@@ -69,7 +69,7 @@ jobs:
 
       - name: Pack NuGet Package
         if: matrix.os == 'ubuntu-latest'
-        run: dotnet pack src/NCodexSDK/NCodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+        run: dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
 
       - name: Upload NuGet Package Artifact
         if: matrix.os == 'ubuntu-latest'

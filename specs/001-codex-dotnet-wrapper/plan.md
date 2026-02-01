@@ -1,5 +1,5 @@
 ````markdown
-# Implementation Plan: NCodexSDK - CLI Wrapper Library
+# Implementation Plan: JKToolKit.CodexSDK - CLI Wrapper Library
 
 **Branch**: `001-codex-dotnet-wrapper` | **Date**: November 20, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-codex-dotnet-wrapper/spec.md`
@@ -75,8 +75,8 @@ specs/[###-feature]/
 
 ```text
 src/
-├── NCodexSDK/
-│   ├── NCodexSDK.csproj
+├── JKToolKit.CodexSDK/
+│   ├── JKToolKit.CodexSDK.csproj
 │   ├── Public/
 │   │   ├── CodexClient.cs
 │   │   ├── CodexClientOptions.cs
@@ -115,8 +115,8 @@ src/
 │       └── ILoggerAdapter.cs (optional)
 
 tests/
-├── NCodexSDK.Tests/
-│   ├── NCodexSDK.Tests.csproj
+├── JKToolKit.CodexSDK.Tests/
+│   ├── JKToolKit.CodexSDK.Tests.csproj
 │   ├── Unit/
 │   │   ├── JsonlEventParserTests.cs
 │   │   ├── JsonlTailerTests.cs

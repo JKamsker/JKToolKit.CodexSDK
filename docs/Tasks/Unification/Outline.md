@@ -1,9 +1,9 @@
-Below is a concrete integration plan that folds **`NCodexSDK.AppServer`** and **`NCodexSDK.McpServer`** into the **core `NCodexSDK`** package/assembly, while keeping the existing **`codex exec`** (“exec approach”) working exactly as it does today.
+Below is a concrete integration plan that folds **`JKToolKit.CodexSDK.AppServer`** and **`JKToolKit.CodexSDK.McpServer`** into the **core `JKToolKit.CodexSDK`** package/assembly, while keeping the existing **`codex exec`** (“exec approach”) working exactly as it does today.
 
 I’m basing this on the current repo layout where:
 
-* `src/NCodexSDK` already contains shared infra like **`StdioProcess`**, **`StdioProcessFactory`**, and **`JsonRpcConnection`** (currently shared via `InternalsVisibleTo`).
-* `src/NCodexSDK.AppServer` and `src/NCodexSDK.McpServer` are separate projects primarily for packaging / API surface, not because they need distinct infra.
+* `src/JKToolKit.CodexSDK` already contains shared infra like **`StdioProcess`**, **`StdioProcessFactory`**, and **`JsonRpcConnection`** (currently shared via `InternalsVisibleTo`).
+* `src/JKToolKit.CodexSDK.AppServer` and `src/JKToolKit.CodexSDK.McpServer` are separate projects primarily for packaging / API surface, not because they need distinct infra.
 
 ---
 
@@ -37,33 +37,33 @@ I’m basing this on the current repo layout where:
 
 ### Recommended approach
 
-**Move AppServer and McpServer code into the core `NCodexSDK` project** *without changing namespaces*:
+**Move AppServer and McpServer code into the core `JKToolKit.CodexSDK` project** *without changing namespaces*:
 
 * Keep public namespaces:
 
-  * `NCodexSDK.Public` (exec)
-  * `NCodexSDK.AppServer`
-  * `NCodexSDK.McpServer`
+  * `JKToolKit.CodexSDK.Public` (exec)
+  * `JKToolKit.CodexSDK.AppServer`
+  * `JKToolKit.CodexSDK.McpServer`
 
 That way, user code that already does:
 
 ```csharp
-using NCodexSDK.AppServer;
-using NCodexSDK.McpServer;
-using NCodexSDK.Public;
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.McpServer;
+using JKToolKit.CodexSDK.Public;
 ```
 
 doesn’t need to change; only the **package references** change.
 
 ### Repo structure after move
 
-Inside `src/NCodexSDK`:
+Inside `src/JKToolKit.CodexSDK`:
 
 ```
-src/NCodexSDK/
+src/JKToolKit.CodexSDK/
   Public/                 // exec API (unchanged)
-  AppServer/              // moved from NCodexSDK.AppServer
-  McpServer/              // moved from NCodexSDK.McpServer
+  AppServer/              // moved from JKToolKit.CodexSDK.AppServer
+  McpServer/              // moved from JKToolKit.CodexSDK.McpServer
   Infrastructure/
     JsonRpc/              // already present
     Stdio/                // already present
@@ -78,19 +78,19 @@ You have two viable strategies; I recommend **B**.
 
 ### A) Hard merge (breaking packaging change)
 
-* Delete/stop packing `NCòdexSDK.AppServer` and `NCòdexSDK.McpServer`
-* Only ship `NCòdexSDK`
+* Delete/stop packing `NCodexSDK.AppServer` and `NCodexSDK.McpServer`
+* Only ship `NCodexSDK`
 * Users must remove the add-on package references
 
 This is simplest but will break people who reference the add-ons explicitly.
 
 ### B) Soft merge (best UX)
 
-* Ship **one “real” package**: `NCòdexSDK` containing everything.
-* Keep shipping `NCòdexSDK.AppServer` and `NCòdexSDK.McpServer` as **shim packages** that:
+* Ship **one “real” package**: `NCodexSDK` containing everything.
+* Keep shipping `NCodexSDK.AppServer` and `NCodexSDK.McpServer` as **shim packages** that:
 
-  * depend on `NCòdexSDK`
-  * contain **type-forwarders** to the types now living in `NCodexSDK`
+  * depend on `NCodexSDK`
+  * contain **type-forwarders** to the types now living in `JKToolKit.CodexSDK`
 
 This preserves:
 
@@ -221,7 +221,7 @@ You currently have two identical records:
 
 Create one shared public record:
 
-* `NCodexSDK.Public.CodexClientInfo`
+* `JKToolKit.CodexSDK.Public.CodexClientInfo`
 
 Then choose one of:
 
@@ -318,10 +318,10 @@ This is the step-by-step breakdown you can hand to someone and execute in PRs.
 
 * Move files:
 
-  * `src/NCodexSDK.AppServer/**.cs` → `src/NCodexSDK/AppServer/**.cs`
-  * `src/NCodexSDK.McpServer/**.cs` → `src/NCodexSDK/McpServer/**.cs`
-* Update `NCodexSDK.csproj` if needed (SDK-style includes files by default).
-* Remove `InternalsVisibleTo("NCodexSDK.AppServer")` and `InternalsVisibleTo("NCodexSDK.McpServer")` from `NCodexSDK/Properties/AssemblyInfo.cs` (they’ll be in the same assembly now).
+  * `src/JKToolKit.CodexSDK.AppServer/**.cs` → `src/JKToolKit.CodexSDK/AppServer/**.cs`
+  * `src/JKToolKit.CodexSDK.McpServer/**.cs` → `src/JKToolKit.CodexSDK/McpServer/**.cs`
+* Update `JKToolKit.CodexSDK.csproj` if needed (SDK-style includes files by default).
+* Remove `InternalsVisibleTo("JKToolKit.CodexSDK.AppServer")` and `InternalsVisibleTo("JKToolKit.CodexSDK.McpServer")` from `JKToolKit.CodexSDK/Properties/AssemblyInfo.cs` (they’ll be in the same assembly now).
 * Fix build errors (mostly namespace/usings and internal visibility that’s no longer needed).
 
 ✅ Exec remains untouched.
@@ -368,14 +368,14 @@ This is the step-by-step breakdown you can hand to someone and execute in PRs.
 
 If you choose **soft merge**:
 
-* Change `NCodexSDK.AppServer.csproj` and `NCodexSDK.McpServer.csproj`:
+* Change `JKToolKit.CodexSDK.AppServer.csproj` and `JKToolKit.CodexSDK.McpServer.csproj`:
 
   * remove all compiled sources
   * add type-forwarders
   * keep package metadata/readme
-  * add dependency on `NCòdexSDK`
+  * add dependency on `NCodexSDK`
   * mark package as deprecated (NuGet metadata)
-* Update solution + demos to reference only `NCòdexSDK`
+* Update solution + demos to reference only `NCodexSDK`
 
 If you choose **hard merge**:
 
@@ -390,9 +390,9 @@ If you choose **hard merge**:
 
 * Update root README:
 
-  * installation: only `dotnet add package NCòdexSDK`
+  * installation: only `dotnet add package NCodexSDK`
   * still show 3 modes
-* Update `*.Demo` projects to reference only `NCodexSDK` project (or just the package).
+* Update `*.Demo` projects to reference only `JKToolKit.CodexSDK` project (or just the package).
 * Ensure examples look consistent (same general patterns).
 
 ---
@@ -419,7 +419,7 @@ To explicitly satisfy your constraint:
 After integration, a user installs only:
 
 ```bash
-dotnet add package NCòdexSDK
+dotnet add package NCodexSDK
 ```
 
 And can do either:

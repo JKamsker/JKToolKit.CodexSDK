@@ -1,4 +1,4 @@
-# Event Schemas: NCodexSDK
+# Event Schemas: JKToolKit.CodexSDK
 
 This directory contains JSON schemas and examples for all Codex event types.
 

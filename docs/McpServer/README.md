@@ -1,12 +1,12 @@
-# NCodexSDK.McpServer
+# JKToolKit.CodexSDK.McpServer
 
-`NCodexSDK.McpServer` is a namespace/module in the main `NCòdexSDK` package that integrates with **`codex mcp-server`**, exposing Codex as a minimal **MCP tool provider** over stdio JSON-RPC.
+`JKToolKit.CodexSDK.McpServer` is a namespace/module in the main `JKToolKit.CodexSDK` package that integrates with **`codex mcp-server`**, exposing Codex as a minimal **MCP tool provider** over stdio JSON-RPC.
 
 See also:
 
 - Docs index: [`docs/README.md`](../README.md)
 - App Server docs: [`docs/AppServer/README.md`](../AppServer/README.md)
-- Core (`codex exec`) docs: [`src/NCodexSDK/README.md`](../../src/NCodexSDK/README.md)
+- Core (`codex exec`) docs: [`src/JKToolKit.CodexSDK/README.md`](../../src/JKToolKit.CodexSDK/README.md)
 
 Use it when you want to treat Codex as “just another tool” in an MCP-like architecture:
 
@@ -36,7 +36,7 @@ Unlike `app-server` (threads/turns/items with rich event notifications), MCP mod
 - **request/response**
 - tool discovery + tool invocation
 
-NCodexSDK.McpServer provides:
+JKToolKit.CodexSDK.McpServer provides:
 
 - strongly typed wrappers for the two Codex-specific tools
 - a low-level escape hatch (`CallAsync` / `CallToolAsync`) for forward compatibility
@@ -74,12 +74,12 @@ Models:
 ### Install
 
 ```bash
-dotnet add package NCòdexSDK
+dotnet add package JKToolKit.CodexSDK
 ```
 
 ```csharp
-using NCodexSDK.McpServer;
-using NCodexSDK.Public.Models;
+using JKToolKit.CodexSDK.McpServer;
+using JKToolKit.CodexSDK.Public.Models;
 
 await using var codex = await CodexMcpServerClient.StartAsync(new CodexMcpServerClientOptions());
 
@@ -122,12 +122,12 @@ Then resolve `ICodexMcpServerClientFactory` and call `StartAsync()`.
 
 ## Demos
 
-- `src/NCodexSDK.McpServer.Demo` lists tools, starts a session, and sends a follow-up via `codex-reply`.
+- `src/JKToolKit.CodexSDK.McpServer.Demo` lists tools, starts a session, and sends a follow-up via `codex-reply`.
 
 Run:
 
 ```bash
-dotnet run --project src/NCodexSDK.McpServer.Demo -- "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.McpServer.Demo -- "<repo-path>"
 ```
 
 ## Troubleshooting
