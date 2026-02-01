@@ -1,6 +1,6 @@
 # <img src="res/logo.png" align="left" width="120" height="120" /> NCodexSDK
 
-[![CI](https://github.com/JKamsker/NCodexSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/NCodexSDK/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/badge/Nuget-Download-blue?logo=nuget)](https://www.nuget.org/packages/NC%C3%B2dexSDK)
+[![CI](https://github.com/JKamsker/NCodexSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/NCodexSDK/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/badge/Nuget-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK)
 
 <br clear="left"/>
 
@@ -12,7 +12,7 @@ It supports three integration styles:
 - **`codex app-server`**: JSON-RPC server mode (threads/turns/items + streaming deltas + approvals)
 - **`codex mcp-server`**: MCP tool provider mode (`tools/list`, `tools/call` → `codex` / `codex-reply`)
 
-`NCodexSDK.AppServer` and `NCodexSDK.McpServer` are now **part of the core `NCòdexSDK` package** (same assembly / same install).
+`NCodexSDK.AppServer` and `NCodexSDK.McpServer` are now **part of the core `JKToolKit.CodexSDK` package** (same assembly / same install).
 
 ## Installation
 
@@ -24,10 +24,10 @@ It supports three integration styles:
 ### NuGet
 
 ```bash
-dotnet add package NCòdexSDK
+dotnet add package JKToolKit.CodexSDK
 ```
 
-> Upgrading from older versions: remove `NCòdexSDK.AppServer` / `NCòdexSDK.McpServer` package references (if you had them). The namespaces remain `NCodexSDK.AppServer` and `NCodexSDK.McpServer`.
+> Upgrading from older versions: replace `NCòdexSDK` with `JKToolKit.CodexSDK` and remove `NCòdexSDK.AppServer` / `NCòdexSDK.McpServer` package references (if you had them). The namespaces remain `NCodexSDK.AppServer` and `NCodexSDK.McpServer`.
 
 ## Quickstart (`codex exec`)
 

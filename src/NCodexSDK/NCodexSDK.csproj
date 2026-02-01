@@ -8,9 +8,9 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>NCodexSDK</AssemblyName>
     <RootNamespace>NCodexSDK</RootNamespace>
-    <PackageId>NCòdexSDK</PackageId>
-    <Product>NCòdexSDK</Product>
-    <Title>NCòdexSDK</Title>
+    <PackageId>JKToolKit.CodexSDK</PackageId>
+    <Product>JKToolKit.CodexSDK</Product>
+    <Title>JKToolKit.CodexSDK</Title>
     
     <!-- NuGet Package Metadata -->
     <PackageIcon>logo.png</PackageIcon>
