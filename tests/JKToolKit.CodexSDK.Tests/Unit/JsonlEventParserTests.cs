@@ -147,9 +147,98 @@ public class JsonlEventParserTests
         var evt = events[0].Should().BeOfType<TurnContextEvent>().Subject;
         evt.ApprovalPolicy.Should().Be(approvalPolicy);
         evt.SandboxPolicyType.Should().Be(sandboxPolicyType);
+        evt.NetworkAccess.Should().BeNull();
         evt.Timestamp.Should().BeCloseTo(timestamp, TimeSpan.FromSeconds(1));
         evt.Type.Should().Be("turn_context");
         evt.RawPayload.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_TurnContextEvent_WithSandboxPolicyObject_ParsesNetworkAccess()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""turn_context"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""approval_policy"": ""never"",
+                ""sandbox_policy"": {{
+                    ""type"": ""workspace-write"",
+                    ""network_access"": false
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<TurnContextEvent>().Subject;
+        evt.ApprovalPolicy.Should().Be("never");
+        evt.SandboxPolicyType.Should().Be("workspace-write");
+        evt.NetworkAccess.Should().BeFalse();
+        evt.Type.Should().Be("turn_context");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_WrappedAgentMessage_UnwrapsToAgentMessageEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""agent_message"",
+                ""message"": ""Hello from wrapper.""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<AgentMessageEvent>().Subject;
+        evt.Text.Should().Be("Hello from wrapper.");
+        evt.Type.Should().Be("agent_message");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ExitedReviewMode_ParsesStructuredReviewOutput()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""exited_review_mode"",
+                ""review_output"": {{
+                    ""overall_correctness"": ""good"",
+                    ""overall_explanation"": ""Looks fine."",
+                    ""overall_confidence_score"": 0.9,
+                    ""findings"": [
+                        {{
+                            ""priority"": 1,
+                            ""confidence_score"": 0.8,
+                            ""title"": ""Issue title"",
+                            ""body"": ""Issue body"",
+                            ""code_location"": {{
+                                ""absolute_file_path"": ""/tmp/file.cs"",
+                                ""line_range"": {{ ""start"": 10, ""end"": 12 }}
+                            }}
+                        }}
+                    ]
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
+        evt.Type.Should().Be("exited_review_mode");
+        evt.ReviewOutput.OverallCorrectness.Should().Be("good");
+        evt.ReviewOutput.OverallConfidenceScore.Should().Be(0.9);
+        evt.ReviewOutput.Findings.Should().HaveCount(1);
+        evt.ReviewOutput.Findings[0].CodeLocation!.AbsoluteFilePath.Should().Be("/tmp/file.cs");
+        evt.ReviewOutput.Findings[0].CodeLocation!.LineRange!.Start.Should().Be(10);
     }
 
     [Fact]

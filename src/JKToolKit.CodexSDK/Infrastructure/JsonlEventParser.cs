@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Globalization;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Public.Models;
 using Microsoft.Extensions.Logging;
@@ -136,7 +137,39 @@ public sealed class JsonlEventParser : IJsonlEventParser
             "token_count" => ParseTokenCountEvent(root, timestamp, type, rawPayload),
             "turn_context" => ParseTurnContextEvent(root, timestamp, type, rawPayload),
             "response_item" => ParseResponseItemEvent(root, timestamp, type, rawPayload),
+            "event_msg" => ParseEventMsgEvent(root, timestamp, rawPayload),
             _ => ParseUnknownEvent(timestamp, type, rawPayload)
+        };
+    }
+
+    /// <summary>
+    /// Parses an event_msg envelope. Codex sometimes wraps known event payloads under this envelope.
+    /// </summary>
+    private CodexEvent? ParseEventMsgEvent(
+        JsonElement root,
+        DateTimeOffset timestamp,
+        JsonElement rawPayload)
+    {
+        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogWarning("event_msg missing 'payload' object");
+            return null;
+        }
+
+        var innerType = payload.TryGetProperty("type", out var typeEl) ? typeEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(innerType))
+        {
+            _logger.LogDebug("event_msg missing inner 'payload.type'; returning unknown event");
+            return ParseUnknownEvent(timestamp, "event_msg", rawPayload);
+        }
+
+        // Treat the envelope as transparent: surface the inner type, while retaining the full raw payload.
+        return innerType switch
+        {
+            "agent_message" => ParseAgentMessageEvent(root, timestamp, innerType, rawPayload),
+            "agent_reasoning" => ParseAgentReasoningEvent(root, timestamp, innerType, rawPayload),
+            "exited_review_mode" => ParseExitedReviewModeEvent(root, timestamp, innerType, rawPayload),
+            _ => ParseUnknownEvent(timestamp, innerType, rawPayload)
         };
     }
 
@@ -354,6 +387,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
     {
         string? approvalPolicy = null;
         string? sandboxPolicyType = null;
+        bool? networkAccess = null;
 
         if (root.TryGetProperty("payload", out var payload))
         {
@@ -362,9 +396,20 @@ public sealed class JsonlEventParser : IJsonlEventParser
                 approvalPolicy = approvalElement.GetString();
             }
 
-            if (payload.TryGetProperty("sandbox_policy_type", out var sandboxElement))
-            {
+            // Codex has produced both `sandbox_policy_type: string` and `sandbox_policy: { type, network_access }`.
+            if (payload.TryGetProperty("sandbox_policy_type", out var sandboxElement) && sandboxElement.ValueKind == JsonValueKind.String)
                 sandboxPolicyType = sandboxElement.GetString();
+
+            if (payload.TryGetProperty("sandbox_policy", out var sandboxPolicy) && sandboxPolicy.ValueKind == JsonValueKind.Object)
+            {
+                if (sandboxPolicy.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
+                    sandboxPolicyType = typeEl.GetString();
+
+                if (sandboxPolicy.TryGetProperty("network_access", out var netEl) &&
+                    (netEl.ValueKind == JsonValueKind.True || netEl.ValueKind == JsonValueKind.False))
+                {
+                    networkAccess = netEl.GetBoolean();
+                }
             }
         }
 
@@ -374,7 +419,113 @@ public sealed class JsonlEventParser : IJsonlEventParser
             Type = type,
             RawPayload = rawPayload,
             ApprovalPolicy = approvalPolicy,
-            SandboxPolicyType = sandboxPolicyType
+            SandboxPolicyType = sandboxPolicyType,
+            NetworkAccess = networkAccess
+        };
+    }
+
+    private ExitedReviewModeEvent? ParseExitedReviewModeEvent(
+        JsonElement root,
+        DateTimeOffset timestamp,
+        string type,
+        JsonElement rawPayload)
+    {
+        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogWarning("{Type} event missing 'payload' field", type);
+            return null;
+        }
+
+        if (!payload.TryGetProperty("review_output", out var reviewOutputEl) || reviewOutputEl.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogWarning("{Type} event missing 'payload.review_output' object", type);
+            return null;
+        }
+
+        return new ExitedReviewModeEvent
+        {
+            Timestamp = timestamp,
+            Type = type,
+            RawPayload = rawPayload,
+            ReviewOutput = ParseReviewOutput(reviewOutputEl)
+        };
+    }
+
+    private static ReviewOutput ParseReviewOutput(JsonElement el)
+    {
+        var overallCorrectness = TryGetString(el, "overall_correctness");
+        var overallExplanation = TryGetString(el, "overall_explanation");
+        var overallConfidenceScore = TryGetDouble(el, "overall_confidence_score");
+
+        var findings = new List<ReviewFinding>();
+        if (el.TryGetProperty("findings", out var findingsEl) && findingsEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var f in findingsEl.EnumerateArray())
+            {
+                if (f.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                findings.Add(new ReviewFinding(
+                    Priority: TryGetInt(f, "priority"),
+                    ConfidenceScore: TryGetDouble(f, "confidence_score"),
+                    Title: TryGetString(f, "title"),
+                    Body: TryGetString(f, "body"),
+                    CodeLocation: TryParseReviewCodeLocation(f)));
+            }
+        }
+
+        return new ReviewOutput(overallCorrectness, overallExplanation, overallConfidenceScore, findings);
+    }
+
+    private static ReviewCodeLocation? TryParseReviewCodeLocation(JsonElement finding)
+    {
+        if (!finding.TryGetProperty("code_location", out var loc) || loc.ValueKind != JsonValueKind.Object)
+            return null;
+
+        var file = TryGetString(loc, "absolute_file_path");
+        ReviewLineRange? range = null;
+
+        if (loc.TryGetProperty("line_range", out var lineRange) && lineRange.ValueKind == JsonValueKind.Object)
+        {
+            range = new ReviewLineRange(
+                Start: TryGetInt(lineRange, "start"),
+                End: TryGetInt(lineRange, "end"));
+        }
+
+        if (file is null && range is null)
+            return null;
+
+        return new ReviewCodeLocation(file, range);
+    }
+
+    private static string? TryGetString(JsonElement el, string name) =>
+        el.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String
+            ? p.GetString()
+            : null;
+
+    private static double? TryGetDouble(JsonElement el, string name)
+    {
+        if (!el.TryGetProperty(name, out var p))
+            return null;
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.Number when p.TryGetDouble(out var d) => d,
+            JsonValueKind.String when double.TryParse(p.GetString(), NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var d) => d,
+            _ => null
+        };
+    }
+
+    private static int? TryGetInt(JsonElement el, string name)
+    {
+        if (!el.TryGetProperty(name, out var p))
+            return null;
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.Number when p.TryGetInt32(out var i) => i,
+            JsonValueKind.String when int.TryParse(p.GetString(), out var i) => i,
+            _ => null
         };
     }
 

@@ -17,6 +17,9 @@ namespace JKToolKit.CodexSDK.Public;
 /// </summary>
 public sealed class CodexClient : ICodexClient, IAsyncDisposable
 {
+    private const int SessionIdScanWindowChars = 32 * 1024;
+    private const int SessionStartDiagCaptureChars = 8 * 1024;
+
     private readonly CodexClientOptions _clientOptions;
     private readonly ICodexProcessLauncher _processLauncher;
     private readonly ICodexSessionLocator _sessionLocator;
@@ -141,7 +144,40 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             throw;
         }
 
-        return new CodexReviewResult(process.ExitCode, stdoutCapture.ToString().TrimEnd(), stderrCapture.ToString().TrimEnd());
+        var stdoutText = stdoutCapture.ToString().TrimEnd();
+        var stderrText = stderrCapture.ToString().TrimEnd();
+
+        SessionId? sessionId = null;
+        if (SessionIdRegex.Match(stdoutText) is { Success: true } stdoutMatch &&
+            SessionId.TryParse(stdoutMatch.Groups[1].Value, out var stdoutId))
+        {
+            sessionId = stdoutId;
+        }
+        else if (SessionIdRegex.Match(stderrText) is { Success: true } stderrMatch &&
+                 SessionId.TryParse(stderrMatch.Groups[1].Value, out var stderrId))
+        {
+            sessionId = stderrId;
+        }
+
+        string? logPath = null;
+        if (sessionId is { } sid)
+        {
+            try
+            {
+                var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+                logPath = await _sessionLocator.FindSessionLogAsync(sid, sessionsRoot, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to resolve session log path for review session id {SessionId}", sid);
+            }
+        }
+
+        return new CodexReviewResult(process.ExitCode, stdoutText, stderrText)
+        {
+            SessionId = sessionId,
+            LogPath = logPath
+        };
     }
 
     private static async Task PumpStreamAsync(
@@ -269,20 +305,29 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             sw.Restart();
 
             var captureTimeout = TimeSpan.FromSeconds(Math.Max(10, _clientOptions.StartTimeout.TotalSeconds));
-            var sessionIdCaptureTask = CaptureSessionIdAsync(process, captureTimeout, cancellationToken);
+            var (sessionIdCaptureTask, getStartStdoutDiag, getStartStderrDiag) = StartLiveSessionStdIoDrain(process, cancellationToken);
 
             // Locate the new session log file
             string logPath;
             SessionId? capturedId = null;
             try
             {
-                capturedId = await sessionIdCaptureTask.ConfigureAwait(false);
+                capturedId = await WaitForResultOrTimeoutAsync(sessionIdCaptureTask, captureTimeout, cancellationToken).ConfigureAwait(false);
                 _logger.LogDebug("Captured session id {SessionId} from process output after {ElapsedMilliseconds} ms", capturedId, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
+                var stdoutSnippet = getStartStdoutDiag().TrimEnd();
+                var stderrSnippet = getStartStderrDiag().TrimEnd();
+
                 _logger.LogDebug(ex, "Failed to capture session id from process output after {ElapsedMilliseconds} ms.", sw.ElapsedMilliseconds);
-                throw;
+
+                throw new InvalidOperationException(
+                    "Failed to capture session id from Codex process output; cannot locate session log. " +
+                    "This may indicate the Codex CLI did not start correctly or its stdout/stderr were not readable. " +
+                    $"Captured stdout (first {SessionStartDiagCaptureChars} chars): {stdoutSnippet}. " +
+                    $"Captured stderr (first {SessionStartDiagCaptureChars} chars): {stderrSnippet}.",
+                    ex);
             }
 
             if (capturedId is { } sid)
@@ -388,10 +433,10 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 .ConfigureAwait(false);
 
             var captureTimeout = TimeSpan.FromMilliseconds(Math.Min(250, _clientOptions.StartTimeout.TotalMilliseconds / 4));
-            var sessionIdCaptureTask = CaptureSessionIdAsync(process, captureTimeout, cancellationToken);
+            var (sessionIdCaptureTask, _, _) = StartLiveSessionStdIoDrain(process, cancellationToken);
             try
             {
-                var captured = await sessionIdCaptureTask.ConfigureAwait(false);
+                var captured = await WaitForResultOrTimeoutAsync(sessionIdCaptureTask, captureTimeout, cancellationToken).ConfigureAwait(false);
                 if (captured != null && !captured.Value.Equals(sessionId))
                 {
                     _logger.LogDebug("Captured session id {CapturedId} differs from requested {RequestedId}", captured, sessionId);
@@ -602,56 +647,128 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         return last;
     }
 
-    private async Task<SessionId?> CaptureSessionIdAsync(Process process, TimeSpan timeout, CancellationToken cancellationToken)
+    private (Task<SessionId?> SessionIdTask, Func<string> GetStdoutDiag, Func<string> GetStderrDiag) StartLiveSessionStdIoDrain(
+        Process process,
+        CancellationToken cancellationToken)
     {
+        var tcs = new TaskCompletionSource<SessionId?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Capture a small prefix of stdout/stderr for diagnostics only.
+        // Most useful output is in the JSONL log, but this helps when Codex fails before emitting session_meta.
+        var stdoutDiag = new StringBuilder(capacity: SessionStartDiagCaptureChars);
+        var stderrDiag = new StringBuilder(capacity: SessionStartDiagCaptureChars);
+        var stdoutDiagLock = new object();
+        var stderrDiagLock = new object();
+
+        int drainCompleted = 0;
+
+        Task DrainAsync(StreamReader? reader, StringBuilder diag, object diagLock, string streamName) =>
+            Task.Run(async () =>
+            {
+                if (reader is null)
+                {
+                    if (Interlocked.Increment(ref drainCompleted) == 2)
+                        tcs.TrySetResult(null);
+                    return;
+                }
+
+                var scan = new StringBuilder(capacity: SessionIdScanWindowChars);
+                var buffer = new char[4096];
+
+                try
+                {
+                    while (true)
+                    {
+                        var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+                        if (read == 0)
+                        {
+                            break;
+                        }
+
+                        lock (diagLock)
+                        {
+                            if (diag.Length < SessionStartDiagCaptureChars)
+                            {
+                                var remaining = SessionStartDiagCaptureChars - diag.Length;
+                                diag.Append(buffer, 0, Math.Min(read, remaining));
+                            }
+                        }
+
+                        if (!tcs.Task.IsCompleted)
+                        {
+                            scan.Append(buffer, 0, read);
+                            if (scan.Length > SessionIdScanWindowChars)
+                            {
+                                var tail = scan.ToString()[^SessionIdScanWindowChars..];
+                                scan.Clear();
+                                scan.Append(tail);
+                            }
+
+                            var match = SessionIdRegex.Match(scan.ToString());
+                            if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
+                            {
+                                tcs.TrySetResult(sessionId);
+                            }
+                        }
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // Caller cancelled; best-effort drain.
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "Error draining Codex process {Stream} during live session start", streamName);
+                }
+                finally
+                {
+                    if (Interlocked.Increment(ref drainCompleted) == 2)
+                        tcs.TrySetResult(null);
+                }
+            }, CancellationToken.None);
+
+        _ = DrainAsync(process.StartInfo.RedirectStandardOutput ? process.StandardOutput : null, stdoutDiag, stdoutDiagLock, "stdout");
+        _ = DrainAsync(process.StartInfo.RedirectStandardError ? process.StandardError : null, stderrDiag, stderrDiagLock, "stderr");
+
+        string GetStdoutDiag()
+        {
+            lock (stdoutDiagLock)
+            {
+                return stdoutDiag.ToString();
+            }
+        }
+
+        string GetStderrDiag()
+        {
+            lock (stderrDiagLock)
+            {
+                return stderrDiag.ToString();
+            }
+        }
+
+        return (tcs.Task, GetStdoutDiag, GetStderrDiag);
+    }
+
+    private static async Task<T?> WaitForResultOrTimeoutAsync<T>(
+        Task<T?> task,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        if (task.IsCompleted)
+            return await task.ConfigureAwait(false);
+
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
 
-        var stdoutTask = ReadSessionIdFromStreamAsync(process.StartInfo.RedirectStandardOutput ? process.StandardOutput : null, timeoutCts.Token);
-        var stderrTask = ReadSessionIdFromStreamAsync(process.StartInfo.RedirectStandardError ? process.StandardError : null, timeoutCts.Token);
-
-        var completed = await Task.WhenAny(stdoutTask, stderrTask).ConfigureAwait(false);
-        var result = await completed.ConfigureAwait(false);
-        if (result is not null)
-        {
-            return result;
-        }
-
-        var otherTask = ReferenceEquals(completed, stdoutTask) ? stderrTask : stdoutTask;
-        return await otherTask.ConfigureAwait(false);
-    }
-
-    private static async Task<SessionId?> ReadSessionIdFromStreamAsync(StreamReader? reader, CancellationToken cancellationToken)
-    {
-        if (reader is null)
-        {
-            return null;
-        }
-
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var line = await reader.ReadLineAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
-                if (line is null)
-                {
-                    break;
-                }
-
-                var match = SessionIdRegex.Match(line);
-                if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
-                {
-                    return sessionId;
-                }
-            }
+            return await task.WaitAsync(timeoutCts.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            // ignore cancellation to allow caller to consume other stream
+            throw new TimeoutException($"Timed out after {timeout.TotalSeconds:0.###}s.");
         }
-
-        return null;
     }
 
-    private static readonly Regex SessionIdRegex = new(@"session id:\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex SessionIdRegex = new(@"session id\s*[:=]\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 }

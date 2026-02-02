@@ -38,4 +38,9 @@ public record TurnContextEvent : CodexEvent
     /// </summary>
     public CodexSandboxMode? ParsedSandboxMode =>
         CodexSandboxMode.TryParse(SandboxPolicyType, out var mode) ? mode : (CodexSandboxMode?)null;
+
+    /// <summary>
+    /// Gets whether network access is enabled for the current turn's sandbox policy (when provided by Codex).
+    /// </summary>
+    public bool? NetworkAccess { get; init; }
 }

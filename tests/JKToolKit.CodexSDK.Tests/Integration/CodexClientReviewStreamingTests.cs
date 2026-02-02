@@ -42,6 +42,38 @@ public sealed class CodexClientReviewStreamingTests
         result.StandardError.Should().Contain("ERR");
     }
 
+    [Fact]
+    public async Task ReviewAsync_ExtractsSessionId_AndResolvesLogPath()
+    {
+        var workingDirectory = Directory.GetCurrentDirectory();
+        var reviewOptions = new CodexReviewOptions(workingDirectory);
+
+        var sessionId = SessionId.Parse("11111111-1111-1111-1111-111111111111");
+        using var process = CreateEchoSessionIdProcess(sessionId);
+
+        var sessionsRoot = Path.Combine(Path.GetTempPath(), "JKToolKit.CodexSDK.Tests", Guid.NewGuid().ToString("n"));
+        Directory.CreateDirectory(sessionsRoot);
+        var expectedLogPath = Path.Combine(sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
+
+        var launcher = new ReviewProcessLauncher(process);
+        var locator = new FakeSessionLocator(expectedLogPath);
+        var pathProvider = new FakePathProvider(sessionsRoot);
+
+        var clientOptions = new CodexClientOptions { SessionsRootDirectory = sessionsRoot };
+        var client = new CodexClient(
+            Options.Create(clientOptions),
+            launcher,
+            sessionLocator: locator,
+            pathProvider: pathProvider,
+            logger: NullLogger<CodexClient>.Instance,
+            loggerFactory: NullLoggerFactory.Instance);
+
+        var result = await client.ReviewAsync(reviewOptions, CancellationToken.None);
+
+        result.SessionId.Should().Be(sessionId);
+        result.LogPath.Should().Be(expectedLogPath);
+    }
+
     private static Process CreateEchoThenSleepProcess()
     {
         ProcessStartInfo startInfo;
@@ -76,6 +108,40 @@ public sealed class CodexClientReviewStreamingTests
         return Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start test process.");
     }
 
+    private static Process CreateEchoSessionIdProcess(SessionId sessionId)
+    {
+        ProcessStartInfo startInfo;
+
+        if (OperatingSystem.IsWindows())
+        {
+            startInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c echo session id: {sessionId.Value} & echo OUT & echo ERR 1>&2",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                CreateNoWindow = true
+            };
+        }
+        else
+        {
+            startInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                Arguments = $"-c \"echo 'session id: {sessionId.Value}'; echo OUT; echo ERR 1>&2\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                CreateNoWindow = true
+            };
+        }
+
+        return Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start test process.");
+    }
+
     private sealed class ReviewProcessLauncher(Process process) : ICodexProcessLauncher
     {
         public Task<Process> StartSessionAsync(CodexSessionOptions options, CodexClientOptions clientOptions, CancellationToken cancellationToken) =>
@@ -89,6 +155,36 @@ public sealed class CodexClientReviewStreamingTests
 
         public Task<int> TerminateProcessAsync(Process processToTerminate, TimeSpan timeout, CancellationToken cancellationToken) =>
             Task.FromResult(processToTerminate.ExitCode);
+    }
+
+    private sealed class FakeSessionLocator(string logPath) : ICodexSessionLocator
+    {
+        public Task<string> WaitForNewSessionFileAsync(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout, CancellationToken cancellationToken) =>
+            throw new NotImplementedException();
+
+        public Task<string> FindSessionLogAsync(SessionId sessionId, string sessionsRoot, CancellationToken cancellationToken) =>
+            Task.FromResult(logPath);
+
+        public Task<string> WaitForSessionLogByIdAsync(SessionId sessionId, string sessionsRoot, TimeSpan timeout, CancellationToken cancellationToken) =>
+            Task.FromResult(logPath);
+
+        public Task<string> ValidateLogFileAsync(string logFilePath, CancellationToken cancellationToken) =>
+            Task.FromResult(logFilePath);
+
+        public IAsyncEnumerable<CodexSessionInfo> ListSessionsAsync(string sessionsRoot, SessionFilter? filter, CancellationToken cancellationToken) =>
+            throw new NotImplementedException();
+    }
+
+    private sealed class FakePathProvider(string sessionsRoot) : ICodexPathProvider
+    {
+        public string GetCodexExecutablePath(string? overridePath) =>
+            overridePath ?? "codex";
+
+        public string GetSessionsRootDirectory(string? overrideDirectory) =>
+            overrideDirectory ?? sessionsRoot;
+
+        public string ResolveSessionLogPath(SessionId sessionId, string? sessionsRootOverride) =>
+            Path.Combine(sessionsRootOverride ?? sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
     }
 
     private sealed class SignalTextWriter : TextWriter
@@ -114,4 +210,3 @@ public sealed class CodexClientReviewStreamingTests
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }
-
