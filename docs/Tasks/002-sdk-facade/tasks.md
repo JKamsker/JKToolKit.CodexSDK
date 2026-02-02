@@ -87,7 +87,7 @@ description: "Task breakdown for CodexSdk facade + unified DI registration"
 - [x] T043 DI test: `AddCodexSdk` resolves.
   - Build a `ServiceCollection`, register `ILoggerFactory` (e.g. `NullLoggerFactory.Instance`), call `AddCodexSdk`, build provider, resolve `CodexSdk`.
 
-- [ ] T044 (Optional) E2E smoke test (guarded by `CodexE2EFact`) that uses `CodexSdk.Create(...)` and starts:
+- [x] T044 (Optional) E2E smoke test (guarded by `CodexE2EFact`) that uses `CodexSdk.Create(...)` and starts:
   - `sdk.AppServer.StartAsync()`
   - `sdk.McpServer.StartAsync()`
   - (Exec mode is already covered elsewhere)
