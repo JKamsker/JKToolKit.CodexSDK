@@ -23,21 +23,21 @@ description: "Task breakdown for CodexSdk facade + unified DI registration"
 
 ## Phase 1 — Implement the facade types
 
-- [ ] T010 [P] Add `CodexExecFacade` (thin wrapper over `ICodexClient`).
+- [x] T010 [P] Add `CodexExecFacade` (thin wrapper over `ICodexClient`).
   - File: `src/JKToolKit.CodexSDK/Facade/CodexExecFacade.cs`
   - Delegates: `StartSessionAsync`, `ResumeSessionAsync`, `AttachToLogAsync`, `ListSessionsAsync`, `ReviewAsync`, `GetRateLimitsAsync` (if desired).
 
-- [ ] T011 [P] Add `CodexAppServerFacade` (thin wrapper over `ICodexAppServerClientFactory`).
+- [x] T011 [P] Add `CodexAppServerFacade` (thin wrapper over `ICodexAppServerClientFactory`).
   - File: `src/JKToolKit.CodexSDK/Facade/CodexAppServerFacade.cs`
   - Required: `StartAsync(CancellationToken)` delegates to factory.
   - Optional: `StartAsync(CodexAppServerClientOptions, CancellationToken)` for per-call overrides.
 
-- [ ] T012 [P] Add `CodexMcpServerFacade` (thin wrapper over `ICodexMcpServerClientFactory`).
+- [x] T012 [P] Add `CodexMcpServerFacade` (thin wrapper over `ICodexMcpServerClientFactory`).
   - File: `src/JKToolKit.CodexSDK/Facade/CodexMcpServerFacade.cs`
   - Required: `StartAsync(CancellationToken)` delegates to factory.
   - Optional: `StartAsync(CodexMcpServerClientOptions, CancellationToken)` for per-call overrides.
 
-- [ ] T013 Add `CodexSdk` root type.
+- [x] T013 Add `CodexSdk` root type.
   - File: `src/JKToolKit.CodexSDK/Facade/CodexSdk.cs`
   - DI-friendly constructor: `CodexSdk(ICodexClient exec, ICodexAppServerClientFactory app, ICodexMcpServerClientFactory mcp)`.
   - Properties: `Exec`, `AppServer`, `McpServer`.
