@@ -75,16 +75,16 @@ description: "Task breakdown for CodexSdk facade + unified DI registration"
 
 ## Phase 4 — Tests
 
-- [ ] T040 [P] Unit tests: `CodexSdkBuilder` precedence rules.
+- [x] T040 [P] Unit tests: `CodexSdkBuilder` precedence rules.
   - File: `tests/JKToolKit.CodexSDK.Tests/Unit/CodexSdkBuilderTests.cs`
 
-- [ ] T041 [P] Unit tests: `CodexExecFacade` delegates to `ICodexClient`.
+- [x] T041 [P] Unit tests: `CodexExecFacade` delegates to `ICodexClient`.
   - Use a minimal fake/mock `ICodexClient` implementation.
 
-- [ ] T042 [P] Unit tests: `CodexAppServerFacade` + `CodexMcpServerFacade` delegate to factories.
+- [x] T042 [P] Unit tests: `CodexAppServerFacade` + `CodexMcpServerFacade` delegate to factories.
   - Use minimal fake factories that record invocations.
 
-- [ ] T043 DI test: `AddCodexSdk` resolves.
+- [x] T043 DI test: `AddCodexSdk` resolves.
   - Build a `ServiceCollection`, register `ILoggerFactory` (e.g. `NullLoggerFactory.Instance`), call `AddCodexSdk`, build provider, resolve `CodexSdk`.
 
 - [ ] T044 (Optional) E2E smoke test (guarded by `CodexE2EFact`) that uses `CodexSdk.Create(...)` and starts:
