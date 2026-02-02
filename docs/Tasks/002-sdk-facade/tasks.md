@@ -45,7 +45,7 @@ description: "Task breakdown for CodexSdk facade + unified DI registration"
 
 ## Phase 2 — Non-DI convenience builder
 
-- [ ] T020 Add `CodexSdkBuilder`.
+- [x] T020 Add `CodexSdkBuilder`.
   - File: `src/JKToolKit.CodexSDK/Facade/CodexSdkBuilder.cs`
   - Holds options:
     - `CodexClientOptions` (exec)
@@ -60,7 +60,7 @@ description: "Task breakdown for CodexSdk facade + unified DI registration"
     - internal `CodexAppServerClientFactory` + `CodexMcpServerClientFactory`
     - `CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory)`
 
-- [ ] T021 Add `CodexSdk.Create(Action<CodexSdkBuilder>? configure = null)`.
+- [x] T021 Add `CodexSdk.Create(Action<CodexSdkBuilder>? configure = null)`.
   - Convenience entry point for non-DI users.
   - Must work with defaults (no configuration).
 

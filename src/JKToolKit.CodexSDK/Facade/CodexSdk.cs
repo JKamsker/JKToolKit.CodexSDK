@@ -61,6 +61,17 @@ public sealed class CodexSdk : IAsyncDisposable
         McpServer = new CodexMcpServerFacade(mcpServer);
     }
 
+    /// <summary>
+    /// Creates a <see cref="CodexSdk"/> without using DI.
+    /// </summary>
+    /// <param name="configure">Optional configuration for the builder.</param>
+    public static CodexSdk Create(Action<CodexSdkBuilder>? configure = null)
+    {
+        var builder = new CodexSdkBuilder();
+        configure?.Invoke(builder);
+        return builder.Build();
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
