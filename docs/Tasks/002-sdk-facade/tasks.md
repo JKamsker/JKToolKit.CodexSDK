@@ -15,11 +15,11 @@ description: "Task breakdown for CodexSdk facade + unified DI registration"
 
 ## Phase 0 — API decisions (must happen first)
 
-- [ ] T001 Decide final namespaces + file locations for new public types:
+- [x] T001 Decide final namespaces + file locations for new public types:
   - `CodexSdk` should live in `namespace JKToolKit.CodexSDK`.
   - New source folder: `src/JKToolKit.CodexSDK/Facade/`.
-- [ ] T002 Decide whether `sdk.AppServer.StartAsync(CodexAppServerClientOptions)` (options override per-call) is required for v1.
-  - If not required, keep `StartAsync()` as the only method and rely on builder/DI for configuration.
+- [x] T002 Decide whether `sdk.AppServer.StartAsync(CodexAppServerClientOptions)` (options override per-call) is required for v1.
+  - Not required for v1; keep `StartAsync()` only and rely on builder/DI for configuration.
 
 ## Phase 1 — Implement the facade types
 
