@@ -23,6 +23,16 @@ public readonly record struct CodexReasoningEffort
     }
 
     /// <summary>
+    /// Gets the none reasoning effort level - no reasoning.
+    /// </summary>
+    public static CodexReasoningEffort None => new("none");
+
+    /// <summary>
+    /// Gets the minimal reasoning effort level.
+    /// </summary>
+    public static CodexReasoningEffort Minimal => new("minimal");
+
+    /// <summary>
     /// Gets the low reasoning effort level - minimal reasoning, faster responses.
     /// </summary>
     public static CodexReasoningEffort Low => new("low");

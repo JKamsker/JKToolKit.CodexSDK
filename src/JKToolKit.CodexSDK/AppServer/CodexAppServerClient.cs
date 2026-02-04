@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
 using JKToolKit.CodexSDK.Abstractions;
@@ -53,6 +54,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var loggerFactory = NullLoggerFactory.Instance;
         var logger = loggerFactory.CreateLogger<CodexAppServerClient>();
+        var serializerOptions = options.SerializerOptionsOverride ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
@@ -64,7 +66,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             options.StartupTimeout,
             options.ShutdownTimeout,
             options.NotificationBufferCapacity,
-            options.SerializerOptionsOverride,
+            serializerOptions,
             includeJsonRpcHeader: false,
             ct);
 
@@ -93,10 +95,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "initialize",
-            new
-            {
-                clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version }
-            },
+            new InitializeParams(clientInfo, Capabilities: null),
             ct);
 
         await _rpc.SendNotificationAsync("initialized", @params: null, ct);
@@ -116,13 +115,18 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "thread/start",
-            new
-            {
-                model = options.Model?.Value,
-                cwd = options.Cwd,
-                approvalPolicy = options.ApprovalPolicy?.Value,
-                sandbox = options.Sandbox?.ToAppServerWireValue()
-            },
+            new ThreadStartParams(
+                Model: options.Model?.Value,
+                ModelProvider: options.ModelProvider,
+                Cwd: options.Cwd,
+                ApprovalPolicy: options.ApprovalPolicy?.Value,
+                Sandbox: options.Sandbox?.ToAppServerWireValue(),
+                Config: options.Config,
+                BaseInstructions: options.BaseInstructions,
+                DeveloperInstructions: options.DeveloperInstructions,
+                Personality: options.Personality,
+                Ephemeral: options.Ephemeral,
+                ExperimentalRawEvents: options.ExperimentalRawEvents),
             ct);
 
         var threadId = ExtractThreadId(result);
@@ -141,10 +145,37 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "thread/resume",
-            new { threadId },
+            new ThreadResumeParams(threadId),
             ct);
 
         var id = ExtractThreadId(result) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/resume",
+            new ThreadResumeParams(
+                ThreadId: options.ThreadId,
+                History: options.History,
+                Path: options.Path,
+                Model: options.Model?.Value,
+                ModelProvider: options.ModelProvider,
+                Cwd: options.Cwd,
+                ApprovalPolicy: options.ApprovalPolicy?.Value,
+                Sandbox: options.Sandbox?.ToAppServerWireValue(),
+                Config: options.Config,
+                BaseInstructions: options.BaseInstructions,
+                DeveloperInstructions: options.DeveloperInstructions,
+                Personality: options.Personality),
+            ct);
+
+        var id = ExtractThreadId(result) ?? options.ThreadId;
         return new CodexThread(id, result);
     }
 
@@ -157,14 +188,18 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "turn/start",
-            new
-            {
-                threadId,
-                input = options.Input.Select(i => i.Wire).ToArray(),
-                model = options.Model?.Value,
-                effort = options.Effort?.Value,
-                cwd = options.Cwd
-            },
+            new TurnStartParams(
+                ThreadId: threadId,
+                Input: options.Input.Select(i => i.Wire).ToArray(),
+                Cwd: options.Cwd,
+                ApprovalPolicy: options.ApprovalPolicy?.Value,
+                SandboxPolicy: options.SandboxPolicy,
+                Model: options.Model?.Value,
+                Effort: options.Effort?.Value,
+                Summary: options.Summary,
+                Personality: options.Personality,
+                OutputSchema: options.OutputSchema,
+                CollaborationMode: options.CollaborationMode),
             ct);
 
         var turnId = ExtractTurnId(result);
@@ -196,7 +231,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     private Task InterruptAsync(string threadId, string turnId, CancellationToken ct) =>
-        _rpc.SendRequestAsync("turn/interrupt", new { threadId, turnId }, ct);
+        _rpc.SendRequestAsync("turn/interrupt", new TurnInterruptParams(threadId, turnId), ct);
 
     private ValueTask OnRpcNotificationAsync(JsonRpcNotification notification)
     {
@@ -384,6 +419,21 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             AgentMessageDeltaNotification d => d.TurnId,
             ItemStartedNotification s => s.TurnId,
             ItemCompletedNotification c => c.TurnId,
+            TurnStartedNotification s => s.TurnId,
+            TurnDiffUpdatedNotification d => d.TurnId,
+            TurnPlanUpdatedNotification p => p.TurnId,
+            ThreadTokenUsageUpdatedNotification u => u.TurnId,
+            PlanDeltaNotification d => d.TurnId,
+            RawResponseItemCompletedNotification r => r.TurnId,
+            CommandExecutionOutputDeltaNotification d => d.TurnId,
+            TerminalInteractionNotification t => t.TurnId,
+            FileChangeOutputDeltaNotification d => d.TurnId,
+            McpToolCallProgressNotification p => p.TurnId,
+            ReasoningSummaryTextDeltaNotification d => d.TurnId,
+            ReasoningSummaryPartAddedNotification d => d.TurnId,
+            ReasoningTextDeltaNotification d => d.TurnId,
+            ContextCompactedNotification c => c.TurnId,
+            ErrorNotification e => e.TurnId,
             TurnCompletedNotification t => t.TurnId,
             _ => null
         };

@@ -310,36 +310,28 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
 
     private object CreateRequestObject(long id, string method, object? @params)
     {
-        if (IncludeJsonRpcHeader)
-        {
-            return new { jsonrpc = "2.0", id, method, @params };
-        }
-
-        return new { id, method, @params };
+        return new JsonRpcRequestWireMessage(
+            Id: id,
+            Method: method,
+            Params: @params,
+            JsonRpc: IncludeJsonRpcHeader ? "2.0" : null);
     }
 
     private object CreateNotificationObject(string method, object? @params)
     {
-        if (IncludeJsonRpcHeader)
-        {
-            return new { jsonrpc = "2.0", method, @params };
-        }
-
-        return new { method, @params };
+        return new JsonRpcNotificationWireMessage(
+            Method: method,
+            Params: @params,
+            JsonRpc: IncludeJsonRpcHeader ? "2.0" : null);
     }
 
     private object CreateResponseObject(JsonRpcResponse response)
     {
-        if (IncludeJsonRpcHeader)
-        {
-            return response.Error is null
-                ? new { jsonrpc = "2.0", id = response.Id.Value, result = response.Result }
-                : new { jsonrpc = "2.0", id = response.Id.Value, error = response.Error };
-        }
-
-        return response.Error is null
-            ? new { id = response.Id.Value, result = response.Result }
-            : new { id = response.Id.Value, error = response.Error };
+        return new JsonRpcResponseWireMessage(
+            Id: response.Id.Value,
+            Result: response.Error is null ? response.Result : null,
+            Error: response.Error,
+            JsonRpc: IncludeJsonRpcHeader ? "2.0" : null);
     }
 
     private static JsonRpcError ParseError(JsonElement errorProp)
