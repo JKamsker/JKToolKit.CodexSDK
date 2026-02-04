@@ -10,6 +10,9 @@ public sealed class AppServerStreamSettings : CommandSettings
     [CommandOption("--codex-path <PATH>")]
     public string? CodexExecutablePath { get; init; }
 
+    [CommandOption("--codex-home <DIR>")]
+    public string? CodexHomeDirectory { get; init; }
+
     [CommandOption("--timeout-seconds <SECONDS>")]
     public int? TimeoutSeconds { get; init; }
 
@@ -22,4 +25,3 @@ public sealed class AppServerStreamSettings : CommandSettings
     [CommandOption("--sandbox <MODE>")]
     public string? Sandbox { get; init; }
 }
-

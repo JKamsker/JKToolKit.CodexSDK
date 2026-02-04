@@ -28,6 +28,15 @@ public class CodexClientOptions
     public string? CodexExecutablePath { get; set; }
 
     /// <summary>
+    /// Gets or sets the Codex home directory (used as the <c>CODEX_HOME</c> environment variable for launched processes).
+    /// </summary>
+    /// <remarks>
+    /// When set, the SDK will set <c>CODEX_HOME</c> for Codex subprocesses (exec/review) and will also
+    /// default the sessions root to <c>{CODEX_HOME}/sessions</c> unless <see cref="SessionsRootDirectory"/> is set.
+    /// </remarks>
+    public string? CodexHomeDirectory { get; set; }
+
+    /// <summary>
     /// Gets or sets the root directory where session data is stored.
     /// </summary>
     /// <remarks>
@@ -133,6 +142,7 @@ public class CodexClientOptions
     public CodexClientOptions Clone() => new()
     {
         CodexExecutablePath = CodexExecutablePath,
+        CodexHomeDirectory = CodexHomeDirectory,
         SessionsRootDirectory = SessionsRootDirectory,
         StartTimeout = StartTimeout,
         ProcessExitTimeout = ProcessExitTimeout,

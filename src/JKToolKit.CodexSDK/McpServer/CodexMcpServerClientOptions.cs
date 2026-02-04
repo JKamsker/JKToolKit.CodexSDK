@@ -9,6 +9,11 @@ public sealed class CodexMcpServerClientOptions
 
     public string? CodexExecutablePath { get; set; }
 
+    /// <summary>
+    /// Gets or sets the Codex home directory (passed as <c>CODEX_HOME</c> to the launched process).
+    /// </summary>
+    public string? CodexHomeDirectory { get; set; }
+
     public TimeSpan StartupTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
 

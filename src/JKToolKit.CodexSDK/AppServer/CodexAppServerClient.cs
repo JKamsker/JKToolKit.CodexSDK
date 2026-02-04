@@ -7,6 +7,7 @@ using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Infrastructure;
+using JKToolKit.CodexSDK.Public;
 using JKToolKit.CodexSDK.Public.Models;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -54,10 +55,11 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         var logger = loggerFactory.CreateLogger<CodexAppServerClient>();
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
+        var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
         var (process, rpc) = await CodexJsonRpcBootstrap.StartAsync(
             stdioFactory,
             loggerFactory,
-            options.Launch,
+            launch,
             options.CodexExecutablePath,
             options.StartupTimeout,
             options.ShutdownTimeout,
@@ -71,6 +73,16 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         await client.InitializeAsync(options.DefaultClientInfo, ct);
 
         return client;
+    }
+
+    private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(codexHomeDirectory))
+        {
+            return launch;
+        }
+
+        return launch.WithEnvironment("CODEX_HOME", codexHomeDirectory);
     }
 
     public async Task<AppServerInitializeResult> InitializeAsync(

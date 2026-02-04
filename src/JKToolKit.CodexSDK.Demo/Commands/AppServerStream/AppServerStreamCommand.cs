@@ -40,6 +40,7 @@ public sealed class AppServerStreamCommand : AsyncCommand<AppServerStreamSetting
         await using var sdk = CodexSdk.Create(builder =>
         {
             builder.CodexExecutablePath = settings.CodexExecutablePath;
+            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
             builder.ConfigureAppServer(o =>
                 o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Demo", "1.0.0"));
         });

@@ -13,7 +13,11 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
     {
         var prompt = ResolvePrompt(settings);
         var workingDirectory = settings.WorkingDirectory ?? Directory.GetCurrentDirectory();
-        var sessionsRoot = settings.SessionsRoot ?? DefaultSessionsRoot();
+        var sessionsRoot =
+            settings.SessionsRoot ??
+            (!string.IsNullOrWhiteSpace(settings.CodexHomeDirectory)
+                ? Path.Combine(settings.CodexHomeDirectory, "sessions")
+                : DefaultSessionsRoot());
 
         Directory.CreateDirectory(sessionsRoot);
 
@@ -50,6 +54,7 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
         await using var sdk = CodexSdk.Create(builder =>
         {
             builder.CodexExecutablePath = settings.CodexExecutablePath;
+            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
             builder.UseLoggerFactory(loggerFactory);
             builder.ConfigureExec(o => o.SessionsRootDirectory = sessionsRoot);
         });

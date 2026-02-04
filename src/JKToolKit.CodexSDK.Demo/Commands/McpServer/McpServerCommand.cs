@@ -42,6 +42,7 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
         await using var sdk = CodexSdk.Create(builder =>
         {
             builder.CodexExecutablePath = settings.CodexExecutablePath;
+            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
         });
 
         try

@@ -10,6 +10,9 @@ public sealed class McpServerSettings : CommandSettings
     [CommandOption("--codex-path <PATH>")]
     public string? CodexExecutablePath { get; init; }
 
+    [CommandOption("--codex-home <DIR>")]
+    public string? CodexHomeDirectory { get; init; }
+
     [CommandOption("--model <MODEL>")]
     public string? Model { get; init; }
 
@@ -28,4 +31,3 @@ public sealed class McpServerSettings : CommandSettings
     [CommandOption("--include-plan-tool")]
     public bool IncludePlanTool { get; init; }
 }
-

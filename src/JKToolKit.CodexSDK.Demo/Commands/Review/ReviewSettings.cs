@@ -10,6 +10,9 @@ public sealed class ReviewSettings : CommandSettings
     [CommandOption("--codex-path <PATH>")]
     public string? CodexExecutablePath { get; init; }
 
+    [CommandOption("--codex-home <DIR>")]
+    public string? CodexHomeDirectory { get; init; }
+
     [CommandOption("--commit <SHA>")]
     public string? CommitSha { get; init; }
 

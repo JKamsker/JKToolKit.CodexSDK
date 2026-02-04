@@ -36,6 +36,7 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
         await using var sdk = CodexSdk.Create(builder =>
         {
             builder.CodexExecutablePath = settings.CodexExecutablePath;
+            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
             builder.ConfigureAppServer(o =>
             {
                 o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Approval Demo", "1.0.0");

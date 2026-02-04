@@ -20,6 +20,21 @@ public class CodexSdkBuilderTests
     }
 
     [Fact]
+    public void CreateEffectiveOptionsSnapshot_GlobalCodexHomeDirectory_FlowsToAllModes_WhenPerModeHomesAreNull()
+    {
+        var builder = new CodexSdkBuilder
+        {
+            CodexHomeDirectory = @"C:\codex\profiles\proaccount"
+        };
+
+        var (exec, app, mcp) = builder.CreateEffectiveOptionsSnapshot();
+
+        exec.CodexHomeDirectory.Should().Be(builder.CodexHomeDirectory);
+        app.CodexHomeDirectory.Should().Be(builder.CodexHomeDirectory);
+        mcp.CodexHomeDirectory.Should().Be(builder.CodexHomeDirectory);
+    }
+
+    [Fact]
     public void CreateEffectiveOptionsSnapshot_ModeSpecificCodexExecutablePath_WinsOverGlobal()
     {
         var builder = new CodexSdkBuilder
@@ -36,6 +51,25 @@ public class CodexSdkBuilderTests
         exec.CodexExecutablePath.Should().Be(@"C:\bin\exec.exe");
         app.CodexExecutablePath.Should().Be(@"C:\bin\app.exe");
         mcp.CodexExecutablePath.Should().Be(@"C:\bin\mcp.exe");
+    }
+
+    [Fact]
+    public void CreateEffectiveOptionsSnapshot_ModeSpecificCodexHomeDirectory_WinsOverGlobal()
+    {
+        var builder = new CodexSdkBuilder
+        {
+            CodexHomeDirectory = @"C:\codex\global"
+        };
+
+        builder.ConfigureExec(o => o.CodexHomeDirectory = @"C:\codex\exec");
+        builder.ConfigureAppServer(o => o.CodexHomeDirectory = @"C:\codex\app");
+        builder.ConfigureMcpServer(o => o.CodexHomeDirectory = @"C:\codex\mcp");
+
+        var (exec, app, mcp) = builder.CreateEffectiveOptionsSnapshot();
+
+        exec.CodexHomeDirectory.Should().Be(@"C:\codex\exec");
+        app.CodexHomeDirectory.Should().Be(@"C:\codex\app");
+        mcp.CodexHomeDirectory.Should().Be(@"C:\codex\mcp");
     }
 
     [Fact]

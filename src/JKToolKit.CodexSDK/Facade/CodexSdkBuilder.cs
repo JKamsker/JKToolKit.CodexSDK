@@ -27,6 +27,11 @@ public sealed class CodexSdkBuilder
     public string? CodexExecutablePath { get; set; }
 
     /// <summary>
+    /// Gets or sets the Codex home directory to apply across all modes unless a mode-specific override is set.
+    /// </summary>
+    public string? CodexHomeDirectory { get; set; }
+
+    /// <summary>
     /// Gets the logger factory to use across all modes, if configured.
     /// </summary>
     public ILoggerFactory? LoggerFactory { get; private set; }
@@ -108,6 +113,19 @@ public sealed class CodexSdkBuilder
                 mcp.CodexExecutablePath = globalPath;
         }
 
+        var globalHome = CodexHomeDirectory;
+        if (!string.IsNullOrWhiteSpace(globalHome))
+        {
+            if (exec.CodexHomeDirectory is null)
+                exec.CodexHomeDirectory = globalHome;
+
+            if (app.CodexHomeDirectory is null)
+                app.CodexHomeDirectory = globalHome;
+
+            if (mcp.CodexHomeDirectory is null)
+                mcp.CodexHomeDirectory = globalHome;
+        }
+
         return (exec, app, mcp);
     }
 
@@ -115,6 +133,7 @@ public sealed class CodexSdkBuilder
     {
         Launch = options.Launch,
         CodexExecutablePath = options.CodexExecutablePath,
+        CodexHomeDirectory = options.CodexHomeDirectory,
         StartupTimeout = options.StartupTimeout,
         ShutdownTimeout = options.ShutdownTimeout,
         DefaultClientInfo = options.DefaultClientInfo,
@@ -127,6 +146,7 @@ public sealed class CodexSdkBuilder
     {
         Launch = options.Launch,
         CodexExecutablePath = options.CodexExecutablePath,
+        CodexHomeDirectory = options.CodexHomeDirectory,
         StartupTimeout = options.StartupTimeout,
         ShutdownTimeout = options.ShutdownTimeout,
         SerializerOptionsOverride = options.SerializerOptionsOverride,

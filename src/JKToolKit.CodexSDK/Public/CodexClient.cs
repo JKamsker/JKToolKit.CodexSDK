@@ -19,6 +19,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
 {
     private const int SessionIdScanWindowChars = 32 * 1024;
     private const int SessionStartDiagCaptureChars = 8 * 1024;
+    private const string CodexHomeEnvVar = "CODEX_HOME";
 
     private readonly CodexClientOptions _clientOptions;
     private readonly ICodexProcessLauncher _processLauncher;
@@ -61,7 +62,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             throw new ArgumentException("SessionId cannot be empty.", nameof(sessionId));
         }
 
-        var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+        var sessionsRoot = GetEffectiveSessionsRootDirectory();
 
         var logPath = await _sessionLocator.FindSessionLogAsync(sessionId, sessionsRoot, cancellationToken).ConfigureAwait(false);
 
@@ -84,7 +85,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     public IAsyncEnumerable<CodexSessionInfo> ListSessionsAsync(SessionFilter? filter = null, CancellationToken cancellationToken = default)
     {
         _clientOptions.Validate();
-        var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+        var sessionsRoot = GetEffectiveSessionsRootDirectory();
 
         return _sessionLocator.ListSessionsAsync(sessionsRoot, filter, cancellationToken);
     }
@@ -164,7 +165,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         {
             try
             {
-                var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+                var sessionsRoot = GetEffectiveSessionsRootDirectory();
                 logPath = await _sessionLocator.FindSessionLogAsync(sid, sessionsRoot, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -291,7 +292,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         options.Validate();
 
         // Resolve paths
-        var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+        var sessionsRoot = GetEffectiveSessionsRootDirectory();
 
         var startTime = DateTimeOffset.UtcNow;
         _logger.LogDebug("Starting Codex session at {StartTime} using sessions root {SessionsRoot}", startTime, sessionsRoot);
@@ -421,7 +422,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             throw new ArgumentException("SessionId cannot be empty.", nameof(sessionId));
         }
 
-        var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+        var sessionsRoot = GetEffectiveSessionsRootDirectory();
         var logPath = _pathProvider.ResolveSessionLogPath(sessionId, sessionsRoot);
         await _sessionLocator.ValidateLogFileAsync(logPath, cancellationToken).ConfigureAwait(false);
 
@@ -605,7 +606,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         cancellationToken.ThrowIfCancellationRequested();
         _clientOptions.Validate();
 
-        var sessionsRoot = _pathProvider.GetSessionsRootDirectory(_clientOptions.SessionsRootDirectory);
+        var sessionsRoot = GetEffectiveSessionsRootDirectory();
 
         // Collect sessions and scan newest first for a token_count event with rate limits
         var sessions = new List<CodexSessionInfo>();
@@ -626,6 +627,29 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         }
 
         return null;
+    }
+
+    private string GetEffectiveSessionsRootDirectory()
+    {
+        var overrideDirectory = _clientOptions.SessionsRootDirectory;
+        if (string.IsNullOrWhiteSpace(overrideDirectory))
+        {
+            var home =
+                _clientOptions.CodexHomeDirectory ??
+                Environment.GetEnvironmentVariable(CodexHomeEnvVar);
+
+            if (!string.IsNullOrWhiteSpace(home))
+            {
+                overrideDirectory = Path.Combine(home, "sessions");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(overrideDirectory))
+        {
+            Directory.CreateDirectory(overrideDirectory);
+        }
+
+        return _pathProvider.GetSessionsRootDirectory(overrideDirectory);
     }
 
     private async Task<RateLimits?> ReadLastRateLimitsAsync(string logPath, CancellationToken cancellationToken)
