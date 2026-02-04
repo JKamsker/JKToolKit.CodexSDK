@@ -395,7 +395,7 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
             ? c
             : -32000;
 
-        var message = errorProp.TryGetProperty("message", out var messageProp)
+        var message = errorProp.TryGetProperty("message", out var messageProp) && messageProp.ValueKind == JsonValueKind.String
             ? (messageProp.GetString() ?? "Remote error")
             : "Remote error";
 
