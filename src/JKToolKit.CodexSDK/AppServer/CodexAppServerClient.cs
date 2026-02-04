@@ -247,6 +247,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         var mapped = AppServerNotificationMapper.Map(notification.Method, notification.Params);
 
         _globalNotifications.Writer.TryWrite(mapped);
+        LogIfBogus(mapped);
 
         var turnId = TryGetTurnId(mapped);
         if (!string.IsNullOrWhiteSpace(turnId))
@@ -270,6 +271,42 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    private void LogIfBogus(AppServerNotification notification)
+    {
+#if DEBUG
+        var isBogus = notification switch
+        {
+            AgentMessageDeltaNotification d => string.IsNullOrWhiteSpace(d.ThreadId) ||
+                                              string.IsNullOrWhiteSpace(d.TurnId) ||
+                                              string.IsNullOrWhiteSpace(d.ItemId),
+            ItemStartedNotification s => string.IsNullOrWhiteSpace(s.ThreadId) ||
+                                         string.IsNullOrWhiteSpace(s.TurnId) ||
+                                         string.IsNullOrWhiteSpace(s.ItemId),
+            ItemCompletedNotification c => string.IsNullOrWhiteSpace(c.ThreadId) ||
+                                           string.IsNullOrWhiteSpace(c.TurnId) ||
+                                           string.IsNullOrWhiteSpace(c.ItemId),
+            TurnStartedNotification s => string.IsNullOrWhiteSpace(s.ThreadId) ||
+                                         string.IsNullOrWhiteSpace(s.TurnId),
+            TurnCompletedNotification t => string.IsNullOrWhiteSpace(t.ThreadId) ||
+                                           string.IsNullOrWhiteSpace(t.TurnId),
+            TurnDiffUpdatedNotification d => string.IsNullOrWhiteSpace(d.ThreadId) ||
+                                            string.IsNullOrWhiteSpace(d.TurnId),
+            TurnPlanUpdatedNotification p => string.IsNullOrWhiteSpace(p.ThreadId) ||
+                                             string.IsNullOrWhiteSpace(p.TurnId),
+            ThreadTokenUsageUpdatedNotification u => string.IsNullOrWhiteSpace(u.ThreadId) ||
+                                                    string.IsNullOrWhiteSpace(u.TurnId),
+            ErrorNotification e => string.IsNullOrWhiteSpace(e.ThreadId) ||
+                                   string.IsNullOrWhiteSpace(e.TurnId),
+            _ => false
+        };
+
+        if (isBogus)
+        {
+            _logger.LogWarning("Received malformed app-server notification: {Method}. Raw params: {Params}", notification.Method, notification.Params);
+        }
+#endif
     }
 
     private async ValueTask<JsonRpcResponse> OnRpcServerRequestAsync(JsonRpcRequest req)

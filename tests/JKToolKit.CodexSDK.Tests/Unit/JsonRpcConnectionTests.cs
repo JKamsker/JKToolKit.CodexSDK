@@ -111,7 +111,7 @@ public sealed class JsonRpcConnectionTests
     }
 
     [Fact]
-    public async Task InvalidJson_PropagatesProtocolError_ToPendingRequests()
+    public async Task InvalidJson_IsIgnored_AndConnectionContinues()
     {
         await using var harness = await PipeHarness.CreateAsync();
 
@@ -123,10 +123,57 @@ public sealed class JsonRpcConnectionTests
             serializerOptions: null,
             logger: NullLogger.Instance);
 
-        await harness.ServerWriter.WriteLineAsync("not-json");
+        var serverTask = Task.Run(async () =>
+        {
+            await harness.ServerWriter.WriteLineAsync("not-json");
 
-        var act = async () => await rpc.SendRequestAsync("ping", @params: null, CancellationToken.None);
-        await act.Should().ThrowAsync<JsonRpcProtocolException>();
+            var line = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            line.Should().NotBeNull();
+
+            using var reqDoc = JsonDocument.Parse(line!);
+            var id = reqDoc.RootElement.GetProperty("id").GetInt64();
+
+            await harness.ServerWriter.WriteLineAsync(
+                JsonSerializer.Serialize(new { jsonrpc = "2.0", id, result = new { ok = true } }));
+        });
+
+        var result = await rpc.SendRequestAsync("ping", @params: null, CancellationToken.None);
+        result.GetProperty("ok").GetBoolean().Should().BeTrue();
+
+        await serverTask;
+    }
+
+    [Fact]
+    public async Task BogusNotifications_AreDropped_WithoutFaulting()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var serverTask = Task.Run(async () =>
+        {
+            await harness.ServerWriter.WriteLineAsync(
+                JsonSerializer.Serialize(new { jsonrpc = "2.0", method = 123, @params = new { } }));
+            await harness.ServerWriter.WriteLineAsync("""{"jsonrpc":"2.0","method":"note","params":{"ok":true}}""");
+        });
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        await foreach (var note in rpc.Notifications(cts.Token))
+        {
+            note.Method.Should().Be("note");
+            break;
+        }
+
+        await serverTask;
+
+        // should not fault the connection
+        await rpc.SendNotificationAsync("still-alive", @params: null, CancellationToken.None);
     }
 
     private sealed class PipeHarness : IAsyncDisposable

@@ -128,22 +128,15 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
                     continue;
                 }
 
-                JsonDocument doc;
+                JsonDocument? doc = null;
                 try
                 {
                     doc = JsonDocument.Parse(line);
-                }
-                catch (Exception ex)
-                {
-                    throw new JsonRpcProtocolException($"Failed to parse JSON-RPC message: '{line}'.", ex);
-                }
-
-                using (doc)
-                {
                     var root = doc.RootElement;
 
                     if (root.ValueKind != JsonValueKind.Object)
                     {
+                        LogBogus($"Dropping non-object JSON-RPC message. Line: '{line}'.");
                         continue;
                     }
 
@@ -152,21 +145,52 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
 
                     if (hasId && hasMethod)
                     {
-                        await HandleServerRequestAsync(idProp, methodProp, root);
+                        try
+                        {
+                            await HandleServerRequestAsync(idProp, methodProp, root);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogBogus($"Dropping malformed JSON-RPC server request. Line: '{line}'.", ex);
+                        }
                         continue;
                     }
 
                     if (hasId)
                     {
-                        HandleResponse(idProp, root);
+                        try
+                        {
+                            HandleResponse(idProp, root);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogBogus($"Dropping malformed JSON-RPC response. Line: '{line}'.", ex);
+                        }
                         continue;
                     }
 
                     if (hasMethod)
                     {
-                        await HandleNotificationAsync(methodProp, root);
+                        try
+                        {
+                            await HandleNotificationAsync(methodProp, root);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogBogus($"Dropping malformed JSON-RPC notification. Line: '{line}'.", ex);
+                        }
                         continue;
                     }
+
+                    LogBogus($"Dropping unknown JSON-RPC message shape. Line: '{line}'.");
+                }
+                catch (JsonException ex)
+                {
+                    LogBogus($"Dropping invalid JSON from server. Line: '{line}'.", ex);
+                }
+                finally
+                {
+                    doc?.Dispose();
                 }
             }
         }
@@ -205,6 +229,14 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
             return;
         }
 
+        if (root.TryGetProperty("error", out errorProp) && errorProp.ValueKind != JsonValueKind.Undefined &&
+            errorProp.ValueKind != JsonValueKind.Null)
+        {
+            var error = ParseError(errorProp);
+            tcs.TrySetException(new JsonRpcRemoteException(error));
+            return;
+        }
+
         if (!root.TryGetProperty("result", out var resultProp))
         {
             tcs.TrySetException(new JsonRpcProtocolException("JSON-RPC response missing 'result'/'error'."));
@@ -216,6 +248,12 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
 
     private async Task HandleNotificationAsync(JsonElement methodProp, JsonElement root)
     {
+        if (methodProp.ValueKind != JsonValueKind.String)
+        {
+            LogBogus($"Dropping JSON-RPC notification with non-string method: {methodProp.GetRawText()}.");
+            return;
+        }
+
         var method = methodProp.GetString();
         if (string.IsNullOrWhiteSpace(method))
         {
@@ -248,6 +286,12 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
 
     private async Task HandleServerRequestAsync(JsonElement idProp, JsonElement methodProp, JsonElement root)
     {
+        if (methodProp.ValueKind != JsonValueKind.String)
+        {
+            LogBogus($"Dropping JSON-RPC server request with non-string method: {methodProp.GetRawText()}.");
+            return;
+        }
+
         var method = methodProp.GetString();
         if (string.IsNullOrWhiteSpace(method))
         {
@@ -342,6 +386,11 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
 
     private static JsonRpcError ParseError(JsonElement errorProp)
     {
+        if (errorProp.ValueKind != JsonValueKind.Object)
+        {
+            return new JsonRpcError(-32000, "Remote error", Data: errorProp.Clone());
+        }
+
         var code = errorProp.TryGetProperty("code", out var codeProp) && codeProp.TryGetInt32(out var c)
             ? c
             : -32000;
@@ -357,5 +406,14 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
         }
 
         return new JsonRpcError(code, message, data);
+    }
+
+    private void LogBogus(string message, Exception? ex = null)
+    {
+#if DEBUG
+        _logger.LogWarning(ex, message);
+#else
+        _logger.LogTrace(ex, message);
+#endif
     }
 }
