@@ -310,28 +310,34 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
 
     private object CreateRequestObject(long id, string method, object? @params)
     {
-        return new JsonRpcRequestWireMessage(
-            Id: id,
-            Method: method,
-            Params: @params,
-            JsonRpc: IncludeJsonRpcHeader ? "2.0" : null);
+        return new JsonRpcRequestWireMessage
+        {
+            Id = id,
+            Method = method,
+            Params = @params,
+            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
+        };
     }
 
     private object CreateNotificationObject(string method, object? @params)
     {
-        return new JsonRpcNotificationWireMessage(
-            Method: method,
-            Params: @params,
-            JsonRpc: IncludeJsonRpcHeader ? "2.0" : null);
+        return new JsonRpcNotificationWireMessage
+        {
+            Method = method,
+            Params = @params,
+            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
+        };
     }
 
     private object CreateResponseObject(JsonRpcResponse response)
     {
-        return new JsonRpcResponseWireMessage(
-            Id: response.Id.Value,
-            Result: response.Error is null ? response.Result : null,
-            Error: response.Error,
-            JsonRpc: IncludeJsonRpcHeader ? "2.0" : null);
+        return new JsonRpcResponseWireMessage
+        {
+            Id = response.Id.Value,
+            Result = response.Error is null ? response.Result : null,
+            Error = response.Error,
+            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
+        };
     }
 
     private static JsonRpcError ParseError(JsonElement errorProp)

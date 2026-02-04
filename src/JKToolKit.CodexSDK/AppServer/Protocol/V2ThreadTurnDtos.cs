@@ -3,47 +3,122 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol;
 
-public sealed record ThreadStartParams(
-    [property: JsonPropertyName("model")] string? Model = null,
-    [property: JsonPropertyName("modelProvider")] string? ModelProvider = null,
-    [property: JsonPropertyName("cwd")] string? Cwd = null,
-    [property: JsonPropertyName("approvalPolicy")] string? ApprovalPolicy = null,
-    [property: JsonPropertyName("sandbox")] string? Sandbox = null,
-    [property: JsonPropertyName("config")] JsonElement? Config = null,
-    [property: JsonPropertyName("baseInstructions")] string? BaseInstructions = null,
-    [property: JsonPropertyName("developerInstructions")] string? DeveloperInstructions = null,
-    [property: JsonPropertyName("personality")] string? Personality = null,
-    [property: JsonPropertyName("ephemeral")] bool? Ephemeral = null,
-    [property: JsonPropertyName("experimentalRawEvents")] bool ExperimentalRawEvents = false);
+public sealed record class ThreadStartParams
+{
+    [JsonPropertyName("model")]
+    public string? Model { get; init; }
 
-public sealed record ThreadResumeParams(
-    [property: JsonPropertyName("threadId")] string ThreadId,
-    [property: JsonPropertyName("history")] JsonElement? History = null,
-    [property: JsonPropertyName("path")] string? Path = null,
-    [property: JsonPropertyName("model")] string? Model = null,
-    [property: JsonPropertyName("modelProvider")] string? ModelProvider = null,
-    [property: JsonPropertyName("cwd")] string? Cwd = null,
-    [property: JsonPropertyName("approvalPolicy")] string? ApprovalPolicy = null,
-    [property: JsonPropertyName("sandbox")] string? Sandbox = null,
-    [property: JsonPropertyName("config")] JsonElement? Config = null,
-    [property: JsonPropertyName("baseInstructions")] string? BaseInstructions = null,
-    [property: JsonPropertyName("developerInstructions")] string? DeveloperInstructions = null,
-    [property: JsonPropertyName("personality")] string? Personality = null);
+    [JsonPropertyName("modelProvider")]
+    public string? ModelProvider { get; init; }
 
-public sealed record TurnStartParams(
-    [property: JsonPropertyName("threadId")] string ThreadId,
-    [property: JsonPropertyName("input")] IReadOnlyList<object> Input,
-    [property: JsonPropertyName("cwd")] string? Cwd = null,
-    [property: JsonPropertyName("approvalPolicy")] string? ApprovalPolicy = null,
-    [property: JsonPropertyName("sandboxPolicy")] SandboxPolicy? SandboxPolicy = null,
-    [property: JsonPropertyName("model")] string? Model = null,
-    [property: JsonPropertyName("effort")] string? Effort = null,
-    [property: JsonPropertyName("summary")] string? Summary = null,
-    [property: JsonPropertyName("personality")] string? Personality = null,
-    [property: JsonPropertyName("outputSchema")] JsonElement? OutputSchema = null,
-    [property: JsonPropertyName("collaborationMode")] JsonElement? CollaborationMode = null);
+    [JsonPropertyName("cwd")]
+    public string? Cwd { get; init; }
 
-public sealed record TurnInterruptParams(
-    [property: JsonPropertyName("threadId")] string ThreadId,
-    [property: JsonPropertyName("turnId")] string TurnId);
+    [JsonPropertyName("approvalPolicy")]
+    public string? ApprovalPolicy { get; init; }
 
+    [JsonPropertyName("sandbox")]
+    public string? Sandbox { get; init; }
+
+    [JsonPropertyName("config")]
+    public JsonElement? Config { get; init; }
+
+    [JsonPropertyName("baseInstructions")]
+    public string? BaseInstructions { get; init; }
+
+    [JsonPropertyName("developerInstructions")]
+    public string? DeveloperInstructions { get; init; }
+
+    [JsonPropertyName("personality")]
+    public string? Personality { get; init; }
+
+    [JsonPropertyName("ephemeral")]
+    public bool? Ephemeral { get; init; }
+
+    [JsonPropertyName("experimentalRawEvents")]
+    public bool ExperimentalRawEvents { get; init; }
+}
+
+public sealed record class ThreadResumeParams
+{
+    [JsonPropertyName("threadId")]
+    public required string ThreadId { get; init; }
+
+    [JsonPropertyName("history")]
+    public JsonElement? History { get; init; }
+
+    [JsonPropertyName("path")]
+    public string? Path { get; init; }
+
+    [JsonPropertyName("model")]
+    public string? Model { get; init; }
+
+    [JsonPropertyName("modelProvider")]
+    public string? ModelProvider { get; init; }
+
+    [JsonPropertyName("cwd")]
+    public string? Cwd { get; init; }
+
+    [JsonPropertyName("approvalPolicy")]
+    public string? ApprovalPolicy { get; init; }
+
+    [JsonPropertyName("sandbox")]
+    public string? Sandbox { get; init; }
+
+    [JsonPropertyName("config")]
+    public JsonElement? Config { get; init; }
+
+    [JsonPropertyName("baseInstructions")]
+    public string? BaseInstructions { get; init; }
+
+    [JsonPropertyName("developerInstructions")]
+    public string? DeveloperInstructions { get; init; }
+
+    [JsonPropertyName("personality")]
+    public string? Personality { get; init; }
+}
+
+public sealed record class TurnStartParams
+{
+    [JsonPropertyName("threadId")]
+    public required string ThreadId { get; init; }
+
+    [JsonPropertyName("input")]
+    public required IReadOnlyList<object> Input { get; init; }
+
+    [JsonPropertyName("cwd")]
+    public string? Cwd { get; init; }
+
+    [JsonPropertyName("approvalPolicy")]
+    public string? ApprovalPolicy { get; init; }
+
+    [JsonPropertyName("sandboxPolicy")]
+    public SandboxPolicy? SandboxPolicy { get; init; }
+
+    [JsonPropertyName("model")]
+    public string? Model { get; init; }
+
+    [JsonPropertyName("effort")]
+    public string? Effort { get; init; }
+
+    [JsonPropertyName("summary")]
+    public string? Summary { get; init; }
+
+    [JsonPropertyName("personality")]
+    public string? Personality { get; init; }
+
+    [JsonPropertyName("outputSchema")]
+    public JsonElement? OutputSchema { get; init; }
+
+    [JsonPropertyName("collaborationMode")]
+    public JsonElement? CollaborationMode { get; init; }
+}
+
+public sealed record class TurnInterruptParams
+{
+    [JsonPropertyName("threadId")]
+    public required string ThreadId { get; init; }
+
+    [JsonPropertyName("turnId")]
+    public required string TurnId { get; init; }
+}

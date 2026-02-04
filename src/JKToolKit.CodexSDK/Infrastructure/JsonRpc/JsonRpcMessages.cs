@@ -22,9 +22,57 @@ internal readonly record struct JsonRpcId(JsonElement Value)
     };
 }
 
-internal sealed record JsonRpcRequest(JsonRpcId Id, string Method, JsonElement? Params);
-internal sealed record JsonRpcResponse(JsonRpcId Id, JsonElement? Result, JsonRpcError? Error);
-internal sealed record JsonRpcNotification(string Method, JsonElement? Params);
+internal sealed record class JsonRpcRequest
+{
+    public JsonRpcId Id { get; }
+    public string Method { get; }
+    public JsonElement? Params { get; }
 
-internal sealed record JsonRpcError(int Code, string Message, JsonElement? Data = null);
+    public JsonRpcRequest(JsonRpcId Id, string Method, JsonElement? Params)
+    {
+        this.Id = Id;
+        this.Method = Method ?? throw new ArgumentNullException(nameof(Method));
+        this.Params = Params;
+    }
+}
+
+internal sealed record class JsonRpcResponse
+{
+    public JsonRpcId Id { get; }
+    public JsonElement? Result { get; }
+    public JsonRpcError? Error { get; }
+
+    public JsonRpcResponse(JsonRpcId Id, JsonElement? Result, JsonRpcError? Error)
+    {
+        this.Id = Id;
+        this.Result = Result;
+        this.Error = Error;
+    }
+}
+
+internal sealed record class JsonRpcNotification
+{
+    public string Method { get; }
+    public JsonElement? Params { get; }
+
+    public JsonRpcNotification(string Method, JsonElement? Params)
+    {
+        this.Method = Method ?? throw new ArgumentNullException(nameof(Method));
+        this.Params = Params;
+    }
+}
+
+internal sealed record class JsonRpcError
+{
+    public int Code { get; }
+    public string Message { get; }
+    public JsonElement? Data { get; }
+
+    public JsonRpcError(int Code, string Message, JsonElement? Data = null)
+    {
+        this.Code = Code;
+        this.Message = Message ?? throw new ArgumentNullException(nameof(Message));
+        this.Data = Data;
+    }
+}
 

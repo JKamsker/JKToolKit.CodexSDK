@@ -95,7 +95,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "initialize",
-            new InitializeParams(clientInfo, Capabilities: null),
+            new InitializeParams { ClientInfo = clientInfo, Capabilities = null },
             ct);
 
         await _rpc.SendNotificationAsync("initialized", @params: null, ct);
@@ -115,18 +115,20 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "thread/start",
-            new ThreadStartParams(
-                Model: options.Model?.Value,
-                ModelProvider: options.ModelProvider,
-                Cwd: options.Cwd,
-                ApprovalPolicy: options.ApprovalPolicy?.Value,
-                Sandbox: options.Sandbox?.ToAppServerWireValue(),
-                Config: options.Config,
-                BaseInstructions: options.BaseInstructions,
-                DeveloperInstructions: options.DeveloperInstructions,
-                Personality: options.Personality,
-                Ephemeral: options.Ephemeral,
-                ExperimentalRawEvents: options.ExperimentalRawEvents),
+            new ThreadStartParams
+            {
+                Model = options.Model?.Value,
+                ModelProvider = options.ModelProvider,
+                Cwd = options.Cwd,
+                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                Sandbox = options.Sandbox?.ToAppServerWireValue(),
+                Config = options.Config,
+                BaseInstructions = options.BaseInstructions,
+                DeveloperInstructions = options.DeveloperInstructions,
+                Personality = options.Personality,
+                Ephemeral = options.Ephemeral,
+                ExperimentalRawEvents = options.ExperimentalRawEvents
+            },
             ct);
 
         var threadId = ExtractThreadId(result);
@@ -145,7 +147,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "thread/resume",
-            new ThreadResumeParams(threadId),
+            new ThreadResumeParams { ThreadId = threadId },
             ct);
 
         var id = ExtractThreadId(result) ?? threadId;
@@ -160,19 +162,21 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "thread/resume",
-            new ThreadResumeParams(
-                ThreadId: options.ThreadId,
-                History: options.History,
-                Path: options.Path,
-                Model: options.Model?.Value,
-                ModelProvider: options.ModelProvider,
-                Cwd: options.Cwd,
-                ApprovalPolicy: options.ApprovalPolicy?.Value,
-                Sandbox: options.Sandbox?.ToAppServerWireValue(),
-                Config: options.Config,
-                BaseInstructions: options.BaseInstructions,
-                DeveloperInstructions: options.DeveloperInstructions,
-                Personality: options.Personality),
+            new ThreadResumeParams
+            {
+                ThreadId = options.ThreadId,
+                History = options.History,
+                Path = options.Path,
+                Model = options.Model?.Value,
+                ModelProvider = options.ModelProvider,
+                Cwd = options.Cwd,
+                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                Sandbox = options.Sandbox?.ToAppServerWireValue(),
+                Config = options.Config,
+                BaseInstructions = options.BaseInstructions,
+                DeveloperInstructions = options.DeveloperInstructions,
+                Personality = options.Personality
+            },
             ct);
 
         var id = ExtractThreadId(result) ?? options.ThreadId;
@@ -188,18 +192,20 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "turn/start",
-            new TurnStartParams(
-                ThreadId: threadId,
-                Input: options.Input.Select(i => i.Wire).ToArray(),
-                Cwd: options.Cwd,
-                ApprovalPolicy: options.ApprovalPolicy?.Value,
-                SandboxPolicy: options.SandboxPolicy,
-                Model: options.Model?.Value,
-                Effort: options.Effort?.Value,
-                Summary: options.Summary,
-                Personality: options.Personality,
-                OutputSchema: options.OutputSchema,
-                CollaborationMode: options.CollaborationMode),
+            new TurnStartParams
+            {
+                ThreadId = threadId,
+                Input = options.Input.Select(i => i.Wire).ToArray(),
+                Cwd = options.Cwd,
+                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                SandboxPolicy = options.SandboxPolicy,
+                Model = options.Model?.Value,
+                Effort = options.Effort?.Value,
+                Summary = options.Summary,
+                Personality = options.Personality,
+                OutputSchema = options.OutputSchema,
+                CollaborationMode = options.CollaborationMode
+            },
             ct);
 
         var turnId = ExtractTurnId(result);
@@ -231,7 +237,10 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     private Task InterruptAsync(string threadId, string turnId, CancellationToken ct) =>
-        _rpc.SendRequestAsync("turn/interrupt", new TurnInterruptParams(threadId, turnId), ct);
+        _rpc.SendRequestAsync(
+            "turn/interrupt",
+            new TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
+            ct);
 
     private ValueTask OnRpcNotificationAsync(JsonRpcNotification notification)
     {

@@ -2,13 +2,20 @@ using System.Text.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
-public sealed record ItemStartedNotification(
-    string ThreadId,
-    string TurnId,
-    JsonElement Item,
-    JsonElement Params)
-    : AppServerNotification("item/started", Params)
+public sealed record class ItemStartedNotification : AppServerNotification
 {
+    public string ThreadId { get; }
+    public string TurnId { get; }
+    public JsonElement Item { get; }
+
+    public ItemStartedNotification(string ThreadId, string TurnId, JsonElement Item, JsonElement Params)
+        : base("item/started", Params)
+    {
+        this.ThreadId = ThreadId;
+        this.TurnId = TurnId;
+        this.Item = Item;
+    }
+
     public string? ItemId =>
         Item.ValueKind == JsonValueKind.Object &&
         Item.TryGetProperty("id", out var id) &&

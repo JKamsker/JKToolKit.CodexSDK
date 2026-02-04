@@ -8,41 +8,43 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol;
 /// <remarks>
 /// This matches the v2 <c>SandboxPolicy</c> DTO offered by <c>codex app-server</c>.
 /// </remarks>
-public abstract record SandboxPolicy
+public abstract record class SandboxPolicy
 {
-    private SandboxPolicy()
+    [JsonPropertyName("type")]
+    public abstract string Type { get; }
+
+    public sealed record class DangerFullAccess : SandboxPolicy
     {
+        public override string Type => "dangerFullAccess";
     }
 
-    public sealed record DangerFullAccess : SandboxPolicy
+    public sealed record class ReadOnly : SandboxPolicy
     {
-        [JsonPropertyName("type")]
-        public string Type => "dangerFullAccess";
+        public override string Type => "readOnly";
     }
 
-    public sealed record ReadOnly : SandboxPolicy
+    public sealed record class ExternalSandbox : SandboxPolicy
     {
-        [JsonPropertyName("type")]
-        public string Type => "readOnly";
+        public override string Type => "externalSandbox";
+
+        [JsonPropertyName("networkAccess")]
+        public required string NetworkAccess { get; init; }
     }
 
-    public sealed record ExternalSandbox(
-        [property: JsonPropertyName("networkAccess")] string NetworkAccess)
-        : SandboxPolicy
+    public sealed record class WorkspaceWrite : SandboxPolicy
     {
-        [JsonPropertyName("type")]
-        public string Type => "externalSandbox";
-    }
+        public override string Type => "workspaceWrite";
 
-    public sealed record WorkspaceWrite(
-        [property: JsonPropertyName("writableRoots")] IReadOnlyList<string> WritableRoots,
-        [property: JsonPropertyName("networkAccess")] bool NetworkAccess,
-        [property: JsonPropertyName("excludeTmpdirEnvVar")] bool ExcludeTmpdirEnvVar,
-        [property: JsonPropertyName("excludeSlashTmp")] bool ExcludeSlashTmp)
-        : SandboxPolicy
-    {
-        [JsonPropertyName("type")]
-        public string Type => "workspaceWrite";
+        [JsonPropertyName("writableRoots")]
+        public IReadOnlyList<string> WritableRoots { get; init; } = Array.Empty<string>();
+
+        [JsonPropertyName("networkAccess")]
+        public bool NetworkAccess { get; init; }
+
+        [JsonPropertyName("excludeTmpdirEnvVar")]
+        public bool ExcludeTmpdirEnvVar { get; init; }
+
+        [JsonPropertyName("excludeSlashTmp")]
+        public bool ExcludeSlashTmp { get; init; }
     }
 }
-

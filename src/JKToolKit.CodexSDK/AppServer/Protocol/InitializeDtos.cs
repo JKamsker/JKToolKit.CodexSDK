@@ -6,13 +6,23 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol;
 /// <summary>
 /// Client-declared capabilities negotiated during initialize.
 /// </summary>
-public sealed record InitializeCapabilities(
-    [property: JsonPropertyName("experimentalApi")] bool ExperimentalApi);
+public sealed record class InitializeCapabilities
+{
+    [JsonPropertyName("experimentalApi")]
+    public bool ExperimentalApi { get; init; }
+}
 
-public sealed record InitializeParams(
-    [property: JsonPropertyName("clientInfo")] AppServerClientInfo ClientInfo,
-    [property: JsonPropertyName("capabilities")] InitializeCapabilities? Capabilities);
+public sealed record class InitializeParams
+{
+    [JsonPropertyName("clientInfo")]
+    public required AppServerClientInfo ClientInfo { get; init; }
 
-public sealed record InitializeResponse(
-    [property: JsonPropertyName("userAgent")] string UserAgent);
+    [JsonPropertyName("capabilities")]
+    public InitializeCapabilities? Capabilities { get; init; }
+}
 
+public sealed record class InitializeResponse
+{
+    [JsonPropertyName("userAgent")]
+    public required string UserAgent { get; init; }
+}

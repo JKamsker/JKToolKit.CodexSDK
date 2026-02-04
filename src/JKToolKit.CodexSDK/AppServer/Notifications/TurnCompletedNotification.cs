@@ -2,12 +2,18 @@ using System.Text.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
-public sealed record TurnCompletedNotification(
-    string ThreadId,
-    JsonElement Turn,
-    JsonElement Params)
-    : AppServerNotification("turn/completed", Params)
+public sealed record class TurnCompletedNotification : AppServerNotification
 {
+    public string ThreadId { get; }
+    public JsonElement Turn { get; }
+
+    public TurnCompletedNotification(string ThreadId, JsonElement Turn, JsonElement Params)
+        : base("turn/completed", Params)
+    {
+        this.ThreadId = ThreadId;
+        this.Turn = Turn;
+    }
+
     public string? TurnId =>
         Turn.ValueKind == JsonValueKind.Object &&
         Turn.TryGetProperty("id", out var id) &&

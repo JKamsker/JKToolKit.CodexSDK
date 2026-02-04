@@ -3,20 +3,44 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
-internal sealed record JsonRpcRequestWireMessage(
-    [property: JsonPropertyName("id")] long Id,
-    [property: JsonPropertyName("method")] string Method,
-    [property: JsonPropertyName("params")] object? Params,
-    [property: JsonPropertyName("jsonrpc")] string? JsonRpc = null);
+internal sealed record class JsonRpcRequestWireMessage
+{
+    [JsonPropertyName("id")]
+    public long Id { get; init; }
 
-internal sealed record JsonRpcNotificationWireMessage(
-    [property: JsonPropertyName("method")] string Method,
-    [property: JsonPropertyName("params")] object? Params,
-    [property: JsonPropertyName("jsonrpc")] string? JsonRpc = null);
+    [JsonPropertyName("method")]
+    public required string Method { get; init; }
 
-internal sealed record JsonRpcResponseWireMessage(
-    [property: JsonPropertyName("id")] JsonElement Id,
-    [property: JsonPropertyName("result")] object? Result,
-    [property: JsonPropertyName("error")] JsonRpcError? Error,
-    [property: JsonPropertyName("jsonrpc")] string? JsonRpc = null);
+    [JsonPropertyName("params")]
+    public object? Params { get; init; }
 
+    [JsonPropertyName("jsonrpc")]
+    public string? JsonRpc { get; init; }
+}
+
+internal sealed record class JsonRpcNotificationWireMessage
+{
+    [JsonPropertyName("method")]
+    public required string Method { get; init; }
+
+    [JsonPropertyName("params")]
+    public object? Params { get; init; }
+
+    [JsonPropertyName("jsonrpc")]
+    public string? JsonRpc { get; init; }
+}
+
+internal sealed record class JsonRpcResponseWireMessage
+{
+    [JsonPropertyName("id")]
+    public JsonElement Id { get; init; }
+
+    [JsonPropertyName("result")]
+    public object? Result { get; init; }
+
+    [JsonPropertyName("error")]
+    public JsonRpcError? Error { get; init; }
+
+    [JsonPropertyName("jsonrpc")]
+    public string? JsonRpc { get; init; }
+}
