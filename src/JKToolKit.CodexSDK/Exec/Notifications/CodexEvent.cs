@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 /// <summary>
 /// Abstract base class for all Codex events.

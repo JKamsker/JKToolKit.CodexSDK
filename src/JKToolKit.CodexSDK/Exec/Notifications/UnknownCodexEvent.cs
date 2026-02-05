@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 /// <summary>
 /// Represents an unknown or unrecognized Codex event.

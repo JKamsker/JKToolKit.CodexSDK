@@ -1,6 +1,7 @@
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
-using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using FluentAssertions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;

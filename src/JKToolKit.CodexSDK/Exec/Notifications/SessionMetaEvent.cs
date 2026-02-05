@@ -1,4 +1,6 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
+
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 /// <summary>
 /// Represents a session metadata event containing session configuration and context.

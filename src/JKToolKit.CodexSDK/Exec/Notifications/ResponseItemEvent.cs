@@ -1,6 +1,7 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Exec.Protocol;
 
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 /// <summary>
 /// Represents a response_item event emitted by Codex, carrying a typed payload

@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using JKToolKit.CodexSDK.Abstractions;
-using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure;

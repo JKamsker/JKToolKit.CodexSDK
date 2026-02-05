@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 /// <summary>
 /// Represents a message event from the Codex agent.

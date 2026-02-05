@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 /// <summary>
 /// Indicates that the active context window was compacted.

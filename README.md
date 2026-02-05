@@ -38,6 +38,8 @@ Use a single, discoverable entry point that exposes all three modes via `sdk.Exe
 ```csharp
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 
 await using var sdk = CodexSdk.Create();
@@ -86,11 +88,10 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, Can
     switch (evt)
     {
         case AgentMessageEvent msg:
-            Console.WriteLine($"Agent: {msg.Content}");
+            Console.WriteLine($"Agent: {msg.Text}");
             break;
-        case ResponseItemEvent item when item.Payload.Message != null:
-            var text = string.Join("", item.Payload.Message.Value.TextParts);
-            Console.WriteLine($"[{item.Payload.Message.Value.Role}] {text}");
+        case ResponseItemEvent item when item.Payload is MessageResponseItemPayload m:
+            Console.WriteLine($"[{m.Role}] {string.Join("\n", m.TextParts)}");
             break;
         case TokenCountEvent tokens:
             Console.WriteLine($"Tokens: {tokens.InputTokens} in, {tokens.OutputTokens} out");

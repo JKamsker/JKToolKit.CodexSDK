@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 /// <summary>
 /// Represents an agent reasoning event containing internal thought processes.

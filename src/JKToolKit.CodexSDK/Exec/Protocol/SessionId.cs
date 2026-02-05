@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Protocol;
 
 /// <summary>
 /// Represents a unique Codex session identifier with validation.

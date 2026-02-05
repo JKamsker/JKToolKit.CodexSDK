@@ -1,4 +1,6 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
+
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 /// <summary>
 /// Represents a token count event containing usage statistics.
@@ -53,10 +55,3 @@ public record TokenCountEvent : CodexEvent
     /// </summary>
     public int? ModelContextWindow { get; init; }
 }
-
-public sealed record TokenUsage(
-    int? InputTokens,
-    int? CachedInputTokens,
-    int? OutputTokens,
-    int? ReasoningOutputTokens,
-    int? TotalTokens);

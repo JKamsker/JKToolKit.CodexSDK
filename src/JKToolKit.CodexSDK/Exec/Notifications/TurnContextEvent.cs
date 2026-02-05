@@ -1,4 +1,6 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
+
+using JKToolKit.CodexSDK.Models;
 
 /// <summary>
 /// Represents a turn context event containing execution context information.

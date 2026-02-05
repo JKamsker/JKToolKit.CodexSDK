@@ -1,8 +1,11 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Protocol;
 
 /// <summary>
 /// Represents rate limit usage scopes returned by Codex.
 /// </summary>
+/// <param name="Primary">Primary rate limit scope, when provided.</param>
+/// <param name="Secondary">Secondary rate limit scope, when provided.</param>
+/// <param name="Credits">Credit availability information, when provided.</param>
 public sealed record RateLimits(
     RateLimitScope? Primary,
     RateLimitScope? Secondary,

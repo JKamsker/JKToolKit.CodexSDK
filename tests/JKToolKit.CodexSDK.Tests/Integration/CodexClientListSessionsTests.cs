@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 using Microsoft.Extensions.Logging;

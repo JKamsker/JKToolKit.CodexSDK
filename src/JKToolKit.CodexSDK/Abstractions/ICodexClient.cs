@@ -1,5 +1,5 @@
 using JKToolKit.CodexSDK.Exec;
-using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 namespace JKToolKit.CodexSDK.Abstractions;
 

@@ -1,4 +1,6 @@
-namespace JKToolKit.CodexSDK.Models;
+namespace JKToolKit.CodexSDK.Exec.Notifications;
+
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 /// <summary>
 /// Represents the end of a Codex <c>review</c> run, including structured review output.

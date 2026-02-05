@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using JKToolKit.CodexSDK.Infrastructure;
-using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit.Sdk;

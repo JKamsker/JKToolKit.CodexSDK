@@ -1,3 +1,4 @@
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.Exec;

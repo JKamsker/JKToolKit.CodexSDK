@@ -1,4 +1,5 @@
-using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 namespace JKToolKit.CodexSDK.Exec;
 

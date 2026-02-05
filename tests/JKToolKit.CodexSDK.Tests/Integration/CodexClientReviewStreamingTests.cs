@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
-using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;
 

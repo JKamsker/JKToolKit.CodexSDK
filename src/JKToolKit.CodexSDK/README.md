@@ -65,7 +65,8 @@ For a resumed session:
 - `JKToolKit.CodexSDK.Exec.CodexClient`: main entry point
 - `JKToolKit.CodexSDK.Exec.CodexSessionHandle`: a live or historical session handle (`IAsyncDisposable`)
 - `JKToolKit.CodexSDK.Exec.EventStreamOptions`: controls event filtering/stream options
-- `JKToolKit.CodexSDK.Models.*`: strongly-typed **Exec JSONL** event models (`SessionMetaEvent`, `ResponseItemEvent`, …)
+- `JKToolKit.CodexSDK.Exec.Notifications.*`: strongly-typed **Exec JSONL** event models (`SessionMetaEvent`, `ResponseItemEvent`, …)
+- `JKToolKit.CodexSDK.Exec.Protocol.*`: strongly-typed **Exec JSONL** protocol models (e.g. `SessionId`, `RateLimits`, `MessageResponseItemPayload`)
 
 ## Getting Started
 
@@ -78,6 +79,8 @@ For a resumed session:
 
 ```csharp
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 
 await using var client = new CodexClient(new CodexClientOptions());
@@ -95,10 +98,10 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default))
     switch (evt)
     {
         case AgentMessageEvent msg:
-            Console.WriteLine(msg.Content);
+            Console.WriteLine(msg.Text);
             break;
-        case ResponseItemEvent item when item.Payload.Message is { } m:
-            Console.WriteLine(string.Join("", m.TextParts));
+        case ResponseItemEvent item when item.Payload is MessageResponseItemPayload m:
+            Console.WriteLine(string.Join("\n", m.TextParts));
             break;
     }
 }

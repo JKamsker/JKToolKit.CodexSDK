@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.Infrastructure;

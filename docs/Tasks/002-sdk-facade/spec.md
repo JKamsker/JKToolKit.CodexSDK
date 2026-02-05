@@ -162,6 +162,7 @@ public sealed class CodexMcpServerFacade
 ```csharp
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 
 await using var sdk = CodexSdk.Create(b =>
