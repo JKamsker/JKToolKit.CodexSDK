@@ -28,6 +28,43 @@ public sealed class JsonlEventParser : IJsonlEventParser
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    /// <summary>
+    /// Attempts to parse a single JSONL line into a <see cref="CodexEvent"/> without throwing.
+    /// </summary>
+    public bool TryParseLine(string line, out CodexEvent? evt, out string? error)
+    {
+        evt = null;
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            error = "Line is empty/whitespace.";
+            return false;
+        }
+
+        try
+        {
+            evt = ParseLineCore(line);
+            if (evt == null)
+            {
+                error = "Line could not be parsed (missing required fields or unsupported shape).";
+                return false;
+            }
+
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
     /// <inheritdoc />
     public async IAsyncEnumerable<CodexEvent> ParseAsync(
         IAsyncEnumerable<string> lines,
@@ -68,20 +105,9 @@ public sealed class JsonlEventParser : IJsonlEventParser
                 continue;
             }
 
-            CodexEvent? evt = null;
-
-            try
+            if (!TryParseLine(line, out var evt, out var error))
             {
-                evt = ParseLine(line);
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogWarning(ex, "Malformed JSON line, skipping: {Line}", line);
-                continue;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error parsing line, skipping: {Line}", line);
+                _logger.LogWarning("Error parsing line, skipping: {Error}. Line: {Line}", error, line);
                 continue;
             }
 
@@ -97,7 +123,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
     /// </summary>
     /// <param name="line">The JSONL line to parse.</param>
     /// <returns>A parsed CodexEvent instance, or null if the line cannot be parsed.</returns>
-    private CodexEvent? ParseLine(string line)
+    private CodexEvent? ParseLineCore(string line)
     {
         using var doc = JsonDocument.Parse(line);
         var root = doc.RootElement;
@@ -138,6 +164,8 @@ public sealed class JsonlEventParser : IJsonlEventParser
             "turn_context" => ParseTurnContextEvent(root, timestamp, type, rawPayload),
             "response_item" => ParseResponseItemEvent(root, timestamp, type, rawPayload),
             "event_msg" => ParseEventMsgEvent(root, timestamp, rawPayload),
+            "event" => ParseEventEnvelopeEvent(root, timestamp, rawPayload),
+            "compacted" => ParseCompactedEvent(root, timestamp, type, rawPayload),
             _ => ParseUnknownEvent(timestamp, type, rawPayload)
         };
     }
@@ -166,22 +194,67 @@ public sealed class JsonlEventParser : IJsonlEventParser
         // Codex can emit event_msg payloads in two shapes:
         // 1) { type, payload: { ... } }  (nested payload)
         // 2) { type, ... }              (payload fields at this level)
-        //
-        // Downstream parsers expect the event root to contain a "payload" object.
-        var eventRoot = payload.TryGetProperty("payload", out var innerPayload) && innerPayload.ValueKind == JsonValueKind.Object
-            ? payload
-            : root;
-
-        // Preserve the original JSONL record for debugging/inspection fidelity.
-        // rawPayload is already a clone of the full line (see ParseLine).
-        var eventRawPayload = rawPayload;
+        var innerRoot = payload.TryGetProperty("payload", out var innerPayload) && innerPayload.ValueKind == JsonValueKind.Object
+            ? innerPayload
+            : payload;
 
         return innerType switch
         {
-            "agent_message" => ParseAgentMessageEvent(eventRoot, timestamp, innerType, eventRawPayload),
-            "agent_reasoning" => ParseAgentReasoningEvent(eventRoot, timestamp, innerType, eventRawPayload),
-            "exited_review_mode" => ParseExitedReviewModeEvent(eventRoot, timestamp, innerType, eventRawPayload),
-            _ => ParseUnknownEvent(timestamp, innerType, eventRawPayload)
+            "agent_message" => ParseAgentMessageEvent(innerRoot, timestamp, innerType, rawPayload),
+            "agent_reasoning" => ParseAgentReasoningEvent(innerRoot, timestamp, innerType, rawPayload),
+            "user_message" => ParseUserMessageEvent(innerRoot, timestamp, innerType, rawPayload),
+            "token_count" => ParseTokenCountEvent(innerRoot, timestamp, innerType, rawPayload),
+            "context_compacted" => new ContextCompactedEvent { Timestamp = timestamp, Type = innerType, RawPayload = rawPayload },
+            "turn_aborted" => ParseTurnAbortedEvent(innerRoot, timestamp, innerType, rawPayload),
+            "entered_review_mode" => ParseEnteredReviewModeEvent(innerRoot, timestamp, innerType, rawPayload),
+            "exited_review_mode" => ParseExitedReviewModeEvent(innerRoot, timestamp, innerType, rawPayload),
+            _ => ParseUnknownEvent(timestamp, innerType, rawPayload)
+        };
+    }
+
+    private CodexEvent? ParseEventEnvelopeEvent(
+        JsonElement root,
+        DateTimeOffset timestamp,
+        JsonElement rawPayload)
+    {
+        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogWarning("event missing 'payload' object");
+            return null;
+        }
+
+        if (!payload.TryGetProperty("msg", out var msg) || msg.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogWarning("event missing 'payload.msg' object");
+            return null;
+        }
+
+        var msgType = msg.TryGetProperty("type", out var typeEl) ? typeEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(msgType))
+        {
+            _logger.LogWarning("event missing 'payload.msg.type'");
+            return null;
+        }
+
+        return msgType switch
+        {
+            "agent_message" => ParseAgentMessageEvent(msg, timestamp, msgType, rawPayload),
+            "agent_reasoning" => ParseAgentReasoningEvent(msg, timestamp, msgType, rawPayload),
+            "agent_reasoning_section_break" => new AgentReasoningSectionBreakEvent { Timestamp = timestamp, Type = msgType, RawPayload = rawPayload },
+            "background_event" => ParseBackgroundEvent(msg, timestamp, msgType, rawPayload),
+            "compaction_checkpoint_warning" => ParseCompactionCheckpointWarningEvent(msg, timestamp, msgType, rawPayload),
+            "entered_review_mode" => ParseEnteredReviewModeEvent(msg, timestamp, msgType, rawPayload),
+            "error" => ParseErrorEvent(msg, timestamp, msgType, rawPayload),
+            "exited_review_mode" => ParseExitedReviewModeEvent(msg, timestamp, msgType, rawPayload),
+            "patch_apply_begin" => ParsePatchApplyBeginEvent(msg, timestamp, msgType, rawPayload),
+            "patch_apply_end" => ParsePatchApplyEndEvent(msg, timestamp, msgType, rawPayload),
+            "plan_update" => ParsePlanUpdateEvent(msg, timestamp, msgType, rawPayload),
+            "task_started" => ParseTaskStartedEvent(msg, timestamp, msgType, rawPayload),
+            "task_complete" => ParseTaskCompleteEvent(msg, timestamp, msgType, rawPayload),
+            "token_count" => ParseTokenCountEvent(msg, timestamp, msgType, rawPayload),
+            "turn_aborted" => ParseTurnAbortedEvent(msg, timestamp, msgType, rawPayload),
+            "turn_diff" => ParseTurnDiffEvent(msg, timestamp, msgType, rawPayload),
+            _ => ParseUnknownEvent(timestamp, msgType, rawPayload)
         };
     }
 
@@ -217,6 +290,27 @@ public sealed class JsonlEventParser : IJsonlEventParser
         var cwd = payload.TryGetProperty("cwd", out var cwdElement)
             ? cwdElement.GetString()
             : null;
+        var cliVersion = payload.TryGetProperty("cli_version", out var cliVersionEl) ? cliVersionEl.GetString() : null;
+        var originator = payload.TryGetProperty("originator", out var originatorEl) ? originatorEl.GetString() : null;
+        string? source = null;
+        string? sourceSubagent = null;
+        if (payload.TryGetProperty("source", out var sourceEl))
+        {
+            if (sourceEl.ValueKind == JsonValueKind.String)
+            {
+                source = sourceEl.GetString();
+            }
+            else if (sourceEl.ValueKind == JsonValueKind.Object)
+            {
+                var subagent = TryGetString(sourceEl, "subagent");
+                if (!string.IsNullOrWhiteSpace(subagent))
+                {
+                    source = "subagent";
+                    sourceSubagent = subagent;
+                }
+            }
+        }
+        var modelProvider = payload.TryGetProperty("model_provider", out var modelProviderEl) ? modelProviderEl.GetString() : null;
 
         return new SessionMetaEvent
         {
@@ -224,7 +318,12 @@ public sealed class JsonlEventParser : IJsonlEventParser
             Type = type,
             RawPayload = rawPayload,
             SessionId = sessionId,
-            Cwd = cwd
+            Cwd = cwd,
+            CliVersion = cliVersion,
+            Originator = originator,
+            Source = source,
+            SourceSubagent = sourceSubagent,
+            ModelProvider = modelProvider
         };
     }
 
@@ -237,13 +336,10 @@ public sealed class JsonlEventParser : IJsonlEventParser
         string type,
         JsonElement rawPayload)
     {
-        if (!root.TryGetProperty("payload", out var payload))
-        {
-            _logger.LogWarning("user_message event missing 'payload' field");
-            return null;
-        }
+        var payload = GetEventBody(root);
 
-        if (!payload.TryGetProperty("message", out var messageElement))
+        if (!payload.TryGetProperty("message", out var messageElement) &&
+            !payload.TryGetProperty("text", out messageElement))
         {
             _logger.LogWarning("user_message event missing 'payload.message' field");
             return null;
@@ -274,13 +370,10 @@ public sealed class JsonlEventParser : IJsonlEventParser
         string type,
         JsonElement rawPayload)
     {
-        if (!root.TryGetProperty("payload", out var payload))
-        {
-            _logger.LogWarning("agent_message event missing 'payload' field");
-            return null;
-        }
+        var payload = GetEventBody(root);
 
-        if (!payload.TryGetProperty("message", out var messageElement))
+        if (!payload.TryGetProperty("message", out var messageElement) &&
+            !payload.TryGetProperty("text", out messageElement))
         {
             _logger.LogWarning("agent_message event missing 'payload.message' field");
             return null;
@@ -311,11 +404,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
         string type,
         JsonElement rawPayload)
     {
-        if (!root.TryGetProperty("payload", out var payload))
-        {
-            _logger.LogWarning("agent_reasoning event missing 'payload' field");
-            return null;
-        }
+        var payload = GetEventBody(root);
 
         if (!payload.TryGetProperty("text", out var textElement))
         {
@@ -348,32 +437,71 @@ public sealed class JsonlEventParser : IJsonlEventParser
         string type,
         JsonElement rawPayload)
     {
+        var payload = GetEventBody(root);
+
         int? inputTokens = null;
         int? outputTokens = null;
         int? reasoningTokens = null;
+        int? modelContextWindow = null;
+        TokenUsage? lastTokenUsage = null;
+        TokenUsage? totalTokenUsage = null;
         RateLimits? rateLimits = null;
 
-        if (root.TryGetProperty("payload", out var payload))
+        // Newer schema: { info: { total_token_usage, last_token_usage, model_context_window }, rate_limits }
+        if (payload.TryGetProperty("info", out var info) && info.ValueKind == JsonValueKind.Object)
         {
-            if (payload.TryGetProperty("input_tokens", out var inputElement))
+            if (info.TryGetProperty("last_token_usage", out var lastEl) && lastEl.ValueKind == JsonValueKind.Object)
             {
-                inputTokens = inputElement.GetInt32();
+                lastTokenUsage = ParseTokenUsage(lastEl);
             }
 
-            if (payload.TryGetProperty("output_tokens", out var outputElement))
+            if (info.TryGetProperty("total_token_usage", out var totalEl) && totalEl.ValueKind == JsonValueKind.Object)
             {
-                outputTokens = outputElement.GetInt32();
+                totalTokenUsage = ParseTokenUsage(totalEl);
             }
 
-            if (payload.TryGetProperty("reasoning_output_tokens", out var reasoningElement))
+            if (info.TryGetProperty("model_context_window", out var ctxEl) && ctxEl.ValueKind == JsonValueKind.Number)
             {
-                reasoningTokens = reasoningElement.GetInt32();
+                modelContextWindow = ctxEl.GetInt32();
             }
+        }
 
-            if (payload.TryGetProperty("rate_limits", out var rateLimitsElement))
-            {
-                rateLimits = ParseRateLimits(rateLimitsElement);
-            }
+        // Older schema: { input_tokens, output_tokens, reasoning_output_tokens, rate_limits }
+        if (payload.TryGetProperty("input_tokens", out var inputElement) && inputElement.ValueKind == JsonValueKind.Number)
+        {
+            inputTokens = inputElement.GetInt32();
+        }
+
+        if (payload.TryGetProperty("output_tokens", out var outputElement) && outputElement.ValueKind == JsonValueKind.Number)
+        {
+            outputTokens = outputElement.GetInt32();
+        }
+
+        if (payload.TryGetProperty("reasoning_output_tokens", out var reasoningElement) && reasoningElement.ValueKind == JsonValueKind.Number)
+        {
+            reasoningTokens = reasoningElement.GetInt32();
+        }
+
+        if (payload.TryGetProperty("rate_limits", out var rateLimitsElement))
+        {
+            rateLimits = ParseRateLimits(rateLimitsElement);
+        }
+
+        if (lastTokenUsage != null)
+        {
+            inputTokens ??= lastTokenUsage.InputTokens;
+            outputTokens ??= lastTokenUsage.OutputTokens;
+            reasoningTokens ??= lastTokenUsage.ReasoningOutputTokens;
+        }
+
+        if (lastTokenUsage == null && (inputTokens.HasValue || outputTokens.HasValue || reasoningTokens.HasValue))
+        {
+            lastTokenUsage = new TokenUsage(
+                InputTokens: inputTokens,
+                CachedInputTokens: null,
+                OutputTokens: outputTokens,
+                ReasoningOutputTokens: reasoningTokens,
+                TotalTokens: null);
         }
 
         return new TokenCountEvent
@@ -384,7 +512,10 @@ public sealed class JsonlEventParser : IJsonlEventParser
             InputTokens = inputTokens,
             OutputTokens = outputTokens,
             ReasoningTokens = reasoningTokens,
-            RateLimits = rateLimits
+            RateLimits = rateLimits,
+            LastTokenUsage = lastTokenUsage,
+            TotalTokenUsage = totalTokenUsage,
+            ModelContextWindow = modelContextWindow
         };
     }
 
@@ -442,11 +573,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
         string type,
         JsonElement rawPayload)
     {
-        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
-        {
-            _logger.LogWarning("{Type} event missing 'payload' field", type);
-            return null;
-        }
+        var payload = GetEventBody(root);
 
         if (!payload.TryGetProperty("review_output", out var reviewOutputEl) || reviewOutputEl.ValueKind != JsonValueKind.Object)
         {
@@ -563,7 +690,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
             return null;
         }
 
-        var normalized = NormalizeResponseItemPayload(payloadType, payload);
+        var normalized = ParseResponseItemPayload(payloadType, payload);
 
         return new ResponseItemEvent
         {
@@ -595,9 +722,19 @@ public sealed class JsonlEventParser : IJsonlEventParser
 
     private RateLimits? ParseRateLimits(JsonElement rateLimitsElement)
     {
+        if (rateLimitsElement.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
         RateLimitScope? ParseScope(string propertyName)
         {
             if (!rateLimitsElement.TryGetProperty(propertyName, out var scope))
+            {
+                return null;
+            }
+
+            if (scope.ValueKind != JsonValueKind.Object)
             {
                 return null;
             }
@@ -649,6 +786,11 @@ public sealed class JsonlEventParser : IJsonlEventParser
                 return null;
             }
 
+            if (credits.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
             bool? hasCredits = null;
             if (credits.TryGetProperty("has_credits", out var hasCreditsEl) &&
                 (hasCreditsEl.ValueKind == JsonValueKind.True || hasCreditsEl.ValueKind == JsonValueKind.False))
@@ -663,7 +805,11 @@ public sealed class JsonlEventParser : IJsonlEventParser
                 unlimited = unlimitedEl.GetBoolean();
             }
 
-            string? balance = credits.TryGetProperty("balance", out var balanceEl) ? balanceEl.GetString() : null;
+            string? balance = null;
+            if (credits.TryGetProperty("balance", out var balanceEl) && balanceEl.ValueKind == JsonValueKind.String)
+            {
+                balance = balanceEl.GetString();
+            }
 
             return new RateLimitCredits(hasCredits, unlimited, balance);
         }
@@ -680,46 +826,320 @@ public sealed class JsonlEventParser : IJsonlEventParser
         return new RateLimits(primary, secondary, credits);
     }
 
-    private ResponseItemPayload NormalizeResponseItemPayload(string payloadType, JsonElement payload)
+    private CompactedEvent? ParseCompactedEvent(
+        JsonElement root,
+        DateTimeOffset timestamp,
+        string type,
+        JsonElement rawPayload)
     {
-        IReadOnlyList<string>? summaries = null;
-        string? messageRole = null;
-        IReadOnlyList<string>? messageTexts = null;
-        FunctionCallInfo? functionCall = null;
-        string? ghostCommit = null;
+        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogWarning("compacted event missing 'payload' object");
+            return null;
+        }
 
+        var message = payload.TryGetProperty("message", out var messageEl) && messageEl.ValueKind == JsonValueKind.String
+            ? messageEl.GetString() ?? string.Empty
+            : string.Empty;
+
+        var replacementHistory = new List<ResponseItemPayload>();
+        if (payload.TryGetProperty("replacement_history", out var historyEl) && historyEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in historyEl.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var itemType = item.TryGetProperty("type", out var itemTypeEl) ? itemTypeEl.GetString() : null;
+                if (string.IsNullOrWhiteSpace(itemType))
+                {
+                    replacementHistory.Add(new UnknownResponseItemPayload { PayloadType = "unknown", Raw = item.Clone() });
+                    continue;
+                }
+
+                replacementHistory.Add(ParseResponseItemPayload(itemType, item));
+            }
+        }
+
+        return new CompactedEvent
+        {
+            Timestamp = timestamp,
+            Type = type,
+            RawPayload = rawPayload,
+            Message = message,
+            ReplacementHistory = replacementHistory
+        };
+    }
+
+    private BackgroundEvent? ParseBackgroundEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var msg = TryGetString(payload, "message") ?? TryGetString(payload, "text");
+        if (string.IsNullOrWhiteSpace(msg))
+            return null;
+
+        return new BackgroundEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, Message = msg };
+    }
+
+    private CompactionCheckpointWarningEvent? ParseCompactionCheckpointWarningEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var msg = TryGetString(payload, "message") ?? TryGetString(payload, "text");
+        if (string.IsNullOrWhiteSpace(msg))
+            return null;
+
+        return new CompactionCheckpointWarningEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, Message = msg };
+    }
+
+    private ErrorEvent? ParseErrorEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var msg = TryGetString(payload, "message") ?? TryGetString(payload, "text");
+        if (string.IsNullOrWhiteSpace(msg))
+            return null;
+
+        return new ErrorEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, Message = msg };
+    }
+
+    private TurnAbortedEvent? ParseTurnAbortedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var reason = TryGetString(payload, "reason");
+        if (string.IsNullOrWhiteSpace(reason))
+            return null;
+
+        return new TurnAbortedEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, Reason = reason };
+    }
+
+    private TurnDiffEvent? ParseTurnDiffEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var diff = TryGetString(payload, "unified_diff");
+        if (string.IsNullOrWhiteSpace(diff))
+            return null;
+
+        return new TurnDiffEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, UnifiedDiff = diff };
+    }
+
+    private EnteredReviewModeEvent? ParseEnteredReviewModeEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var prompt = TryGetString(payload, "prompt");
+        var hint = TryGetString(payload, "user_facing_hint");
+
+        ReviewTarget? target = null;
+        if (payload.TryGetProperty("target", out var targetEl) && targetEl.ValueKind == JsonValueKind.Object)
+        {
+            var targetType = TryGetString(targetEl, "type") ?? "unknown";
+            target = new ReviewTarget(
+                Type: targetType,
+                Branch: TryGetString(targetEl, "branch"),
+                Sha: TryGetString(targetEl, "sha"),
+                Title: TryGetString(targetEl, "title"),
+                Instructions: TryGetString(targetEl, "instructions"));
+        }
+
+        return new EnteredReviewModeEvent
+        {
+            Timestamp = timestamp,
+            Type = type,
+            RawPayload = rawPayload,
+            Prompt = prompt,
+            UserFacingHint = hint,
+            Target = target
+        };
+    }
+
+    private PlanUpdateEvent? ParsePlanUpdateEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var name = TryGetString(payload, "name");
+        var steps = new List<PlanStep>();
+
+        if (payload.TryGetProperty("plan", out var planEl) && planEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var p in planEl.EnumerateArray())
+            {
+                if (p.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var step = TryGetString(p, "step") ?? string.Empty;
+                var status = TryGetString(p, "status") ?? string.Empty;
+                steps.Add(new PlanStep(step, status));
+            }
+        }
+
+        return new PlanUpdateEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, Name = name, Plan = steps };
+    }
+
+    private TaskStartedEvent ParseTaskStartedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        int? ctx = null;
+        if (payload.TryGetProperty("model_context_window", out var ctxEl) && ctxEl.ValueKind == JsonValueKind.Number)
+            ctx = ctxEl.GetInt32();
+
+        return new TaskStartedEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, ModelContextWindow = ctx };
+    }
+
+    private TaskCompleteEvent ParseTaskCompleteEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var last = TryGetString(payload, "last_agent_message");
+        return new TaskCompleteEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, LastAgentMessage = last };
+    }
+
+    private PatchApplyBeginEvent? ParsePatchApplyBeginEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var callId = TryGetString(payload, "call_id");
+        if (string.IsNullOrWhiteSpace(callId))
+            return null;
+
+        bool? autoApproved = null;
+        if (payload.TryGetProperty("auto_approved", out var autoEl) &&
+            (autoEl.ValueKind == JsonValueKind.True || autoEl.ValueKind == JsonValueKind.False))
+        {
+            autoApproved = autoEl.GetBoolean();
+        }
+
+        var changes = new Dictionary<string, PatchApplyFileChange>(StringComparer.OrdinalIgnoreCase);
+        if (payload.TryGetProperty("changes", out var changesEl) && changesEl.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in changesEl.EnumerateObject())
+            {
+                if (prop.Value.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var change = ParsePatchApplyFileChange(prop.Value);
+                if (change != null)
+                {
+                    changes[prop.Name] = change;
+                }
+            }
+        }
+
+        return new PatchApplyBeginEvent
+        {
+            Timestamp = timestamp,
+            Type = type,
+            RawPayload = rawPayload,
+            CallId = callId,
+            AutoApproved = autoApproved,
+            Changes = changes
+        };
+    }
+
+    private static PatchApplyFileChange? ParsePatchApplyFileChange(JsonElement el)
+    {
+        if (el.ValueKind != JsonValueKind.Object)
+            return null;
+
+        PatchApplyAddOperation? add = null;
+        if (el.TryGetProperty("add", out var addEl) && addEl.ValueKind == JsonValueKind.Object)
+        {
+            var content = TryGetString(addEl, "content") ?? string.Empty;
+            add = new PatchApplyAddOperation(content);
+        }
+
+        PatchApplyUpdateOperation? update = null;
+        if (el.TryGetProperty("update", out var updateEl) && updateEl.ValueKind == JsonValueKind.Object)
+        {
+            update = new PatchApplyUpdateOperation(
+                UnifiedDiff: TryGetString(updateEl, "unified_diff"),
+                MovePath: TryGetString(updateEl, "move_path"),
+                OriginalContent: TryGetString(updateEl, "original_content"),
+                NewContent: TryGetString(updateEl, "new_content"));
+        }
+
+        PatchApplyDeleteOperation? delete = null;
+        if (el.TryGetProperty("delete", out var delEl) && delEl.ValueKind == JsonValueKind.Object)
+        {
+            delete = new PatchApplyDeleteOperation();
+        }
+
+        if (add == null && update == null && delete == null)
+            return null;
+
+        return new PatchApplyFileChange { Add = add, Update = update, Delete = delete };
+    }
+
+    private PatchApplyEndEvent? ParsePatchApplyEndEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
+    {
+        var payload = GetEventBody(root);
+        var callId = TryGetString(payload, "call_id");
+        if (string.IsNullOrWhiteSpace(callId))
+            return null;
+
+        bool? success = null;
+        if (payload.TryGetProperty("success", out var successEl) &&
+            (successEl.ValueKind == JsonValueKind.True || successEl.ValueKind == JsonValueKind.False))
+        {
+            success = successEl.GetBoolean();
+        }
+
+        return new PatchApplyEndEvent
+        {
+            Timestamp = timestamp,
+            Type = type,
+            RawPayload = rawPayload,
+            CallId = callId,
+            Stdout = TryGetString(payload, "stdout"),
+            Stderr = TryGetString(payload, "stderr"),
+            Success = success
+        };
+    }
+
+    private static TokenUsage ParseTokenUsage(JsonElement el)
+    {
+        return new TokenUsage(
+            InputTokens: TryGetInt(el, "input_tokens"),
+            CachedInputTokens: TryGetInt(el, "cached_input_tokens"),
+            OutputTokens: TryGetInt(el, "output_tokens"),
+            ReasoningOutputTokens: TryGetInt(el, "reasoning_output_tokens"),
+            TotalTokens: TryGetInt(el, "total_tokens"));
+    }
+
+    private ResponseItemPayload ParseResponseItemPayload(string payloadType, JsonElement payload)
+    {
         if (string.Equals(payloadType, "reasoning", StringComparison.OrdinalIgnoreCase))
         {
+            var summaries = Array.Empty<string>();
             if (payload.TryGetProperty("summary", out var summaryArray) && summaryArray.ValueKind == JsonValueKind.Array)
             {
                 summaries = summaryArray
                     .EnumerateArray()
-                    .Select(s => s.TryGetProperty("text", out var t) ? t.GetString() : null)
+                    .Select(s => s.ValueKind == JsonValueKind.Object ? TryGetString(s, "text") : null)
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .Cast<string>()
                     .ToArray();
             }
-        }
-        else if (string.Equals(payloadType, "message", StringComparison.OrdinalIgnoreCase))
-        {
-            messageRole = payload.TryGetProperty("role", out var roleEl) ? roleEl.GetString() : null;
-            if (payload.TryGetProperty("content", out var contentArray) && contentArray.ValueKind == JsonValueKind.Array)
+
+            var encrypted = TryGetString(payload, "encrypted_content");
+
+            return new ReasoningResponseItemPayload
             {
-                messageTexts = contentArray
-                    .EnumerateArray()
-                    .Select(c =>
-                        c.ValueKind == JsonValueKind.Object &&
-                        c.TryGetProperty("text", out var t)
-                            ? t.GetString()
-                            : null)
-                    .Where(s => !string.IsNullOrWhiteSpace(s))
-                    .Cast<string>()
-                    .ToArray();
-            }
+                PayloadType = payloadType,
+                SummaryTexts = summaries,
+                EncryptedContent = encrypted
+            };
         }
-        else if (string.Equals(payloadType, "function_call", StringComparison.OrdinalIgnoreCase))
+
+        if (string.Equals(payloadType, "message", StringComparison.OrdinalIgnoreCase))
         {
-            var name = payload.TryGetProperty("name", out var nameEl) ? nameEl.GetString() : null;
+            var role = TryGetString(payload, "role");
+            var parts = ParseMessageContent(payload);
+            return new MessageResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Role = role,
+                Content = parts
+            };
+        }
+
+        if (string.Equals(payloadType, "function_call", StringComparison.OrdinalIgnoreCase))
+        {
+            var name = TryGetString(payload, "name");
             string? argsJson = null;
             if (payload.TryGetProperty("arguments", out var argsEl))
             {
@@ -727,28 +1147,213 @@ public sealed class JsonlEventParser : IJsonlEventParser
                     ? argsEl.GetString()
                     : argsEl.GetRawText();
             }
-            var callId = payload.TryGetProperty("call_id", out var idEl) ? idEl.GetString() : null;
-            functionCall = new FunctionCallInfo(name, argsJson, callId);
-        }
-        else if (string.Equals(payloadType, "ghost_snapshot", StringComparison.OrdinalIgnoreCase))
-        {
-            if (payload.TryGetProperty("ghost_commit", out var commitEl) &&
-                commitEl.ValueKind == JsonValueKind.Object &&
-                commitEl.TryGetProperty("id", out var idEl))
+            var callId = TryGetString(payload, "call_id");
+
+            return new FunctionCallResponseItemPayload
             {
-                ghostCommit = idEl.GetString();
-            }
+                PayloadType = payloadType,
+                Name = name,
+                ArgumentsJson = argsJson,
+                CallId = callId
+            };
         }
 
-        return new ResponseItemPayload
+        if (string.Equals(payloadType, "function_call_output", StringComparison.OrdinalIgnoreCase))
+        {
+            var callId = TryGetString(payload, "call_id");
+            string? output = null;
+            if (payload.TryGetProperty("output", out var outputEl))
+            {
+                output = outputEl.ValueKind == JsonValueKind.String ? outputEl.GetString() : outputEl.GetRawText();
+            }
+
+            return new FunctionCallOutputResponseItemPayload
+            {
+                PayloadType = payloadType,
+                CallId = callId,
+                Output = output
+            };
+        }
+
+        if (string.Equals(payloadType, "custom_tool_call", StringComparison.OrdinalIgnoreCase))
+        {
+            return new CustomToolCallResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Status = TryGetString(payload, "status"),
+                CallId = TryGetString(payload, "call_id"),
+                Name = TryGetString(payload, "name"),
+                Input = TryGetString(payload, "input")
+            };
+        }
+
+        if (string.Equals(payloadType, "custom_tool_call_output", StringComparison.OrdinalIgnoreCase))
+        {
+            return new CustomToolCallOutputResponseItemPayload
+            {
+                PayloadType = payloadType,
+                CallId = TryGetString(payload, "call_id"),
+                Output = TryGetString(payload, "output")
+            };
+        }
+
+        if (string.Equals(payloadType, "web_search_call", StringComparison.OrdinalIgnoreCase))
+        {
+            WebSearchAction? action = null;
+            if (payload.TryGetProperty("action", out var actionEl) && actionEl.ValueKind == JsonValueKind.Object)
+            {
+                IReadOnlyList<string>? queries = null;
+                if (actionEl.TryGetProperty("queries", out var queriesEl) && queriesEl.ValueKind == JsonValueKind.Array)
+                {
+                    queries = queriesEl.EnumerateArray()
+                        .Select(q => q.ValueKind == JsonValueKind.String ? q.GetString() : null)
+                        .Where(q => !string.IsNullOrWhiteSpace(q))
+                        .Cast<string>()
+                        .ToArray();
+                }
+
+                action = new WebSearchAction(
+                    Type: TryGetString(actionEl, "type"),
+                    Query: TryGetString(actionEl, "query"),
+                    Queries: queries);
+            }
+
+            return new WebSearchCallResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Status = TryGetString(payload, "status"),
+                Action = action
+            };
+        }
+
+        if (string.Equals(payloadType, "ghost_snapshot", StringComparison.OrdinalIgnoreCase))
+        {
+            GhostCommit? commit = null;
+            if (payload.TryGetProperty("ghost_commit", out var commitEl) && commitEl.ValueKind == JsonValueKind.Object)
+            {
+                IReadOnlyList<string>? files = null;
+                if (commitEl.TryGetProperty("preexisting_untracked_files", out var filesEl) && filesEl.ValueKind == JsonValueKind.Array)
+                {
+                    files = filesEl.EnumerateArray()
+                        .Select(f => f.ValueKind == JsonValueKind.String ? f.GetString() : null)
+                        .Where(f => !string.IsNullOrWhiteSpace(f))
+                        .Cast<string>()
+                        .ToArray();
+                }
+
+                IReadOnlyList<string>? dirs = null;
+                if (commitEl.TryGetProperty("preexisting_untracked_dirs", out var dirsEl) && dirsEl.ValueKind == JsonValueKind.Array)
+                {
+                    dirs = dirsEl.EnumerateArray()
+                        .Select(d => d.ValueKind == JsonValueKind.String ? d.GetString() : null)
+                        .Where(d => !string.IsNullOrWhiteSpace(d))
+                        .Cast<string>()
+                        .ToArray();
+                }
+
+                commit = new GhostCommit(
+                    Id: TryGetString(commitEl, "id"),
+                    Parent: TryGetString(commitEl, "parent"),
+                    PreexistingUntrackedFiles: files,
+                    PreexistingUntrackedDirs: dirs);
+            }
+
+            return new GhostSnapshotResponseItemPayload
+            {
+                PayloadType = payloadType,
+                GhostCommit = commit
+            };
+        }
+
+        if (string.Equals(payloadType, "compaction", StringComparison.OrdinalIgnoreCase))
+        {
+            return new CompactionResponseItemPayload
+            {
+                PayloadType = payloadType,
+                EncryptedContent = TryGetString(payload, "encrypted_content")
+            };
+        }
+
+        return new UnknownResponseItemPayload
         {
             PayloadType = payloadType,
-            Raw = payload.Clone(),
-            SummaryTexts = summaries,
-            MessageRole = messageRole,
-            MessageTextParts = messageTexts,
-            FunctionCall = functionCall,
-            GhostCommitId = ghostCommit
+            Raw = payload.Clone()
         };
+    }
+
+    private static IReadOnlyList<ResponseMessageContentPart> ParseMessageContent(JsonElement payload)
+    {
+        if (!payload.TryGetProperty("content", out var contentArray) || contentArray.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<ResponseMessageContentPart>();
+        }
+
+        var parts = new List<ResponseMessageContentPart>();
+        foreach (var c in contentArray.EnumerateArray())
+        {
+            if (c.ValueKind != JsonValueKind.Object)
+                continue;
+
+            var contentType = TryGetString(c, "type");
+            if (string.IsNullOrWhiteSpace(contentType))
+                continue;
+
+            if (string.Equals(contentType, "input_text", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add(new ResponseMessageInputTextPart
+                {
+                    ContentType = contentType,
+                    Text = TryGetString(c, "text") ?? string.Empty
+                });
+                continue;
+            }
+
+            if (string.Equals(contentType, "output_text", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add(new ResponseMessageOutputTextPart
+                {
+                    ContentType = contentType,
+                    Text = TryGetString(c, "text") ?? string.Empty
+                });
+                continue;
+            }
+
+            if (string.Equals(contentType, "input_image", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add(new ResponseMessageInputImagePart
+                {
+                    ContentType = contentType,
+                    ImageUrl = TryGetString(c, "image_url") ?? string.Empty
+                });
+                continue;
+            }
+
+            parts.Add(new UnknownResponseMessageContentPart
+            {
+                ContentType = contentType,
+                Raw = c.Clone()
+            });
+        }
+
+        return parts;
+    }
+
+    private static JsonElement GetEventBody(JsonElement root)
+    {
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("payload", out var payload) &&
+            payload.ValueKind == JsonValueKind.Object)
+        {
+            root = payload;
+        }
+
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("msg", out var msg) &&
+            msg.ValueKind == JsonValueKind.Object)
+        {
+            root = msg;
+        }
+
+        return root;
     }
 }

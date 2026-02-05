@@ -43,17 +43,15 @@ public static class CodexEventTextExtensions
 
     private static IEnumerable<string> EnumerateResponseItemTextCandidates(ResponseItemEvent item)
     {
-        // Message payloads may be normalized by the SDK.
-        if (string.Equals(item.PayloadType, "message", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(item.Payload.MessageRole, "assistant", StringComparison.OrdinalIgnoreCase) &&
-            item.Payload.MessageTextParts is { Count: > 0 } parts)
+        if (item.Payload is MessageResponseItemPayload msg &&
+            string.Equals(msg.Role, "assistant", StringComparison.OrdinalIgnoreCase) &&
+            msg.TextParts is { Count: > 0 } parts)
         {
             yield return string.Join("\n", parts);
         }
 
-        // Reasoning payloads sometimes include summary text segments.
-        if (string.Equals(item.PayloadType, "reasoning", StringComparison.OrdinalIgnoreCase) &&
-            item.Payload.SummaryTexts is { Count: > 0 } summaries)
+        if (item.Payload is ReasoningResponseItemPayload reasoning &&
+            reasoning.SummaryTexts is { Count: > 0 } summaries)
         {
             foreach (var s in summaries)
             {

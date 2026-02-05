@@ -256,26 +256,48 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
 
     private static void RenderResponseItem(string timestamp, ResponseItemEvent evt)
     {
-        var payload = evt.Payload;
-        if (payload.SummaryTexts is { Count: > 0 })
+        switch (evt.Payload)
         {
-            Console.WriteLine($"[{timestamp}] resp   > {string.Join(" | ", payload.SummaryTexts)}");
-            return;
-        }
+            case ReasoningResponseItemPayload reasoning when reasoning.SummaryTexts.Count > 0:
+                Console.WriteLine($"[{timestamp}] resp   > {string.Join(" | ", reasoning.SummaryTexts)}");
+                return;
 
-        if (payload.MessageTextParts is { Count: > 0 })
-        {
-            Console.WriteLine($"[{timestamp}] resp-msg ({payload.MessageRole ?? "n/a"}) > {string.Join(" ", payload.MessageTextParts)}");
-            return;
-        }
+            case MessageResponseItemPayload msg when msg.TextParts.Count > 0:
+                Console.WriteLine($"[{timestamp}] resp-msg ({msg.Role ?? "n/a"}) > {string.Join(" ", msg.TextParts)}");
+                return;
 
-        if (payload.FunctionCall is { } fn)
-        {
-            Console.WriteLine($"[{timestamp}] resp-fn  > {fn.Name ?? "?"}({fn.ArgumentsJson ?? ""}) callId={fn.CallId ?? "n/a"}");
-            return;
-        }
+            case FunctionCallResponseItemPayload fn:
+                Console.WriteLine($"[{timestamp}] resp-fn  > {fn.Name ?? "?"}({fn.ArgumentsJson ?? ""}) callId={fn.CallId ?? "n/a"}");
+                return;
 
-        Console.WriteLine($"[{timestamp}] resp[{payload.PayloadType}] > {payload.Raw.GetRawText()}");
+            case FunctionCallOutputResponseItemPayload fnOut:
+                Console.WriteLine($"[{timestamp}] resp-fn-out > callId={fnOut.CallId ?? "n/a"}");
+                return;
+
+            case CustomToolCallResponseItemPayload tool:
+                Console.WriteLine($"[{timestamp}] resp-tool > {tool.Name ?? "?"} callId={tool.CallId ?? "n/a"} status={tool.Status ?? "n/a"}");
+                return;
+
+            case CustomToolCallOutputResponseItemPayload toolOut:
+                Console.WriteLine($"[{timestamp}] resp-tool-out > callId={toolOut.CallId ?? "n/a"}");
+                return;
+
+            case WebSearchCallResponseItemPayload web:
+                Console.WriteLine($"[{timestamp}] resp-web > {web.Action?.Type ?? "search"} q={web.Action?.Query ?? "n/a"}");
+                return;
+
+            case GhostSnapshotResponseItemPayload ghost when ghost.GhostCommit?.Id is { } id:
+                Console.WriteLine($"[{timestamp}] resp-ghost > {id}");
+                return;
+
+            case UnknownResponseItemPayload unk:
+                Console.WriteLine($"[{timestamp}] resp[{unk.PayloadType}] > {unk.Raw.GetRawText()}");
+                return;
+
+            default:
+                Console.WriteLine($"[{timestamp}] resp[{evt.PayloadType}]");
+                return;
+        }
     }
 
     private static async Task PrintDebugInfo(string sessionsRoot)

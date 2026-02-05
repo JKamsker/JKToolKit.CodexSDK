@@ -37,4 +37,26 @@ public record TokenCountEvent : CodexEvent
     /// Gets the rate limit usage information reported with this event, when available.
     /// </summary>
     public RateLimits? RateLimits { get; init; }
+
+    /// <summary>
+    /// Gets token usage for the last request/turn when provided by Codex.
+    /// </summary>
+    public TokenUsage? LastTokenUsage { get; init; }
+
+    /// <summary>
+    /// Gets token usage accumulated across the session when provided by Codex.
+    /// </summary>
+    public TokenUsage? TotalTokenUsage { get; init; }
+
+    /// <summary>
+    /// Gets the model context window size when provided by Codex.
+    /// </summary>
+    public int? ModelContextWindow { get; init; }
 }
+
+public sealed record TokenUsage(
+    int? InputTokens,
+    int? CachedInputTokens,
+    int? OutputTokens,
+    int? ReasoningOutputTokens,
+    int? TotalTokens);

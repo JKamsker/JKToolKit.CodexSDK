@@ -65,7 +65,7 @@ For a resumed session:
 - `JKToolKit.CodexSDK.Exec.CodexClient`: main entry point
 - `JKToolKit.CodexSDK.Exec.CodexSessionHandle`: a live or historical session handle (`IAsyncDisposable`)
 - `JKToolKit.CodexSDK.Exec.EventStreamOptions`: controls event filtering/stream options
-- `JKToolKit.CodexSDK.Models.*`: strongly-typed event models (`SessionMetaEvent`, `ResponseItemEvent`, …)
+- `JKToolKit.CodexSDK.Models.*`: strongly-typed **Exec JSONL** event models (`SessionMetaEvent`, `ResponseItemEvent`, …)
 
 ## Getting Started
 
