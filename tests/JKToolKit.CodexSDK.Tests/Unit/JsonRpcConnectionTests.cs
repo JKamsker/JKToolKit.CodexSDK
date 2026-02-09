@@ -398,6 +398,34 @@ public sealed class JsonRpcConnectionTests
         await serverTask;
     }
 
+    [Fact]
+    public async Task RemoteClose_FaultsConnection_AndFailsPendingRequests()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var serverTask = Task.Run(async () =>
+        {
+            var line = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            line.Should().NotBeNull();
+
+            harness.CloseServer();
+        });
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var act = async () => await rpc.SendRequestAsync("ping", @params: null, cts.Token);
+        await act.Should().ThrowAsync<JsonRpcConnectionClosedException>();
+
+        await serverTask;
+    }
+
     private sealed class PipeHarness : IAsyncDisposable
     {
         private readonly NamedPipeServerStream _server;
@@ -418,6 +446,13 @@ public sealed class JsonRpcConnectionTests
 
             ServerReader = new StreamReader(_server);
             ServerWriter = new StreamWriter(_server) { AutoFlush = true };
+        }
+
+        public void CloseServer()
+        {
+            try { ServerReader.Dispose(); } catch { }
+            try { ServerWriter.Dispose(); } catch { }
+            try { _server.Dispose(); } catch { }
         }
 
         public static async Task<PipeHarness> CreateAsync()

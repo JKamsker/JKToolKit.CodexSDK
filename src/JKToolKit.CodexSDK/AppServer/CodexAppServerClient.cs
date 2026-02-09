@@ -30,6 +30,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private readonly Channel<AppServerNotification> _globalNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
     private int _disposed;
+    private int _disconnectSignaled;
+    private readonly Task _processExitWatcher;
 
     internal CodexAppServerClient(
         CodexAppServerClientOptions options,
@@ -51,6 +53,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         _rpc.OnNotification += OnRpcNotificationAsync;
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
+
+        _processExitWatcher = Task.Run(WatchProcessExitAsync);
     }
 
     /// <summary>
@@ -380,7 +384,14 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         _globalNotifications.Writer.TryComplete();
 
-        foreach (var handle in _turnsById.Values)
+        CodexTurnHandle[] handles;
+        lock (_turnsById)
+        {
+            handles = _turnsById.Values.ToArray();
+            _turnsById.Clear();
+        }
+
+        foreach (var handle in handles)
         {
             handle.EventsChannel.Writer.TryComplete();
             handle.CompletionTcs.TrySetCanceled();
@@ -388,6 +399,96 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         await _rpc.DisposeAsync();
         await _process.DisposeAsync();
+    }
+
+    private async Task WatchProcessExitAsync()
+    {
+        try
+        {
+            await _process.Completion.ConfigureAwait(false);
+        }
+        catch
+        {
+            // ignore
+        }
+
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            return;
+        }
+
+        SignalDisconnect(BuildDisconnectException());
+    }
+
+    private Exception BuildDisconnectException()
+    {
+        int? pid = null;
+        int? exitCode = null;
+        try
+        {
+            pid = _process.Process.Id;
+        }
+        catch
+        {
+            // ignore
+        }
+
+        try
+        {
+            exitCode = _process.Process.HasExited ? _process.Process.ExitCode : null;
+        }
+        catch
+        {
+            // ignore
+        }
+
+        var stderrTail = Array.Empty<string>();
+        try
+        {
+            stderrTail = _process.StderrTail.ToArray();
+        }
+        catch
+        {
+            // ignore
+        }
+
+        var msg = exitCode is null
+            ? "Codex app-server subprocess disconnected."
+            : $"Codex app-server subprocess exited with code {exitCode}.";
+
+        if (stderrTail.Length > 0)
+        {
+            msg += $" (stderr tail: {string.Join(" | ", stderrTail.TakeLast(5))})";
+        }
+
+        return new CodexAppServerDisconnectedException(
+            msg,
+            processId: pid,
+            exitCode: exitCode,
+            stderrTail: stderrTail);
+    }
+
+    private void SignalDisconnect(Exception ex)
+    {
+        if (Interlocked.Exchange(ref _disconnectSignaled, 1) != 0)
+        {
+            return;
+        }
+
+        _globalNotifications.Writer.TryComplete(ex);
+
+        CodexTurnHandle[] handles;
+        lock (_turnsById)
+        {
+            handles = _turnsById.Values.ToArray();
+            _turnsById.Clear();
+        }
+
+        foreach (var handle in handles)
+        {
+            handle.EventsChannel.Writer.TryComplete(ex);
+            handle.CompletionTcs.TrySetException(ex);
+        }
     }
 
     private static string? ExtractId(JsonElement element, params string[] propertyNames)

@@ -16,6 +16,7 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Task _readLoop;
     private Exception? _fault;
+    private int _faulted;
 
     private long _nextId;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonElement>> _pending = new();
@@ -122,6 +123,10 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
                 var line = await _reader.ReadLineAsync(_disposeCts.Token);
                 if (line is null)
                 {
+                    if (!_disposeCts.IsCancellationRequested)
+                    {
+                        Fault(new JsonRpcConnectionClosedException("JSON-RPC stream closed by remote endpoint."));
+                    }
                     break;
                 }
 
@@ -202,16 +207,30 @@ internal sealed class JsonRpcConnection : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _fault = ex;
+            Fault(ex);
             _logger.LogWarning(ex, "JSON-RPC read loop terminated with error.");
-            foreach (var (_, tcs) in _pending)
-            {
-                tcs.TrySetException(ex);
-            }
         }
         finally
         {
             _notifications.Writer.TryComplete(_fault);
+        }
+    }
+
+    private void Fault(Exception ex)
+    {
+        if (Interlocked.Exchange(ref _faulted, 1) != 0)
+        {
+            return;
+        }
+
+        _fault = ex;
+
+        foreach (var (key, _) in _pending)
+        {
+            if (_pending.TryRemove(key, out var tcs))
+            {
+                tcs.TrySetException(ex);
+            }
         }
     }
 

@@ -9,6 +9,10 @@ internal sealed class StdioProcess : IAsyncDisposable
     private readonly TimeSpan _shutdownTimeout;
     private readonly CancellationTokenSource _shutdownCts = new();
     private readonly Task _stderrDrainTask;
+    private readonly object _stderrTailSync = new();
+    private readonly Queue<string> _stderrTail = new();
+    private const int StderrTailCapacity = 200;
+    private const int MaxStderrLineLength = 4096;
     private int _disposed;
 
     public Process Process { get; }
@@ -17,6 +21,17 @@ internal sealed class StdioProcess : IAsyncDisposable
     public StreamReader Stderr { get; }
 
     public Task Completion { get; }
+
+    internal IReadOnlyList<string> StderrTail
+    {
+        get
+        {
+            lock (_stderrTailSync)
+            {
+                return _stderrTail.ToArray();
+            }
+        }
+    }
 
     private StdioProcess(Process process, TimeSpan shutdownTimeout, ILogger logger)
     {
@@ -160,6 +175,20 @@ internal sealed class StdioProcess : IAsyncDisposable
                 var line = await Stderr.ReadLineAsync(ct);
                 if (line is null) break;
                 if (line.Length == 0) continue;
+
+                lock (_stderrTailSync)
+                {
+                    if (line.Length > MaxStderrLineLength)
+                    {
+                        line = line[..MaxStderrLineLength] + "…";
+                    }
+
+                    _stderrTail.Enqueue(line);
+                    while (_stderrTail.Count > StderrTailCapacity)
+                    {
+                        _stderrTail.Dequeue();
+                    }
+                }
 
                 _logger.LogDebug("codex stderr: {Line}", line);
             }
