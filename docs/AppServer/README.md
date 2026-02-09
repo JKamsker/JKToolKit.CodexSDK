@@ -147,6 +147,35 @@ services.AddCodexAppServerClient(o =>
 
 Then resolve `ICodexAppServerClientFactory` and call `StartAsync()`.
 
+## Resiliency (auto-restart)
+
+If you want the SDK to automatically restart `codex app-server` when the subprocess dies, register the resilient factory:
+
+```csharp
+using JKToolKit.CodexSDK.AppServer.Resiliency;
+
+services.AddCodexResilientAppServerClient(o =>
+{
+    // Safe defaults:
+    // - AutoRestart = true
+    // - RetryPolicy = NeverRetry (user decides what to retry)
+});
+```
+
+Then resolve `ICodexResilientAppServerClientFactory` and call `StartAsync()`:
+
+```csharp
+var resilientFactory = sp.GetRequiredService<ICodexResilientAppServerClientFactory>();
+await using var codex = await resilientFactory.StartAsync();
+
+var thread = await codex.StartThreadAsync(new ThreadStartOptions { /* ... */ });
+```
+
+Notes:
+
+- The resilient client may emit a local marker notification `client/restarted` (`ClientRestartedNotification`) after restarts.
+- In-flight turns cannot be safely resumed mid-flight; failures surface as `CodexAppServerDisconnectedException` (includes exit code + best-effort stderr tail). Your retry policy can decide whether to start a new turn, re-resume a thread, etc.
+
 ## Demos
 
 - `src/JKToolKit.CodexSDK.Demo` includes commands that demonstrate:
