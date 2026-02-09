@@ -172,31 +172,31 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
     /// Sends an arbitrary JSON-RPC request to the app server.
     /// </summary>
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        ExecuteWithPolicyAsync(CodexAppServerOperationKind.Call, c => c.CallAsync(method, @params, ct), ct);
+        ExecuteWithPolicyAsync(CodexAppServerOperationKind.Call, (c, token) => c.CallAsync(method, @params, token), ct);
 
     /// <summary>
     /// Starts a new thread.
     /// </summary>
     public Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct = default) =>
-        ExecuteWithPolicyAsync(CodexAppServerOperationKind.StartThread, c => c.StartThreadAsync(options, ct), ct);
+        ExecuteWithPolicyAsync(CodexAppServerOperationKind.StartThread, (c, token) => c.StartThreadAsync(options, token), ct);
 
     /// <summary>
     /// Resumes an existing thread by ID.
     /// </summary>
     public Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct = default) =>
-        ExecuteWithPolicyAsync(CodexAppServerOperationKind.ResumeThread, c => c.ResumeThreadAsync(threadId, ct), ct);
+        ExecuteWithPolicyAsync(CodexAppServerOperationKind.ResumeThread, (c, token) => c.ResumeThreadAsync(threadId, token), ct);
 
     /// <summary>
     /// Resumes an existing thread using the provided options.
     /// </summary>
     public Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default) =>
-        ExecuteWithPolicyAsync(CodexAppServerOperationKind.ResumeThread, c => c.ResumeThreadAsync(options, ct), ct);
+        ExecuteWithPolicyAsync(CodexAppServerOperationKind.ResumeThread, (c, token) => c.ResumeThreadAsync(options, token), ct);
 
     /// <summary>
     /// Starts a new turn within the specified thread.
     /// </summary>
     public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default) =>
-        ExecuteWithPolicyAsync(CodexAppServerOperationKind.StartTurn, c => c.StartTurnAsync(threadId, options, ct), ct);
+        ExecuteWithPolicyAsync(CodexAppServerOperationKind.StartTurn, (c, token) => c.StartTurnAsync(threadId, options, token), ct);
 
     /// <summary>
     /// Forces a restart of the underlying app-server subprocess.
@@ -236,7 +236,7 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
 
     private async Task<T> ExecuteWithPolicyAsync<T>(
         CodexAppServerOperationKind kind,
-        Func<ICodexAppServerClientAdapter, Task<T>> op,
+        Func<ICodexAppServerClientAdapter, CancellationToken, Task<T>> op,
         CancellationToken ct)
     {
         ThrowIfFaultedOrDisposed();
@@ -255,7 +255,7 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
 
             try
             {
-                return await op(inner).ConfigureAwait(false);
+                return await op(inner, linkedToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (IsDisconnect(ex))
             {
@@ -368,7 +368,7 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
             Exception? lastStartFailure = null;
             while (true)
             {
-                // enforce restart window (sliding)
+                // enforce restart window (sliding) over SUCCESSFUL restarts only
                 var now = DateTimeOffset.UtcNow;
                 while (_restartTimes.Count > 0 && (now - _restartTimes.Peek()) > policy.Window)
                 {
@@ -384,13 +384,15 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
                     throw ex;
                 }
 
-                _restartTimes.Enqueue(now);
-                var windowAttempt = _restartTimes.Count;
-
+                var windowAttempt = _restartTimes.Count + 1;
                 var delay = ComputeBackoff(policy, windowAttempt);
                 if (delay > TimeSpan.Zero)
                 {
-                    _logger.LogDebug("Delaying app-server restart by {Delay} (attempt {Attempt} in window).", delay, windowAttempt);
+                    _logger.LogDebug(
+                        "Delaying app-server restart by {Delay} (planned successful restart #{Attempt} in current window; max {Max}).",
+                        delay,
+                        windowAttempt,
+                        policy.MaxRestarts);
                     await Task.Delay(delay, ct).ConfigureAwait(false);
                 }
 
@@ -398,6 +400,15 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
                 {
                     var created = await _startInner(ct).ConfigureAwait(false);
                     SetInner(created);
+
+                    // Only count successful restarts toward MaxRestarts.
+                    var successNow = DateTimeOffset.UtcNow;
+                    while (_restartTimes.Count > 0 && (successNow - _restartTimes.Peek()) > policy.Window)
+                    {
+                        _restartTimes.Dequeue();
+                    }
+                    _restartTimes.Enqueue(successNow);
+
                     break;
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -407,7 +418,11 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
                 catch (Exception ex)
                 {
                     lastStartFailure = ex;
-                    _logger.LogWarning(ex, "Failed to restart codex app-server (attempt {Attempt} in window).", windowAttempt);
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to restart codex app-server (planned successful restart #{Attempt} in current window; max {Max}).",
+                        windowAttempt,
+                        policy.MaxRestarts);
                 }
             }
 
