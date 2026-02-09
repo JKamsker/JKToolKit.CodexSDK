@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications;
@@ -366,6 +367,7 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
             }
 
             Exception? lastStartFailure = null;
+            var consecutiveFailures = 0;
             while (true)
             {
                 // enforce restart window (sliding) over SUCCESSFUL restarts only
@@ -409,6 +411,7 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
                     }
                     _restartTimes.Enqueue(successNow);
 
+                    consecutiveFailures = 0;
                     break;
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -418,11 +421,21 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
                 catch (Exception ex)
                 {
                     lastStartFailure = ex;
+                    consecutiveFailures++;
                     _logger.LogWarning(
                         ex,
                         "Failed to restart codex app-server (planned successful restart #{Attempt} in current window; max {Max}).",
                         windowAttempt,
                         policy.MaxRestarts);
+
+                    if (consecutiveFailures >= policy.MaxRestarts)
+                    {
+                        var fail = new CodexAppServerUnavailableException(
+                            $"Failed to restart codex app-server after {consecutiveFailures} consecutive attempts.",
+                            innerException: lastStartFailure ?? trigger);
+                        Fault(fail);
+                        throw fail;
+                    }
                 }
             }
 
@@ -506,9 +519,11 @@ public sealed class ResilientCodexAppServerClient : IAsyncDisposable
             throw new ObjectDisposedException(nameof(ResilientCodexAppServerClient));
         }
 
-        if (_fault is not null)
+        var fault = _fault;
+        if (fault is not null)
         {
-            throw _fault;
+            ExceptionDispatchInfo.Capture(fault).Throw();
+            throw new InvalidOperationException("Unreachable.");
         }
     }
 
