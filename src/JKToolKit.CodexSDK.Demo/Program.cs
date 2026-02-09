@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.Demo.Commands.AppServerApproval;
+using JKToolKit.CodexSDK.Demo.Commands.AppServerResilientStream;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerStream;
 using JKToolKit.CodexSDK.Demo.Commands.Exec;
 using JKToolKit.CodexSDK.Demo.Commands.McpServer;
@@ -25,6 +26,9 @@ internal static class Program
 
             config.AddCommand<AppServerStreamCommand>("appserver-stream")
                 .WithDescription("Start `codex app-server` and stream turn output.");
+
+            config.AddCommand<AppServerResilientStreamCommand>("appserver-resilient-stream")
+                .WithDescription("Start `codex app-server` with auto-restart enabled and stream turn output.");
 
             config.AddCommand<AppServerApprovalCommand>("appserver-approval")
                 .WithDescription("Start `codex app-server` with a restrictive manual approval handler.");
