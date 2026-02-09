@@ -123,6 +123,11 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _rpc.SendRequestAsync(method, @params, ct);
 
     /// <summary>
+    /// A task that completes when the underlying Codex app-server subprocess exits.
+    /// </summary>
+    public Task ExitTask => _process.Completion;
+
+    /// <summary>
     /// Subscribes to the global app-server notification stream.
     /// </summary>
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
