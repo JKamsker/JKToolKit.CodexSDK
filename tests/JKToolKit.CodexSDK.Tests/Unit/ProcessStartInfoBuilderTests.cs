@@ -1,7 +1,8 @@
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Infrastructure;
-using JKToolKit.CodexSDK.Public;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
@@ -81,6 +82,49 @@ public class ProcessStartInfoBuilderTests
                 "resume",
                 "session-abc",
                 "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateProcessStartInfo_SetsCodexHomeEnvironmentVariable_WhenConfigured()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "prompt");
+            var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
+
+            startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateResumeStartInfo_SetsCodexHomeEnvironmentVariable_WhenConfigured()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "follow-up");
+            var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
+            var sessionId = SessionId.Parse("session-abc");
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateResumeStartInfo(sessionId, options, clientOptions);
+
+            startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
         }
         finally
         {
@@ -230,6 +274,27 @@ public class ProcessStartInfoBuilderTests
                 "--enable",
                 "experimental_feature",
                 "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateReviewStartInfo_SetsCodexHomeEnvironmentVariable_WhenConfigured()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexReviewOptions(workingDirectory);
+            var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
+
+            startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
         }
         finally
         {

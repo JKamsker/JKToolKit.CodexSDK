@@ -22,9 +22,3 @@ internal readonly record struct JsonRpcId(JsonElement Value)
     };
 }
 
-internal sealed record JsonRpcRequest(JsonRpcId Id, string Method, JsonElement? Params);
-internal sealed record JsonRpcResponse(JsonRpcId Id, JsonElement? Result, JsonRpcError? Error);
-internal sealed record JsonRpcNotification(string Method, JsonElement? Params);
-
-internal sealed record JsonRpcError(int Code, string Message, JsonElement? Data = null);
-

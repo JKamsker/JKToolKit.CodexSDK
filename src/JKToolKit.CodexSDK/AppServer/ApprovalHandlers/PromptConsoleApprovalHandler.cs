@@ -2,8 +2,12 @@ using System.Text.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.ApprovalHandlers;
 
+/// <summary>
+/// Approval handler that prompts on the console for each request.
+/// </summary>
 public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
 {
+    /// <inheritdoc />
     public ValueTask<JsonElement> HandleAsync(string method, JsonElement? @params, CancellationToken ct)
     {
         Console.Error.WriteLine($"Approval request: {method}");

@@ -1,4 +1,4 @@
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 using FluentAssertions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;

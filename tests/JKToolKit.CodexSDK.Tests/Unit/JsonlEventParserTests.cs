@@ -1,5 +1,6 @@
 using JKToolKit.CodexSDK.Infrastructure;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;

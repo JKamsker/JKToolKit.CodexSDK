@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 
 namespace JKToolKit.CodexSDK.Infrastructure;
 

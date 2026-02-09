@@ -1,5 +1,6 @@
 using JKToolKit.CodexSDK.Infrastructure;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
@@ -20,9 +21,8 @@ public class ResponseItemEventTests
 
         var response = Assert.IsType<ResponseItemEvent>(evt);
         response.PayloadType.Should().Be("reasoning");
-        response.Payload.SummaryTexts.Should().ContainSingle("**Planning read-only exploration**");
-        response.Payload.FunctionCall.Should().BeNull();
-        response.Payload.MessageTextParts.Should().BeNullOrEmpty();
+        var payload = response.Payload.Should().BeOfType<ReasoningResponseItemPayload>().Subject;
+        payload.SummaryTexts.Should().ContainSingle("**Planning read-only exploration**");
     }
 
     [Fact]
@@ -34,9 +34,9 @@ public class ResponseItemEventTests
 
         var response = Assert.IsType<ResponseItemEvent>(evt);
         response.PayloadType.Should().Be("message");
-        response.Payload.MessageRole.Should().Be("assistant");
-        response.Payload.MessageTextParts.Should().ContainSingle("Hello there");
-        response.Payload.SummaryTexts.Should().BeNullOrEmpty();
+        var payload = response.Payload.Should().BeOfType<MessageResponseItemPayload>().Subject;
+        payload.Role.Should().Be("assistant");
+        payload.TextParts.Should().ContainSingle("Hello there");
     }
 
     [Fact]
@@ -48,10 +48,10 @@ public class ResponseItemEventTests
 
         var response = Assert.IsType<ResponseItemEvent>(evt);
         response.PayloadType.Should().Be("function_call");
-        response.Payload.FunctionCall.Should().NotBeNull();
-        response.Payload.FunctionCall!.Name.Should().Be("shell_command");
-        response.Payload.FunctionCall.ArgumentsJson.Should().Contain("ls");
-        response.Payload.FunctionCall.CallId.Should().Be("call_123");
+        var payload = response.Payload.Should().BeOfType<FunctionCallResponseItemPayload>().Subject;
+        payload.Name.Should().Be("shell_command");
+        payload.ArgumentsJson.Should().Contain("ls");
+        payload.CallId.Should().Be("call_123");
     }
 
     private async Task<CodexEvent> ParseSingleAsync(string line)

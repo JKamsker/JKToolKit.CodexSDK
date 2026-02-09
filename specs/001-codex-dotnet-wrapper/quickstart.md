@@ -36,8 +36,8 @@ dotnet build src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj
 
 ```csharp
 using System.Threading;
-using JKToolKit.CodexSDK.Public;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Models;
 
 // Create client with defaults (uses PATH / default sessions root)
 await using var client = new CodexClient();
@@ -84,8 +84,8 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, Can
 
 ```csharp
 using System.Threading;
-using JKToolKit.CodexSDK.Public;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Models;
 
 await using var client = new CodexClient();
 
@@ -106,7 +106,7 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, Can
 
 ```csharp
 using System.Threading;
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 
 await using var client = new CodexClient();
 
@@ -126,7 +126,7 @@ await foreach (var evt in session.GetEventsAsync(replayOptions, CancellationToke
 
 ```csharp
 using System.Threading;
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 
 await using var client = new CodexClient();
 
@@ -154,7 +154,7 @@ await foreach (var sessionInfo in client.ListSessionsAsync(filter, CancellationT
 ### Global Client Configuration
 
 ```csharp
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 
 var clientOptions = new CodexClientOptions
 {
@@ -179,7 +179,7 @@ await using var client = new CodexClient(clientOptions);
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Abstractions;
 
 var services = new ServiceCollection();
@@ -267,7 +267,7 @@ Console.WriteLine($"Collected {events.Count} events");
 ### Pattern 5: Filter Events by Type
 
 ```csharp
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 
 await using var session = await client.StartSessionAsync(options, CancellationToken.None);
 
@@ -334,7 +334,7 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, Can
 
 ```csharp
 using JKToolKit.CodexSDK.Abstractions;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 using Moq;
 using Xunit;
 

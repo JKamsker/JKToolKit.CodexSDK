@@ -4,8 +4,17 @@ using JKToolKit.CodexSDK.Infrastructure;
 
 namespace JKToolKit.CodexSDK.McpServer;
 
+/// <summary>
+/// Dependency injection extensions for registering Codex MCP server services.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers the Codex MCP server client and related infrastructure.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">Optional options configuration.</param>
+    /// <returns>The service collection.</returns>
     public static IServiceCollection AddCodexMcpServerClient(
         this IServiceCollection services,
         Action<CodexMcpServerClientOptions>? configure = null)

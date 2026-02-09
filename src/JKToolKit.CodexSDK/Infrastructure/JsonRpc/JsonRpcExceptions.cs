@@ -1,3 +1,5 @@
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
+
 namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 internal sealed class JsonRpcProtocolException : Exception

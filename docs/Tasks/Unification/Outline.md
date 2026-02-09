@@ -41,7 +41,7 @@ I’m basing this on the current repo layout where:
 
 * Keep public namespaces:
 
-  * `JKToolKit.CodexSDK.Public` (exec)
+  * `JKToolKit.CodexSDK.Exec` (exec)
   * `JKToolKit.CodexSDK.AppServer`
   * `JKToolKit.CodexSDK.McpServer`
 
@@ -50,7 +50,7 @@ That way, user code that already does:
 ```csharp
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.McpServer;
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 ```
 
 doesn’t need to change; only the **package references** change.
@@ -221,7 +221,7 @@ You currently have two identical records:
 
 Create one shared public record:
 
-* `JKToolKit.CodexSDK.Public.CodexClientInfo`
+* `JKToolKit.CodexSDK.Exec.CodexClientInfo`
 
 Then choose one of:
 

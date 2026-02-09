@@ -79,7 +79,7 @@ dotnet add package JKToolKit.CodexSDK
 
 ```csharp
 using JKToolKit.CodexSDK.McpServer;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 
 await using var codex = await CodexMcpServerClient.StartAsync(new CodexMcpServerClientOptions());
 
@@ -122,12 +122,12 @@ Then resolve `ICodexMcpServerClientFactory` and call `StartAsync()`.
 
 ## Demos
 
-- `src/JKToolKit.CodexSDK.McpServer.Demo` lists tools, starts a session, and sends a follow-up via `codex-reply`.
+- `src/JKToolKit.CodexSDK.Demo` has a `mcpserver` command that lists tools, starts a session, and sends a follow-up via `codex-reply`.
 
 Run:
 
 ```bash
-dotnet run --project src/JKToolKit.CodexSDK.McpServer.Demo -- "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcpserver --repo "<repo-path>"
 ```
 
 ## Troubleshooting

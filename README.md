@@ -29,13 +29,46 @@ dotnet add package JKToolKit.CodexSDK
 
 > Upgrading from older versions: replace `NCodexSDK` with `JKToolKit.CodexSDK` and remove `NCodexSDK.AppServer` / `NCodexSDK.McpServer` package references (if you had them). The namespaces remain `JKToolKit.CodexSDK.AppServer` and `JKToolKit.CodexSDK.McpServer`.
 
-## Quickstart (`codex exec`)
+## Quickstart
+
+### Recommended: `CodexSdk` facade
+
+Use a single, discoverable entry point that exposes all three modes via `sdk.Exec`, `sdk.AppServer`, and `sdk.McpServer`:
+
+```csharp
+using JKToolKit.CodexSDK;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.Models;
+
+await using var sdk = CodexSdk.Create();
+
+// Exec mode (start/resume sessions and stream JSONL events)
+await using var session = await sdk.Exec.StartSessionAsync(
+    new CodexSessionOptions("<workdir>", "Write a hello world program")
+    {
+        Model = CodexModel.Gpt51Codex,
+        ReasoningEffort = CodexReasoningEffort.Medium
+    });
+
+await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, CancellationToken.None))
+{
+    // ...
+}
+
+// AppServer / McpServer modes
+await using var app = await sdk.AppServer.StartAsync();
+await using var mcp = await sdk.McpServer.StartAsync();
+```
+
+### `codex exec` (direct client)
 
 Fastest way to start a session and stream events:
 
 ```csharp
-using JKToolKit.CodexSDK.Public;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Models;
 
 var clientOptions = new CodexClientOptions();
 await using var client = new CodexClient(clientOptions);
@@ -55,11 +88,10 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, Can
     switch (evt)
     {
         case AgentMessageEvent msg:
-            Console.WriteLine($"Agent: {msg.Content}");
+            Console.WriteLine($"Agent: {msg.Text}");
             break;
-        case ResponseItemEvent item when item.Payload.Message != null:
-            var text = string.Join("", item.Payload.Message.Value.TextParts);
-            Console.WriteLine($"[{item.Payload.Message.Value.Role}] {text}");
+        case ResponseItemEvent item when item.Payload is MessageResponseItemPayload m:
+            Console.WriteLine($"[{m.Role}] {string.Join("\n", m.TextParts)}");
             break;
         case TokenCountEvent tokens:
             Console.WriteLine($"Tokens: {tokens.InputTokens} in, {tokens.OutputTokens} out");
@@ -80,7 +112,7 @@ Codex offers two stdio JSON-RPC modes that this repo supports:
 ```csharp
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 
 await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
 {
@@ -112,7 +144,7 @@ Console.WriteLine($"\nDone: {(await turn.Completion).Status}");
 
 ```csharp
 using JKToolKit.CodexSDK.McpServer;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 
 await using var codex = await CodexMcpServerClient.StartAsync(new CodexMcpServerClientOptions());
 
@@ -137,10 +169,18 @@ Console.WriteLine(followUp.Text);
 Demos (console apps):
 
 ```bash
+# Exec demo (default command)
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- "Your prompt here"
-dotnet run --project src/JKToolKit.CodexSDK.Demo.Review -- --commit <sha>
-dotnet run --project src/JKToolKit.CodexSDK.AppServer.Demo -- "<repo-path>"
-dotnet run --project src/JKToolKit.CodexSDK.McpServer.Demo -- "<repo-path>"
+
+# Review demo
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- review --commit <sha>
+
+# AppServer demos
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-stream --repo "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout-seconds 30
+
+# McpServer demo
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcpserver --repo "<repo-path>"
 ```
 
 ## Documentation

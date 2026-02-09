@@ -3,14 +3,23 @@ using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
 using JKToolKit.CodexSDK.Abstractions;
+using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
+using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
+using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Infrastructure;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
+using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
+/// <summary>
+/// A client for interacting with the Codex CLI "app-server" JSON-RPC interface.
+/// </summary>
 public sealed class CodexAppServerClient : IAsyncDisposable
 {
     private readonly CodexAppServerClientOptions _options;
@@ -44,6 +53,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
     }
 
+    /// <summary>
+    /// Starts a new Codex app-server process and returns a connected client.
+    /// </summary>
     public static async Task<CodexAppServerClient> StartAsync(
         CodexAppServerClientOptions options,
         CancellationToken ct = default)
@@ -52,17 +64,19 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var loggerFactory = NullLoggerFactory.Instance;
         var logger = loggerFactory.CreateLogger<CodexAppServerClient>();
+        var serializerOptions = options.SerializerOptionsOverride ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
+        var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
         var (process, rpc) = await CodexJsonRpcBootstrap.StartAsync(
             stdioFactory,
             loggerFactory,
-            options.Launch,
+            launch,
             options.CodexExecutablePath,
             options.StartupTimeout,
             options.ShutdownTimeout,
             options.NotificationBufferCapacity,
-            options.SerializerOptionsOverride,
+            serializerOptions,
             includeJsonRpcHeader: false,
             ct);
 
@@ -73,6 +87,19 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return client;
     }
 
+    private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(codexHomeDirectory))
+        {
+            return launch;
+        }
+
+        return launch.WithEnvironment("CODEX_HOME", codexHomeDirectory);
+    }
+
+    /// <summary>
+    /// Performs the JSON-RPC initialization handshake.
+    /// </summary>
     public async Task<AppServerInitializeResult> InitializeAsync(
         AppServerClientInfo clientInfo,
         CancellationToken ct = default)
@@ -81,10 +108,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "initialize",
-            new
-            {
-                clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version }
-            },
+            new InitializeParams { ClientInfo = clientInfo, Capabilities = null },
             ct);
 
         await _rpc.SendNotificationAsync("initialized", @params: null, ct);
@@ -92,24 +116,45 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return new AppServerInitializeResult(result);
     }
 
+    /// <summary>
+    /// Sends an arbitrary JSON-RPC request to the app server.
+    /// </summary>
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
         _rpc.SendRequestAsync(method, @params, ct);
 
+    /// <summary>
+    /// A task that completes when the underlying Codex app-server subprocess exits.
+    /// </summary>
+    public Task ExitTask => _process.Completion;
+
+    /// <summary>
+    /// Subscribes to the global app-server notification stream.
+    /// </summary>
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
         _globalNotifications.Reader.ReadAllAsync(ct);
 
+    /// <summary>
+    /// Starts a new thread.
+    /// </summary>
     public async Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
 
         var result = await _rpc.SendRequestAsync(
             "thread/start",
-            new
+            new ThreadStartParams
             {
-                model = options.Model?.Value,
-                cwd = options.Cwd,
-                approvalPolicy = options.ApprovalPolicy?.Value,
-                sandbox = options.Sandbox?.ToAppServerWireValue()
+                Model = options.Model?.Value,
+                ModelProvider = options.ModelProvider,
+                Cwd = options.Cwd,
+                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                Sandbox = options.Sandbox?.ToAppServerWireValue(),
+                Config = options.Config,
+                BaseInstructions = options.BaseInstructions,
+                DeveloperInstructions = options.DeveloperInstructions,
+                Personality = options.Personality,
+                Ephemeral = options.Ephemeral,
+                ExperimentalRawEvents = options.ExperimentalRawEvents
             },
             ct);
 
@@ -122,6 +167,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return new CodexThread(threadId, result);
     }
 
+    /// <summary>
+    /// Resumes an existing thread by ID.
+    /// </summary>
     public async Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
@@ -129,13 +177,48 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "thread/resume",
-            new { threadId },
+            new ThreadResumeParams { ThreadId = threadId },
             ct);
 
         var id = ExtractThreadId(result) ?? threadId;
         return new CodexThread(id, result);
     }
 
+    /// <summary>
+    /// Resumes an existing thread using the provided options.
+    /// </summary>
+    public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/resume",
+            new ThreadResumeParams
+            {
+                ThreadId = options.ThreadId,
+                History = options.History,
+                Path = options.Path,
+                Model = options.Model?.Value,
+                ModelProvider = options.ModelProvider,
+                Cwd = options.Cwd,
+                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                Sandbox = options.Sandbox?.ToAppServerWireValue(),
+                Config = options.Config,
+                BaseInstructions = options.BaseInstructions,
+                DeveloperInstructions = options.DeveloperInstructions,
+                Personality = options.Personality
+            },
+            ct);
+
+        var id = ExtractThreadId(result) ?? options.ThreadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Starts a new turn within the specified thread.
+    /// </summary>
     public async Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
@@ -145,13 +228,19 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "turn/start",
-            new
+            new TurnStartParams
             {
-                threadId,
-                input = options.Input.Select(i => i.Wire).ToArray(),
-                model = options.Model?.Value,
-                effort = options.Effort?.Value,
-                cwd = options.Cwd
+                ThreadId = threadId,
+                Input = options.Input.Select(i => i.Wire).ToArray(),
+                Cwd = options.Cwd,
+                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                SandboxPolicy = options.SandboxPolicy,
+                Model = options.Model?.Value,
+                Effort = options.Effort?.Value,
+                Summary = options.Summary,
+                Personality = options.Personality,
+                OutputSchema = options.OutputSchema,
+                CollaborationMode = options.CollaborationMode
             },
             ct);
 
@@ -184,13 +273,17 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     private Task InterruptAsync(string threadId, string turnId, CancellationToken ct) =>
-        _rpc.SendRequestAsync("turn/interrupt", new { threadId, turnId }, ct);
+        _rpc.SendRequestAsync(
+            "turn/interrupt",
+            new TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
+            ct);
 
     private ValueTask OnRpcNotificationAsync(JsonRpcNotification notification)
     {
         var mapped = AppServerNotificationMapper.Map(notification.Method, notification.Params);
 
         _globalNotifications.Writer.TryWrite(mapped);
+        LogIfBogus(mapped);
 
         var turnId = TryGetTurnId(mapped);
         if (!string.IsNullOrWhiteSpace(turnId))
@@ -216,6 +309,42 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 
+    private void LogIfBogus(AppServerNotification notification)
+    {
+#if DEBUG
+        var isBogus = notification switch
+        {
+            AgentMessageDeltaNotification d => string.IsNullOrWhiteSpace(d.ThreadId) ||
+                                              string.IsNullOrWhiteSpace(d.TurnId) ||
+                                              string.IsNullOrWhiteSpace(d.ItemId),
+            ItemStartedNotification s => string.IsNullOrWhiteSpace(s.ThreadId) ||
+                                         string.IsNullOrWhiteSpace(s.TurnId) ||
+                                         string.IsNullOrWhiteSpace(s.ItemId),
+            ItemCompletedNotification c => string.IsNullOrWhiteSpace(c.ThreadId) ||
+                                           string.IsNullOrWhiteSpace(c.TurnId) ||
+                                           string.IsNullOrWhiteSpace(c.ItemId),
+            TurnStartedNotification s => string.IsNullOrWhiteSpace(s.ThreadId) ||
+                                         string.IsNullOrWhiteSpace(s.TurnId),
+            TurnCompletedNotification t => string.IsNullOrWhiteSpace(t.ThreadId) ||
+                                           string.IsNullOrWhiteSpace(t.TurnId),
+            TurnDiffUpdatedNotification d => string.IsNullOrWhiteSpace(d.ThreadId) ||
+                                            string.IsNullOrWhiteSpace(d.TurnId),
+            TurnPlanUpdatedNotification p => string.IsNullOrWhiteSpace(p.ThreadId) ||
+                                             string.IsNullOrWhiteSpace(p.TurnId),
+            ThreadTokenUsageUpdatedNotification u => string.IsNullOrWhiteSpace(u.ThreadId) ||
+                                                    string.IsNullOrWhiteSpace(u.TurnId),
+            ErrorNotification e => string.IsNullOrWhiteSpace(e.ThreadId) ||
+                                   string.IsNullOrWhiteSpace(e.TurnId),
+            _ => false
+        };
+
+        if (isBogus)
+        {
+            _logger.LogWarning("Received malformed app-server notification: {Method}. Raw params: {Params}", notification.Method, notification.Params);
+        }
+#endif
+    }
+
     private async ValueTask<JsonRpcResponse> OnRpcServerRequestAsync(JsonRpcRequest req)
     {
         var handler = _options.ApprovalHandler;
@@ -239,6 +368,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Disposes the underlying app-server connection and terminates the process.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -372,6 +504,21 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             AgentMessageDeltaNotification d => d.TurnId,
             ItemStartedNotification s => s.TurnId,
             ItemCompletedNotification c => c.TurnId,
+            TurnStartedNotification s => s.TurnId,
+            TurnDiffUpdatedNotification d => d.TurnId,
+            TurnPlanUpdatedNotification p => p.TurnId,
+            ThreadTokenUsageUpdatedNotification u => u.TurnId,
+            PlanDeltaNotification d => d.TurnId,
+            RawResponseItemCompletedNotification r => r.TurnId,
+            CommandExecutionOutputDeltaNotification d => d.TurnId,
+            TerminalInteractionNotification t => t.TurnId,
+            FileChangeOutputDeltaNotification d => d.TurnId,
+            McpToolCallProgressNotification p => p.TurnId,
+            ReasoningSummaryTextDeltaNotification d => d.TurnId,
+            ReasoningSummaryPartAddedNotification d => d.TurnId,
+            ReasoningTextDeltaNotification d => d.TurnId,
+            ContextCompactedNotification c => c.TurnId,
+            ErrorNotification e => e.TurnId,
             TurnCompletedNotification t => t.TurnId,
             _ => null
         };

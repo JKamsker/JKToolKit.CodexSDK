@@ -1,5 +1,6 @@
 using System.Text.Json;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Protocol;
 
 namespace JKToolKit.CodexSDK.Tests.TestHelpers;
 

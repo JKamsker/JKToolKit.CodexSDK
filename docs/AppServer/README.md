@@ -90,7 +90,7 @@ dotnet add package JKToolKit.CodexSDK
 ```csharp
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Models;
 
 await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
 {
@@ -149,7 +149,7 @@ Then resolve `ICodexAppServerClientFactory` and call `StartAsync()`.
 
 ## Demos
 
-- `src/JKToolKit.CodexSDK.AppServer.Demo` shows:
+- `src/JKToolKit.CodexSDK.Demo` includes commands that demonstrate:
   - starting the client
   - creating a thread
   - starting a turn
@@ -158,13 +158,13 @@ Then resolve `ICodexAppServerClientFactory` and call `StartAsync()`.
 Run:
 
 ```bash
-dotnet run --project src/JKToolKit.CodexSDK.AppServer.Demo -- --demo stream --repo "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-stream --repo "<repo-path>"
 ```
 
 Approval demo (restrictive allow-list):
 
 ```bash
-dotnet run --project src/JKToolKit.CodexSDK.AppServer.Demo -- --demo approve --timeout-seconds 30
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout-seconds 30
 ```
 
 ## Troubleshooting

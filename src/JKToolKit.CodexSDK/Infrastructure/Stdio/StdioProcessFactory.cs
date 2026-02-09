@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using JKToolKit.CodexSDK.Abstractions;
-using JKToolKit.CodexSDK.Public;
+using JKToolKit.CodexSDK.Exec;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Stdio;
 

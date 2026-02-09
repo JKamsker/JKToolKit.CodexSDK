@@ -1,9 +1,0 @@
-{
-  "profiles": {
-    "JKToolKit.CodexSDK.AppServer.Demo (approve default)": {
-      "commandName": "Project",
-      "commandLineArgs": "--demo approve --timeout-seconds 30"
-    }
-  }
-}
-

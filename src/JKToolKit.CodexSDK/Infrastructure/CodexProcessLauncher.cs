@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using JKToolKit.CodexSDK.Abstractions;
-using JKToolKit.CodexSDK.Public;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure;
@@ -16,6 +16,7 @@ namespace JKToolKit.CodexSDK.Infrastructure;
 /// </remarks>
 public sealed class CodexProcessLauncher : ICodexProcessLauncher
 {
+    private const string CodexHomeEnvVar = "CODEX_HOME";
     private readonly ICodexPathProvider _pathProvider;
     private readonly ILogger<CodexProcessLauncher> _logger;
 
@@ -342,7 +343,9 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
 
         _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
 
-        return ProcessStartInfoBuilder.Create(codexPath, options);
+        var startInfo = ProcessStartInfoBuilder.Create(codexPath, options);
+        ApplyCodexHome(startInfo, clientOptions);
+        return startInfo;
     }
 
     internal ProcessStartInfo CreateResumeStartInfo(
@@ -361,7 +364,9 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
 
         _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
 
-        return ProcessStartInfoBuilder.CreateResume(codexPath, sessionId, options);
+        var startInfo = ProcessStartInfoBuilder.CreateResume(codexPath, sessionId, options);
+        ApplyCodexHome(startInfo, clientOptions);
+        return startInfo;
     }
 
     /// <inheritdoc />
@@ -459,7 +464,19 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
 
         _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
 
-        return ProcessStartInfoBuilder.CreateReview(codexPath, options);
+        var startInfo = ProcessStartInfoBuilder.CreateReview(codexPath, options);
+        ApplyCodexHome(startInfo, clientOptions);
+        return startInfo;
+    }
+
+    private static void ApplyCodexHome(ProcessStartInfo startInfo, CodexClientOptions clientOptions)
+    {
+        if (string.IsNullOrWhiteSpace(clientOptions.CodexHomeDirectory))
+        {
+            return;
+        }
+
+        startInfo.Environment[CodexHomeEnvVar] = clientOptions.CodexHomeDirectory;
     }
 
     /// <summary>

@@ -1,5 +1,5 @@
-using JKToolKit.CodexSDK.Public;
-using JKToolKit.CodexSDK.Public.Models;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Notifications;
 
 namespace JKToolKit.CodexSDK.Abstractions;
 

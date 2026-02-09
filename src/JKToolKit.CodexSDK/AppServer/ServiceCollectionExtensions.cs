@@ -4,8 +4,17 @@ using JKToolKit.CodexSDK.Infrastructure;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
+/// <summary>
+/// Dependency injection extensions for registering Codex app-server services.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers the Codex app-server client and related infrastructure.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">Optional options configuration.</param>
+    /// <returns>The service collection.</returns>
     public static IServiceCollection AddCodexAppServerClient(
         this IServiceCollection services,
         Action<CodexAppServerClientOptions>? configure = null)
