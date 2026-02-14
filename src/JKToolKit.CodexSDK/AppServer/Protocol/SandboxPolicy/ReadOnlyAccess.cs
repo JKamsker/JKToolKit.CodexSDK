@@ -8,6 +8,7 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 /// <remarks>
 /// This is an upstream addition and may not be supported by older Codex app-server builds.
 /// </remarks>
+[JsonConverter(typeof(ReadOnlyAccessJsonConverter))]
 public abstract record class ReadOnlyAccess
 {
     /// <summary>
@@ -46,4 +47,3 @@ public abstract record class ReadOnlyAccess
         public IReadOnlyList<string> ReadableRoots { get; init; } = Array.Empty<string>();
     }
 }
-

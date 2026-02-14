@@ -35,6 +35,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
     private int _disposed;
     private int _disconnectSignaled;
+    private int _readOnlyAccessOverridesSupport; // -1 = rejected, 0 = unknown, 1 = supported
     private readonly Task _processExitWatcher;
     private AppServerInitializeResult? _initializeResult;
 
@@ -825,6 +826,14 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
+        if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy) &&
+            Volatile.Read(ref _readOnlyAccessOverridesSupport) == -1)
+        {
+            var ua = InitializeResult?.UserAgent ?? "<unknown userAgent>";
+            throw new InvalidOperationException(
+                $"turn/start sandboxPolicy ReadOnlyAccess overrides were previously rejected by this app-server build. userAgent='{ua}'. Do not send ReadOnlyAccess fields unless your Codex app-server supports them.");
+        }
+
         var turnStartParams = new TurnStartParams
         {
             ThreadId = threadId,
@@ -847,6 +856,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }
         catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32602 && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
         {
+            Interlocked.Exchange(ref _readOnlyAccessOverridesSupport, -1);
             var ua = InitializeResult?.UserAgent ?? "<unknown userAgent>";
             var sandboxJson = JsonSerializer.Serialize(options.SandboxPolicy, CreateDefaultSerializerOptions());
             var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
@@ -856,6 +866,11 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             throw new InvalidOperationException(
                 $"turn/start rejected sandboxPolicy parameters (likely unsupported by this Codex app-server build). userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
                 ex);
+        }
+
+        if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
+        {
+            Interlocked.Exchange(ref _readOnlyAccessOverridesSupport, 1);
         }
 
         var turnId = ExtractTurnId(result);
