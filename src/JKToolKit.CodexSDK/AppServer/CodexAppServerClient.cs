@@ -473,10 +473,104 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                 $"turn/start returned no turn id. Raw result: {result}");
         }
 
+        return CreateTurnHandle(threadId, turnId);
+    }
+
+    /// <summary>
+    /// Steers an in-progress turn by appending input items.
+    /// </summary>
+    public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+        if (string.IsNullOrWhiteSpace(options.ExpectedTurnId))
+            throw new ArgumentException("ExpectedTurnId cannot be empty or whitespace.", nameof(options.ExpectedTurnId));
+
+        try
+        {
+            var result = await _rpc.SendRequestAsync(
+                "turn/steer",
+                BuildTurnSteerParams(options),
+                ct);
+
+            return ExtractTurnId(result) ?? options.ExpectedTurnId;
+        }
+        catch (JsonRpcRemoteException ex)
+        {
+            var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
+                ? $" Data: {ex.Error.Data.Value.GetRawText()}"
+                : string.Empty;
+
+            throw new InvalidOperationException(
+                $"turn/steer failed for expectedTurnId '{options.ExpectedTurnId}': {ex.Error.Code}: {ex.Error.Message}.{data}",
+                ex);
+        }
+    }
+
+    /// <summary>
+    /// Starts a review via the app-server.
+    /// </summary>
+    public async Task<ReviewStartResult> StartReviewAsync(ReviewStartOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+        ArgumentNullException.ThrowIfNull(options.Target);
+
+        var result = await _rpc.SendRequestAsync(
+            "review/start",
+            BuildReviewStartParams(options),
+            ct);
+
+        var reviewThreadId = GetStringOrNull(result, "reviewThreadId");
+
+        var turnObj = TryGetObject(result, "turn") ?? result;
+        var turnId = ExtractTurnId(turnObj);
+        if (string.IsNullOrWhiteSpace(turnId))
+        {
+            throw new InvalidOperationException(
+                $"review/start returned no turn id. Raw result: {result}");
+        }
+
+        var turnThreadId = ExtractThreadId(turnObj) ?? reviewThreadId ?? options.ThreadId;
+
+        return new ReviewStartResult
+        {
+            Turn = CreateTurnHandle(turnThreadId, turnId),
+            ReviewThreadId = reviewThreadId,
+            Raw = result
+        };
+    }
+
+    internal static TurnSteerParams BuildTurnSteerParams(TurnSteerOptions options) =>
+        new()
+        {
+            ThreadId = options.ThreadId,
+            ExpectedTurnId = options.ExpectedTurnId,
+            Input = options.Input.Select(i => i.Wire).ToArray()
+        };
+
+    internal static ReviewStartParams BuildReviewStartParams(ReviewStartOptions options) =>
+        new()
+        {
+            ThreadId = options.ThreadId,
+            Target = options.Target.ToWire(),
+            Delivery = options.Delivery switch
+            {
+                ReviewDelivery.Inline => "inline",
+                ReviewDelivery.Detached => "detached",
+                _ => null
+            }
+        };
+
+    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId)
+    {
         var handle = new CodexTurnHandle(
             threadId,
             turnId,
             interrupt: c => InterruptAsync(threadId, turnId, c),
+            steer: (input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
             onDispose: () =>
             {
                 lock (_turnsById)

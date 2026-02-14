@@ -17,14 +17,14 @@ This plan adds support while keeping consistency with:
 
 ### Must-haves
 
-- [ ] Add a wrapper for `turn/steer`.
-- [ ] Add a wrapper for `review/start`.
-- [ ] Provide an ergonomic C# API that matches current patterns.
+- [x] Add a wrapper for `turn/steer`.
+- [x] Add a wrapper for `review/start`.
+- [x] Provide an ergonomic C# API that matches current patterns.
 
 ### Nice-to-haves
 
-- [ ] Add convenience helpers to build review targets (uncommitted/base/commit/custom).
-- [ ] Tie `turn/steer` to `CodexTurnHandle` directly (e.g. `handle.SteerAsync(...)`).
+- [x] Add convenience helpers to build review targets (uncommitted/base/commit/custom).
+- [x] Tie `turn/steer` to `CodexTurnHandle` directly (e.g. `handle.SteerAsync(...)`).
 - [ ] Align terminology with exec-mode review (`CodexClient.ReviewAsync`) where practical.
 
 ---
@@ -54,9 +54,9 @@ Add wire params DTO matching upstream:
 
 Implementation steps:
 
-- [ ] Add protocol DTO `TurnSteerParams` under `Protocol/V2`.
-- [ ] Add `CodexAppServerClient.Steer...` method calling `_rpc.SendRequestAsync("turn/steer", ...)`.
-- [ ] Decide whether to expose this on `CodexTurnHandle` (follow-up).
+- [x] Add protocol DTO `TurnSteerParams` under `Protocol/V2`.
+- [x] Add `CodexAppServerClient.Steer...` method calling `_rpc.SendRequestAsync("turn/steer", ...)`.
+- [x] Decide whether to expose this on `CodexTurnHandle` (follow-up).
 
 ### 2.3 Failure modes
 
@@ -179,7 +179,7 @@ SDK work:
 
 Strategy:
 
-- [ ] Preserve raw notifications.
+- [x] Preserve raw notifications.
 - [ ] Add typed mappings only for stable/high-value events.
 
 ### 4.1 Detached reviews and turn handles
@@ -198,9 +198,9 @@ SDK implications:
 
 ## 5) Testing strategy
 
-- [ ] Unit tests:
-  - [ ] request param serialization for `turn/steer`
-  - [ ] request param serialization for `review/start` for each target variant
+- [x] Unit tests:
+  - [x] request param serialization for `turn/steer`
+  - [x] request param serialization for `review/start` for each target variant
 - [ ] Mapper tests (if new notifications are added)
 - [ ] Integration tests (optional):
   - [ ] start thread → start turn → steer turn
@@ -210,22 +210,22 @@ SDK implications:
 
 ## 6) Acceptance criteria
 
-- [ ] Users can steer an in-progress turn safely.
-- [ ] Users can start reviews using the app-server API with clear, typed targets.
-- [ ] Detached review returns the correct review thread id.
+- [x] Users can steer an in-progress turn safely.
+- [x] Users can start reviews using the app-server API with clear, typed targets.
+- [x] Detached review returns the correct review thread id.
 
 ---
 
 ## 7) Implementation milestones
 
-- [ ] Phase A — add request wrappers
-  - [ ] `turn/steer` request + minimal result parsing
-  - [ ] `review/start` request + minimal result parsing
-- [ ] Phase B — ergonomic APIs
-  - [ ] optional `CodexTurnHandle.SteerAsync(...)`
-  - [ ] typed `ReviewTarget` helpers
-- [ ] Phase C — docs + examples
-  - [ ] add to `docs/AppServer/README.md` with sample flows
-- [ ] Phase D — tests
-  - [ ] unit tests for serialization + extractor helpers
+- [x] Phase A — add request wrappers
+  - [x] `turn/steer` request + minimal result parsing
+  - [x] `review/start` request + minimal result parsing
+- [x] Phase B — ergonomic APIs
+  - [x] optional `CodexTurnHandle.SteerAsync(...)`
+  - [x] typed `ReviewTarget` helpers
+- [x] Phase C — docs + examples
+  - [x] add to `docs/AppServer/README.md` with sample flows
+- [x] Phase D — tests
+  - [x] unit tests for serialization + extractor helpers
   - [ ] optional integration tests guarded by env var

@@ -55,12 +55,17 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
 - `CodexAppServerClient`
   - `StartAsync(...)` + initialization handshake
   - `StartThreadAsync(...)`, `ResumeThreadAsync(...)`
+  - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
+  - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
+  - `SteerTurnAsync(...)`
+  - `StartReviewAsync(...)`
   - `CallAsync(...)` escape hatch for forward compatibility
 - `CodexTurnHandle`
   - `Events()` → `IAsyncEnumerable<AppServerNotification>`
   - `Completion` → completes when `turn/completed` arrives
   - `InterruptAsync()` → calls `turn/interrupt`
+  - `SteerAsync(...)` → calls `turn/steer`
 
 ### Typed notifications (initial set)
 
@@ -173,6 +178,30 @@ await foreach (var e in turn.Events())
 var completed = await turn.Completion;
 Console.WriteLine($"\nDone: {completed.Status}");
 ```
+
+### Steer an active turn
+
+```csharp
+await turn.SteerAsync([TurnInputItem.Text("Actually focus on failing tests first.")]);
+```
+
+### Start a code review
+
+```csharp
+var review = await codex.StartReviewAsync(new ReviewStartOptions
+{
+    ThreadId = thread.Id,
+    Delivery = ReviewDelivery.Inline,
+    Target = new ReviewTarget.Commit("1234567deadbeef", title: "Polish tui colors")
+});
+
+await review.Turn.Completion;
+```
+
+Notes:
+
+- `review/start` (app-server) runs as a turn and streams normal app-server notifications.
+- `CodexClient.ReviewAsync(...)` (exec-mode) is a simpler one-off review command with stdout/stderr output.
 
 ## Approvals / Server-Initiated Requests
 
