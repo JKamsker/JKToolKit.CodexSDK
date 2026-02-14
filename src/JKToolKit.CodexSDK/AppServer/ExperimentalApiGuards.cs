@@ -31,6 +31,19 @@ internal static class ExperimentalApiGuards
         }
     }
 
+    internal static void ValidateThreadFork(ThreadForkOptions options, bool experimentalApiEnabled)
+    {
+        if (string.IsNullOrWhiteSpace(options.ThreadId) && string.IsNullOrWhiteSpace(options.Path))
+        {
+            throw new ArgumentException("Either ThreadId or Path must be specified.", nameof(options));
+        }
+
+        if (!experimentalApiEnabled && !string.IsNullOrWhiteSpace(options.Path))
+        {
+            throw new CodexExperimentalApiRequiredException("thread/fork.path");
+        }
+    }
+
     internal static void ValidateTurnStart(TurnStartOptions options, bool experimentalApiEnabled)
     {
         if (!experimentalApiEnabled && options.CollaborationMode is not null)

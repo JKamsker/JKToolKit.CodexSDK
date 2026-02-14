@@ -264,6 +264,137 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     /// <summary>
+    /// Lists threads with optional filters and paging.
+    /// </summary>
+    public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/list",
+            new ThreadListParams
+            {
+                Archived = options.Archived,
+                Cwd = options.Cwd,
+                Query = options.Query,
+                PageSize = options.PageSize,
+                Cursor = options.Cursor,
+                SortKey = options.SortKey,
+                SortDirection = options.SortDirection
+            },
+            ct);
+
+        return new CodexThreadListPage
+        {
+            Threads = ParseThreadListThreads(result),
+            NextCursor = ExtractNextCursor(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Reads a thread by ID.
+    /// </summary>
+    public async Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/read",
+            new ThreadReadParams { ThreadId = threadId },
+            ct);
+
+        var threadObject = TryGetObject(result, "thread") ?? result;
+        var summary = ParseThreadSummary(threadObject) ?? new CodexThreadSummary
+        {
+            ThreadId = threadId,
+            Raw = threadObject
+        };
+
+        return new CodexThreadReadResult
+        {
+            Thread = summary,
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Forks a thread.
+    /// </summary>
+    public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ExperimentalApiGuards.ValidateThreadFork(options, ExperimentalApiEnabled);
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/fork",
+            new ThreadForkParams
+            {
+                ThreadId = options.ThreadId,
+                Path = options.Path
+            },
+            ct);
+
+        var threadId = ExtractThreadId(result);
+        if (string.IsNullOrWhiteSpace(threadId))
+        {
+            throw new InvalidOperationException(
+                $"thread/fork returned no thread id. Raw result: {result}");
+        }
+
+        return new CodexThread(threadId, result);
+    }
+
+    /// <summary>
+    /// Archives a thread.
+    /// </summary>
+    public async Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/archive",
+            new ThreadArchiveParams { ThreadId = threadId },
+            ct);
+
+        var id = ExtractThreadId(result) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Unarchives a thread.
+    /// </summary>
+    public async Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await _rpc.SendRequestAsync(
+            "thread/unarchive",
+            new ThreadUnarchiveParams { ThreadId = threadId },
+            ct);
+
+        var id = ExtractThreadId(result) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Sets (or clears) the thread name.
+    /// </summary>
+    public async Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        _ = await _rpc.SendRequestAsync(
+            "thread/name/set",
+            new ThreadSetNameParams { ThreadId = threadId, ThreadName = name },
+            ct);
+    }
+
+    /// <summary>
     /// Starts a new turn within the specified thread.
     /// </summary>
     public async Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
@@ -536,7 +667,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }
     }
 
-    private static string? ExtractId(JsonElement element, params string[] propertyNames)
+    internal static string? ExtractId(JsonElement element, params string[] propertyNames)
     {
         if (element.ValueKind != JsonValueKind.Object)
         {
@@ -554,7 +685,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return null;
     }
 
-    private static string? ExtractThreadId(JsonElement result)
+    internal static string? ExtractThreadId(JsonElement result)
     {
         // Common shapes:
         // - { "threadId": "..." }
@@ -567,7 +698,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                FindStringPropertyRecursive(result, propertyName: "threadId", maxDepth: 6);
     }
 
-    private static string? ExtractTurnId(JsonElement result)
+    internal static string? ExtractTurnId(JsonElement result)
     {
         // Common shapes:
         // - { "turnId": "..." }
@@ -580,7 +711,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                FindStringPropertyRecursive(result, propertyName: "turnId", maxDepth: 6);
     }
 
-    private static string? ExtractIdByPath(JsonElement element, string p1, string p2)
+    internal static string? ExtractIdByPath(JsonElement element, string p1, string p2)
     {
         if (element.ValueKind != JsonValueKind.Object)
         {
@@ -595,7 +726,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return ExtractId(child, p2);
     }
 
-    private static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth)
+    internal static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth)
     {
         if (maxDepth < 0)
         {
@@ -668,4 +799,123 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             TurnCompletedNotification t => t.TurnId,
             _ => null
         };
+
+    internal static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult)
+    {
+        var array =
+            TryGetArray(listResult, "threads") ??
+            TryGetArray(listResult, "items") ??
+            TryGetArray(listResult, "sessions");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<CodexThreadSummary>();
+        }
+
+        var threads = new List<CodexThreadSummary>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            var summary = ParseThreadSummary(item);
+            if (summary is not null)
+            {
+                threads.Add(summary);
+            }
+        }
+
+        return threads;
+    }
+
+    internal static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject)
+    {
+        if (threadObject.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var primary = TryGetObject(threadObject, "thread") ?? threadObject;
+
+        var threadId = ExtractThreadId(threadObject);
+        if (string.IsNullOrWhiteSpace(threadId))
+        {
+            return null;
+        }
+
+        var name =
+            GetStringOrNull(primary, "name") ??
+            GetStringOrNull(primary, "threadName") ??
+            GetStringOrNull(primary, "title");
+
+        var archived = GetBoolOrNull(primary, "archived");
+        var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
+        var cwd = GetStringOrNull(primary, "cwd");
+        var model = GetStringOrNull(primary, "model");
+
+        return new CodexThreadSummary
+        {
+            ThreadId = threadId,
+            Name = name,
+            Archived = archived,
+            CreatedAt = createdAt,
+            Cwd = cwd,
+            Model = model,
+            Raw = threadObject
+        };
+    }
+
+    internal static string? ExtractNextCursor(JsonElement listResult) =>
+        GetStringOrNull(listResult, "nextCursor") ??
+        GetStringOrNull(listResult, "cursor");
+
+    private static JsonElement? TryGetArray(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Array
+            ? p
+            : null;
+
+    private static JsonElement? TryGetObject(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Object
+            ? p
+            : null;
+
+    private static string? GetStringOrNull(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.String
+            ? p.GetString()
+            : null;
+
+    private static bool? GetBoolOrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => null
+        };
+    }
+
+    private static DateTimeOffset? GetDateTimeOffsetOrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(p.GetString(), out var dto))
+        {
+            return dto;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt64(out var epoch))
+        {
+            // Best-effort: treat large values as milliseconds, otherwise seconds.
+            return epoch > 10_000_000_000
+                ? DateTimeOffset.FromUnixTimeMilliseconds(epoch)
+                : DateTimeOffset.FromUnixTimeSeconds(epoch);
+        }
+
+        return null;
+    }
 }

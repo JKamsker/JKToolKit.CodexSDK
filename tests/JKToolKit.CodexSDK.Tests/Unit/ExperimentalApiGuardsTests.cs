@@ -62,10 +62,21 @@ public sealed class ExperimentalApiGuardsTests
         {
             ExperimentalApiGuards.ValidateThreadStart(new ThreadStartOptions { ExperimentalRawEvents = true }, experimentalApiEnabled: true);
             ExperimentalApiGuards.ValidateThreadResume(new ThreadResumeOptions { ThreadId = "t", History = history.RootElement, Path = "C:\\rollout" }, experimentalApiEnabled: true);
+            ExperimentalApiGuards.ValidateThreadFork(new ThreadForkOptions { Path = "C:\\rollout" }, experimentalApiEnabled: true);
             ExperimentalApiGuards.ValidateTurnStart(new TurnStartOptions { CollaborationMode = collab.RootElement }, experimentalApiEnabled: true);
         };
 
         act.Should().NotThrow();
     }
-}
 
+    [Fact]
+    public void ValidateThreadFork_Throws_WhenPathSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadForkOptions { Path = "C:\\rollout" };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/fork.path");
+    }
+}

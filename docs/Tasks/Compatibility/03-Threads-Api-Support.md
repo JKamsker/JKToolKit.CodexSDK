@@ -14,15 +14,15 @@ This plan adds typed, ergonomic support in `JKToolKit.CodexSDK.AppServer` while 
 
 ### Must-haves
 
-- [ ] Add first-class wrappers for common thread lifecycle operations:
+- [x] Add first-class wrappers for common thread lifecycle operations:
    - `thread/list`
    - `thread/read`
    - `thread/fork`
    - `thread/archive`
    - `thread/unarchive`
    - `thread/name/set`
-- [ ] Preserve raw JSON for forward compatibility.
-- [ ] Keep API layering consistent with existing types:
+- [x] Preserve raw JSON for forward compatibility.
+- [x] Keep API layering consistent with existing types:
    - options objects in `JKToolKit.CodexSDK.AppServer`
    - wire DTOs in `JKToolKit.CodexSDK.AppServer.Protocol.V2`
 
@@ -41,12 +41,12 @@ This plan adds typed, ergonomic support in `JKToolKit.CodexSDK.AppServer` while 
 
 Add methods to `src/JKToolKit.CodexSDK/AppServer/CodexAppServerClient.cs` (names illustrative):
 
-- [ ] `Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)`
-- [ ] `Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default)`
-- [ ] `Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)`
-- [ ] `Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default)`
-- [ ] `Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)`
-- [ ] `Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)`
+- [x] `Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)`
+- [x] `Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default)`
+- [x] `Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)`
+- [x] `Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default)`
+- [x] `Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)`
+- [x] `Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)`
 
 Design notes:
 
@@ -58,7 +58,7 @@ Design notes:
 
 Add minimal models:
 
-- [ ] `CodexThreadSummary`
+- [x] `CodexThreadSummary`
   - `string ThreadId`
   - `string? Name`
   - `bool? Archived`
@@ -67,19 +67,19 @@ Add minimal models:
   - `string? Model`
   - `JsonElement Raw`
 
-- [ ] `CodexThreadListPage`
+- [x] `CodexThreadListPage`
   - `IReadOnlyList<CodexThreadSummary> Threads`
   - `string? NextCursor` (or raw cursor object)
   - `JsonElement Raw`
 
 ### 2.3 Options
 
-- [ ] `ThreadListOptions`
+- [x] `ThreadListOptions`
   - Filters: `Archived`, `Cwd`, `Query` (if supported), etc.
   - Paging: `PageSize`, `Cursor`
   - Sorting: `SortKey`, `SortDirection`
 
-- [ ] `ThreadForkOptions`
+- [x] `ThreadForkOptions`
   - Stable path: fork by `ThreadId`
   - Experimental path: fork by rollout `Path` (only if experimental enabled)
 
@@ -104,12 +104,12 @@ This is a “shape guide” for what to implement first. The SDK should treat un
 
 Deliver in a sequence that yields immediate user value with minimal schema churn:
 
-- [ ] Phase A — discovery + inspection:
-  - [ ] `thread/list`, `thread/read`
-- [ ] Phase B — lifecycle management:
-  - [ ] `thread/archive`, `thread/unarchive`, `thread/name/set`
-- [ ] Phase C — branching workflows:
-  - [ ] `thread/fork` (stable subset)
+- [x] Phase A — discovery + inspection:
+  - [x] `thread/list`, `thread/read`
+- [x] Phase B — lifecycle management:
+  - [x] `thread/archive`, `thread/unarchive`, `thread/name/set`
+- [x] Phase C — branching workflows:
+  - [x] `thread/fork` (stable subset)
 - [ ] Phase D — advanced operations:
   - [ ] `thread/compact/start`, `thread/rollback`, `thread/loaded/list`
 - [ ] Phase E — experimental-only extras:
@@ -125,8 +125,8 @@ Where:
 
 Approach:
 
-- [ ] Add per-method DTOs for request params.
-- [ ] For responses, prefer parsing into:
+- [x] Add per-method DTOs for request params.
+- [x] For responses, prefer parsing into:
    - `JsonElement` raw
    - plus helper extractors (thread id) using existing patterns in `CodexAppServerClient`.
 
@@ -136,12 +136,12 @@ This minimizes the amount of schema churn that forces SDK updates.
 
 Add to `src/JKToolKit.CodexSDK/AppServer/Protocol/V2/`:
 
-- [ ] `ThreadListParams`, `ThreadListResponse`
-- [ ] `ThreadReadParams`, `ThreadReadResponse`
-- [ ] `ThreadForkParams`, `ThreadForkResponse`
-- [ ] `ThreadArchiveParams`, `ThreadArchiveResponse`
-- [ ] `ThreadUnarchiveParams`, `ThreadUnarchiveResponse`
-- [ ] `ThreadSetNameParams`, `ThreadSetNameResponse`
+- [x] `ThreadListParams`, `ThreadListResponse`
+- [x] `ThreadReadParams`, `ThreadReadResponse`
+- [x] `ThreadForkParams`, `ThreadForkResponse`
+- [x] `ThreadArchiveParams`, `ThreadArchiveResponse`
+- [x] `ThreadUnarchiveParams`, `ThreadUnarchiveResponse`
+- [x] `ThreadSetNameParams`, `ThreadSetNameResponse`
 - [ ] (later) `ThreadCompactStartParams`, `ThreadCompactStartResponse`
 - [ ] (later) `ThreadRollbackParams`, `ThreadRollbackResponse`
 - [ ] (later) `ThreadLoadedListParams`, `ThreadLoadedListResponse`
@@ -199,16 +199,16 @@ Upstream adds additional notifications over time. Strategy:
 
 Add JSON fixtures for representative responses:
 
-- [ ] thread/list response with cursor
-- [ ] thread/read response with history summary
-- [ ] thread/fork response
-- [ ] thread/archive/unarchive responses
+- [x] thread/list response with cursor
+- [x] thread/read response with history summary
+- [x] thread/fork response
+- [x] thread/archive/unarchive responses
 
 Test:
 
-- [ ] correct id extraction
-- [ ] no exceptions on unknown fields
-- [ ] roundtrip “Raw” presence
+- [x] correct id extraction
+- [x] no exceptions on unknown fields
+- [x] roundtrip “Raw” presence
 
 ### 6.2 Integration tests (optional)
 
@@ -222,7 +222,7 @@ Guard with env var.
 
 ## 7) Acceptance criteria
 
-- [ ] Users can do end-to-end thread lifecycle operations through typed methods.
-- [ ] Stable-only mode works without experimental opt-in.
-- [ ] Experimental-only request shapes are blocked unless opt-in enabled.
-- [ ] Unknown upstream fields do not break parsing; raw JSON preserved.
+- [x] Users can do end-to-end thread lifecycle operations through typed methods.
+- [x] Stable-only mode works without experimental opt-in.
+- [x] Experimental-only request shapes are blocked unless opt-in enabled.
+- [x] Unknown upstream fields do not break parsing; raw JSON preserved.
