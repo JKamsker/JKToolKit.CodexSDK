@@ -36,6 +36,8 @@
     <None Update="Fixtures\\thread-fork-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-archive-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-unarchive-response.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\thread-loaded-list-response.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\thread-rollback-response.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

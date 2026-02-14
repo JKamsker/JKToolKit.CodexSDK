@@ -28,10 +28,10 @@ This plan adds typed, ergonomic support in `JKToolKit.CodexSDK.AppServer` while 
 
 ### Nice-to-haves
 
-- [ ] `thread/loaded/list`
-- [ ] `thread/compact/start`
-- [ ] `thread/rollback`
-- [ ] `thread/backgroundTerminals/clean` (experimental upstream)
+- [x] `thread/loaded/list`
+- [x] `thread/compact/start`
+- [x] `thread/rollback`
+- [x] `thread/backgroundTerminals/clean` (experimental upstream)
 
 ---
 
@@ -110,10 +110,10 @@ Deliver in a sequence that yields immediate user value with minimal schema churn
   - [x] `thread/archive`, `thread/unarchive`, `thread/name/set`
 - [x] Phase C — branching workflows:
   - [x] `thread/fork` (stable subset)
-- [ ] Phase D — advanced operations:
-  - [ ] `thread/compact/start`, `thread/rollback`, `thread/loaded/list`
-- [ ] Phase E — experimental-only extras:
-  - [ ] `thread/backgroundTerminals/clean`
+- [x] Phase D — advanced operations:
+  - [x] `thread/compact/start`, `thread/rollback`, `thread/loaded/list`
+- [x] Phase E — experimental-only extras:
+  - [x] `thread/backgroundTerminals/clean`
 
 ---
 
@@ -142,9 +142,9 @@ Add to `src/JKToolKit.CodexSDK/AppServer/Protocol/V2/`:
 - [x] `ThreadArchiveParams`, `ThreadArchiveResponse`
 - [x] `ThreadUnarchiveParams`, `ThreadUnarchiveResponse`
 - [x] `ThreadSetNameParams`, `ThreadSetNameResponse`
-- [ ] (later) `ThreadCompactStartParams`, `ThreadCompactStartResponse`
-- [ ] (later) `ThreadRollbackParams`, `ThreadRollbackResponse`
-- [ ] (later) `ThreadLoadedListParams`, `ThreadLoadedListResponse`
+- [x] (later) `ThreadCompactStartParams`, `ThreadCompactStartResponse`
+- [x] (later) `ThreadRollbackParams`, `ThreadRollbackResponse`
+- [x] (later) `ThreadLoadedListParams`, `ThreadLoadedListResponse`
 
 Implementation note:
 
@@ -214,7 +214,7 @@ Test:
 
 If a real app-server is available:
 
-- [ ] Start thread → list → read → archive → list archived → unarchive
+- [x] Start thread → list → read → archive → list archived → unarchive
 
 Guard with env var.
 

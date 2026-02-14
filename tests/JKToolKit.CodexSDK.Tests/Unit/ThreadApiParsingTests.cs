@@ -54,5 +54,26 @@ public sealed class ThreadApiParsingTests
         CodexAppServerClient.ExtractThreadId(LoadFixture("thread-archive-response.json")).Should().Be("t_arch");
         CodexAppServerClient.ExtractThreadId(LoadFixture("thread-unarchive-response.json")).Should().Be("t_arch");
     }
+
+    [Fact]
+    public void ParseThreadLoadedListThreadIds_ParsesIds_AndNextCursor()
+    {
+        var raw = LoadFixture("thread-loaded-list-response.json");
+
+        var ids = CodexAppServerClient.ParseThreadLoadedListThreadIds(raw);
+        var cursor = CodexAppServerClient.ExtractNextCursor(raw);
+
+        ids.Should().Equal("t_loaded_1", "t_loaded_2");
+        cursor.Should().Be("cursor_loaded_3");
+    }
+
+    [Fact]
+    public void ThreadRollbackResponse_ExtractsThreadId_FromThreadObject()
+    {
+        var raw = LoadFixture("thread-rollback-response.json");
+        raw.TryGetProperty("thread", out var threadObj).Should().BeTrue();
+
+        CodexAppServerClient.ExtractThreadId(threadObj).Should().Be("t_rb");
+    }
 }
 

@@ -420,6 +420,87 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     /// <summary>
+    /// Lists identifiers of threads currently loaded in memory by the app-server.
+    /// </summary>
+    public async Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await SendRequestAsync(
+            "thread/loaded/list",
+            new ThreadLoadedListParams
+            {
+                Cursor = options.Cursor,
+                Limit = options.Limit
+            },
+            ct);
+
+        return new CodexLoadedThreadListPage
+        {
+            ThreadIds = ParseThreadLoadedListThreadIds(result),
+            NextCursor = ExtractNextCursor(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Starts thread compaction.
+    /// </summary>
+    public async Task CompactThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        _ = await SendRequestAsync(
+            "thread/compact/start",
+            new ThreadCompactStartParams { ThreadId = threadId },
+            ct);
+    }
+
+    /// <summary>
+    /// Rolls back the thread by the specified number of turns.
+    /// </summary>
+    public async Task<CodexThread> RollbackThreadAsync(string threadId, int numTurns, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        if (numTurns <= 0)
+            throw new ArgumentOutOfRangeException(nameof(numTurns), numTurns, "NumTurns must be greater than zero.");
+
+        var result = await SendRequestAsync(
+            "thread/rollback",
+            new ThreadRollbackParams
+            {
+                ThreadId = threadId,
+                NumTurns = numTurns
+            },
+            ct);
+
+        var threadObj = TryGetObject(result, "thread") ?? result;
+        var id = ExtractThreadId(threadObj) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Terminates all running background terminals associated with the thread (experimental).
+    /// </summary>
+    public async Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        if (!ExperimentalApiEnabled)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/backgroundTerminals/clean");
+        }
+
+        _ = await SendRequestAsync(
+            "thread/backgroundTerminals/clean",
+            new ThreadBackgroundTerminalsCleanParams { ThreadId = threadId },
+            ct);
+    }
+
+    /// <summary>
     /// Forks a thread.
     /// </summary>
     public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
@@ -1107,6 +1188,33 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     internal static string? ExtractNextCursor(JsonElement listResult) =>
         GetStringOrNull(listResult, "nextCursor") ??
         GetStringOrNull(listResult, "cursor");
+
+    internal static IReadOnlyList<string> ParseThreadLoadedListThreadIds(JsonElement loadedListResult)
+    {
+        var array =
+            TryGetArray(loadedListResult, "data") ??
+            TryGetArray(loadedListResult, "threads");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<string>();
+        }
+
+        var ids = new List<string>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                var id = item.GetString();
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+
+        return ids;
+    }
 
     internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(JsonElement skillsListResult)
     {
