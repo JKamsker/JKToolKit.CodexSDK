@@ -197,6 +197,13 @@ Console.WriteLine($"\nDone: {completed.Status}");
 await turn.SteerAsync([TurnInputItem.Text("Actually focus on failing tests first.")]);
 ```
 
+Notes:
+
+- Steering is best-effort and may race with turn completion.
+- Cancellation stops waiting for the response but does not guarantee the server did not apply the steer request.
+- For raw responses, use `await turn.SteerRawAsync(...)` / `await codex.SteerTurnRawAsync(...)` (returns `TurnSteerResult`).
+- Server-side JSON-RPC failures surface as `CodexAppServerRequestFailedException` (includes `ErrorCode`/`ErrorMessage`/`ErrorData`).
+
 ### Start a code review
 
 ```csharp
@@ -214,6 +221,7 @@ Notes:
 
 - `review/start` (app-server) runs as a turn and streams normal app-server notifications.
 - `CodexClient.ReviewAsync(...)` (exec-mode) is a simpler one-off review command with stdout/stderr output.
+- `CodexAppServerClient.ReviewAsync(...)` is an alias for `StartReviewAsync(...)` for naming consistency.
 
 ## Approvals / Server-Initiated Requests
 

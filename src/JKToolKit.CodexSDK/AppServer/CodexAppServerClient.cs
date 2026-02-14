@@ -862,7 +862,24 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Steers an in-progress turn by appending input items.
     /// </summary>
+    /// <remarks>
+    /// Steering is best-effort and may race with turn completion. Cancellation stops waiting for the response but does
+    /// not guarantee the server did not apply the steer request.
+    /// </remarks>
     public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
+    {
+        var result = await SteerTurnRawAsync(options, ct);
+        return result.TurnId;
+    }
+
+    /// <summary>
+    /// Steers an in-progress turn by appending input items and returns the raw JSON result payload.
+    /// </summary>
+    /// <remarks>
+    /// Steering is best-effort and may race with turn completion. Cancellation stops waiting for the response but does
+    /// not guarantee the server did not apply the steer request.
+    /// </remarks>
+    public async Task<TurnSteerResult> SteerTurnRawAsync(TurnSteerOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.ThreadId))
@@ -872,22 +889,27 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         try
         {
-            var result = await SendRequestAsync(
+            var raw = await SendRequestAsync(
                 "turn/steer",
                 BuildTurnSteerParams(options),
                 ct);
 
-            return ExtractTurnId(result) ?? options.ExpectedTurnId;
+            return new TurnSteerResult
+            {
+                TurnId = ExtractTurnId(raw) ?? options.ExpectedTurnId,
+                Raw = raw
+            };
         }
         catch (JsonRpcRemoteException ex)
         {
-            var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
-                ? $" Data: {ex.Error.Data.Value.GetRawText()}"
-                : string.Empty;
-
-            throw new InvalidOperationException(
-                $"turn/steer failed for expectedTurnId '{options.ExpectedTurnId}': {ex.Error.Code}: {ex.Error.Message}.{data}",
-                ex);
+            var ua = InitializeResult?.UserAgent;
+            throw new CodexAppServerRequestFailedException(
+                method: "turn/steer",
+                errorCode: ex.Error.Code,
+                errorMessage: $"{ex.Error.Message} (expectedTurnId='{options.ExpectedTurnId}')",
+                errorData: ex.Error.Data,
+                userAgent: ua,
+                innerException: ex);
         }
     }
 
@@ -901,10 +923,25 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
         ArgumentNullException.ThrowIfNull(options.Target);
 
-        var result = await SendRequestAsync(
-            "review/start",
-            BuildReviewStartParams(options),
-            ct);
+        JsonElement result;
+        try
+        {
+            result = await SendRequestAsync(
+                "review/start",
+                BuildReviewStartParams(options),
+                ct);
+        }
+        catch (JsonRpcRemoteException ex)
+        {
+            var ua = InitializeResult?.UserAgent;
+            throw new CodexAppServerRequestFailedException(
+                method: "review/start",
+                errorCode: ex.Error.Code,
+                errorMessage: ex.Error.Message,
+                errorData: ex.Error.Data,
+                userAgent: ua,
+                innerException: ex);
+        }
 
         var reviewThreadId = GetStringOrNull(result, "reviewThreadId");
 
@@ -925,6 +962,15 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             Raw = result
         };
     }
+
+    /// <summary>
+    /// Starts a review via the app-server.
+    /// </summary>
+    /// <remarks>
+    /// This is an alias for <see cref="StartReviewAsync"/> to better align with exec-mode naming (<c>ReviewAsync</c>).
+    /// </remarks>
+    public Task<ReviewStartResult> ReviewAsync(ReviewStartOptions options, CancellationToken ct = default) =>
+        StartReviewAsync(options, ct);
 
     internal static TurnSteerParams BuildTurnSteerParams(TurnSteerOptions options) =>
         new()
@@ -954,6 +1000,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             turnId,
             interrupt: c => InterruptAsync(threadId, turnId, c),
             steer: (input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
+            steerRaw: (input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
             onDispose: () =>
             {
                 lock (_turnsById)

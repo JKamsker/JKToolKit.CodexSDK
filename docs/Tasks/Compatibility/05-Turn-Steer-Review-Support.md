@@ -25,7 +25,7 @@ This plan adds support while keeping consistency with:
 
 - [x] Add convenience helpers to build review targets (uncommitted/base/commit/custom).
 - [x] Tie `turn/steer` to `CodexTurnHandle` directly (e.g. `handle.SteerAsync(...)`).
-- [ ] Align terminology with exec-mode review (`CodexClient.ReviewAsync`) where practical.
+- [x] Align terminology with exec-mode review (`CodexClient.ReviewAsync`) where practical.
 
 ---
 
@@ -74,19 +74,19 @@ SDK behavior:
 
 Open questions to resolve up-front (documented behavior matters here):
 
-- [ ] **Can multiple steer requests be in-flight concurrently?**
-  - [ ] Recommendation: allow, but callers should serialize themselves.
-- [ ] **What happens if the turn completes between building params and sending?**
-  - [ ] Expect server to reject; surface as a typed exception or raw JSON-RPC error.
-- [ ] **Cancellation behavior**
-  - [ ] Cancel should:
-    - [ ] stop waiting for the response
-    - [ ] not assume the steer request was not applied (server may still apply)
+- [x] **Can multiple steer requests be in-flight concurrently?**
+  - [x] Recommendation: allow, but callers should serialize themselves.
+- [x] **What happens if the turn completes between building params and sending?**
+  - [x] Expect server to reject; surface as a typed exception or raw JSON-RPC error.
+- [x] **Cancellation behavior**
+  - [x] Cancel should:
+    - [x] stop waiting for the response
+    - [x] not assume the steer request was not applied (server may still apply)
 
 SDK mitigations:
 
-- [ ] Keep `Raw` response/error available for diagnosis.
-- [ ] If we add a handle-level API, document that steer is “best effort” and may race with completion.
+- [x] Keep `Raw` response/error available for diagnosis.
+- [x] If we add a handle-level API, document that steer is “best effort” and may race with completion.
 
 ---
 
@@ -159,11 +159,11 @@ App-server review (`review/start`) differs:
 
 Plan for minimizing user confusion:
 
-- [ ] Document when to use which:
-  - [ ] exec-mode: simple one-off review with stdout/stderr result
-  - [ ] app-server: review as a first-class turn, with streaming events/notifications
-- [ ] Consider a facade helper later:
-  - [ ] `CodexSdk.ReviewAsync(...)` that can route to exec vs app-server based on configuration.
+- [x] Document when to use which:
+  - [x] exec-mode: simple one-off review with stdout/stderr result
+  - [x] app-server: review as a first-class turn, with streaming events/notifications
+- [x] Consider a facade helper later:
+  - [x] `CodexSdk.ReviewAsync(...)` that can route to exec vs app-server based on configuration.
 
 ---
 
@@ -173,14 +173,14 @@ Plan for minimizing user confusion:
 
 SDK work:
 
-- [ ] Ensure per-turn stream plumbing can handle:
-  - [ ] detached reviews (turn belongs to a different thread id)
-  - [ ] review mode transitions (if surfaced via notifications)
+- [x] Ensure per-turn stream plumbing can handle:
+  - [x] detached reviews (turn belongs to a different thread id)
+  - [x] review mode transitions (if surfaced via notifications)
 
 Strategy:
 
 - [x] Preserve raw notifications.
-- [ ] Add typed mappings only for stable/high-value events.
+- [x] Add typed mappings only for stable/high-value events.
 
 ### 4.1 Detached reviews and turn handles
 
@@ -201,10 +201,10 @@ SDK implications:
 - [x] Unit tests:
   - [x] request param serialization for `turn/steer`
   - [x] request param serialization for `review/start` for each target variant
-- [ ] Mapper tests (if new notifications are added)
-- [ ] Integration tests (optional):
-  - [ ] start thread → start turn → steer turn
-  - [ ] start review inline and detached
+- [x] Mapper tests (if new notifications are added)
+- [x] Integration tests (optional):
+  - [x] start thread → start turn → steer turn
+  - [x] start review inline and detached
 
 ---
 
@@ -228,4 +228,4 @@ SDK implications:
   - [x] add to `docs/AppServer/README.md` with sample flows
 - [x] Phase D — tests
   - [x] unit tests for serialization + extractor helpers
-  - [ ] optional integration tests guarded by env var
+  - [x] optional integration tests guarded by env var

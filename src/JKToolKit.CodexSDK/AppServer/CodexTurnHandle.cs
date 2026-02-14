@@ -11,6 +11,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
 {
     private readonly Func<CancellationToken, Task> _interrupt;
     private readonly Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<string>>? _steer;
+    private readonly Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<TurnSteerResult>>? _steerRaw;
     private readonly Action _onDispose;
     private int _disposed;
 
@@ -37,6 +38,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
         string turnId,
         Func<CancellationToken, Task> interrupt,
         Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<string>>? steer,
+        Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<TurnSteerResult>>? steerRaw,
         Action onDispose,
         int bufferCapacity)
     {
@@ -44,6 +46,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
         TurnId = turnId;
         _interrupt = interrupt;
         _steer = steer;
+        _steerRaw = steerRaw;
         _onDispose = onDispose;
 
         EventsChannel = System.Threading.Channels.Channel.CreateBounded<AppServerNotification>(new BoundedChannelOptions(bufferCapacity)
@@ -78,6 +81,23 @@ public sealed class CodexTurnHandle : IAsyncDisposable
         }
 
         return _steer(input, ct);
+    }
+
+    /// <summary>
+    /// Sends additional input to an in-progress turn via <c>turn/steer</c> and returns the raw JSON result payload.
+    /// </summary>
+    /// <remarks>
+    /// Steering is best-effort and may race with turn completion. Cancellation stops waiting for the response but does
+    /// not guarantee the server did not apply the steer request.
+    /// </remarks>
+    public Task<TurnSteerResult> SteerRawAsync(IReadOnlyList<TurnInputItem> input, CancellationToken ct = default)
+    {
+        if (_steerRaw is null)
+        {
+            throw new NotSupportedException("This turn handle does not support raw steering results.");
+        }
+
+        return _steerRaw(input, ct);
     }
 
     /// <summary>
