@@ -98,6 +98,34 @@ before sending the request:
 - `turn/start.collaborationMode`
 - `thread/start.experimentalRawEvents` (when `true`)
 
+### Enabling experimental API opt-in (advanced)
+
+If you need experimental-gated fields/methods, opt in explicitly at initialize time:
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
+
+await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    Capabilities = new InitializeCapabilities
+    {
+        ExperimentalApi = true,
+
+        // Optional: reduce notification volume (method names are upstream-defined).
+        OptOutNotificationMethods = new[]
+        {
+            "item/agentMessage/delta"
+        }
+    }
+});
+```
+
+Notes:
+
+- Experimental surfaces are upstream-unstable and may break across Codex updates.
+- If your Codex app-server is too old to understand a capability field, initialize may fail with a JSON-RPC invalid-params error.
+
 ## Getting Started
 
 ### Prerequisites
@@ -227,5 +255,5 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
 - If you hit interactive prompts unexpectedly: configure an `ApprovalHandler` or set `ApprovalPolicy = Never`.
-- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in in the initialize capabilities.
+- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.Capabilities.ExperimentalApi = true`.
 - If the Codex subprocess dies mid-turn: the SDK now faults the global notification stream and any in-progress `CodexTurnHandle` streams/completions with `CodexAppServerDisconnectedException` (includes exit code and a best-effort stderr tail).

@@ -150,7 +150,7 @@ Add a “Troubleshooting” entry:
 
 - [x] Error: `"<descriptor> requires experimentalApi capability"`
   - [x] Explanation: upstream gating
-  - [ ] Fix: enable opt-in (link to plan 02)
+  - [x] Fix: enable opt-in (link to plan 02)
 
 ---
 
@@ -190,14 +190,14 @@ Guard with env var (consistent with existing style in repo).
 - [x] Docs clearly explain:
   - [x] What is stable
   - [x] What is experimental
-  - [ ] How to enable experimental safely
+  - [x] How to enable experimental safely
 
 ---
 
 ## 7) Open questions / decisions
 
-- [ ] Do we want a single “capabilities” knob in `CodexAppServerClientOptions`, or separate boolean `EnableExperimentalApi`?
+- [x] Do we want a single “capabilities” knob in `CodexAppServerClientOptions`, or separate boolean `EnableExperimentalApi`?
 - [x] Should client-side validation be:
   - [x] strict (throw), or
   - [ ] permissive (silently ignore experimental fields unless opt-in)?
-  - [ ] Recommendation: **strict** (throw).
+  - [x] Recommendation: **strict** (throw).

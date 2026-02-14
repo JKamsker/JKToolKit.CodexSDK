@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,6 +33,38 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private int _disposed;
     private int _disconnectSignaled;
     private readonly Task _processExitWatcher;
+
+    private bool ExperimentalApiEnabled => _options.Capabilities?.ExperimentalApi == true;
+
+    internal static InitializeCapabilities? NormalizeCapabilities(InitializeCapabilities? capabilities)
+    {
+        if (capabilities is null)
+        {
+            return null;
+        }
+
+        var experimentalApi = capabilities.ExperimentalApi;
+        var optOut = capabilities.OptOutNotificationMethods;
+        var hasOptOut = optOut is { Count: > 0 };
+
+        if (!experimentalApi && !hasOptOut)
+        {
+            return null;
+        }
+
+        return new InitializeCapabilities
+        {
+            ExperimentalApi = experimentalApi,
+            OptOutNotificationMethods = hasOptOut ? optOut : null
+        };
+    }
+
+    internal static InitializeParams BuildInitializeParams(AppServerClientInfo clientInfo, InitializeCapabilities? capabilities) =>
+        new()
+        {
+            ClientInfo = clientInfo,
+            Capabilities = NormalizeCapabilities(capabilities)
+        };
 
     internal CodexAppServerClient(
         CodexAppServerClientOptions options,
@@ -68,7 +101,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var loggerFactory = NullLoggerFactory.Instance;
         var logger = loggerFactory.CreateLogger<CodexAppServerClient>();
-        var serializerOptions = options.SerializerOptionsOverride ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var serializerOptions = options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions();
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
@@ -91,6 +124,12 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return client;
     }
 
+    internal static JsonSerializerOptions CreateDefaultSerializerOptions() =>
+        new(JsonSerializerDefaults.Web)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
     private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
     {
         if (string.IsNullOrWhiteSpace(codexHomeDirectory))
@@ -112,7 +151,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var result = await _rpc.SendRequestAsync(
             "initialize",
-            new InitializeParams { ClientInfo = clientInfo, Capabilities = null },
+            BuildInitializeParams(clientInfo, _options.Capabilities),
             ct);
 
         await _rpc.SendNotificationAsync("initialized", @params: null, ct);
@@ -144,7 +183,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
         var result = await _rpc.SendRequestAsync(
             "thread/start",
@@ -199,7 +238,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
 
-        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: false);
+        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
         var result = await _rpc.SendRequestAsync(
             "thread/resume",
@@ -234,7 +273,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         ArgumentNullException.ThrowIfNull(options);
 
-        ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: false);
+        ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
         var result = await _rpc.SendRequestAsync(
             "turn/start",

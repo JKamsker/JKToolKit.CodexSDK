@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -55,4 +56,13 @@ public sealed class CodexAppServerClientOptions
     /// Gets or sets an optional handler for approval requests coming from the app server.
     /// </summary>
     public IAppServerApprovalHandler? ApprovalHandler { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional initialize-time capabilities negotiated with the app-server.
+    /// </summary>
+    /// <remarks>
+    /// The SDK is stable-only by default (<see cref="Capabilities"/> is <see langword="null"/>).
+    /// Newer upstream Codex builds gate some fields/methods behind <c>capabilities.experimentalApi</c>.
+    /// </remarks>
+    public InitializeCapabilities? Capabilities { get; set; }
 }

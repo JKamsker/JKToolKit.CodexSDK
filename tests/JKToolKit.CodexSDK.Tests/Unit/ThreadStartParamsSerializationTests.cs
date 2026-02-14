@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FluentAssertions;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -11,7 +12,7 @@ public sealed class ThreadStartParamsSerializationTests
     {
         var json = JsonSerializer.Serialize(
             new ThreadStartParams { ExperimentalRawEvents = false },
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            CodexAppServerClient.CreateDefaultSerializerOptions());
 
         json.Should().NotContain("experimentalRawEvents");
     }
@@ -21,9 +22,8 @@ public sealed class ThreadStartParamsSerializationTests
     {
         var json = JsonSerializer.Serialize(
             new ThreadStartParams { ExperimentalRawEvents = true },
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            CodexAppServerClient.CreateDefaultSerializerOptions());
 
         json.Should().Contain("\"experimentalRawEvents\":true");
     }
 }
-

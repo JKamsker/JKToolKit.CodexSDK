@@ -12,13 +12,13 @@ This plan adds a *clear, explicit, safe-by-default* opt-in in `JKToolKit.CodexSD
 
 ### Must-haves
 
-- [ ] **Opt-in is explicit** and disabled by default.
-- [ ] **SDK can successfully use experimental-gated fields/methods** when enabled, including:
+- [x] **Opt-in is explicit** and disabled by default.
+- [x] **SDK can successfully use experimental-gated fields/methods** when enabled, including:
    - `thread/resume.history`
    - `thread/resume.path`
    - `turn/start.collaborationMode`
    - (and future experimental additions)
-- [ ] **Good UX**:
+- [x] **Good UX**:
    - Clear option naming
    - Clear exceptions when not enabled
    - Docs that explain tradeoffs (unstable surface)
@@ -43,9 +43,9 @@ Upstream also added capabilities like `optOutNotificationMethods` (list of metho
 
 Proposed:
 
-- [ ] Add optional properties:
-  - [ ] `bool ExperimentalApi { get; init; }`
-  - [ ] `IReadOnlyList<string>? OptOutNotificationMethods { get; init; }`
+- [x] Add optional properties:
+  - [x] `bool ExperimentalApi { get; init; }`
+  - [x] `IReadOnlyList<string>? OptOutNotificationMethods { get; init; }`
 
 Design notes:
 
@@ -60,7 +60,7 @@ Add to:
 
 Proposed options field(s):
 
-- [ ] `InitializeCapabilities? Capabilities { get; set; }`
+- [x] `InitializeCapabilities? Capabilities { get; set; }`
 
 Defaults:
 
@@ -87,8 +87,8 @@ Current behavior:
 
 Proposed behavior:
 
-- [ ] Pass options capabilities:
-  - [ ] `Capabilities = _options.Capabilities` (or derived from other option fields)
+- [x] Pass options capabilities:
+  - [x] `Capabilities = _options.Capabilities` (or derived from other option fields)
 
 ### 2.4 Interaction with “stable-only” guardrails
 
@@ -134,8 +134,8 @@ Potential risk:
 
 Mitigations:
 
-- [ ] Keep capabilities omitted by default (null).
-- [ ] Keep capability objects minimal and only include fields explicitly set.
+- [x] Keep capabilities omitted by default (null).
+- [x] Keep capability objects minimal and only include fields explicitly set.
 - [ ] If initialize fails, surface the raw JSON-RPC error as-is plus add an optional “help” suffix.
 
 ### 3.2 Mixed capability usage
@@ -199,14 +199,14 @@ await using var client = await CodexAppServerClient.StartAsync(options);
 
 Validate that:
 
-- [ ] When `Capabilities == null`, initialize params do not include it (or include null consistently).
-- [ ] When `Capabilities.ExperimentalApi == true`, initialize params include:
-  - [ ] `"capabilities": { "experimentalApi": true }`
-- [ ] When `OptOutNotificationMethods` set, it serializes as expected.
+- [x] When `Capabilities == null`, initialize params do not include it (or include null consistently).
+- [x] When `Capabilities.ExperimentalApi == true`, initialize params include:
+  - [x] `"capabilities": { "experimentalApi": true }`
+- [x] When `OptOutNotificationMethods` set, it serializes as expected.
 
 Suggested approach:
 
-- [ ] Unit-test the object being passed to `_rpc.SendRequestAsync("initialize", ...)` by
+- [x] Unit-test the object being passed to `_rpc.SendRequestAsync("initialize", ...)` by
   extracting an internal helper that builds the `InitializeParams`.
 
 ### 5.2 Integration tests (optional)
@@ -222,28 +222,28 @@ Guard with env var so tests are opt-in.
 
 ## 8) Implementation milestones (experimental opt-in)
 
-- [ ] **Wire capabilities through initialize**
-  - [ ] Add `CodexAppServerClientOptions.Capabilities`
-  - [ ] Plumb into `InitializeAsync(...)`
-- [ ] **Update DTOs**
-  - [ ] Extend `InitializeCapabilities` with `OptOutNotificationMethods`
-- [ ] **Adjust guardrails**
-  - [ ] Make stable-only checks conditional on `ExperimentalApi == true`
-- [ ] **Docs**
-  - [ ] Add a “Capabilities” section and examples
-- [ ] **Tests**
-  - [ ] Unit tests for initialize payload construction
+- [x] **Wire capabilities through initialize**
+  - [x] Add `CodexAppServerClientOptions.Capabilities`
+  - [x] Plumb into `InitializeAsync(...)`
+- [x] **Update DTOs**
+  - [x] Extend `InitializeCapabilities` with `OptOutNotificationMethods`
+- [x] **Adjust guardrails**
+  - [x] Make stable-only checks conditional on `ExperimentalApi == true`
+- [x] **Docs**
+  - [x] Add a “Capabilities” section and examples
+- [x] **Tests**
+  - [x] Unit tests for initialize payload construction
   - [ ] Optional integration test for one experimental field
 
 ---
 
 ## 6) Acceptance criteria
 
-- [ ] Default behavior remains stable-only (no opt-in).
-- [ ] Enabling experimental:
-  - [ ] sets the capability at initialize
-  - [ ] unblocks known gated fields (`thread/resume.history`, `thread/resume.path`, `turn/start.collaborationMode`)
-- [ ] Docs clearly warn experimental usage is unstable and may break with upstream updates.
+- [x] Default behavior remains stable-only (no opt-in).
+- [x] Enabling experimental:
+  - [x] sets the capability at initialize
+  - [x] unblocks known gated fields (`thread/resume.history`, `thread/resume.path`, `turn/start.collaborationMode`)
+- [x] Docs clearly warn experimental usage is unstable and may break with upstream updates.
 
 ---
 
@@ -251,5 +251,5 @@ Guard with env var so tests are opt-in.
 
 - [ ] Parse upstream error messages and translate them into typed exceptions:
   - [ ] e.g. `CodexExperimentalApiRequiredException` with `Descriptor = "turn/start.collaborationMode"`
-- [ ] Add a “capabilities compatibility” section in `docs/AppServer/README.md`:
-  - [ ] stable vs experimental, and how to opt in.
+- [x] Add a “capabilities compatibility” section in `docs/AppServer/README.md`:
+  - [x] stable vs experimental, and how to opt in.
