@@ -1,15 +1,36 @@
 {
-  "skills": [
+  "data": [
     {
-      "name": "tasklist-executor",
-      "description": "Execute work from a tasklist.",
-      "path": "C:\\skills\\tasklist-executor",
-      "unknown": 1
+      "cwd": "C:\\repo",
+      "skills": [
+        {
+          "name": "tasklist-executor",
+          "description": "Execute work from a tasklist.",
+          "shortDescription": "Execute tasks",
+          "path": "C:\\skills\\tasklist-executor",
+          "enabled": true,
+          "scope": "user",
+          "unknown": 1
+        }
+      ],
+      "errors": [
+        {
+          "path": "C:\\repo\\skill.toml",
+          "message": "bad manifest",
+          "unknownErr": true
+        }
+      ]
     },
     {
-      "id": "fallback-id",
-      "description": null,
-      "path": null
+      "cwd": "C:\\other",
+      "skills": [
+        {
+          "id": "fallback-id",
+          "description": null,
+          "path": null
+        }
+      ],
+      "errors": []
     }
   ]
 }

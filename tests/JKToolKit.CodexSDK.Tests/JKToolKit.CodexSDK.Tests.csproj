@@ -29,6 +29,7 @@
     <None Update="Fixtures\\appserver-notifications.jsonl" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\skills-list-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\app-list-response.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\skills-remote-read-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\review-start-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\turn-steer-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-list-response.json" CopyToOutputDirectory="PreserveNewest" />

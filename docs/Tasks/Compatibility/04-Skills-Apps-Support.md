@@ -19,10 +19,10 @@ This plan adds first-class support to `JKToolKit.CodexSDK.AppServer` with typed 
 
 ### Nice-to-haves
 
-- [ ] `skills/remote/read`, `skills/remote/write`
-- [ ] `skills/config/write`
-- [ ] richer models for skill/app descriptors (icons, disabled reasons, requirements)
-- [ ] fuzzy file search sessions (experimental upstream)
+- [x] `skills/remote/read`, `skills/remote/write`
+- [x] `skills/config/write`
+- [x] richer models for skill/app descriptors (icons, disabled reasons, requirements)
+- [x] fuzzy file search sessions (experimental upstream)
 
 ---
 
@@ -175,11 +175,11 @@ This avoids chasing frequent upstream schema edits.
   - [x] `skills/list`
   - [x] `app/list`
   - [x] `app/list/updated` notification mapping
-- [ ] Phase B — management:
-  - [ ] `skills/config/write`
-  - [ ] `skills/remote/read` / `skills/remote/write`
-- [ ] Phase C — experimental-only extras:
-  - [ ] fuzzy file search session APIs + notification
+- [x] Phase B — management:
+  - [x] `skills/config/write`
+  - [x] `skills/remote/read` / `skills/remote/write`
+- [x] Phase C — experimental-only extras:
+  - [x] fuzzy file search session APIs + notification
 
 ---
 
@@ -206,8 +206,8 @@ Ensure:
 - [x] Response parsing tests:
   - [x] skills/list response sample
   - [x] app/list response sample
-- [ ] Integration tests (optional):
-  - [ ] list skills/apps on a local Codex install (guarded by env var)
+- [x] Integration tests (optional):
+  - [x] list skills/apps on a local Codex install (guarded by env var)
 
 ---
 

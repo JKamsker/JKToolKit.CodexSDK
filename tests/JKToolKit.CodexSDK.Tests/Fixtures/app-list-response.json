@@ -1,19 +1,27 @@
 {
-  "apps": [
+  "data": [
     {
       "id": "app_1",
       "name": "GitHub",
-      "title": "GitHub",
-      "enabled": true
+      "description": "GitHub integration",
+      "logoUrl": "https://example.com/logo.png",
+      "logoUrlDark": "https://example.com/logo-dark.png",
+      "distributionChannel": "built-in",
+      "installUrl": "https://example.com/install",
+      "isAccessible": true,
+      "isEnabled": true
     },
     {
       "id": "app_2",
       "name": "Example",
-      "enabled": false,
+      "description": null,
+      "isAccessible": false,
+      "isEnabled": false,
       "disabledReason": "authRequired",
       "unknown": { "x": 1 }
     }
   ],
+  "nextCursor": "cursor_apps_2",
   "topUnknown": true
 }
 

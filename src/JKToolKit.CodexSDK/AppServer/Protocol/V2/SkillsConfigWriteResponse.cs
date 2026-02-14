@@ -4,15 +4,15 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 /// <summary>
-/// Minimal envelope for a <c>skills/list</c> response.
+/// Minimal envelope for a <c>skills/config/write</c> response.
 /// </summary>
-public sealed record class SkillsListResponse
+public sealed record class SkillsConfigWriteResponse
 {
     /// <summary>
-    /// Gets the response data array when present (raw).
+    /// Gets the effective enabled value after applying the config update.
     /// </summary>
-    [JsonPropertyName("data")]
-    public JsonElement? Data { get; init; }
+    [JsonPropertyName("effectiveEnabled")]
+    public bool? EffectiveEnabled { get; init; }
 
     /// <summary>
     /// Gets additional unmodeled properties for forward compatibility.

@@ -13,6 +13,11 @@ public sealed record class AppsListResult
     public required IReadOnlyList<AppDescriptor> Apps { get; init; }
 
     /// <summary>
+    /// Gets the next cursor token when present.
+    /// </summary>
+    public string? NextCursor { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the response.
     /// </summary>
     public required JsonElement Raw { get; init; }

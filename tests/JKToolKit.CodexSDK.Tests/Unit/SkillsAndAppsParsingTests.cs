@@ -27,6 +27,8 @@ public sealed class SkillsAndAppsParsingTests
         var skills = CodexAppServerClient.ParseSkillsListSkills(raw);
 
         skills.Select(s => s.Name).Should().Equal("tasklist-executor", "fallback-id");
+        skills[0].Enabled.Should().BeTrue();
+        skills[0].Cwd.Should().Be("C:\\repo");
         skills[0].Raw.TryGetProperty("unknown", out _).Should().BeTrue();
     }
 
@@ -37,8 +39,10 @@ public sealed class SkillsAndAppsParsingTests
         var apps = CodexAppServerClient.ParseAppsListApps(raw);
 
         apps.Select(a => a.Id).Should().Equal("app_1", "app_2");
+        apps[1].IsEnabled.Should().BeFalse();
         apps[1].Enabled.Should().BeFalse();
         apps[1].DisabledReason.Should().Be("authRequired");
+        apps[0].LogoUrl.Should().NotBeNullOrWhiteSpace();
         apps[1].Raw.TryGetProperty("unknown", out _).Should().BeTrue();
     }
 }

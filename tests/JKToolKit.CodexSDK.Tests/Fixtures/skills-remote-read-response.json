@@ -1,0 +1,11 @@
+{
+  "data": [
+    {
+      "id": "remote_1",
+      "name": "RemoteSkill",
+      "description": "remote desc",
+      "unknown": true
+    }
+  ]
+}
+

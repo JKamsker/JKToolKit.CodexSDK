@@ -4,21 +4,15 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 /// <summary>
-/// Minimal envelope for an <c>app/list</c> response.
+/// Minimal envelope for a <c>skills/remote/read</c> response.
 /// </summary>
-public sealed record class AppListResponse
+public sealed record class SkillsRemoteReadResponse
 {
     /// <summary>
-    /// Gets the response data array when present (raw).
+    /// Gets the remote skills array when present (raw).
     /// </summary>
     [JsonPropertyName("data")]
     public JsonElement? Data { get; init; }
-
-    /// <summary>
-    /// Gets the next cursor token when present.
-    /// </summary>
-    [JsonPropertyName("nextCursor")]
-    public string? NextCursor { get; init; }
 
     /// <summary>
     /// Gets additional unmodeled properties for forward compatibility.

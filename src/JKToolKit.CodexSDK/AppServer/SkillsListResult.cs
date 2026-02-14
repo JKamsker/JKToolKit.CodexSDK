@@ -13,6 +13,11 @@ public sealed record class SkillsListResult
     public required IReadOnlyList<SkillDescriptor> Skills { get; init; }
 
     /// <summary>
+    /// Gets the returned per-scope entries when present.
+    /// </summary>
+    public IReadOnlyList<SkillsListEntryResult>? Entries { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the response.
     /// </summary>
     public required JsonElement Raw { get; init; }
