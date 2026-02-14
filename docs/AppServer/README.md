@@ -131,6 +131,18 @@ Notes:
 - Experimental surfaces are upstream-unstable and may break across Codex updates.
 - If your Codex app-server is too old to understand a capability field, initialize may fail with a JSON-RPC invalid-params error.
 
+## Sandbox Policies (Read-Only Access)
+
+Codex supports per-turn sandbox policy overrides via `TurnStartOptions.SandboxPolicy` (wire `sandboxPolicy`).
+
+Newer upstream Codex builds can additionally accept **read-only access controls** to restrict what the model is allowed to read:
+
+- `SandboxPolicy.ReadOnly.Access` (`"access"`) — applies to the read-only policy variant
+- `SandboxPolicy.WorkspaceWrite.ReadOnlyAccess` (`"readOnlyAccess"`) — applies to the workspace-write policy variant
+
+If you set these fields and the app-server is too old to understand them, it may fail with a JSON-RPC invalid-params error.
+The SDK attempts to include the serialized `sandboxPolicy` and `InitializeResult.UserAgent` in the thrown exception message to help diagnose version mismatches.
+
 ## Getting Started
 
 ### Prerequisites

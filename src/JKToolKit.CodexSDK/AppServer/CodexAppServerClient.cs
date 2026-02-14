@@ -15,6 +15,7 @@ using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -33,6 +34,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private int _disposed;
     private int _disconnectSignaled;
     private readonly Task _processExitWatcher;
+    private AppServerInitializeResult? _initializeResult;
 
     private bool ExperimentalApiEnabled => _options.Capabilities?.ExperimentalApi == true;
 
@@ -119,7 +121,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var client = new CodexAppServerClient(options, process, rpc, logger);
 
-        await client.InitializeAsync(options.DefaultClientInfo, ct);
+        _ = await client.InitializeAsync(options.DefaultClientInfo, ct);
 
         return client;
     }
@@ -156,8 +158,14 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         await _rpc.SendNotificationAsync("initialized", @params: null, ct);
 
-        return new AppServerInitializeResult(result);
+        _initializeResult = new AppServerInitializeResult(result);
+        return _initializeResult;
     }
+
+    /// <summary>
+    /// Gets the initialize result payload, if <see cref="InitializeAsync"/> has completed successfully.
+    /// </summary>
+    public AppServerInitializeResult? InitializeResult => _initializeResult;
 
     /// <summary>
     /// Sends an arbitrary JSON-RPC request to the app server.
@@ -448,23 +456,38 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
-        var result = await _rpc.SendRequestAsync(
-            "turn/start",
-            new TurnStartParams
-            {
-                ThreadId = threadId,
-                Input = options.Input.Select(i => i.Wire).ToArray(),
-                Cwd = options.Cwd,
-                ApprovalPolicy = options.ApprovalPolicy?.Value,
-                SandboxPolicy = options.SandboxPolicy,
-                Model = options.Model?.Value,
-                Effort = options.Effort?.Value,
-                Summary = options.Summary,
-                Personality = options.Personality,
-                OutputSchema = options.OutputSchema,
-                CollaborationMode = options.CollaborationMode
-            },
-            ct);
+        var turnStartParams = new TurnStartParams
+        {
+            ThreadId = threadId,
+            Input = options.Input.Select(i => i.Wire).ToArray(),
+            Cwd = options.Cwd,
+            ApprovalPolicy = options.ApprovalPolicy?.Value,
+            SandboxPolicy = options.SandboxPolicy,
+            Model = options.Model?.Value,
+            Effort = options.Effort?.Value,
+            Summary = options.Summary,
+            Personality = options.Personality,
+            OutputSchema = options.OutputSchema,
+            CollaborationMode = options.CollaborationMode
+        };
+
+        JsonElement result;
+        try
+        {
+            result = await _rpc.SendRequestAsync("turn/start", turnStartParams, ct);
+        }
+        catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32602 && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
+        {
+            var ua = InitializeResult?.UserAgent ?? "<unknown userAgent>";
+            var sandboxJson = JsonSerializer.Serialize(options.SandboxPolicy, CreateDefaultSerializerOptions());
+            var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
+                ? $" Data: {ex.Error.Data.Value.GetRawText()}"
+                : string.Empty;
+
+            throw new InvalidOperationException(
+                $"turn/start rejected sandboxPolicy parameters (likely unsupported by this Codex app-server build). userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
+                ex);
+        }
 
         var turnId = ExtractTurnId(result);
         if (string.IsNullOrWhiteSpace(turnId))
@@ -475,6 +498,14 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         return CreateTurnHandle(threadId, turnId);
     }
+
+    private static bool ContainsReadOnlyAccessOverrides(SandboxPolicy? policy) =>
+        policy switch
+        {
+            SandboxPolicy.ReadOnly r => r.Access is not null,
+            SandboxPolicy.WorkspaceWrite w => w.ReadOnlyAccess is not null,
+            _ => false
+        };
 
     /// <summary>
     /// Steers an in-progress turn by appending input items.

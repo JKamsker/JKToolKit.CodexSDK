@@ -15,14 +15,14 @@ This plan focuses on exposing *the high-value subset* in `JKToolKit.CodexSDK.App
 
 ### Must-haves
 
-- [ ] Expose upstream read-only access controls in the app-server `SandboxPolicy` types:
+- [x] Expose upstream read-only access controls in the app-server `SandboxPolicy` types:
    - `ReadOnlyAccess` union (`fullAccess` vs `restricted`)
    - attach to:
      - `SandboxPolicy.ReadOnly` (as `access`)
      - `SandboxPolicy.WorkspaceWrite` (as `readOnlyAccess`)
-- [ ] Keep defaults backward compatible:
-  - [ ] do not send new fields unless explicitly set
-- [ ] Improve docs around sandbox/permissions tradeoffs.
+- [x] Keep defaults backward compatible:
+  - [x] do not send new fields unless explicitly set
+- [x] Improve docs around sandbox/permissions tradeoffs.
 
 ### Nice-to-haves
 
@@ -58,8 +58,8 @@ Add under:
 
 Model shape (conceptual):
 
-- [ ] `ReadOnlyAccess.FullAccess` → `{ "type": "fullAccess" }`
-- [ ] `ReadOnlyAccess.Restricted` → `{ "type": "restricted", "includePlatformDefaults": true, "readableRoots": [] }`
+- [x] `ReadOnlyAccess.FullAccess` → `{ "type": "fullAccess" }`
+- [x] `ReadOnlyAccess.Restricted` → `{ "type": "restricted", "includePlatformDefaults": true, "readableRoots": [] }`
 
 Ensure:
 
@@ -86,14 +86,14 @@ Design notes:
 
 Plan to keep compatibility:
 
-- [ ] **Do not send new fields by default**
-  - [ ] Keep `Access` / `ReadOnlyAccess` nullable and omit when null.
-- [ ] **Document minimum Codex version expectations**
-  - [ ] “If you set `ReadOnlyAccess`, you need a Codex build new enough to understand it.”
-- [ ] **Fail with actionable guidance**
-  - [ ] If app-server returns a JSON-RPC “invalid params” error, include:
-    - [ ] the sandbox policy shape we sent (redacted as needed)
-    - [ ] the server `userAgent` (available from `initialize`) to help diagnose mismatch
+- [x] **Do not send new fields by default**
+  - [x] Keep `Access` / `ReadOnlyAccess` nullable and omit when null.
+- [x] **Document minimum Codex version expectations**
+  - [x] “If you set `ReadOnlyAccess`, you need a Codex build new enough to understand it.”
+- [x] **Fail with actionable guidance**
+  - [x] If app-server returns a JSON-RPC “invalid params” error, include:
+    - [x] the sandbox policy shape we sent (redacted as needed)
+    - [x] the server `userAgent` (available from `initialize`) to help diagnose mismatch
 
 Optional enhancement:
 
@@ -168,10 +168,10 @@ Design stance:
 
 ## 6) Testing strategy
 
-- [ ] Unit tests:
-  - [ ] `ReadOnlyAccess` serialization matches upstream shapes
-  - [ ] `SandboxPolicy.ReadOnly` includes `"access"` only when set
-  - [ ] `SandboxPolicy.WorkspaceWrite` includes `"readOnlyAccess"` only when set
+- [x] Unit tests:
+  - [x] `ReadOnlyAccess` serialization matches upstream shapes
+  - [x] `SandboxPolicy.ReadOnly` includes `"access"` only when set
+  - [x] `SandboxPolicy.WorkspaceWrite` includes `"readOnlyAccess"` only when set
 - [ ] Integration tests (optional):
   - [ ] start app-server and run a turn with restricted readable roots (if practical)
 
@@ -179,19 +179,19 @@ Design stance:
 
 ## 7) Acceptance criteria
 
-- [ ] SDK can express upstream read-only access controls without breaking existing callers.
-- [ ] Defaults remain stable and do not send new fields unintentionally.
-- [ ] Docs clearly explain when and why to use read-only access restrictions.
+- [x] SDK can express upstream read-only access controls without breaking existing callers.
+- [x] Defaults remain stable and do not send new fields unintentionally.
+- [x] Docs clearly explain when and why to use read-only access restrictions.
 
 ---
 
 ## 8) Implementation milestones
 
-- [ ] Phase A — wire models
-  - [ ] Introduce `ReadOnlyAccess` union type (wire DTO)
-  - [ ] Extend `SandboxPolicy.ReadOnly` / `SandboxPolicy.WorkspaceWrite` with nullable fields
-- [ ] Phase B — docs
-  - [ ] Update `docs/AppServer/README.md` with examples and version notes
-- [ ] Phase C — tests
-  - [ ] Unit tests for serialization/omission
+- [x] Phase A — wire models
+  - [x] Introduce `ReadOnlyAccess` union type (wire DTO)
+  - [x] Extend `SandboxPolicy.ReadOnly` / `SandboxPolicy.WorkspaceWrite` with nullable fields
+- [x] Phase B — docs
+  - [x] Update `docs/AppServer/README.md` with examples and version notes
+- [x] Phase C — tests
+  - [x] Unit tests for serialization/omission
   - [ ] Optional integration test (guarded by env var)
