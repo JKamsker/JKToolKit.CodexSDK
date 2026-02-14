@@ -80,7 +80,7 @@ public sealed class TurnStartOptions
     /// <remarks>
     /// When set, Codex treats this as taking precedence over some other overrides (such as model, reasoning effort,
     /// and developer instructions).
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     public JsonElement? CollaborationMode { get; set; }
 }
-

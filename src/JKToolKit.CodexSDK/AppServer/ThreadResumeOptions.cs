@@ -21,11 +21,17 @@ public sealed class ThreadResumeOptions
     /// <summary>
     /// [UNSTABLE] If specified, resume using the provided history instead of loading from disk.
     /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
     public JsonElement? History { get; set; }
 
     /// <summary>
     /// [UNSTABLE] If specified, resume from a specific rollout path on disk.
     /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
     public string? Path { get; set; }
 
     /// <summary>

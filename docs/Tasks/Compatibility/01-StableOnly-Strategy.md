@@ -116,18 +116,18 @@ Audit serialization defaults:
 
 Concrete audit items:
 
-- [ ] `ThreadStartParams.ExperimentalRawEvents` is currently a non-nullable bool.
+- [x] `ThreadStartParams.ExperimentalRawEvents` is currently a non-nullable bool.
   - [ ] Confirm upstream gating triggers only when true.
-  - [ ] If upstream gating changes to “field present”, consider making it nullable (`bool?`) or adding `JsonIgnore(WhenWritingDefault)` logic.
+  - [x] If upstream gating changes to “field present”, consider making it nullable (`bool?`) or adding `JsonIgnore(WhenWritingDefault)` logic.
 
 ### 3.4 Implementation milestones (stable-only)
 
-- [ ] **Document stable vs experimental**
-  - [ ] Add a section to `docs/AppServer/README.md` with the matrix above.
-- [ ] **Add client-side guardrails**
-  - [ ] Throw early when callers set experimental-only fields without opt-in.
-- [ ] **Add tests**
-  - [ ] Unit tests verifying guardrails and default request shapes.
+- [x] **Document stable vs experimental**
+  - [x] Add a section to `docs/AppServer/README.md` with the matrix above.
+- [x] **Add client-side guardrails**
+  - [x] Throw early when callers set experimental-only fields without opt-in.
+- [x] **Add tests**
+  - [x] Unit tests verifying guardrails and default request shapes.
 
 ---
 
@@ -140,16 +140,16 @@ Update app-server docs to clearly separate:
 
 Places to update:
 
-- [ ] `docs/AppServer/README.md`
-- [ ] Public XML docs on:
+- [x] `docs/AppServer/README.md`
+- [x] Public XML docs on:
   - `ThreadResumeOptions.History`
   - `ThreadResumeOptions.Path`
   - `TurnStartParams.CollaborationMode`
 
 Add a “Troubleshooting” entry:
 
-- [ ] Error: `"<descriptor> requires experimentalApi capability"`
-  - [ ] Explanation: upstream gating
+- [x] Error: `"<descriptor> requires experimentalApi capability"`
+  - [x] Explanation: upstream gating
   - [ ] Fix: enable opt-in (link to plan 02)
 
 ---
@@ -160,12 +160,12 @@ Add a “Troubleshooting” entry:
 
 Add tests around client-side validation:
 
-- [ ] When experimental-only properties are set, the SDK throws with a clear message *before* sending JSON-RPC.
+- [x] When experimental-only properties are set, the SDK throws with a clear message *before* sending JSON-RPC.
 
 Best test seam:
 
 - [ ] For `CodexAppServerClient`, inject a fake `JsonRpcConnection` or wrap request building behind an interface.
-- [ ] If that is too heavy, validate at options level and unit test the options validation method(s).
+- [x] If that is too heavy, validate at options level and unit test the options validation method(s).
 
 ### 5.2 Integration tests (optional / gated)
 
@@ -183,13 +183,13 @@ Guard with env var (consistent with existing style in repo).
 
 - [ ] Against latest upstream Codex:
   - [ ] Stable path works end-to-end with no experimental opt-in.
-- [ ] SDK fails fast (client-side) for:
-  - [ ] `thread/resume.history`
-  - [ ] `thread/resume.path`
-  - [ ] `turn/start.collaborationMode`
-- [ ] Docs clearly explain:
-  - [ ] What is stable
-  - [ ] What is experimental
+- [x] SDK fails fast (client-side) for:
+  - [x] `thread/resume.history`
+  - [x] `thread/resume.path`
+  - [x] `turn/start.collaborationMode`
+- [x] Docs clearly explain:
+  - [x] What is stable
+  - [x] What is experimental
   - [ ] How to enable experimental safely
 
 ---
@@ -197,7 +197,7 @@ Guard with env var (consistent with existing style in repo).
 ## 7) Open questions / decisions
 
 - [ ] Do we want a single “capabilities” knob in `CodexAppServerClientOptions`, or separate boolean `EnableExperimentalApi`?
-- [ ] Should client-side validation be:
-  - [ ] strict (throw), or
+- [x] Should client-side validation be:
+  - [x] strict (throw), or
   - [ ] permissive (silently ignore experimental fields unless opt-in)?
   - [ ] Recommendation: **strict** (throw).

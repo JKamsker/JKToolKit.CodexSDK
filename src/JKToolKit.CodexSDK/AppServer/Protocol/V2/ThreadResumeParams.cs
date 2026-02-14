@@ -25,6 +25,7 @@ public sealed record class ThreadResumeParams
     /// <remarks>
     /// This field is unstable / intended for internal use (Codex Cloud).
     /// If specified, the server resumes the thread from the provided history instead of loading from disk.
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     [JsonPropertyName("history")]
     public JsonElement? History { get; init; }
@@ -34,6 +35,7 @@ public sealed record class ThreadResumeParams
     /// </summary>
     /// <remarks>
     /// This field is unstable. If specified, the server loads the thread from the given path on disk.
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     [JsonPropertyName("path")]
     public string? Path { get; init; }

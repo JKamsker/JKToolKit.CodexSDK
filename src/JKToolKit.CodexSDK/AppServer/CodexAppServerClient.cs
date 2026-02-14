@@ -144,6 +144,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
 
+        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+
         var result = await _rpc.SendRequestAsync(
             "thread/start",
             new ThreadStartParams
@@ -197,6 +199,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
 
+        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: false);
+
         var result = await _rpc.SendRequestAsync(
             "thread/resume",
             new ThreadResumeParams
@@ -229,6 +233,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
         ArgumentNullException.ThrowIfNull(options);
+
+        ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: false);
 
         var result = await _rpc.SendRequestAsync(
             "turn/start",

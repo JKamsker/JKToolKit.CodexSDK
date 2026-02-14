@@ -88,6 +88,7 @@ public sealed record class TurnStartParams
     /// <remarks>
     /// When set, the server may treat this as taking precedence over other overrides such as model, reasoning effort,
     /// and developer instructions.
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     [JsonPropertyName("collaborationMode")]
     public JsonElement? CollaborationMode { get; init; }

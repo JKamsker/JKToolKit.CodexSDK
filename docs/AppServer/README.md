@@ -72,6 +72,32 @@ The library maps a small must-have subset of notifications into typed records:
 - `TurnCompletedNotification` (`turn/completed`)
 - `UnknownNotification` fallback for forward-compatibility
 
+## Stable vs Experimental (Upstream Compatibility)
+
+Newer upstream Codex builds increasingly gate fields/methods behind an initialize-time capability:
+
+- `initialize.params.capabilities.experimentalApi = true`
+
+This SDK is **stable-only by default** and avoids sending known experimental-gated fields unless explicitly requested.
+
+### Stable-only subset (works without experimental opt-in)
+
+- `initialize` + `initialized`
+- `thread/start` (stable subset)
+- `thread/resume` by `threadId` (stable subset)
+- `turn/start` (stable subset; no `collaborationMode`)
+- `turn/interrupt`
+
+### Known experimental-gated fields (blocked by default)
+
+If you set any of these while experimental opt-in is disabled, the SDK throws `CodexExperimentalApiRequiredException`
+before sending the request:
+
+- `thread/resume.history`
+- `thread/resume.path`
+- `turn/start.collaborationMode`
+- `thread/start.experimentalRawEvents` (when `true`)
+
 ## Getting Started
 
 ### Prerequisites
@@ -201,4 +227,5 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
 - If you hit interactive prompts unexpectedly: configure an `ApprovalHandler` or set `ApprovalPolicy = Never`.
+- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in in the initialize capabilities.
 - If the Codex subprocess dies mid-turn: the SDK now faults the global notification stream and any in-progress `CodexTurnHandle` streams/completions with `CodexAppServerDisconnectedException` (includes exit code and a best-effort stderr tail).
