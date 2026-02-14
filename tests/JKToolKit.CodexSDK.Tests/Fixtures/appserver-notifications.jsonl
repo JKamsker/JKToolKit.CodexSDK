@@ -1,4 +1,7 @@
 {"method":"item/agentMessage/delta","params":{"threadId":"t1","turnId":"u1","itemId":"i1","delta":"hello"}}
+{"method":"thread/started","params":{"thread":{"id":"thr_123","threadName":"Thread 123"}}}
+{"method":"thread/name/updated","params":{"threadId":"thr_123","threadName":"NewName"}}
+{"method":"turn/started","params":{"threadId":"thr_123","turn":{"id":"turn_1","status":"inProgress","items":[],"error":null}}}
 {"method":"item/started","params":{"threadId":"t1","turnId":"u1","item":{"type":"agentMessage","id":"i1","text":"hello"}}}
 {"method":"item/completed","params":{"threadId":"t1","turnId":"u1","item":{"type":"agentMessage","id":"i1","text":"hello"}}}
 {"method":"turn/completed","params":{"threadId":"t1","turn":{"id":"u1","items":[],"status":"completed","error":null}}}

@@ -79,4 +79,24 @@ public sealed class ExperimentalApiGuardsTests
         act.Should().Throw<CodexExperimentalApiRequiredException>()
             .Which.Descriptor.Should().Be("thread/fork.path");
     }
+
+    [Fact]
+    public void ValidateThreadFork_Throws_WhenNeitherThreadIdNorPathSet()
+    {
+        var options = new ThreadForkOptions();
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ValidateThreadFork_DoesNotThrow_WhenThreadIdSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadForkOptions { ThreadId = "thr_123" };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
+
+        act.Should().NotThrow();
+    }
 }

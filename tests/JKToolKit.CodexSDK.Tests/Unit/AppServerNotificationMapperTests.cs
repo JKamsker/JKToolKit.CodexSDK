@@ -43,6 +43,9 @@ public sealed class AppServerNotificationMapperTests
         }
 
         mapped.Should().ContainSingle(x => x is AgentMessageDeltaNotification);
+        mapped.Should().ContainSingle(x => x is ThreadStartedNotification);
+        mapped.Should().ContainSingle(x => x is ThreadNameUpdatedNotification);
+        mapped.Should().ContainSingle(x => x is TurnStartedNotification);
         mapped.Should().ContainSingle(x => x is AppListUpdatedNotification);
         mapped.Should().ContainSingle(x => x is TurnCompletedNotification);
         mapped.Should().ContainSingle(x => x is UnknownNotification);

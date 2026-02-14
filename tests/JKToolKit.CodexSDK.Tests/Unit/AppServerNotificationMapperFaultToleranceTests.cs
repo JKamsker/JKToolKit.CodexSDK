@@ -38,7 +38,8 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "account/login/completed",
         "authStatusChange",
         "loginChatGptComplete",
-        "sessionConfigured"
+        "sessionConfigured",
+        "app/list/updated"
     ];
 
     public static IEnumerable<object[]> BogusParams()
@@ -84,4 +85,3 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         return doc.RootElement.Clone();
     }
 }
-
