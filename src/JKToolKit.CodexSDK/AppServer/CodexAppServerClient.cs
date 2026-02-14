@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,7 +37,70 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private readonly Task _processExitWatcher;
     private AppServerInitializeResult? _initializeResult;
 
-    private bool ExperimentalApiEnabled => _options.Capabilities?.ExperimentalApi == true;
+    private bool ExperimentalApiEnabled => _options.Capabilities?.ExperimentalApi == true || _options.ExperimentalApi;
+
+    internal static bool TryParseExperimentalApiRequiredMessage(string? message, out string descriptor)
+    {
+        const string suffix = " requires experimentalApi capability";
+
+        descriptor = string.Empty;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        var idx = message.IndexOf(suffix, StringComparison.OrdinalIgnoreCase);
+        if (idx <= 0)
+        {
+            return false;
+        }
+
+        descriptor = message[..idx].Trim().Trim('\'', '"');
+        return !string.IsNullOrWhiteSpace(descriptor);
+    }
+
+    internal static InitializeCapabilities? BuildCapabilitiesFromOptions(CodexAppServerClientOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var caps = options.Capabilities;
+
+        var experimentalApi = options.ExperimentalApi || caps?.ExperimentalApi == true;
+
+        var optOut = new List<string>();
+        if (caps?.OptOutNotificationMethods is { Count: > 0 })
+        {
+            optOut.AddRange(caps.OptOutNotificationMethods.Where(s => !string.IsNullOrWhiteSpace(s)));
+        }
+        if (options.OptOutNotificationMethods is { Count: > 0 })
+        {
+            optOut.AddRange(options.OptOutNotificationMethods.Where(s => !string.IsNullOrWhiteSpace(s)));
+        }
+
+        IReadOnlyList<string>? optOutNormalized = null;
+        if (optOut.Count > 0)
+        {
+            optOutNormalized = optOut.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        return NormalizeCapabilities(new InitializeCapabilities
+        {
+            ExperimentalApi = experimentalApi,
+            OptOutNotificationMethods = optOutNormalized
+        });
+    }
+
+    private async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
+    {
+        try
+        {
+            return await _rpc.SendRequestAsync(method, @params, ct);
+        }
+        catch (JsonRpcRemoteException ex) when (TryParseExperimentalApiRequiredMessage(ex.Error.Message, out var descriptor))
+        {
+            throw new CodexExperimentalApiRequiredException(descriptor, ex);
+        }
+    }
 
     internal static InitializeCapabilities? NormalizeCapabilities(InitializeCapabilities? capabilities)
     {
@@ -152,15 +216,42 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(clientInfo);
 
-        var result = await _rpc.SendRequestAsync(
-            "initialize",
-            BuildInitializeParams(clientInfo, _options.Capabilities),
-            ct);
+        var requestedCapabilities = BuildCapabilitiesFromOptions(_options);
 
-        await _rpc.SendNotificationAsync("initialized", @params: null, ct);
+        try
+        {
+            var result = await _rpc.SendRequestAsync(
+                "initialize",
+                BuildInitializeParams(clientInfo, requestedCapabilities),
+                ct);
 
-        _initializeResult = new AppServerInitializeResult(result);
-        return _initializeResult;
+            await _rpc.SendNotificationAsync("initialized", @params: null, ct);
+
+            _initializeResult = new AppServerInitializeResult(result);
+            return _initializeResult;
+        }
+        catch (JsonRpcRemoteException ex)
+        {
+            var dataJson = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
+                ? ex.Error.Data.Value.GetRawText()
+                : null;
+
+            var wantsCapabilities = requestedCapabilities is not null ||
+                                    _options.ExperimentalApi ||
+                                    (_options.OptOutNotificationMethods is { Count: > 0 });
+
+            var help = wantsCapabilities
+                ? "This may indicate your Codex app-server build does not support the requested initialize capabilities. Try upgrading Codex or omit CodexAppServerClientOptions.Capabilities / ExperimentalApi / OptOutNotificationMethods."
+                : null;
+
+            throw new CodexAppServerInitializeException(
+                ex.Error.Code,
+                ex.Error.Message,
+                dataJson,
+                help,
+                stderrTail: _process.StderrTail,
+                innerException: ex);
+        }
     }
 
     /// <summary>
@@ -172,7 +263,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     /// Sends an arbitrary JSON-RPC request to the app server.
     /// </summary>
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        _rpc.SendRequestAsync(method, @params, ct);
+        SendRequestAsync(method, @params, ct);
 
     /// <summary>
     /// A task that completes when the underlying Codex app-server subprocess exits.
@@ -194,7 +285,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/start",
             new ThreadStartParams
             {
@@ -229,7 +320,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/resume",
             new ThreadResumeParams { ThreadId = threadId },
             ct);
@@ -249,7 +340,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/resume",
             new ThreadResumeParams
             {
@@ -279,7 +370,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/list",
             new ThreadListParams
             {
@@ -309,7 +400,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/read",
             new ThreadReadParams { ThreadId = threadId },
             ct);
@@ -336,7 +427,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         ExperimentalApiGuards.ValidateThreadFork(options, ExperimentalApiEnabled);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/fork",
             new ThreadForkParams
             {
@@ -363,7 +454,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/archive",
             new ThreadArchiveParams { ThreadId = threadId },
             ct);
@@ -380,7 +471,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/unarchive",
             new ThreadUnarchiveParams { ThreadId = threadId },
             ct);
@@ -397,7 +488,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        _ = await _rpc.SendRequestAsync(
+        _ = await SendRequestAsync(
             "thread/name/set",
             new ThreadSetNameParams { ThreadId = threadId, ThreadName = name },
             ct);
@@ -410,7 +501,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "skills/list",
             new SkillsListParams
             {
@@ -433,7 +524,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "app/list",
             new AppListParams { Cwd = options.Cwd },
             ct);
@@ -475,7 +566,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         JsonElement result;
         try
         {
-            result = await _rpc.SendRequestAsync("turn/start", turnStartParams, ct);
+            result = await SendRequestAsync("turn/start", turnStartParams, ct);
         }
         catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32602 && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
         {
@@ -521,7 +612,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         try
         {
-            var result = await _rpc.SendRequestAsync(
+            var result = await SendRequestAsync(
                 "turn/steer",
                 BuildTurnSteerParams(options),
                 ct);
@@ -550,7 +641,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
         ArgumentNullException.ThrowIfNull(options.Target);
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "review/start",
             BuildReviewStartParams(options),
             ct);
@@ -621,7 +712,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     private Task InterruptAsync(string threadId, string turnId, CancellationToken ct) =>
-        _rpc.SendRequestAsync(
+        SendRequestAsync(
             "turn/interrupt",
             new TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
             ct);

@@ -8,6 +8,57 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class InitializeCapabilitiesTests
 {
     [Fact]
+    public void BuildCapabilitiesFromOptions_ReturnsNull_WhenOptionsEmpty()
+    {
+        CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions())
+            .Should()
+            .BeNull();
+    }
+
+    [Fact]
+    public void BuildCapabilitiesFromOptions_IncludesExperimentalApi_WhenConvenienceFlagEnabled()
+    {
+        var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions
+        {
+            ExperimentalApi = true
+        });
+
+        caps.Should().NotBeNull();
+        caps!.ExperimentalApi.Should().BeTrue();
+    }
+
+    [Fact]
+    public void BuildCapabilitiesFromOptions_IncludesOptOut_WhenConvenienceListProvided()
+    {
+        var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions
+        {
+            OptOutNotificationMethods = ["item/agentMessage/delta"]
+        });
+
+        caps.Should().NotBeNull();
+        caps!.OptOutNotificationMethods.Should().Equal("item/agentMessage/delta");
+    }
+
+    [Fact]
+    public void BuildCapabilitiesFromOptions_MergesCapabilitiesAndConvenienceFields()
+    {
+        var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions
+        {
+            ExperimentalApi = true,
+            OptOutNotificationMethods = ["a", "b", "a"],
+            Capabilities = new InitializeCapabilities
+            {
+                ExperimentalApi = false,
+                OptOutNotificationMethods = ["b", "c"]
+            }
+        });
+
+        caps.Should().NotBeNull();
+        caps!.ExperimentalApi.Should().BeTrue();
+        caps.OptOutNotificationMethods.Should().BeEquivalentTo(["a", "b", "c"]);
+    }
+
+    [Fact]
     public void NormalizeCapabilities_ReturnsNull_WhenNull()
     {
         CodexAppServerClient.NormalizeCapabilities(null).Should().BeNull();

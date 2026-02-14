@@ -68,8 +68,8 @@ Defaults:
 
 Alternatively (more discoverable):
 
-- [ ] `bool ExperimentalApi { get; set; } = false;`
-- [ ] plus optional `OptOutNotificationMethods`
+- [x] `bool ExperimentalApi { get; set; } = false;`
+- [x] plus optional `OptOutNotificationMethods`
 
 Recommendation:
 
@@ -136,7 +136,7 @@ Mitigations:
 
 - [x] Keep capabilities omitted by default (null).
 - [x] Keep capability objects minimal and only include fields explicitly set.
-- [ ] If initialize fails, surface the raw JSON-RPC error as-is plus add an optional “help” suffix.
+- [x] If initialize fails, surface the raw JSON-RPC error as-is plus add an optional “help” suffix.
 
 ### 3.2 Mixed capability usage
 
@@ -213,8 +213,8 @@ Suggested approach:
 
 With a real app-server:
 
-- [ ] Start client with experimental enabled
-- [ ] Use one experimental-gated field (e.g. resume by `path`) and assert it no longer errors.
+- [x] Start client with experimental enabled
+- [x] Use one experimental-gated field (e.g. resume by `path`) and assert it no longer errors.
 
 Guard with env var so tests are opt-in.
 
@@ -233,7 +233,7 @@ Guard with env var so tests are opt-in.
   - [x] Add a “Capabilities” section and examples
 - [x] **Tests**
   - [x] Unit tests for initialize payload construction
-  - [ ] Optional integration test for one experimental field
+  - [x] Optional integration test for one experimental field
 
 ---
 
@@ -249,7 +249,7 @@ Guard with env var so tests are opt-in.
 
 ## 7) Follow-ups (nice-to-haves)
 
-- [ ] Parse upstream error messages and translate them into typed exceptions:
-  - [ ] e.g. `CodexExperimentalApiRequiredException` with `Descriptor = "turn/start.collaborationMode"`
+- [x] Parse upstream error messages and translate them into typed exceptions:
+  - [x] e.g. `CodexExperimentalApiRequiredException` with `Descriptor = "turn/start.collaborationMode"`
 - [x] Add a “capabilities compatibility” section in `docs/AppServer/README.md`:
   - [x] stable vs experimental, and how to opt in.
