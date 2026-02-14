@@ -14,15 +14,15 @@ It assumes:
 
 ### Must-haves
 
-- [ ] **No regressions for the common stable path** against newer Codex:
+- [x] **No regressions for the common stable path** against newer Codex:
    - `initialize` + `initialized`
    - `thread/start` (stable subset)
    - `thread/resume` by `threadId` (stable subset)
    - `turn/start` (stable subset; no `collaborationMode`)
    - `turn/interrupt`
-- [ ] **No silent “experimental usage”**:
+- [x] **No silent “experimental usage”**:
    - Don’t send experimental fields by default in a way that triggers upstream gating.
-- [ ] **Helpful failures** when users set experimental-only inputs:
+- [x] **Helpful failures** when users set experimental-only inputs:
    - Throw an exception that names the missing capability and how to enable it.
 
 ### Non-goals
@@ -117,7 +117,7 @@ Audit serialization defaults:
 Concrete audit items:
 
 - [x] `ThreadStartParams.ExperimentalRawEvents` is currently a non-nullable bool.
-  - [ ] Confirm upstream gating triggers only when true.
+  - [x] Confirm upstream gating triggers only when true.
   - [x] If upstream gating changes to “field present”, consider making it nullable (`bool?`) or adding `JsonIgnore(WhenWritingDefault)` logic.
 
 ### 3.4 Implementation milestones (stable-only)
@@ -164,16 +164,16 @@ Add tests around client-side validation:
 
 Best test seam:
 
-- [ ] For `CodexAppServerClient`, inject a fake `JsonRpcConnection` or wrap request building behind an interface.
+- [x] For `CodexAppServerClient`, inject a fake `JsonRpcConnection` or wrap request building behind an interface.
 - [x] If that is too heavy, validate at options level and unit test the options validation method(s).
 
 ### 5.2 Integration tests (optional / gated)
 
 If your CI or local env can run Codex:
 
-- [ ] Start `codex app-server` and validate stable flows:
-  - [ ] Start thread → start turn → observe notifications → interrupt
-  - [ ] Resume thread by threadId
+- [x] Start `codex app-server` and validate stable flows:
+  - [x] Start thread → start turn → observe notifications → interrupt
+  - [x] Resume thread by threadId
 
 Guard with env var (consistent with existing style in repo).
 
@@ -181,8 +181,8 @@ Guard with env var (consistent with existing style in repo).
 
 ## 6) Acceptance criteria
 
-- [ ] Against latest upstream Codex:
-  - [ ] Stable path works end-to-end with no experimental opt-in.
+- [x] Against latest upstream Codex:
+  - [x] Stable path works end-to-end with no experimental opt-in.
 - [x] SDK fails fast (client-side) for:
   - [x] `thread/resume.history`
   - [x] `thread/resume.path`
@@ -197,7 +197,4 @@ Guard with env var (consistent with existing style in repo).
 ## 7) Open questions / decisions
 
 - [x] Do we want a single “capabilities” knob in `CodexAppServerClientOptions`, or separate boolean `EnableExperimentalApi`?
-- [x] Should client-side validation be:
-  - [x] strict (throw), or
-  - [ ] permissive (silently ignore experimental fields unless opt-in)?
-  - [x] Recommendation: **strict** (throw).
+- [x] Decide client-side validation behavior: strict (throw) vs permissive (silently ignore). Chosen: **strict** (throw).

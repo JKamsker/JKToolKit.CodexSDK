@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
-internal sealed class JsonRpcConnection : IAsyncDisposable
+internal sealed class JsonRpcConnection : IJsonRpcConnection
 {
     private readonly StreamWriter _writer;
     private readonly StreamReader _reader;

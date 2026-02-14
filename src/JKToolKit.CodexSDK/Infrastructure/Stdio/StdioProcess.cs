@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Stdio;
 
-internal sealed class StdioProcess : IAsyncDisposable
+internal sealed class StdioProcess : IStdioProcess
 {
     private readonly ILogger _logger;
     private readonly TimeSpan _shutdownTimeout;
@@ -22,7 +22,37 @@ internal sealed class StdioProcess : IAsyncDisposable
 
     public Task Completion { get; }
 
-    internal IReadOnlyList<string> StderrTail
+    public int? ProcessId
+    {
+        get
+        {
+            try
+            {
+                return Process.Id;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    public int? ExitCode
+    {
+        get
+        {
+            try
+            {
+                return Process.HasExited ? Process.ExitCode : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    public IReadOnlyList<string> StderrTail
     {
         get
         {

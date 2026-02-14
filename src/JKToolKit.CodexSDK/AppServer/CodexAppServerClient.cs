@@ -26,8 +26,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 {
     private readonly CodexAppServerClientOptions _options;
     private readonly ILogger _logger;
-    private readonly StdioProcess _process;
-    private readonly JsonRpcConnection _rpc;
+    private readonly IStdioProcess _process;
+    private readonly IJsonRpcConnection _rpc;
 
     private readonly Channel<AppServerNotification> _globalNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
@@ -70,9 +70,10 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
     internal CodexAppServerClient(
         CodexAppServerClientOptions options,
-        StdioProcess process,
-        JsonRpcConnection rpc,
-        ILogger logger)
+        IStdioProcess process,
+        IJsonRpcConnection rpc,
+        ILogger logger,
+        bool startExitWatcher = true)
     {
         _options = options;
         _process = process;
@@ -89,7 +90,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _rpc.OnNotification += OnRpcNotificationAsync;
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
 
-        _processExitWatcher = Task.Run(WatchProcessExitAsync);
+        _processExitWatcher = startExitWatcher ? Task.Run(WatchProcessExitAsync) : Task.CompletedTask;
     }
 
     /// <summary>
@@ -765,26 +766,6 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
     private Exception BuildDisconnectException()
     {
-        int? pid = null;
-        int? exitCode = null;
-        try
-        {
-            pid = _process.Process.Id;
-        }
-        catch
-        {
-            // ignore
-        }
-
-        try
-        {
-            exitCode = _process.Process.HasExited ? _process.Process.ExitCode : null;
-        }
-        catch
-        {
-            // ignore
-        }
-
         var stderrTail = Array.Empty<string>();
         try
         {
@@ -794,6 +775,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         {
             // ignore
         }
+
+        var exitCode = _process.ExitCode;
+        var pid = _process.ProcessId;
 
         var msg = exitCode is null
             ? "Codex app-server subprocess disconnected."
