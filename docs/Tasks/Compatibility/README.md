@@ -22,12 +22,12 @@ This folder contains *implementation plans* (not code changes yet) for keeping `
 
 ## Plans in this folder
 
-- [ ] [01 — Stable-only strategy](./01-StableOnly-Strategy.md)
-- [ ] [02 — Experimental API opt-in](./02-ExperimentalApi-OptIn.md)
-- [ ] [03 — Threads API support](./03-Threads-Api-Support.md)
-- [ ] [04 — Skills & apps support](./04-Skills-Apps-Support.md)
-- [ ] [05 — Turn steer & review/start support](./05-Turn-Steer-Review-Support.md)
-- [ ] [06 — Sandbox/permissions & read-only access support](./06-Sandbox-Permissions-ReadOnlyAccess.md)
+- [x] [01 — Stable-only strategy](./01-StableOnly-Strategy.md)
+- [x] [02 — Experimental API opt-in](./02-ExperimentalApi-OptIn.md)
+- [x] [03 — Threads API support](./03-Threads-Api-Support.md)
+- [x] [04 — Skills & apps support](./04-Skills-Apps-Support.md)
+- [x] [05 — Turn steer & review/start support](./05-Turn-Steer-Review-Support.md)
+- [x] [06 — Sandbox/permissions & read-only access support](./06-Sandbox-Permissions-ReadOnlyAccess.md)
 
 ## Default direction (recommended)
 
