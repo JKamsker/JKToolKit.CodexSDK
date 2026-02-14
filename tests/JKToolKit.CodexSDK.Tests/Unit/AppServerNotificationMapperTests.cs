@@ -46,6 +46,8 @@ public sealed class AppServerNotificationMapperTests
         mapped.Should().ContainSingle(x => x is ThreadStartedNotification);
         mapped.Should().ContainSingle(x => x is ThreadNameUpdatedNotification);
         mapped.Should().ContainSingle(x => x is TurnStartedNotification);
+        mapped.OfType<ItemStartedNotification>().Should().ContainSingle().Which.ItemType.Should().Be("agentMessage");
+        mapped.OfType<ItemCompletedNotification>().Should().ContainSingle().Which.ItemType.Should().Be("agentMessage");
         mapped.Should().ContainSingle(x => x is AppListUpdatedNotification);
         mapped.Should().ContainSingle(x => x is FuzzyFileSearchSessionUpdatedNotification);
         mapped.Should().ContainSingle(x => x is FuzzyFileSearchSessionCompletedNotification);

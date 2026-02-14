@@ -26,8 +26,8 @@ This plan focuses on exposing *the high-value subset* in `JKToolKit.CodexSDK.App
 
 ### Nice-to-haves
 
-- [ ] Surface network requirements/proxy runtime details as typed models
-- [ ] Add helpers that map high-level SDK options to sandbox policy objects
+- [x] Surface network requirements/proxy runtime details as typed models
+- [x] Add helpers that map high-level SDK options to sandbox policy objects
 
 ---
 
@@ -97,8 +97,8 @@ Plan to keep compatibility:
 
 Optional enhancement:
 
-- [ ] Parse a version identifier from `AppServerInitializeResult.UserAgent` when present and gate features client-side.
-  - [ ] This is best-effort only; user agents can change format.
+- [x] Parse a version identifier from `AppServerInitializeResult.UserAgent` when present and gate features client-side.
+  - [x] This is best-effort only; user agents can change format.
 
 ---
 
@@ -142,10 +142,10 @@ Upstream introduced more explicit permissions/config requirements signals.
 
 Plan for a follow-up iteration:
 
-- [ ] Add typed wrappers for:
-  - [ ] `config/requirements/read` (if used by clients)
-  - [ ] structured network requirements (if present in schema)
-- [ ] Add typed notifications/events where stable and valuable.
+- [x] Add typed wrappers for:
+  - [x] `configRequirements/read`
+  - [x] structured network requirements (if present in schema)
+- [x] Add typed notifications/events where stable and valuable.
 
 Key design constraint:
 
@@ -155,9 +155,9 @@ Key design constraint:
 
 These are intentionally not in the first delivery, but should be considered when designing types:
 
-- [ ] Network requirements (proxy, allowlists, “network required” failures)
-- [ ] Permission prompts/messages (new event variants)
-- [ ] Config requirements read/write APIs (policy negotiation)
+- [x] Network requirements (proxy, allowlists, “network required” failures)
+- [x] Permission prompts/messages (new event variants)
+- [x] Config requirements read/write APIs (policy negotiation)
 
 Design stance:
 
@@ -172,8 +172,8 @@ Design stance:
   - [x] `ReadOnlyAccess` serialization matches upstream shapes
   - [x] `SandboxPolicy.ReadOnly` includes `"access"` only when set
   - [x] `SandboxPolicy.WorkspaceWrite` includes `"readOnlyAccess"` only when set
-- [ ] Integration tests (optional):
-  - [ ] start app-server and run a turn with restricted readable roots (if practical)
+- [x] Integration tests (optional):
+  - [x] start app-server and run a turn with restricted readable roots (if practical)
 
 ---
 
@@ -194,4 +194,4 @@ Design stance:
   - [x] Update `docs/AppServer/README.md` with examples and version notes
 - [x] Phase C — tests
   - [x] Unit tests for serialization/omission
-  - [ ] Optional integration test (guarded by env var)
+  - [x] Optional integration test (guarded by env var)

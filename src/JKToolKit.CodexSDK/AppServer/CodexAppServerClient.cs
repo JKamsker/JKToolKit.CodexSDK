@@ -659,6 +659,23 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     /// <summary>
+    /// Reads the active configuration requirements constraints (for example from <c>requirements.toml</c> or MDM).
+    /// </summary>
+    public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
+    {
+        var result = await SendRequestAsync(
+            "configRequirements/read",
+            @params: null,
+            ct);
+
+        return new ConfigRequirementsReadResult
+        {
+            Requirements = ParseConfigRequirementsReadRequirements(result, experimentalApiEnabled: ExperimentalApiEnabled),
+            Raw = result
+        };
+    }
+
+    /// <summary>
     /// Reads remote skills.
     /// </summary>
     public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
@@ -1658,6 +1675,68 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return skills;
     }
 
+    internal static ConfigRequirements? ParseConfigRequirementsReadRequirements(JsonElement configRequirementsReadResult, bool experimentalApiEnabled)
+    {
+        if (configRequirementsReadResult.ValueKind != JsonValueKind.Object ||
+            !configRequirementsReadResult.TryGetProperty("requirements", out var req) ||
+            req.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var allowedApprovalPolicies = GetOptionalStringArray(req, "allowedApprovalPolicies")
+            ?.Select(CodexApprovalPolicy.Parse)
+            .ToArray();
+
+        var allowedSandboxModes = GetOptionalStringArray(req, "allowedSandboxModes")
+            ?.Select(CodexSandboxMode.Parse)
+            .ToArray();
+
+        var allowedWebSearchModes = GetOptionalStringArray(req, "allowedWebSearchModes")
+            ?.Select(CodexWebSearchMode.Parse)
+            .ToArray();
+
+        CodexResidencyRequirement? residency = null;
+        if (CodexResidencyRequirement.TryParse(GetStringOrNull(req, "enforceResidency"), out var r))
+        {
+            residency = r;
+        }
+
+        NetworkRequirements? network = null;
+        if (experimentalApiEnabled && TryGetObject(req, "network") is { } net)
+        {
+            network = ParseNetworkRequirements(net);
+        }
+
+        return new ConfigRequirements
+        {
+            AllowedApprovalPolicies = allowedApprovalPolicies,
+            AllowedSandboxModes = allowedSandboxModes,
+            AllowedWebSearchModes = allowedWebSearchModes,
+            EnforceResidency = residency,
+            Network = network,
+            Raw = req.Clone()
+        };
+    }
+
+    private static NetworkRequirements ParseNetworkRequirements(JsonElement network)
+    {
+        return new NetworkRequirements
+        {
+            Enabled = GetBoolOrNull(network, "enabled"),
+            HttpPort = GetInt32OrNull(network, "httpPort"),
+            SocksPort = GetInt32OrNull(network, "socksPort"),
+            AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
+            DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
+            DangerouslyAllowNonLoopbackAdmin = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackAdmin"),
+            AllowedDomains = GetOptionalStringArray(network, "allowedDomains"),
+            DeniedDomains = GetOptionalStringArray(network, "deniedDomains"),
+            AllowUnixSockets = GetOptionalStringArray(network, "allowUnixSockets"),
+            AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
+            Raw = network.Clone()
+        };
+    }
+
     private static JsonElement? TryGetArray(JsonElement obj, string propertyName) =>
         obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Array
             ? p
@@ -1673,6 +1752,26 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             ? p.GetString()
             : null;
 
+    private static int? GetInt32OrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var i))
+        {
+            return i;
+        }
+
+        if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out i))
+        {
+            return i;
+        }
+
+        return null;
+    }
+
     private static bool? GetBoolOrNull(JsonElement obj, string propertyName)
     {
         if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
@@ -1686,6 +1785,35 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             JsonValueKind.False => false,
             _ => null
         };
+    }
+
+    private static IReadOnlyList<string>? GetOptionalStringArray(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (p.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var list = new List<string>();
+        foreach (var item in p.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                list.Add(item.GetString() ?? string.Empty);
+            }
+        }
+
+        return list;
     }
 
     private static DateTimeOffset? GetDateTimeOffsetOrNull(JsonElement obj, string propertyName)

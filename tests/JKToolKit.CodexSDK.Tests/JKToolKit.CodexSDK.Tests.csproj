@@ -32,6 +32,7 @@
     <None Update="Fixtures\\skills-remote-read-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\review-start-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\turn-steer-response.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\config-requirements-read-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-list-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-read-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-fork-response.json" CopyToOutputDirectory="PreserveNewest" />

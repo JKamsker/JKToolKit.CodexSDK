@@ -143,6 +143,11 @@ Newer upstream Codex builds can additionally accept **read-only access controls*
 If you set these fields and the app-server is too old to understand them, it may fail with a JSON-RPC invalid-params error.
 The SDK attempts to include the serialized `sandboxPolicy` and `InitializeResult.UserAgent` in the thrown exception message to help diagnose version mismatches.
 
+Helpers:
+
+- `CodexSandboxPolicyBuilder` provides convenience constructors for common sandbox policy shapes (read-only, restricted readable roots, workspace-write).
+- `CodexAppServerClient.ReadConfigRequirementsAsync()` calls upstream `configRequirements/read` and returns a typed `ConfigRequirementsReadResult`. Network requirements are only populated when experimental API is enabled.
+
 ## Getting Started
 
 ### Prerequisites

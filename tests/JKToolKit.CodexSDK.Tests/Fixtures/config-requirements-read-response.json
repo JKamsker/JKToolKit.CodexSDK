@@ -1,0 +1,23 @@
+{
+  "requirements": {
+    "allowedApprovalPolicies": ["never", "on-request"],
+    "allowedSandboxModes": ["read-only", "workspace-write"],
+    "allowedWebSearchModes": ["disabled", "cached", "live"],
+    "enforceResidency": "us",
+    "network": {
+      "enabled": true,
+      "httpPort": 8080,
+      "socksPort": 1080,
+      "allowUpstreamProxy": false,
+      "dangerouslyAllowNonLoopbackProxy": false,
+      "dangerouslyAllowNonLoopbackAdmin": false,
+      "allowedDomains": ["example.com"],
+      "deniedDomains": ["bad.example"],
+      "allowUnixSockets": ["/var/run/docker.sock"],
+      "allowLocalBinding": true,
+      "unknownField": "preserve"
+    },
+    "unknownTopLevelField": true
+  }
+}
+
