@@ -1,0 +1,19 @@
+{
+  "apps": [
+    {
+      "id": "app_1",
+      "name": "GitHub",
+      "title": "GitHub",
+      "enabled": true
+    },
+    {
+      "id": "app_2",
+      "name": "Example",
+      "enabled": false,
+      "disabledReason": "authRequired",
+      "unknown": { "x": 1 }
+    }
+  ],
+  "topUnknown": true
+}
+

@@ -1,0 +1,16 @@
+{
+  "skills": [
+    {
+      "name": "tasklist-executor",
+      "description": "Execute work from a tasklist.",
+      "path": "C:\\skills\\tasklist-executor",
+      "unknown": 1
+    },
+    {
+      "id": "fallback-id",
+      "description": null,
+      "path": null
+    }
+  ]
+}
+

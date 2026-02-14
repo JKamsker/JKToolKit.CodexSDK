@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -42,6 +43,7 @@ public sealed class AppServerNotificationMapperTests
         }
 
         mapped.Should().ContainSingle(x => x is AgentMessageDeltaNotification);
+        mapped.Should().ContainSingle(x => x is AppListUpdatedNotification);
         mapped.Should().ContainSingle(x => x is TurnCompletedNotification);
         mapped.Should().ContainSingle(x => x is UnknownNotification);
     }

@@ -395,6 +395,48 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     /// <summary>
+    /// Lists skills.
+    /// </summary>
+    public async Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _rpc.SendRequestAsync(
+            "skills/list",
+            new SkillsListParams
+            {
+                Cwd = options.Cwd,
+                ExtraRootsForCwd = options.ExtraRootsForCwd
+            },
+            ct);
+
+        return new SkillsListResult
+        {
+            Skills = ParseSkillsListSkills(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Lists apps/connectors.
+    /// </summary>
+    public async Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _rpc.SendRequestAsync(
+            "app/list",
+            new AppListParams { Cwd = options.Cwd },
+            ct);
+
+        return new AppsListResult
+        {
+            Apps = ParseAppsListApps(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
     /// Starts a new turn within the specified thread.
     /// </summary>
     public async Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
@@ -865,6 +907,76 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     internal static string? ExtractNextCursor(JsonElement listResult) =>
         GetStringOrNull(listResult, "nextCursor") ??
         GetStringOrNull(listResult, "cursor");
+
+    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(JsonElement skillsListResult)
+    {
+        var array =
+            TryGetArray(skillsListResult, "skills") ??
+            TryGetArray(skillsListResult, "items");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<SkillDescriptor>();
+        }
+
+        var skills = new List<SkillDescriptor>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var name = GetStringOrNull(item, "name") ?? GetStringOrNull(item, "id");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            skills.Add(new SkillDescriptor
+            {
+                Name = name,
+                Description = GetStringOrNull(item, "description"),
+                Path = GetStringOrNull(item, "path"),
+                Raw = item
+            });
+        }
+
+        return skills;
+    }
+
+    internal static IReadOnlyList<AppDescriptor> ParseAppsListApps(JsonElement appsListResult)
+    {
+        var array =
+            TryGetArray(appsListResult, "apps") ??
+            TryGetArray(appsListResult, "items");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<AppDescriptor>();
+        }
+
+        var apps = new List<AppDescriptor>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            apps.Add(new AppDescriptor
+            {
+                Id = GetStringOrNull(item, "id"),
+                Name = GetStringOrNull(item, "name"),
+                Title = GetStringOrNull(item, "title"),
+                Enabled = GetBoolOrNull(item, "enabled"),
+                DisabledReason = GetStringOrNull(item, "disabledReason"),
+                Raw = item
+            });
+        }
+
+        return apps;
+    }
 
     private static JsonElement? TryGetArray(JsonElement obj, string propertyName) =>
         obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Array

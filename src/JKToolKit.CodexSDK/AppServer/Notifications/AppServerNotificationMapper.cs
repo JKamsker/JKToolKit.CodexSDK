@@ -137,6 +137,10 @@ internal static class AppServerNotificationMapper
                 RateLimits: GetAny(p, "rateLimits"),
                 Params: p),
 
+            "app/list/updated" => new AppListUpdatedNotification(
+                Apps: GetAny(p, "apps"),
+                Params: p),
+
             "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
@@ -314,4 +318,3 @@ internal static class AppServerNotificationMapper
         return emptyDoc.RootElement.Clone();
     }
 }
-

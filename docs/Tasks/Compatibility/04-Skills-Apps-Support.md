@@ -13,9 +13,9 @@ This plan adds first-class support to `JKToolKit.CodexSDK.AppServer` with typed 
 
 ### Must-haves
 
-- [ ] Add `skills/list` wrapper and typed results.
-- [ ] Add `app/list` wrapper and typed results.
-- [ ] Map `app/list/updated` notification (and keep unknown fallback).
+- [x] Add `skills/list` wrapper and typed results.
+- [x] Add `app/list` wrapper and typed results.
+- [x] Map `app/list/updated` notification (and keep unknown fallback).
 
 ### Nice-to-haves
 
@@ -49,7 +49,7 @@ This table is mainly to drive prioritization and to keep the SDK aligned with up
 
 Add methods on `CodexAppServerClient`:
 
-- [ ] `Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default)`
+- [x] `Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default)`
 
 Add models:
 
@@ -94,7 +94,7 @@ Avoid hard-coding storage semantics; upstream may evolve what “remote” means
 
 Add methods:
 
-- [ ] `Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)`
+- [x] `Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)`
 
 Add models:
 
@@ -171,10 +171,10 @@ This avoids chasing frequent upstream schema edits.
 
 ### 3.1 Incremental delivery (phased)
 
-- [ ] Phase A — stable discovery:
-  - [ ] `skills/list`
-  - [ ] `app/list`
-  - [ ] `app/list/updated` notification mapping
+- [x] Phase A — stable discovery:
+  - [x] `skills/list`
+  - [x] `app/list`
+  - [x] `app/list/updated` notification mapping
 - [ ] Phase B — management:
   - [ ] `skills/config/write`
   - [ ] `skills/remote/read` / `skills/remote/write`
@@ -187,25 +187,25 @@ This avoids chasing frequent upstream schema edits.
 
 Update:
 
-- [ ] `src/JKToolKit.CodexSDK/AppServer/Notifications/AppServerNotificationMapper.cs`
+- [x] `src/JKToolKit.CodexSDK/AppServer/Notifications/AppServerNotificationMapper.cs`
 
 Add:
 
-- [ ] `"app/list/updated"` mapping
+- [x] `"app/list/updated"` mapping
 
 Ensure:
 
-- [ ] unknown notifications still map to `UnknownNotification` with raw params preserved.
+- [x] unknown notifications still map to `UnknownNotification` with raw params preserved.
 
 ---
 
 ## 5) Testing strategy
 
-- [ ] Mapper tests:
-  - [ ] Add fixtures for `app/list/updated`
-- [ ] Response parsing tests:
-  - [ ] skills/list response sample
-  - [ ] app/list response sample
+- [x] Mapper tests:
+  - [x] Add fixtures for `app/list/updated`
+- [x] Response parsing tests:
+  - [x] skills/list response sample
+  - [x] app/list response sample
 - [ ] Integration tests (optional):
   - [ ] list skills/apps on a local Codex install (guarded by env var)
 
@@ -213,6 +213,6 @@ Ensure:
 
 ## 6) Acceptance criteria
 
-- [ ] Callers can list skills and apps via typed client methods.
-- [ ] `app/list/updated` notification appears as a typed notification.
-- [ ] Unknown fields/methods do not break the SDK.
+- [x] Callers can list skills and apps via typed client methods.
+- [x] `app/list/updated` notification appears as a typed notification.
+- [x] Unknown fields/methods do not break the SDK.

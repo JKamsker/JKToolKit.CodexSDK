@@ -27,6 +27,8 @@
 
   <ItemGroup>
     <None Update="Fixtures\\appserver-notifications.jsonl" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\skills-list-response.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\app-list-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-list-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-read-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-fork-response.json" CopyToOutputDirectory="PreserveNewest" />
