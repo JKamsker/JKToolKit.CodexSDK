@@ -337,8 +337,12 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (string.IsNullOrWhiteSpace(options.ThreadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+        if (options.History is null &&
+            string.IsNullOrWhiteSpace(options.Path) &&
+            string.IsNullOrWhiteSpace(options.ThreadId))
+        {
+            throw new ArgumentException("Either ThreadId, History, or Path must be specified.", nameof(options));
+        }
 
         ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: ExperimentalApiEnabled);
 
@@ -362,6 +366,11 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             ct);
 
         var id = ExtractThreadId(result) ?? options.ThreadId;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new InvalidOperationException(
+                $"thread/resume returned no thread id. Raw result: {result}");
+        }
         return new CodexThread(id, result);
     }
 

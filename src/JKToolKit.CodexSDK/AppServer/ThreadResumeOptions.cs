@@ -14,9 +14,12 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class ThreadResumeOptions
 {
     /// <summary>
-    /// Gets or sets the thread identifier to resume.
+    /// Gets or sets the thread identifier to resume (when resuming by ID).
     /// </summary>
-    public required string ThreadId { get; set; }
+    /// <remarks>
+    /// Required only when resuming by ID. Ignored when <see cref="History"/> or <see cref="Path"/> is set.
+    /// </remarks>
+    public string? ThreadId { get; set; }
 
     /// <summary>
     /// [UNSTABLE] If specified, resume using the provided history instead of loading from disk.

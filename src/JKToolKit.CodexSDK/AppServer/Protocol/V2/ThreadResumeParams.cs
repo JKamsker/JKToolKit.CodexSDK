@@ -14,10 +14,10 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 public sealed record class ThreadResumeParams
 {
     /// <summary>
-    /// Gets the thread identifier to resume.
+    /// Gets the thread identifier to resume (when resuming by ID).
     /// </summary>
     [JsonPropertyName("threadId")]
-    public required string ThreadId { get; init; }
+    public string? ThreadId { get; init; }
 
     /// <summary>
     /// Gets an optional history override to resume from (raw JSON).
