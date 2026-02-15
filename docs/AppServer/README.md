@@ -55,12 +55,17 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
 - `CodexAppServerClient`
   - `StartAsync(...)` + initialization handshake
   - `StartThreadAsync(...)`, `ResumeThreadAsync(...)`
+  - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
+  - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
+  - `SteerTurnAsync(...)`
+  - `StartReviewAsync(...)`
   - `CallAsync(...)` escape hatch for forward compatibility
 - `CodexTurnHandle`
   - `Events()` → `IAsyncEnumerable<AppServerNotification>`
   - `Completion` → completes when `turn/completed` arrives
   - `InterruptAsync()` → calls `turn/interrupt`
+  - `SteerAsync(...)` → calls `turn/steer`
 
 ### Typed notifications (initial set)
 
@@ -71,6 +76,77 @@ The library maps a small must-have subset of notifications into typed records:
 - `ItemCompletedNotification` (`item/completed`)
 - `TurnCompletedNotification` (`turn/completed`)
 - `UnknownNotification` fallback for forward-compatibility
+
+## Stable vs Experimental (Upstream Compatibility)
+
+Newer upstream Codex builds increasingly gate fields/methods behind an initialize-time capability:
+
+- `initialize.params.capabilities.experimentalApi = true`
+
+This SDK is **stable-only by default** and avoids sending known experimental-gated fields unless explicitly requested.
+
+### Stable-only subset (works without experimental opt-in)
+
+- `initialize` + `initialized`
+- `thread/start` (stable subset)
+- `thread/resume` by `threadId` (stable subset)
+- `turn/start` (stable subset; no `collaborationMode`)
+- `turn/interrupt`
+
+### Known experimental-gated fields (blocked by default)
+
+If you set any of these while experimental opt-in is disabled, the SDK throws `CodexExperimentalApiRequiredException`
+before sending the request:
+
+- `thread/resume.history`
+- `thread/resume.path`
+- `turn/start.collaborationMode`
+- `thread/start.experimentalRawEvents` (when `true`)
+
+### Enabling experimental API opt-in (advanced)
+
+If you need experimental-gated fields/methods, opt in explicitly at initialize time:
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
+
+await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    Capabilities = new InitializeCapabilities
+    {
+        ExperimentalApi = true,
+
+        // Optional: reduce notification volume (method names are upstream-defined).
+        OptOutNotificationMethods = new[]
+        {
+            "item/agentMessage/delta"
+        }
+    }
+});
+```
+
+Notes:
+
+- Experimental surfaces are upstream-unstable and may break across Codex updates.
+- If your Codex app-server is too old to understand a capability field, initialize may fail with a JSON-RPC invalid-params error.
+
+## Sandbox Policies (Read-Only Access)
+
+Codex supports per-turn sandbox policy overrides via `TurnStartOptions.SandboxPolicy` (wire `sandboxPolicy`).
+
+Newer upstream Codex builds can additionally accept **read-only access controls** to restrict what the model is allowed to read:
+
+- `SandboxPolicy.ReadOnly.Access` (`"access"`) — applies to the read-only policy variant
+- `SandboxPolicy.WorkspaceWrite.ReadOnlyAccess` (`"readOnlyAccess"`) — applies to the workspace-write policy variant
+
+If you set these fields and the app-server is too old to understand them, it may fail with a JSON-RPC invalid-params error.
+The SDK attempts to include the serialized `sandboxPolicy` and `InitializeResult.UserAgent` in the thrown exception message to help diagnose version mismatches.
+
+Helpers:
+
+- `CodexSandboxPolicyBuilder` provides convenience constructors for common sandbox policy shapes (read-only, restricted readable roots, workspace-write).
+- `CodexAppServerClient.ReadConfigRequirementsAsync()` calls upstream `configRequirements/read` and returns a typed `ConfigRequirementsReadResult`. Network requirements are only populated when experimental API is enabled.
 
 ## Getting Started
 
@@ -119,6 +195,38 @@ await foreach (var e in turn.Events())
 var completed = await turn.Completion;
 Console.WriteLine($"\nDone: {completed.Status}");
 ```
+
+### Steer an active turn
+
+```csharp
+await turn.SteerAsync([TurnInputItem.Text("Actually focus on failing tests first.")]);
+```
+
+Notes:
+
+- Steering is best-effort and may race with turn completion.
+- Cancellation stops waiting for the response but does not guarantee the server did not apply the steer request.
+- For raw responses, use `await turn.SteerRawAsync(...)` / `await codex.SteerTurnRawAsync(...)` (returns `TurnSteerResult`).
+- Server-side JSON-RPC failures surface as `CodexAppServerRequestFailedException` (includes `ErrorCode`/`ErrorMessage`/`ErrorData`).
+
+### Start a code review
+
+```csharp
+var review = await codex.StartReviewAsync(new ReviewStartOptions
+{
+    ThreadId = thread.Id,
+    Delivery = ReviewDelivery.Inline,
+    Target = new ReviewTarget.Commit("1234567deadbeef", title: "Polish tui colors")
+});
+
+await review.Turn.Completion;
+```
+
+Notes:
+
+- `review/start` (app-server) runs as a turn and streams normal app-server notifications.
+- `CodexClient.ReviewAsync(...)` (exec-mode) is a simpler one-off review command with stdout/stderr output.
+- `CodexAppServerClient.ReviewAsync(...)` is an alias for `StartReviewAsync(...)` for naming consistency.
 
 ## Approvals / Server-Initiated Requests
 
@@ -201,4 +309,5 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
 - If you hit interactive prompts unexpectedly: configure an `ApprovalHandler` or set `ApprovalPolicy = Never`.
+- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.Capabilities.ExperimentalApi = true`.
 - If the Codex subprocess dies mid-turn: the SDK now faults the global notification stream and any in-progress `CodexTurnHandle` streams/completions with `CodexAppServerDisconnectedException` (includes exit code and a best-effort stderr tail).

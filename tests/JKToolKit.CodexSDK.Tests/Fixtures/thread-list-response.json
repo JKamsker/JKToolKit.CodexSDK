@@ -1,0 +1,27 @@
+{
+  "threads": [
+    {
+      "threadId": "t_1",
+      "name": "One",
+      "archived": false,
+      "createdAt": "2026-02-01T00:00:00Z",
+      "cwd": "C:\\repo",
+      "model": "gpt-5",
+      "unknownField": { "x": 1 }
+    },
+    {
+      "thread": {
+        "id": "t_2",
+        "threadName": "Two",
+        "archived": true,
+        "createdAt": 1700000000,
+        "cwd": "/tmp",
+        "model": "gpt-5"
+      },
+      "wrapperUnknown": "ok"
+    }
+  ],
+  "nextCursor": "cursor_2",
+  "topUnknown": { "y": 2 }
+}
+

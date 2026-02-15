@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
@@ -136,6 +137,20 @@ internal static class AppServerNotificationMapper
             "account/rateLimits/updated" => new AccountRateLimitsUpdatedNotification(
                 RateLimits: GetAny(p, "rateLimits"),
                 Params: p),
+
+            "app/list/updated" => new AppListUpdatedNotification(
+                apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
+                @params: p),
+
+            "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
+                sessionId: GetString(p, "sessionId") ?? string.Empty,
+                query: GetString(p, "query") ?? string.Empty,
+                files: ParseFuzzyFileSearchResults(p),
+                @params: p),
+
+            "fuzzyFileSearch/sessionCompleted" => new FuzzyFileSearchSessionCompletedNotification(
+                sessionId: GetString(p, "sessionId") ?? string.Empty,
+                @params: p),
 
             "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -308,10 +323,64 @@ internal static class AppServerNotificationMapper
         return list;
     }
 
+    private static IReadOnlyList<FuzzyFileSearchResult> ParseFuzzyFileSearchResults(JsonElement obj)
+    {
+        if (!obj.TryGetProperty("files", out var filesProp) || filesProp.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<FuzzyFileSearchResult>();
+        }
+
+        var list = new List<FuzzyFileSearchResult>();
+        foreach (var item in filesProp.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var root = GetString(item, "root") ?? string.Empty;
+            var path = GetString(item, "path") ?? string.Empty;
+            var fileName = GetString(item, "fileName") ?? GetString(item, "file_name") ?? string.Empty;
+
+            uint score = 0;
+            if (item.TryGetProperty("score", out var scoreProp) &&
+                scoreProp.ValueKind == JsonValueKind.Number &&
+                scoreProp.TryGetUInt32(out var s))
+            {
+                score = s;
+            }
+
+            IReadOnlyList<uint>? indices = null;
+            if (item.TryGetProperty("indices", out var indicesProp) && indicesProp.ValueKind == JsonValueKind.Array)
+            {
+                var idx = new List<uint>();
+                foreach (var i in indicesProp.EnumerateArray())
+                {
+                    if (i.ValueKind == JsonValueKind.Number && i.TryGetUInt32(out var n))
+                    {
+                        idx.Add(n);
+                    }
+                }
+
+                indices = idx;
+            }
+
+            list.Add(new FuzzyFileSearchResult
+            {
+                Root = root,
+                Path = path,
+                FileName = fileName,
+                Score = score,
+                Indices = indices
+            });
+        }
+
+        return list;
+    }
+
     private static JsonElement EmptyObject()
     {
         using var emptyDoc = JsonDocument.Parse("{}");
         return emptyDoc.RootElement.Clone();
     }
 }
-

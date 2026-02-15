@@ -1,0 +1,18 @@
+{
+  "turn": {
+    "id": "turn_900",
+    "status": "inProgress",
+    "items": [
+      {
+        "type": "userMessage",
+        "id": "turn_900",
+        "content": [
+          { "type": "text", "text": "Review commit 1234567: Polish tui colors" }
+        ]
+      }
+    ],
+    "error": null
+  },
+  "reviewThreadId": "thr_123"
+}
+

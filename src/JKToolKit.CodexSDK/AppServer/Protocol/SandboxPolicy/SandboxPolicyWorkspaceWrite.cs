@@ -44,5 +44,15 @@ public abstract partial record class SandboxPolicy
         /// </summary>
         [JsonPropertyName("excludeSlashTmp")]
         public bool ExcludeSlashTmp { get; init; }
+
+        /// <summary>
+        /// Gets optional read-only access controls applied to reads while this policy is active (upstream feature).
+        /// </summary>
+        /// <remarks>
+        /// When set, older Codex app-server builds may reject this field as invalid params.
+        /// </remarks>
+        [JsonPropertyName("readOnlyAccess")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ReadOnlyAccess? ReadOnlyAccess { get; init; }
     }
 }

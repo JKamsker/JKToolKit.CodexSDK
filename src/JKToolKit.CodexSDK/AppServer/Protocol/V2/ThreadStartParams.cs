@@ -81,5 +81,6 @@ public sealed record class ThreadStartParams
     /// This is intended for internal use (e.g. Codex Cloud).
     /// </remarks>
     [JsonPropertyName("experimentalRawEvents")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ExperimentalRawEvents { get; init; }
 }

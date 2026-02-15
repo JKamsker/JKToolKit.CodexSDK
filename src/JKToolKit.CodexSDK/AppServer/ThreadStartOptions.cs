@@ -69,6 +69,7 @@ public sealed class ThreadStartOptions
     /// </summary>
     /// <remarks>
     /// This is intended for internal use (e.g. Codex Cloud).
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     public bool ExperimentalRawEvents { get; set; }
 }

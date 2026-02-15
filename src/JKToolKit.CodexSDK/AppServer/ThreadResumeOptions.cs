@@ -14,18 +14,27 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class ThreadResumeOptions
 {
     /// <summary>
-    /// Gets or sets the thread identifier to resume.
+    /// Gets or sets the thread identifier to resume (when resuming by ID).
     /// </summary>
-    public required string ThreadId { get; set; }
+    /// <remarks>
+    /// Required only when resuming by ID. Ignored when <see cref="History"/> or <see cref="Path"/> is set.
+    /// </remarks>
+    public string? ThreadId { get; set; }
 
     /// <summary>
     /// [UNSTABLE] If specified, resume using the provided history instead of loading from disk.
     /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
     public JsonElement? History { get; set; }
 
     /// <summary>
     /// [UNSTABLE] If specified, resume from a specific rollout path on disk.
     /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
     public string? Path { get; set; }
 
     /// <summary>

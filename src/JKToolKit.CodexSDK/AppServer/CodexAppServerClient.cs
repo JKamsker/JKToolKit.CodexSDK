@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Linq;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -10,10 +12,12 @@ using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
 using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -24,20 +28,118 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 {
     private readonly CodexAppServerClientOptions _options;
     private readonly ILogger _logger;
-    private readonly StdioProcess _process;
-    private readonly JsonRpcConnection _rpc;
+    private readonly IStdioProcess _process;
+    private readonly IJsonRpcConnection _rpc;
 
     private readonly Channel<AppServerNotification> _globalNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
     private int _disposed;
     private int _disconnectSignaled;
+    private int _readOnlyAccessOverridesSupport; // -1 = rejected, 0 = unknown, 1 = supported
     private readonly Task _processExitWatcher;
+    private AppServerInitializeResult? _initializeResult;
+
+    private bool ExperimentalApiEnabled => _options.Capabilities?.ExperimentalApi == true || _options.ExperimentalApi;
+
+    internal static bool TryParseExperimentalApiRequiredMessage(string? message, out string descriptor)
+    {
+        const string suffix = " requires experimentalApi capability";
+
+        descriptor = string.Empty;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        var idx = message.IndexOf(suffix, StringComparison.OrdinalIgnoreCase);
+        if (idx <= 0)
+        {
+            return false;
+        }
+
+        descriptor = message[..idx].Trim().Trim('\'', '"');
+        return !string.IsNullOrWhiteSpace(descriptor);
+    }
+
+    internal static InitializeCapabilities? BuildCapabilitiesFromOptions(CodexAppServerClientOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var caps = options.Capabilities;
+
+        var experimentalApi = options.ExperimentalApi || caps?.ExperimentalApi == true;
+
+        var optOut = new List<string>();
+        if (caps?.OptOutNotificationMethods is { Count: > 0 })
+        {
+            optOut.AddRange(caps.OptOutNotificationMethods.Where(s => !string.IsNullOrWhiteSpace(s)));
+        }
+        if (options.OptOutNotificationMethods is { Count: > 0 })
+        {
+            optOut.AddRange(options.OptOutNotificationMethods.Where(s => !string.IsNullOrWhiteSpace(s)));
+        }
+
+        IReadOnlyList<string>? optOutNormalized = null;
+        if (optOut.Count > 0)
+        {
+            optOutNormalized = optOut.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        return NormalizeCapabilities(new InitializeCapabilities
+        {
+            ExperimentalApi = experimentalApi,
+            OptOutNotificationMethods = optOutNormalized
+        });
+    }
+
+    private async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
+    {
+        try
+        {
+            return await _rpc.SendRequestAsync(method, @params, ct);
+        }
+        catch (JsonRpcRemoteException ex) when (TryParseExperimentalApiRequiredMessage(ex.Error.Message, out var descriptor))
+        {
+            throw new CodexExperimentalApiRequiredException(descriptor, ex);
+        }
+    }
+
+    internal static InitializeCapabilities? NormalizeCapabilities(InitializeCapabilities? capabilities)
+    {
+        if (capabilities is null)
+        {
+            return null;
+        }
+
+        var experimentalApi = capabilities.ExperimentalApi;
+        var optOut = capabilities.OptOutNotificationMethods;
+        var hasOptOut = optOut is { Count: > 0 };
+
+        if (!experimentalApi && !hasOptOut)
+        {
+            return null;
+        }
+
+        return new InitializeCapabilities
+        {
+            ExperimentalApi = experimentalApi,
+            OptOutNotificationMethods = hasOptOut ? optOut : null
+        };
+    }
+
+    internal static InitializeParams BuildInitializeParams(AppServerClientInfo clientInfo, InitializeCapabilities? capabilities) =>
+        new()
+        {
+            ClientInfo = clientInfo,
+            Capabilities = NormalizeCapabilities(capabilities)
+        };
 
     internal CodexAppServerClient(
         CodexAppServerClientOptions options,
-        StdioProcess process,
-        JsonRpcConnection rpc,
-        ILogger logger)
+        IStdioProcess process,
+        IJsonRpcConnection rpc,
+        ILogger logger,
+        bool startExitWatcher = true)
     {
         _options = options;
         _process = process;
@@ -54,7 +156,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _rpc.OnNotification += OnRpcNotificationAsync;
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
 
-        _processExitWatcher = Task.Run(WatchProcessExitAsync);
+        _processExitWatcher = startExitWatcher ? Task.Run(WatchProcessExitAsync) : Task.CompletedTask;
     }
 
     /// <summary>
@@ -68,7 +170,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var loggerFactory = NullLoggerFactory.Instance;
         var logger = loggerFactory.CreateLogger<CodexAppServerClient>();
-        var serializerOptions = options.SerializerOptionsOverride ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var serializerOptions = options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions();
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
@@ -86,10 +188,16 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         var client = new CodexAppServerClient(options, process, rpc, logger);
 
-        await client.InitializeAsync(options.DefaultClientInfo, ct);
+        _ = await client.InitializeAsync(options.DefaultClientInfo, ct);
 
         return client;
     }
+
+    internal static JsonSerializerOptions CreateDefaultSerializerOptions() =>
+        new(JsonSerializerDefaults.Web)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
 
     private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
     {
@@ -110,21 +218,54 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(clientInfo);
 
-        var result = await _rpc.SendRequestAsync(
-            "initialize",
-            new InitializeParams { ClientInfo = clientInfo, Capabilities = null },
-            ct);
+        var requestedCapabilities = BuildCapabilitiesFromOptions(_options);
 
-        await _rpc.SendNotificationAsync("initialized", @params: null, ct);
+        try
+        {
+            var result = await _rpc.SendRequestAsync(
+                "initialize",
+                BuildInitializeParams(clientInfo, requestedCapabilities),
+                ct);
 
-        return new AppServerInitializeResult(result);
+            await _rpc.SendNotificationAsync("initialized", @params: null, ct);
+
+            _initializeResult = new AppServerInitializeResult(result);
+            return _initializeResult;
+        }
+        catch (JsonRpcRemoteException ex)
+        {
+            var dataJson = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
+                ? ex.Error.Data.Value.GetRawText()
+                : null;
+
+            var wantsCapabilities = requestedCapabilities is not null ||
+                                    _options.ExperimentalApi ||
+                                    (_options.OptOutNotificationMethods is { Count: > 0 });
+
+            var help = wantsCapabilities
+                ? "This may indicate your Codex app-server build does not support the requested initialize capabilities. Try upgrading Codex or omit CodexAppServerClientOptions.Capabilities / ExperimentalApi / OptOutNotificationMethods."
+                : null;
+
+            throw new CodexAppServerInitializeException(
+                ex.Error.Code,
+                ex.Error.Message,
+                dataJson,
+                help,
+                stderrTail: _process.StderrTail,
+                innerException: ex);
+        }
     }
+
+    /// <summary>
+    /// Gets the initialize result payload, if <see cref="InitializeAsync"/> has completed successfully.
+    /// </summary>
+    public AppServerInitializeResult? InitializeResult => _initializeResult;
 
     /// <summary>
     /// Sends an arbitrary JSON-RPC request to the app server.
     /// </summary>
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        _rpc.SendRequestAsync(method, @params, ct);
+        SendRequestAsync(method, @params, ct);
 
     /// <summary>
     /// A task that completes when the underlying Codex app-server subprocess exits.
@@ -144,7 +285,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var result = await _rpc.SendRequestAsync(
+        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
+
+        var result = await SendRequestAsync(
             "thread/start",
             new ThreadStartParams
             {
@@ -179,7 +322,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        var result = await _rpc.SendRequestAsync(
+        var result = await SendRequestAsync(
             "thread/resume",
             new ThreadResumeParams { ThreadId = threadId },
             ct);
@@ -194,10 +337,16 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (string.IsNullOrWhiteSpace(options.ThreadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+        if (options.History is null &&
+            string.IsNullOrWhiteSpace(options.Path) &&
+            string.IsNullOrWhiteSpace(options.ThreadId))
+        {
+            throw new ArgumentException("Either ThreadId, History, or Path must be specified.", nameof(options));
+        }
 
-        var result = await _rpc.SendRequestAsync(
+        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: ExperimentalApiEnabled);
+
+        var result = await SendRequestAsync(
             "thread/resume",
             new ThreadResumeParams
             {
@@ -217,7 +366,461 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             ct);
 
         var id = ExtractThreadId(result) ?? options.ThreadId;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new InvalidOperationException(
+                $"thread/resume returned no thread id. Raw result: {result}");
+        }
         return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Lists threads with optional filters and paging.
+    /// </summary>
+    public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await SendRequestAsync(
+            "thread/list",
+            new ThreadListParams
+            {
+                Archived = options.Archived,
+                Cwd = options.Cwd,
+                Query = options.Query,
+                PageSize = options.PageSize,
+                Cursor = options.Cursor,
+                SortKey = options.SortKey,
+                SortDirection = options.SortDirection
+            },
+            ct);
+
+        return new CodexThreadListPage
+        {
+            Threads = ParseThreadListThreads(result),
+            NextCursor = ExtractNextCursor(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Reads a thread by ID.
+    /// </summary>
+    public async Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await SendRequestAsync(
+            "thread/read",
+            new ThreadReadParams { ThreadId = threadId },
+            ct);
+
+        var threadObject = TryGetObject(result, "thread") ?? result;
+        var summary = ParseThreadSummary(threadObject) ?? new CodexThreadSummary
+        {
+            ThreadId = threadId,
+            Raw = threadObject
+        };
+
+        return new CodexThreadReadResult
+        {
+            Thread = summary,
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Lists identifiers of threads currently loaded in memory by the app-server.
+    /// </summary>
+    public async Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await SendRequestAsync(
+            "thread/loaded/list",
+            new ThreadLoadedListParams
+            {
+                Cursor = options.Cursor,
+                Limit = options.Limit
+            },
+            ct);
+
+        return new CodexLoadedThreadListPage
+        {
+            ThreadIds = ParseThreadLoadedListThreadIds(result),
+            NextCursor = ExtractNextCursor(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Starts thread compaction.
+    /// </summary>
+    public async Task CompactThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        _ = await SendRequestAsync(
+            "thread/compact/start",
+            new ThreadCompactStartParams { ThreadId = threadId },
+            ct);
+    }
+
+    /// <summary>
+    /// Rolls back the thread by the specified number of turns.
+    /// </summary>
+    public async Task<CodexThread> RollbackThreadAsync(string threadId, int numTurns, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        if (numTurns <= 0)
+            throw new ArgumentOutOfRangeException(nameof(numTurns), numTurns, "NumTurns must be greater than zero.");
+
+        var result = await SendRequestAsync(
+            "thread/rollback",
+            new ThreadRollbackParams
+            {
+                ThreadId = threadId,
+                NumTurns = numTurns
+            },
+            ct);
+
+        var threadObj = TryGetObject(result, "thread") ?? result;
+        var id = ExtractThreadId(threadObj) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Terminates all running background terminals associated with the thread (experimental).
+    /// </summary>
+    public async Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        if (!ExperimentalApiEnabled)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/backgroundTerminals/clean");
+        }
+
+        _ = await SendRequestAsync(
+            "thread/backgroundTerminals/clean",
+            new ThreadBackgroundTerminalsCleanParams { ThreadId = threadId },
+            ct);
+    }
+
+    /// <summary>
+    /// Forks a thread.
+    /// </summary>
+    public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ExperimentalApiGuards.ValidateThreadFork(options, ExperimentalApiEnabled);
+
+        var result = await SendRequestAsync(
+            "thread/fork",
+            new ThreadForkParams
+            {
+                ThreadId = options.ThreadId,
+                Path = options.Path
+            },
+            ct);
+
+        var threadId = ExtractThreadId(result);
+        if (string.IsNullOrWhiteSpace(threadId))
+        {
+            throw new InvalidOperationException(
+                $"thread/fork returned no thread id. Raw result: {result}");
+        }
+
+        return new CodexThread(threadId, result);
+    }
+
+    /// <summary>
+    /// Archives a thread.
+    /// </summary>
+    public async Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await SendRequestAsync(
+            "thread/archive",
+            new ThreadArchiveParams { ThreadId = threadId },
+            ct);
+
+        var id = ExtractThreadId(result) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Unarchives a thread.
+    /// </summary>
+    public async Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await SendRequestAsync(
+            "thread/unarchive",
+            new ThreadUnarchiveParams { ThreadId = threadId },
+            ct);
+
+        var id = ExtractThreadId(result) ?? threadId;
+        return new CodexThread(id, result);
+    }
+
+    /// <summary>
+    /// Sets (or clears) the thread name.
+    /// </summary>
+    public async Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        _ = await SendRequestAsync(
+            "thread/name/set",
+            new ThreadSetNameParams { ThreadId = threadId, ThreadName = name },
+            ct);
+    }
+
+    /// <summary>
+    /// Lists skills.
+    /// </summary>
+    public async Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        IReadOnlyList<string>? cwds = null;
+        if (options.Cwds is { Count: > 0 })
+        {
+            cwds = options.Cwds;
+        }
+        else if (!string.IsNullOrWhiteSpace(options.Cwd))
+        {
+            cwds = [options.Cwd];
+        }
+
+        SkillsListExtraRootsForCwd[]? perCwd = null;
+        if (options.ExtraRootsForCwd is { Count: > 0 })
+        {
+            var cwd = options.Cwd ?? (cwds is { Count: 1 } ? cwds[0] : null);
+            if (string.IsNullOrWhiteSpace(cwd))
+            {
+                throw new ArgumentException("ExtraRootsForCwd requires a single Cwd scope.", nameof(options));
+            }
+
+            perCwd =
+            [
+                new SkillsListExtraRootsForCwd
+                {
+                    Cwd = cwd,
+                    ExtraUserRoots = options.ExtraRootsForCwd
+                }
+            ];
+        }
+
+        var result = await SendRequestAsync(
+            "skills/list",
+            new SkillsListParams
+            {
+                Cwds = cwds,
+                ForceReload = options.ForceReload ? true : null,
+                PerCwdExtraUserRoots = perCwd
+            },
+            ct);
+
+        var entries = ParseSkillsListEntries(result);
+
+        return new SkillsListResult
+        {
+            Entries = entries,
+            Skills = ParseSkillsListSkills(entries),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Lists apps/connectors.
+    /// </summary>
+    public async Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await SendRequestAsync(
+            "app/list",
+            new AppListParams
+            {
+                Cursor = options.Cursor,
+                Limit = options.Limit,
+                ThreadId = options.ThreadId,
+                ForceRefetch = options.ForceRefetch ? true : null
+            },
+            ct);
+
+        return new AppsListResult
+        {
+            Apps = ParseAppsListApps(result),
+            NextCursor = ExtractNextCursor(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Reads the active configuration requirements constraints (for example from <c>requirements.toml</c> or MDM).
+    /// </summary>
+    public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
+    {
+        var result = await SendRequestAsync(
+            "configRequirements/read",
+            @params: null,
+            ct);
+
+        return new ConfigRequirementsReadResult
+        {
+            Requirements = ParseConfigRequirementsReadRequirements(result, experimentalApiEnabled: ExperimentalApiEnabled),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Reads remote skills.
+    /// </summary>
+    public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
+    {
+        var result = await SendRequestAsync(
+            "skills/remote/read",
+            @params: null,
+            ct);
+
+        return new RemoteSkillsReadResult
+        {
+            Skills = ParseRemoteSkillsReadSkills(result),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Writes a remote skill reference.
+    /// </summary>
+    public async Task<RemoteSkillWriteResult> WriteRemoteSkillAsync(string hazelnutId, bool isPreload, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(hazelnutId))
+            throw new ArgumentException("HazelnutId cannot be empty or whitespace.", nameof(hazelnutId));
+
+        var result = await SendRequestAsync(
+            "skills/remote/write",
+            new SkillsRemoteWriteParams
+            {
+                HazelnutId = hazelnutId,
+                IsPreload = isPreload
+            },
+            ct);
+
+        return new RemoteSkillWriteResult
+        {
+            Id = GetStringOrNull(result, "id"),
+            Name = GetStringOrNull(result, "name"),
+            Path = GetStringOrNull(result, "path"),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Writes skills configuration.
+    /// </summary>
+    public async Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Path cannot be empty or whitespace.", nameof(path));
+
+        var result = await SendRequestAsync(
+            "skills/config/write",
+            new SkillsConfigWriteParams
+            {
+                Enabled = enabled,
+                Path = path
+            },
+            ct);
+
+        return new SkillsConfigWriteResult
+        {
+            EffectiveEnabled = GetBoolOrNull(result, "effectiveEnabled"),
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Starts a fuzzy file search session (experimental).
+    /// </summary>
+    public async Task StartFuzzyFileSearchSessionAsync(string sessionId, IReadOnlyList<string> roots, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
+        ArgumentNullException.ThrowIfNull(roots);
+
+        if (!ExperimentalApiEnabled)
+        {
+            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStart");
+        }
+
+        _ = await SendRequestAsync(
+            "fuzzyFileSearch/sessionStart",
+            new FuzzyFileSearchSessionStartParams
+            {
+                SessionId = sessionId,
+                Roots = roots
+            },
+            ct);
+    }
+
+    /// <summary>
+    /// Updates a fuzzy file search session query (experimental).
+    /// </summary>
+    public async Task UpdateFuzzyFileSearchSessionAsync(string sessionId, string query, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
+        if (string.IsNullOrWhiteSpace(query))
+            throw new ArgumentException("Query cannot be empty or whitespace.", nameof(query));
+
+        if (!ExperimentalApiEnabled)
+        {
+            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionUpdate");
+        }
+
+        _ = await SendRequestAsync(
+            "fuzzyFileSearch/sessionUpdate",
+            new FuzzyFileSearchSessionUpdateParams
+            {
+                SessionId = sessionId,
+                Query = query
+            },
+            ct);
+    }
+
+    /// <summary>
+    /// Stops a fuzzy file search session (experimental).
+    /// </summary>
+    public async Task StopFuzzyFileSearchSessionAsync(string sessionId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
+
+        if (!ExperimentalApiEnabled)
+        {
+            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStop");
+        }
+
+        _ = await SendRequestAsync(
+            "fuzzyFileSearch/sessionStop",
+            new FuzzyFileSearchSessionStopParams
+            {
+                SessionId = sessionId
+            },
+            ct);
     }
 
     /// <summary>
@@ -230,23 +833,54 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         ArgumentNullException.ThrowIfNull(options);
 
-        var result = await _rpc.SendRequestAsync(
-            "turn/start",
-            new TurnStartParams
-            {
-                ThreadId = threadId,
-                Input = options.Input.Select(i => i.Wire).ToArray(),
-                Cwd = options.Cwd,
-                ApprovalPolicy = options.ApprovalPolicy?.Value,
-                SandboxPolicy = options.SandboxPolicy,
-                Model = options.Model?.Value,
-                Effort = options.Effort?.Value,
-                Summary = options.Summary,
-                Personality = options.Personality,
-                OutputSchema = options.OutputSchema,
-                CollaborationMode = options.CollaborationMode
-            },
-            ct);
+        ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
+
+        if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy) &&
+            Volatile.Read(ref _readOnlyAccessOverridesSupport) == -1)
+        {
+            var ua = InitializeResult?.UserAgent ?? "<unknown userAgent>";
+            throw new InvalidOperationException(
+                $"turn/start sandboxPolicy ReadOnlyAccess overrides were previously rejected by this app-server build. userAgent='{ua}'. Do not send ReadOnlyAccess fields unless your Codex app-server supports them.");
+        }
+
+        var turnStartParams = new TurnStartParams
+        {
+            ThreadId = threadId,
+            Input = options.Input.Select(i => i.Wire).ToArray(),
+            Cwd = options.Cwd,
+            ApprovalPolicy = options.ApprovalPolicy?.Value,
+            SandboxPolicy = options.SandboxPolicy,
+            Model = options.Model?.Value,
+            Effort = options.Effort?.Value,
+            Summary = options.Summary,
+            Personality = options.Personality,
+            OutputSchema = options.OutputSchema,
+            CollaborationMode = options.CollaborationMode
+        };
+
+        JsonElement result;
+        try
+        {
+            result = await SendRequestAsync("turn/start", turnStartParams, ct);
+        }
+        catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32602 && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
+        {
+            Interlocked.Exchange(ref _readOnlyAccessOverridesSupport, -1);
+            var ua = InitializeResult?.UserAgent ?? "<unknown userAgent>";
+            var sandboxJson = JsonSerializer.Serialize(options.SandboxPolicy, CreateDefaultSerializerOptions());
+            var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
+                ? $" Data: {ex.Error.Data.Value.GetRawText()}"
+                : string.Empty;
+
+            throw new InvalidOperationException(
+                $"turn/start rejected sandboxPolicy parameters (likely unsupported by this Codex app-server build). userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
+                ex);
+        }
+
+        if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
+        {
+            Interlocked.Exchange(ref _readOnlyAccessOverridesSupport, 1);
+        }
 
         var turnId = ExtractTurnId(result);
         if (string.IsNullOrWhiteSpace(turnId))
@@ -255,10 +889,159 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                 $"turn/start returned no turn id. Raw result: {result}");
         }
 
+        return CreateTurnHandle(threadId, turnId);
+    }
+
+    private static bool ContainsReadOnlyAccessOverrides(SandboxPolicy? policy) =>
+        policy switch
+        {
+            SandboxPolicy.ReadOnly r => r.Access is not null,
+            SandboxPolicy.WorkspaceWrite w => w.ReadOnlyAccess is not null,
+            _ => false
+        };
+
+    /// <summary>
+    /// Steers an in-progress turn by appending input items.
+    /// </summary>
+    /// <remarks>
+    /// Steering is best-effort and may race with turn completion. Cancellation stops waiting for the response but does
+    /// not guarantee the server did not apply the steer request.
+    /// </remarks>
+    public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
+    {
+        var result = await SteerTurnRawAsync(options, ct);
+        return result.TurnId;
+    }
+
+    /// <summary>
+    /// Steers an in-progress turn by appending input items and returns the raw JSON result payload.
+    /// </summary>
+    /// <remarks>
+    /// Steering is best-effort and may race with turn completion. Cancellation stops waiting for the response but does
+    /// not guarantee the server did not apply the steer request.
+    /// </remarks>
+    public async Task<TurnSteerResult> SteerTurnRawAsync(TurnSteerOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+        if (string.IsNullOrWhiteSpace(options.ExpectedTurnId))
+            throw new ArgumentException("ExpectedTurnId cannot be empty or whitespace.", nameof(options.ExpectedTurnId));
+
+        try
+        {
+            var raw = await SendRequestAsync(
+                "turn/steer",
+                BuildTurnSteerParams(options),
+                ct);
+
+            return new TurnSteerResult
+            {
+                TurnId = ExtractTurnId(raw) ?? options.ExpectedTurnId,
+                Raw = raw
+            };
+        }
+        catch (JsonRpcRemoteException ex)
+        {
+            var ua = InitializeResult?.UserAgent;
+            throw new CodexAppServerRequestFailedException(
+                method: "turn/steer",
+                errorCode: ex.Error.Code,
+                errorMessage: $"{ex.Error.Message} (expectedTurnId='{options.ExpectedTurnId}')",
+                errorData: ex.Error.Data,
+                userAgent: ua,
+                innerException: ex);
+        }
+    }
+
+    /// <summary>
+    /// Starts a review via the app-server.
+    /// </summary>
+    public async Task<ReviewStartResult> StartReviewAsync(ReviewStartOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
+        ArgumentNullException.ThrowIfNull(options.Target);
+
+        JsonElement result;
+        try
+        {
+            result = await SendRequestAsync(
+                "review/start",
+                BuildReviewStartParams(options),
+                ct);
+        }
+        catch (JsonRpcRemoteException ex)
+        {
+            var ua = InitializeResult?.UserAgent;
+            throw new CodexAppServerRequestFailedException(
+                method: "review/start",
+                errorCode: ex.Error.Code,
+                errorMessage: ex.Error.Message,
+                errorData: ex.Error.Data,
+                userAgent: ua,
+                innerException: ex);
+        }
+
+        var reviewThreadId = GetStringOrNull(result, "reviewThreadId");
+
+        var turnObj = TryGetObject(result, "turn") ?? result;
+        var turnId = ExtractTurnId(turnObj);
+        if (string.IsNullOrWhiteSpace(turnId))
+        {
+            throw new InvalidOperationException(
+                $"review/start returned no turn id. Raw result: {result}");
+        }
+
+        var turnThreadId = ExtractThreadId(turnObj) ?? reviewThreadId ?? options.ThreadId;
+
+        return new ReviewStartResult
+        {
+            Turn = CreateTurnHandle(turnThreadId, turnId),
+            ReviewThreadId = reviewThreadId,
+            Raw = result
+        };
+    }
+
+    /// <summary>
+    /// Starts a review via the app-server.
+    /// </summary>
+    /// <remarks>
+    /// This is an alias for <see cref="StartReviewAsync"/> to better align with exec-mode naming (<c>ReviewAsync</c>).
+    /// </remarks>
+    public Task<ReviewStartResult> ReviewAsync(ReviewStartOptions options, CancellationToken ct = default) =>
+        StartReviewAsync(options, ct);
+
+    internal static TurnSteerParams BuildTurnSteerParams(TurnSteerOptions options) =>
+        new()
+        {
+            ThreadId = options.ThreadId,
+            ExpectedTurnId = options.ExpectedTurnId,
+            Input = options.Input.Select(i => i.Wire).ToArray()
+        };
+
+    internal static ReviewStartParams BuildReviewStartParams(ReviewStartOptions options) =>
+        new()
+        {
+            ThreadId = options.ThreadId,
+            Target = options.Target.ToWire(),
+            Delivery = options.Delivery switch
+            {
+                ReviewDelivery.Inline => "inline",
+                ReviewDelivery.Detached => "detached",
+                _ => null
+            }
+        };
+
+    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId)
+    {
         var handle = new CodexTurnHandle(
             threadId,
             turnId,
             interrupt: c => InterruptAsync(threadId, turnId, c),
+            steer: (input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
+            steerRaw: (input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
             onDispose: () =>
             {
                 lock (_turnsById)
@@ -277,7 +1060,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     }
 
     private Task InterruptAsync(string threadId, string turnId, CancellationToken ct) =>
-        _rpc.SendRequestAsync(
+        SendRequestAsync(
             "turn/interrupt",
             new TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
             ct);
@@ -422,26 +1205,6 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
     private Exception BuildDisconnectException()
     {
-        int? pid = null;
-        int? exitCode = null;
-        try
-        {
-            pid = _process.Process.Id;
-        }
-        catch
-        {
-            // ignore
-        }
-
-        try
-        {
-            exitCode = _process.Process.HasExited ? _process.Process.ExitCode : null;
-        }
-        catch
-        {
-            // ignore
-        }
-
         var stderrTail = Array.Empty<string>();
         try
         {
@@ -451,6 +1214,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         {
             // ignore
         }
+
+        var exitCode = _process.ExitCode;
+        var pid = _process.ProcessId;
 
         var msg = exitCode is null
             ? "Codex app-server subprocess disconnected."
@@ -491,7 +1257,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }
     }
 
-    private static string? ExtractId(JsonElement element, params string[] propertyNames)
+    internal static string? ExtractId(JsonElement element, params string[] propertyNames)
     {
         if (element.ValueKind != JsonValueKind.Object)
         {
@@ -509,7 +1275,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return null;
     }
 
-    private static string? ExtractThreadId(JsonElement result)
+    internal static string? ExtractThreadId(JsonElement result)
     {
         // Common shapes:
         // - { "threadId": "..." }
@@ -522,7 +1288,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                FindStringPropertyRecursive(result, propertyName: "threadId", maxDepth: 6);
     }
 
-    private static string? ExtractTurnId(JsonElement result)
+    internal static string? ExtractTurnId(JsonElement result)
     {
         // Common shapes:
         // - { "turnId": "..." }
@@ -535,7 +1301,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                FindStringPropertyRecursive(result, propertyName: "turnId", maxDepth: 6);
     }
 
-    private static string? ExtractIdByPath(JsonElement element, string p1, string p2)
+    internal static string? ExtractIdByPath(JsonElement element, string p1, string p2)
     {
         if (element.ValueKind != JsonValueKind.Object)
         {
@@ -550,7 +1316,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return ExtractId(child, p2);
     }
 
-    private static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth)
+    internal static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth)
     {
         if (maxDepth < 0)
         {
@@ -623,4 +1389,481 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             TurnCompletedNotification t => t.TurnId,
             _ => null
         };
+
+    internal static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult)
+    {
+        var array =
+            TryGetArray(listResult, "threads") ??
+            TryGetArray(listResult, "items") ??
+            TryGetArray(listResult, "sessions");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<CodexThreadSummary>();
+        }
+
+        var threads = new List<CodexThreadSummary>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            var summary = ParseThreadSummary(item);
+            if (summary is not null)
+            {
+                threads.Add(summary);
+            }
+        }
+
+        return threads;
+    }
+
+    internal static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject)
+    {
+        if (threadObject.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var primary = TryGetObject(threadObject, "thread") ?? threadObject;
+
+        var threadId = ExtractThreadId(threadObject);
+        if (string.IsNullOrWhiteSpace(threadId))
+        {
+            return null;
+        }
+
+        var name =
+            GetStringOrNull(primary, "name") ??
+            GetStringOrNull(primary, "threadName") ??
+            GetStringOrNull(primary, "title");
+
+        var archived = GetBoolOrNull(primary, "archived");
+        var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
+        var cwd = GetStringOrNull(primary, "cwd");
+        var model = GetStringOrNull(primary, "model");
+
+        return new CodexThreadSummary
+        {
+            ThreadId = threadId,
+            Name = name,
+            Archived = archived,
+            CreatedAt = createdAt,
+            Cwd = cwd,
+            Model = model,
+            Raw = threadObject
+        };
+    }
+
+    internal static string? ExtractNextCursor(JsonElement listResult) =>
+        GetStringOrNull(listResult, "nextCursor") ??
+        GetStringOrNull(listResult, "cursor");
+
+    internal static IReadOnlyList<string> ParseThreadLoadedListThreadIds(JsonElement loadedListResult)
+    {
+        var array =
+            TryGetArray(loadedListResult, "data") ??
+            TryGetArray(loadedListResult, "threads");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<string>();
+        }
+
+        var ids = new List<string>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                var id = item.GetString();
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+
+        return ids;
+    }
+
+    internal static IReadOnlyList<SkillsListEntryResult> ParseSkillsListEntries(JsonElement skillsListResult)
+    {
+        var data = TryGetArray(skillsListResult, "data");
+        if (data is not null && data.Value.ValueKind == JsonValueKind.Array)
+        {
+            var entries = new List<SkillsListEntryResult>();
+            foreach (var entry in data.Value.EnumerateArray())
+            {
+                if (entry.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                var cwd = GetStringOrNull(entry, "cwd");
+
+                var skills = new List<SkillDescriptor>();
+                var skillsArray = TryGetArray(entry, "skills");
+                if (skillsArray is not null && skillsArray.Value.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var skill in skillsArray.Value.EnumerateArray())
+                    {
+                        if (skill.ValueKind != JsonValueKind.Object)
+                        {
+                            continue;
+                        }
+
+                        var name = GetStringOrNull(skill, "name") ?? GetStringOrNull(skill, "id");
+                        if (string.IsNullOrWhiteSpace(name))
+                        {
+                            continue;
+                        }
+
+                        skills.Add(new SkillDescriptor
+                        {
+                            Name = name,
+                            Description = GetStringOrNull(skill, "description"),
+                            ShortDescription = GetStringOrNull(skill, "shortDescription"),
+                            Path = GetStringOrNull(skill, "path"),
+                            Enabled = GetBoolOrNull(skill, "enabled"),
+                            Cwd = cwd,
+                            Scope = GetStringOrNull(skill, "scope"),
+                            Dependencies = TryGetObject(skill, "dependencies"),
+                            Interface = TryGetObject(skill, "interface"),
+                            Raw = skill
+                        });
+                    }
+                }
+
+                var errors = new List<CodexSkillErrorInfo>();
+                var errorsArray = TryGetArray(entry, "errors");
+                if (errorsArray is not null && errorsArray.Value.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var err in errorsArray.Value.EnumerateArray())
+                    {
+                        if (err.ValueKind != JsonValueKind.Object)
+                        {
+                            continue;
+                        }
+
+                        errors.Add(new CodexSkillErrorInfo
+                        {
+                            Message = GetStringOrNull(err, "message"),
+                            Path = GetStringOrNull(err, "path"),
+                            Raw = err
+                        });
+                    }
+                }
+
+                entries.Add(new SkillsListEntryResult
+                {
+                    Cwd = cwd,
+                    Skills = skills,
+                    Errors = errors,
+                    Raw = entry
+                });
+            }
+
+            return entries;
+        }
+
+        var legacySkills = TryGetArray(skillsListResult, "skills") ?? TryGetArray(skillsListResult, "items");
+        if (legacySkills is not null && legacySkills.Value.ValueKind == JsonValueKind.Array)
+        {
+            var skills = new List<SkillDescriptor>();
+            foreach (var item in legacySkills.Value.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                var name = GetStringOrNull(item, "name") ?? GetStringOrNull(item, "id");
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                skills.Add(new SkillDescriptor
+                {
+                    Name = name,
+                    Description = GetStringOrNull(item, "description"),
+                    ShortDescription = GetStringOrNull(item, "shortDescription"),
+                    Path = GetStringOrNull(item, "path"),
+                    Enabled = GetBoolOrNull(item, "enabled"),
+                    Scope = GetStringOrNull(item, "scope"),
+                    Dependencies = TryGetObject(item, "dependencies"),
+                    Interface = TryGetObject(item, "interface"),
+                    Raw = item
+                });
+            }
+
+            return
+            [
+                new SkillsListEntryResult
+                {
+                    Cwd = null,
+                    Skills = skills,
+                    Errors = Array.Empty<CodexSkillErrorInfo>(),
+                    Raw = skillsListResult
+                }
+            ];
+        }
+
+        return Array.Empty<SkillsListEntryResult>();
+    }
+
+    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(JsonElement skillsListResult)
+    {
+        var entries = ParseSkillsListEntries(skillsListResult);
+        return ParseSkillsListSkills(entries);
+    }
+
+    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(IReadOnlyList<SkillsListEntryResult> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return Array.Empty<SkillDescriptor>();
+        }
+
+        return entries.SelectMany(e => e.Skills).ToArray();
+    }
+
+    internal static IReadOnlyList<AppDescriptor> ParseAppsListApps(JsonElement appsListResult)
+    {
+        var array =
+            TryGetArray(appsListResult, "data") ??
+            TryGetArray(appsListResult, "apps") ??
+            TryGetArray(appsListResult, "items");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<AppDescriptor>();
+        }
+
+        var apps = new List<AppDescriptor>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            apps.Add(new AppDescriptor
+            {
+                Id = GetStringOrNull(item, "id"),
+                Name = GetStringOrNull(item, "name"),
+                Description = GetStringOrNull(item, "description"),
+                LogoUrl = GetStringOrNull(item, "logoUrl") ?? GetStringOrNull(item, "logo_url"),
+                LogoUrlDark = GetStringOrNull(item, "logoUrlDark") ?? GetStringOrNull(item, "logo_url_dark"),
+                DistributionChannel = GetStringOrNull(item, "distributionChannel"),
+                InstallUrl = GetStringOrNull(item, "installUrl"),
+                IsAccessible = GetBoolOrNull(item, "isAccessible"),
+                IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
+                Title = GetStringOrNull(item, "title"),
+                DisabledReason = GetStringOrNull(item, "disabledReason"),
+                Raw = item
+            });
+        }
+
+        return apps;
+    }
+
+    internal static IReadOnlyList<RemoteSkillDescriptor> ParseRemoteSkillsReadSkills(JsonElement remoteSkillsResult)
+    {
+        var array =
+            TryGetArray(remoteSkillsResult, "data") ??
+            TryGetArray(remoteSkillsResult, "skills");
+
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<RemoteSkillDescriptor>();
+        }
+
+        var skills = new List<RemoteSkillDescriptor>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var id = GetStringOrNull(item, "id");
+            var name = GetStringOrNull(item, "name");
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            skills.Add(new RemoteSkillDescriptor
+            {
+                Id = id,
+                Name = name,
+                Description = GetStringOrNull(item, "description"),
+                Raw = item
+            });
+        }
+
+        return skills;
+    }
+
+    internal static ConfigRequirements? ParseConfigRequirementsReadRequirements(JsonElement configRequirementsReadResult, bool experimentalApiEnabled)
+    {
+        if (configRequirementsReadResult.ValueKind != JsonValueKind.Object ||
+            !configRequirementsReadResult.TryGetProperty("requirements", out var req) ||
+            req.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var allowedApprovalPolicies = GetOptionalStringArray(req, "allowedApprovalPolicies")
+            ?.Select(CodexApprovalPolicy.Parse)
+            .ToArray();
+
+        var allowedSandboxModes = GetOptionalStringArray(req, "allowedSandboxModes")
+            ?.Select(CodexSandboxMode.Parse)
+            .ToArray();
+
+        var allowedWebSearchModes = GetOptionalStringArray(req, "allowedWebSearchModes")
+            ?.Select(CodexWebSearchMode.Parse)
+            .ToArray();
+
+        CodexResidencyRequirement? residency = null;
+        if (CodexResidencyRequirement.TryParse(GetStringOrNull(req, "enforceResidency"), out var r))
+        {
+            residency = r;
+        }
+
+        NetworkRequirements? network = null;
+        if (experimentalApiEnabled && TryGetObject(req, "network") is { } net)
+        {
+            network = ParseNetworkRequirements(net);
+        }
+
+        return new ConfigRequirements
+        {
+            AllowedApprovalPolicies = allowedApprovalPolicies,
+            AllowedSandboxModes = allowedSandboxModes,
+            AllowedWebSearchModes = allowedWebSearchModes,
+            EnforceResidency = residency,
+            Network = network,
+            Raw = req.Clone()
+        };
+    }
+
+    private static NetworkRequirements ParseNetworkRequirements(JsonElement network)
+    {
+        return new NetworkRequirements
+        {
+            Enabled = GetBoolOrNull(network, "enabled"),
+            HttpPort = GetInt32OrNull(network, "httpPort"),
+            SocksPort = GetInt32OrNull(network, "socksPort"),
+            AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
+            DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
+            DangerouslyAllowNonLoopbackAdmin = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackAdmin"),
+            AllowedDomains = GetOptionalStringArray(network, "allowedDomains"),
+            DeniedDomains = GetOptionalStringArray(network, "deniedDomains"),
+            AllowUnixSockets = GetOptionalStringArray(network, "allowUnixSockets"),
+            AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
+            Raw = network.Clone()
+        };
+    }
+
+    private static JsonElement? TryGetArray(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Array
+            ? p
+            : null;
+
+    private static JsonElement? TryGetObject(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Object
+            ? p
+            : null;
+
+    private static string? GetStringOrNull(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.String
+            ? p.GetString()
+            : null;
+
+    private static int? GetInt32OrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var i))
+        {
+            return i;
+        }
+
+        if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out i))
+        {
+            return i;
+        }
+
+        return null;
+    }
+
+    private static bool? GetBoolOrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => null
+        };
+    }
+
+    private static IReadOnlyList<string>? GetOptionalStringArray(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (p.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var list = new List<string>();
+        foreach (var item in p.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                list.Add(item.GetString() ?? string.Empty);
+            }
+        }
+
+        return list;
+    }
+
+    private static DateTimeOffset? GetDateTimeOffsetOrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(p.GetString(), out var dto))
+        {
+            return dto;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt64(out var epoch))
+        {
+            // Best-effort: treat large values as milliseconds, otherwise seconds.
+            return epoch > 10_000_000_000
+                ? DateTimeOffset.FromUnixTimeMilliseconds(epoch)
+                : DateTimeOffset.FromUnixTimeSeconds(epoch);
+        }
+
+        return null;
+    }
 }

@@ -1,5 +1,6 @@
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Facade;
 using JKToolKit.CodexSDK.McpServer;
 
@@ -72,6 +73,70 @@ public sealed class CodexSdk : IAsyncDisposable
         var builder = new CodexSdkBuilder();
         configure?.Invoke(builder);
         return builder.Build();
+    }
+
+    /// <summary>
+    /// Runs a non-interactive code review using exec-mode (<c>codex review</c>).
+    /// </summary>
+    public Task<CodexReviewResult> ReviewExecAsync(CodexReviewOptions options, CancellationToken ct = default) =>
+        Exec.ReviewAsync(options, ct);
+
+    /// <summary>
+    /// Starts an app-server review (<c>review/start</c>) by creating a thread and returning a running turn.
+    /// </summary>
+    public async Task<CodexSdkAppServerReviewSession> ReviewAppServerAsync(CodexSdkAppServerReviewOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.Thread);
+        ArgumentNullException.ThrowIfNull(options.Target);
+
+        CodexAppServerClient? client = null;
+        try
+        {
+            client = await AppServer.StartAsync(ct);
+
+            var thread = await client.StartThreadAsync(options.Thread, ct);
+            var review = await client.StartReviewAsync(new ReviewStartOptions
+            {
+                ThreadId = thread.Id,
+                Delivery = options.Delivery,
+                Target = options.Target
+            }, ct);
+
+            return new CodexSdkAppServerReviewSession(client, thread, review);
+        }
+        catch
+        {
+            if (client is not null)
+            {
+                await client.DisposeAsync();
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Runs a review using either exec-mode or app-server mode based on <paramref name="options"/>.
+    /// </summary>
+    public async Task<CodexSdkReviewResult> ReviewAsync(CodexSdkReviewOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return options.Mode switch
+        {
+            CodexSdkReviewMode.Exec => new CodexSdkReviewResult
+            {
+                Mode = CodexSdkReviewMode.Exec,
+                Exec = await ReviewExecAsync(options.Exec ?? throw new ArgumentException("Exec options are required when Mode is Exec.", nameof(options)), ct)
+            },
+            CodexSdkReviewMode.AppServer => new CodexSdkReviewResult
+            {
+                Mode = CodexSdkReviewMode.AppServer,
+                AppServer = await ReviewAppServerAsync(options.AppServer ?? throw new ArgumentException("AppServer options are required when Mode is AppServer.", nameof(options)), ct)
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(options.Mode), options.Mode, "Unknown review mode.")
+        };
     }
 
     /// <inheritdoc />

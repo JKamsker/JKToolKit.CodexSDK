@@ -1,0 +1,14 @@
+{
+  "thread": {
+    "threadId": "t_read",
+    "name": "Read Me",
+    "archived": false,
+    "createdAt": "2026-02-02T00:00:00Z",
+    "cwd": "C:\\repo",
+    "model": "gpt-5",
+    "extra": { "any": "value" }
+  },
+  "historySummary": { "turns": 3 },
+  "unknownTopLevel": true
+}
+
