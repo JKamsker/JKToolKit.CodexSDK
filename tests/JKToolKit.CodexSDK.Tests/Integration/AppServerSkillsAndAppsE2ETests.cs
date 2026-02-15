@@ -17,25 +17,44 @@ public sealed class AppServerSkillsAndAppsE2ETests
             DefaultClientInfo = new("jktoolkit_codexsdk_tests", "JKToolKit.CodexSDK.Tests", "1.0.0")
         }, cts.Token);
 
-        var thread = await client.StartThreadAsync(new ThreadStartOptions
+        CodexThread? thread = null;
+        try
         {
-            Cwd = Directory.GetCurrentDirectory(),
-            Model = CodexModel.Gpt52Codex,
-            Ephemeral = true
-        }, cts.Token);
+            thread = await client.StartThreadAsync(new ThreadStartOptions
+            {
+                Cwd = Directory.GetCurrentDirectory(),
+                Model = CodexModel.Gpt52Codex,
+                Ephemeral = true
+            }, cts.Token);
 
-        var skills = await client.ListSkillsAsync(new SkillsListOptions
+            var skills = await client.ListSkillsAsync(new SkillsListOptions
+            {
+                Cwd = Directory.GetCurrentDirectory()
+            }, cts.Token);
+
+            skills.Skills.Should().NotBeNull();
+
+            var apps = await client.ListAppsAsync(new AppsListOptions
+            {
+                ThreadId = thread.Id
+            }, cts.Token);
+
+            apps.Apps.Should().NotBeNull();
+        }
+        finally
         {
-            Cwd = Directory.GetCurrentDirectory()
-        }, cts.Token);
-
-        skills.Skills.Should().NotBeNull();
-
-        var apps = await client.ListAppsAsync(new AppsListOptions
-        {
-            ThreadId = thread.Id
-        }, cts.Token);
-
-        apps.Apps.Should().NotBeNull();
+            if (thread is not null)
+            {
+                try
+                {
+                    using var cleanupCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    _ = await client.ArchiveThreadAsync(thread.Id, cleanupCts.Token);
+                }
+                catch
+                {
+                    // Best-effort cleanup for optional E2E tests.
+                }
+            }
+        }
     }
 }
