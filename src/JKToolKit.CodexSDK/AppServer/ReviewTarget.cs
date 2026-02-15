@@ -90,7 +90,15 @@ public abstract record ReviewTarget
         /// <summary>
         /// Initializes a new instance of <see cref="Raw"/>.
         /// </summary>
-        public Raw(JsonElement wire) => Wire = wire;
+        public Raw(JsonElement wire)
+        {
+            if (wire.ValueKind == JsonValueKind.Undefined)
+            {
+                throw new ArgumentException("Wire element must not be undefined.", nameof(wire));
+            }
+
+            Wire = wire;
+        }
 
         /// <summary>
         /// Gets the raw/opaque wire target shape.

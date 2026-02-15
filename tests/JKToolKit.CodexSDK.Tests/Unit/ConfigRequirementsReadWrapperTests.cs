@@ -100,7 +100,11 @@ public sealed class ConfigRequirementsReadWrapperTests
 
         public IReadOnlyList<string> StderrTail => Array.Empty<string>();
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync()
+        {
+            _tcs.TrySetCanceled();
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed class FakeRpc : IJsonRpcConnection

@@ -11,6 +11,10 @@ namespace JKToolKit.CodexSDK.Models;
 /// </remarks>
 public readonly record struct CodexWebSearchMode
 {
+    private static readonly CodexWebSearchMode DisabledValue = new("disabled");
+    private static readonly CodexWebSearchMode CachedValue = new("cached");
+    private static readonly CodexWebSearchMode LiveValue = new("live");
+
     /// <summary>
     /// Gets the underlying wire value.
     /// </summary>
@@ -27,17 +31,17 @@ public readonly record struct CodexWebSearchMode
     /// <summary>
     /// Gets the <c>disabled</c> web search mode.
     /// </summary>
-    public static CodexWebSearchMode Disabled => new("disabled");
+    public static CodexWebSearchMode Disabled => DisabledValue;
 
     /// <summary>
     /// Gets the <c>cached</c> web search mode.
     /// </summary>
-    public static CodexWebSearchMode Cached => new("cached");
+    public static CodexWebSearchMode Cached => CachedValue;
 
     /// <summary>
     /// Gets the <c>live</c> web search mode.
     /// </summary>
-    public static CodexWebSearchMode Live => new("live");
+    public static CodexWebSearchMode Live => LiveValue;
 
     /// <summary>
     /// Parses a web search mode from a wire value.

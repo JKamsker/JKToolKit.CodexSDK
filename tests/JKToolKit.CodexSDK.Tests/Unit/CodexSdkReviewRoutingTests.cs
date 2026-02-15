@@ -80,6 +80,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();
+        rpc.AssertDrained();
     }
 
     private sealed class FakeExecClient : ICodexClient
@@ -173,6 +174,9 @@ public sealed class CodexSdkReviewRoutingTests
         public Func<JsonRpcRequest, ValueTask<JsonRpcResponse>>? OnServerRequest { get; set; }
 
         public void EnqueueResult(string method, JsonElement result) => _results.Enqueue((method, result));
+
+        public void AssertDrained() =>
+            _results.Should().BeEmpty("all enqueued RPC results should have been consumed");
 
         public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
         {

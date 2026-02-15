@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Models;
@@ -33,6 +34,8 @@ public sealed class AppServerSkillsAndAppsE2ETests
             }, cts.Token);
 
             skills.Skills.Should().NotBeNull();
+            skills.Entries.Should().NotBeNull();
+            skills.Raw.ValueKind.Should().Be(JsonValueKind.Object);
 
             var apps = await client.ListAppsAsync(new AppsListOptions
             {
@@ -40,6 +43,7 @@ public sealed class AppServerSkillsAndAppsE2ETests
             }, cts.Token);
 
             apps.Apps.Should().NotBeNull();
+            apps.Raw.ValueKind.Should().Be(JsonValueKind.Object);
         }
         finally
         {

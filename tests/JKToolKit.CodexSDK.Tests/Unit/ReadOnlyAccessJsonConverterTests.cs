@@ -12,8 +12,40 @@ public sealed class ReadOnlyAccessJsonConverterTests
 
         var access = System.Text.Json.JsonSerializer.Deserialize<ReadOnlyAccess>(json);
 
-        access.Should().BeOfType<ReadOnlyAccess.Restricted>();
-        ((ReadOnlyAccess.Restricted)access!).ReadableRoots.Should().Equal("C:\\repo");
+        access.Should().NotBeNull();
+        access.Should().BeOfType<ReadOnlyAccess.Restricted>()
+            .Which.ReadableRoots.Should().Equal("C:\\repo");
+    }
+
+    [Fact]
+    public void ReadOnlyAccessJsonConverter_ParsesFullAccess()
+    {
+        var json = """{"type":"fullAccess"}""";
+
+        var access = System.Text.Json.JsonSerializer.Deserialize<ReadOnlyAccess>(json);
+
+        access.Should().BeOfType<ReadOnlyAccess.FullAccess>();
+    }
+
+    [Fact]
+    public void ReadOnlyAccessJsonConverter_ThrowsOnUnknownType()
+    {
+        var json = """{"type":"unknown"}""";
+
+        var act = () => System.Text.Json.JsonSerializer.Deserialize<ReadOnlyAccess>(json);
+
+        act.Should().Throw<System.Text.Json.JsonException>()
+            .WithMessage("*Unknown ReadOnlyAccess discriminator*");
+    }
+
+    [Fact]
+    public void ReadOnlyAccessJsonConverter_ThrowsWhenTypeMissing()
+    {
+        var json = """{"includePlatformDefaults":true}""";
+
+        var act = () => System.Text.Json.JsonSerializer.Deserialize<ReadOnlyAccess>(json);
+
+        act.Should().Throw<System.Text.Json.JsonException>()
+            .WithMessage("*must include a string 'type' discriminator*");
     }
 }
-

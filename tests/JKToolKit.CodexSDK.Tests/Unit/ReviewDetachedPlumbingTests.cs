@@ -77,9 +77,7 @@ public sealed class ReviewDetachedPlumbingTests
     {
         public JsonElement Result { get; init; }
 
-#pragma warning disable CS0067 // Event is part of the IJsonRpcConnection contract; tests don't need to raise it.
         public event Func<JsonRpcNotification, ValueTask>? OnNotification;
-#pragma warning restore CS0067
 
         public Func<JsonRpcRequest, ValueTask<JsonRpcResponse>>? OnServerRequest { get; set; }
 
