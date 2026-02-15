@@ -58,11 +58,6 @@ public sealed record class AppDescriptor
     public string? Title { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether the app is enabled, when present.
-    /// </summary>
-    public bool? Enabled { get; init; }
-
-    /// <summary>
     /// Gets an optional disabled reason string, when present.
     /// </summary>
     public string? DisabledReason { get; init; }

@@ -17,6 +17,5 @@ public sealed record class ThreadRollbackParams
     /// Gets the number of turns to roll back.
     /// </summary>
     [JsonPropertyName("numTurns")]
-    public int NumTurns { get; init; }
+    public required int NumTurns { get; init; }
 }
-

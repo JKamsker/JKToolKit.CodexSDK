@@ -45,6 +45,12 @@ public sealed class AppServerThreadLifecycleE2ETests
         archivedList.Threads.Select(t => t.ThreadId).Should().Contain(thread.Id);
 
         _ = await client.UnarchiveThreadAsync(thread.Id, cts.Token);
+
+        var unarchivedList = await client.ListThreadsAsync(new ThreadListOptions
+        {
+            PageSize = 50
+        }, cts.Token);
+
+        unarchivedList.Threads.Select(t => t.ThreadId).Should().Contain(thread.Id);
     }
 }
-

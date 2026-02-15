@@ -21,7 +21,7 @@ public sealed class AppServerSkillsAndAppsE2ETests
         {
             Cwd = Directory.GetCurrentDirectory(),
             Model = CodexModel.Gpt52Codex,
-            Ephemeral = false
+            Ephemeral = true
         }, cts.Token);
 
         var skills = await client.ListSkillsAsync(new SkillsListOptions
@@ -39,4 +39,3 @@ public sealed class AppServerSkillsAndAppsE2ETests
         apps.Apps.Should().NotBeNull();
     }
 }
-

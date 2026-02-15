@@ -15,10 +15,10 @@ public sealed record class AppListUpdatedNotification : AppServerNotification
     /// <summary>
     /// Initializes a new instance of <see cref="AppListUpdatedNotification"/>.
     /// </summary>
-    public AppListUpdatedNotification(JsonElement Apps, JsonElement Params)
-        : base("app/list/updated", Params)
+    public AppListUpdatedNotification(JsonElement apps, JsonElement @params)
+        : base("app/list/updated", @params)
     {
-        this.Apps = Apps;
+        Apps = apps;
     }
 }
 

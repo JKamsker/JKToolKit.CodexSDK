@@ -26,12 +26,11 @@ public sealed record class FuzzyFileSearchSessionUpdatedNotification : AppServer
     /// <summary>
     /// Initializes a new instance of <see cref="FuzzyFileSearchSessionUpdatedNotification"/>.
     /// </summary>
-    public FuzzyFileSearchSessionUpdatedNotification(string SessionId, string Query, IReadOnlyList<FuzzyFileSearchResult> Files, JsonElement Params)
-        : base("fuzzyFileSearch/sessionUpdated", Params)
+    public FuzzyFileSearchSessionUpdatedNotification(string sessionId, string query, IReadOnlyList<FuzzyFileSearchResult> files, JsonElement @params)
+        : base("fuzzyFileSearch/sessionUpdated", @params)
     {
-        this.SessionId = SessionId;
-        this.Query = Query;
-        this.Files = Files;
+        SessionId = sessionId;
+        Query = query;
+        Files = files;
     }
 }
-

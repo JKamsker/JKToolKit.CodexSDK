@@ -18,5 +18,6 @@ public sealed record class InitializeCapabilities
     /// Gets an optional list of notification method names to opt out of.
     /// </summary>
     [JsonPropertyName("optOutNotificationMethods")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? OptOutNotificationMethods { get; init; }
 }

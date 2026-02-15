@@ -39,7 +39,9 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "authStatusChange",
         "loginChatGptComplete",
         "sessionConfigured",
-        "app/list/updated"
+        "app/list/updated",
+        "fuzzyFileSearch/sessionUpdated",
+        "fuzzyFileSearch/sessionCompleted"
     ];
 
     public static IEnumerable<object[]> BogusParams()

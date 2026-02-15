@@ -139,18 +139,18 @@ internal static class AppServerNotificationMapper
                 Params: p),
 
             "app/list/updated" => new AppListUpdatedNotification(
-                Apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
-                Params: p),
+                apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
+                @params: p),
 
             "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
-                SessionId: GetString(p, "sessionId") ?? string.Empty,
-                Query: GetString(p, "query") ?? string.Empty,
-                Files: ParseFuzzyFileSearchResults(p),
-                Params: p),
+                sessionId: GetString(p, "sessionId") ?? string.Empty,
+                query: GetString(p, "query") ?? string.Empty,
+                files: ParseFuzzyFileSearchResults(p),
+                @params: p),
 
             "fuzzyFileSearch/sessionCompleted" => new FuzzyFileSearchSessionCompletedNotification(
-                SessionId: GetString(p, "sessionId") ?? string.Empty,
-                Params: p),
+                sessionId: GetString(p, "sessionId") ?? string.Empty,
+                @params: p),
 
             "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,

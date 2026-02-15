@@ -220,7 +220,7 @@ Guard with env var so tests are opt-in.
 
 ---
 
-## 8) Implementation milestones (experimental opt-in)
+## 6) Implementation milestones (experimental opt-in)
 
 - [x] **Wire capabilities through initialize**
   - [x] Add `CodexAppServerClientOptions.Capabilities`
@@ -237,7 +237,7 @@ Guard with env var so tests are opt-in.
 
 ---
 
-## 6) Acceptance criteria
+## 7) Acceptance criteria
 
 - [x] Default behavior remains stable-only (no opt-in).
 - [x] Enabling experimental:
@@ -247,7 +247,7 @@ Guard with env var so tests are opt-in.
 
 ---
 
-## 7) Follow-ups (nice-to-haves)
+## 8) Follow-ups (nice-to-haves)
 
 - [x] Parse upstream error messages and translate them into typed exceptions:
   - [x] e.g. `CodexExperimentalApiRequiredException` with `Descriptor = "turn/start.collaborationMode"`

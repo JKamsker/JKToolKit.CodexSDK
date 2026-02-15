@@ -8,6 +8,17 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 /// </summary>
 public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
 {
+    /// <summary>
+    /// Parses <c>readableRoots</c> while ignoring non-string entries for forward compatibility.
+    /// </summary>
+    private static string[] ParseReadableRoots(JsonElement roots) =>
+        roots.ValueKind == JsonValueKind.Array
+            ? roots.EnumerateArray()
+                .Where(x => x.ValueKind == JsonValueKind.String)
+                .Select(x => x.GetString() ?? string.Empty)
+                .ToArray()
+            : Array.Empty<string>();
+
     /// <inheritdoc />
     public override ReadOnlyAccess Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -34,7 +45,7 @@ public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
                     ? include.GetBoolean()
                     : true,
                 ReadableRoots = root.TryGetProperty("readableRoots", out var roots) && roots.ValueKind == JsonValueKind.Array
-                    ? roots.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? string.Empty).ToArray()
+                    ? ParseReadableRoots(roots)
                     : Array.Empty<string>()
             },
             _ => throw new JsonException($"Unknown ReadOnlyAccess discriminator: '{type}'.")
@@ -68,4 +79,3 @@ public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
         writer.WriteEndObject();
     }
 }
-

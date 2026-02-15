@@ -628,7 +628,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         return new SkillsListResult
         {
             Entries = entries,
-            Skills = ParseSkillsListSkills(result),
+            Skills = ParseSkillsListSkills(entries),
             Raw = result
         };
     }
@@ -1603,6 +1603,11 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(JsonElement skillsListResult)
     {
         var entries = ParseSkillsListEntries(skillsListResult);
+        return ParseSkillsListSkills(entries);
+    }
+
+    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(IReadOnlyList<SkillsListEntryResult> entries)
+    {
         if (entries.Count == 0)
         {
             return Array.Empty<SkillDescriptor>();
@@ -1643,7 +1648,6 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                 IsAccessible = GetBoolOrNull(item, "isAccessible"),
                 IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
                 Title = GetStringOrNull(item, "title"),
-                Enabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
                 DisabledReason = GetStringOrNull(item, "disabledReason"),
                 Raw = item
             });

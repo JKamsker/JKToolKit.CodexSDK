@@ -2,6 +2,7 @@
   "thread": {
     "threadId": "t_arch",
     "archived": false
-  }
+  },
+  "futureField": 42
 }
 

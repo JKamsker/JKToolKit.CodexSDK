@@ -115,7 +115,7 @@ We should document recommended patterns:
 2. Restrict read-only access explicitly (advanced):
    - `SandboxPolicy.ReadOnly { Access = ReadOnlyAccess.Restricted { readableRoots = [...] } }`
 
-If additional SDK-level convenience types exist (`CodexSandboxMode` etc), consider adding helpers later:
+If additional SDK-level convenience types exist (`CodexSandboxMode` etc.), consider adding helpers later:
 
 - `CodexSandboxPolicyBuilder` (non-breaking addition)
 

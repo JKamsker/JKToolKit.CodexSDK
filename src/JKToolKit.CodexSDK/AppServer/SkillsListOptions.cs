@@ -21,6 +21,10 @@ public sealed class SkillsListOptions
     /// <summary>
     /// Gets or sets optional extra roots for resolving skills relative to <see cref="Cwd"/>, if supported upstream.
     /// </summary>
+    /// <remarks>
+    /// This option requires a single working directory scope. If <see cref="Cwds"/> is set, it must contain exactly one entry
+    /// (or <see cref="Cwd"/> must be set) for this option to apply.
+    /// </remarks>
     public IReadOnlyList<string>? ExtraRootsForCwd { get; set; }
 
     /// <summary>

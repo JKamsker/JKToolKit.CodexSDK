@@ -67,11 +67,10 @@ public readonly record struct CodexWebSearchMode
     /// <summary>
     /// Converts a <see cref="CodexWebSearchMode"/> to its wire value.
     /// </summary>
-    public static implicit operator string(CodexWebSearchMode mode) => mode.Value;
+    public static implicit operator string(CodexWebSearchMode mode) => mode.Value ?? string.Empty;
 
     /// <summary>
     /// Returns the underlying wire value.
     /// </summary>
-    public override string ToString() => Value;
+    public override string ToString() => Value ?? string.Empty;
 }
-

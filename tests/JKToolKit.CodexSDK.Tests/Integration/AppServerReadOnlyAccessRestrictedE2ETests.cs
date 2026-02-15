@@ -14,38 +14,48 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
 
         var tmpDir = Path.Combine(Path.GetTempPath(), "jktoolkit_codexsdk_roa_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tmpDir);
-        var filePath = Path.Combine(tmpDir, "hello.txt");
-        await File.WriteAllTextAsync(filePath, "hello", cts.Token);
-
-        await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
-        {
-            DefaultClientInfo = new("jktoolkit_codexsdk_tests", "JKToolKit.CodexSDK.Tests", "1.0.0")
-        }, cts.Token);
-
-        var thread = await client.StartThreadAsync(new ThreadStartOptions
-        {
-            Cwd = tmpDir,
-            Model = CodexModel.Gpt52Codex
-        }, cts.Token);
-
         try
         {
-            await using var turn = await client.StartTurnAsync(thread.Id, new TurnStartOptions
+            var filePath = Path.Combine(tmpDir, "hello.txt");
+            await File.WriteAllTextAsync(filePath, "hello", cts.Token);
+
+            await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
             {
-                SandboxPolicy = CodexSandboxPolicyBuilder.ReadOnlyRestricted([tmpDir], includePlatformDefaults: true),
-                Input =
-                [
-                    TurnInputItem.Text("Read the file 'hello.txt' in the current directory and reply with its contents only.")
-                ]
+                DefaultClientInfo = new("jktoolkit_codexsdk_tests", "JKToolKit.CodexSDK.Tests", "1.0.0")
             }, cts.Token);
 
-            var completed = await turn.Completion.WaitAsync(cts.Token);
-            completed.Status.Should().NotBeNullOrWhiteSpace();
+            var thread = await client.StartThreadAsync(new ThreadStartOptions
+            {
+                Cwd = tmpDir,
+                Model = CodexModel.Gpt52Codex
+            }, cts.Token);
+
+            try
+            {
+                await using var turn = await client.StartTurnAsync(thread.Id, new TurnStartOptions
+                {
+                    SandboxPolicy = CodexSandboxPolicyBuilder.ReadOnlyRestricted([tmpDir], includePlatformDefaults: true),
+                    Input =
+                    [
+                        TurnInputItem.Text("Read the file 'hello.txt' in the current directory and reply with its contents only.")
+                    ]
+                }, cts.Token);
+
+                var completed = await turn.Completion.WaitAsync(cts.Token);
+                completed.Status.Should().NotBeNullOrWhiteSpace();
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("rejected sandboxPolicy parameters", StringComparison.Ordinal))
+            {
+                // This is an optional E2E test, and older Codex app-server builds may not support ReadOnlyAccess overrides.
+                return;
+            }
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("rejected sandboxPolicy parameters", StringComparison.Ordinal))
+        finally
         {
-            // This is an optional E2E test, and older Codex app-server builds may not support ReadOnlyAccess overrides.
-            return;
+            if (Directory.Exists(tmpDir))
+            {
+                Directory.Delete(tmpDir, recursive: true);
+            }
         }
     }
 }

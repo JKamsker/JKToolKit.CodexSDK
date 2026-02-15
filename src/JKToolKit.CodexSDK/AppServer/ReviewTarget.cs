@@ -7,6 +7,8 @@ namespace JKToolKit.CodexSDK.AppServer;
 /// </summary>
 public abstract record ReviewTarget
 {
+    private static readonly JsonSerializerOptions SerializerOptions = CodexAppServerClient.CreateDefaultSerializerOptions();
+
     private protected ReviewTarget() { }
 
     /// <summary>
@@ -22,7 +24,11 @@ public abstract record ReviewTarget
         /// <summary>
         /// Initializes a new instance of <see cref="BaseBranch"/>.
         /// </summary>
-        public BaseBranch(string branch) => Branch = branch;
+        public BaseBranch(string branch)
+        {
+            ArgumentNullException.ThrowIfNull(branch);
+            Branch = branch;
+        }
 
         /// <summary>
         /// Gets the base branch name.
@@ -40,6 +46,7 @@ public abstract record ReviewTarget
         /// </summary>
         public Commit(string sha, string? title)
         {
+            ArgumentNullException.ThrowIfNull(sha);
             Sha = sha;
             Title = title;
         }
@@ -63,7 +70,11 @@ public abstract record ReviewTarget
         /// <summary>
         /// Initializes a new instance of <see cref="Custom"/>.
         /// </summary>
-        public Custom(string instructions) => Instructions = instructions;
+        public Custom(string instructions)
+        {
+            ArgumentNullException.ThrowIfNull(instructions);
+            Instructions = instructions;
+        }
 
         /// <summary>
         /// Gets the free-form reviewer instructions.
@@ -90,10 +101,10 @@ public abstract record ReviewTarget
     internal JsonElement ToWire() =>
         this switch
         {
-            UncommittedChanges => JsonSerializer.SerializeToElement(new { type = "uncommittedChanges" }, CodexAppServerClient.CreateDefaultSerializerOptions()),
-            BaseBranch b => JsonSerializer.SerializeToElement(new { type = "baseBranch", branch = b.Branch }, CodexAppServerClient.CreateDefaultSerializerOptions()),
-            Commit c => JsonSerializer.SerializeToElement(new { type = "commit", sha = c.Sha, title = c.Title }, CodexAppServerClient.CreateDefaultSerializerOptions()),
-            Custom c => JsonSerializer.SerializeToElement(new { type = "custom", instructions = c.Instructions }, CodexAppServerClient.CreateDefaultSerializerOptions()),
+            UncommittedChanges => JsonSerializer.SerializeToElement(new { type = "uncommittedChanges" }, SerializerOptions),
+            BaseBranch b => JsonSerializer.SerializeToElement(new { type = "baseBranch", branch = b.Branch }, SerializerOptions),
+            Commit c => JsonSerializer.SerializeToElement(new { type = "commit", sha = c.Sha, title = c.Title }, SerializerOptions),
+            Custom c => JsonSerializer.SerializeToElement(new { type = "custom", instructions = c.Instructions }, SerializerOptions),
             Raw r => r.Wire,
             _ => throw new InvalidOperationException($"Unknown {nameof(ReviewTarget)} variant: {GetType().Name}")
         };

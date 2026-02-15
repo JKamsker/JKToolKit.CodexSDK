@@ -1,29 +1,16 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class RemoteSkillsParsingTests
 {
-    private static JsonElement LoadFixture(string name)
-    {
-        var relative = Path.Combine("Fixtures", name);
-        var fullPath = Path.Combine(AppContext.BaseDirectory, relative);
-
-        if (!File.Exists(fullPath))
-        {
-            fullPath = Path.Combine(Directory.GetCurrentDirectory(), "tests", "JKToolKit.CodexSDK.Tests", relative);
-        }
-
-        using var doc = JsonDocument.Parse(File.ReadAllText(fullPath));
-        return doc.RootElement.Clone();
-    }
-
     [Fact]
     public void ParseRemoteSkillsReadSkills_ExtractsFields_AndPreservesRaw()
     {
-        var raw = LoadFixture("skills-remote-read-response.json");
+        var raw = JsonFixtures.Load("skills-remote-read-response.json");
         var skills = CodexAppServerClient.ParseRemoteSkillsReadSkills(raw);
 
         skills.Should().HaveCount(1);
@@ -42,4 +29,3 @@ public sealed class RemoteSkillsParsingTests
         skills.Should().BeEmpty();
     }
 }
-

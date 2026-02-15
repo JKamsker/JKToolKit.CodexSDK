@@ -11,7 +11,7 @@ public sealed record class SkillsConfigWriteParams
     /// Gets a value indicating whether skills are enabled.
     /// </summary>
     [JsonPropertyName("enabled")]
-    public bool Enabled { get; init; }
+    public required bool Enabled { get; init; }
 
     /// <summary>
     /// Gets the skills configuration path.
@@ -19,4 +19,3 @@ public sealed record class SkillsConfigWriteParams
     [JsonPropertyName("path")]
     public required string Path { get; init; }
 }
-

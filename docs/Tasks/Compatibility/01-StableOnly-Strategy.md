@@ -64,6 +64,7 @@ This table is intended to drive *documentation*, *guardrails*, and *tests*.
 | Resume a thread by threadId | (stable) | `CodexAppServerClient.ResumeThreadAsync(threadId)` | ✅ | Safe stable subset. |
 | Resume a thread by history | `thread/resume.history` | `ThreadResumeOptions.History` | ❌ | Must guard/throw unless experimental opt-in enabled. |
 | Resume a thread by rollout path | `thread/resume.path` | `ThreadResumeOptions.Path` | ❌ | Must guard/throw unless experimental opt-in enabled. |
+| Fork a thread by rollout path | `thread/fork.path` | `ThreadForkOptions.Path` | ❌ | Must guard/throw unless experimental opt-in enabled. |
 | Start a turn normally | (stable) | `CodexAppServerClient.StartTurnAsync(...)` | ✅ | Stable path: no collaboration mode. |
 | Start a turn with collaboration mode | `turn/start.collaborationMode` | `TurnStartParams.CollaborationMode` | ❌ | Must guard/throw unless experimental opt-in enabled. |
 | Emit raw response items | `thread/start.experimentalRawEvents` (when true) | `ThreadStartOptions.ExperimentalRawEvents` | ✅* | Stable-only should allow `false` (default). `true` should require opt-in or be treated as experimental. |

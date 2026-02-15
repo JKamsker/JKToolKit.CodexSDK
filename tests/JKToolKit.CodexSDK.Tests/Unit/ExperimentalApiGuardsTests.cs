@@ -91,6 +91,17 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateThreadFork_Throws_WhenBothThreadIdAndPathSet()
+    {
+        var options = new ThreadForkOptions { ThreadId = "thr_123", Path = "C:\\rollout" };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: true);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("Specify either ThreadId or Path, not both.*");
+    }
+
+    [Fact]
     public void ValidateThreadFork_DoesNotThrow_WhenThreadIdSet_AndExperimentalDisabled()
     {
         var options = new ThreadForkOptions { ThreadId = "thr_123" };

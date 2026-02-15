@@ -80,6 +80,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
             throw new NotSupportedException("This turn handle does not support steering.");
         }
 
+        ArgumentNullException.ThrowIfNull(input);
         return _steer(input, ct);
     }
 
@@ -97,6 +98,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
             throw new NotSupportedException("This turn handle does not support raw steering results.");
         }
 
+        ArgumentNullException.ThrowIfNull(input);
         return _steerRaw(input, ct);
     }
 

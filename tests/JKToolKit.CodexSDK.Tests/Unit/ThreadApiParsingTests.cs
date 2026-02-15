@@ -1,29 +1,17 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class ThreadApiParsingTests
 {
-    private static JsonElement LoadFixture(string name)
-    {
-        var relative = Path.Combine("Fixtures", name);
-        var fullPath = Path.Combine(AppContext.BaseDirectory, relative);
-
-        if (!File.Exists(fullPath))
-        {
-            fullPath = Path.Combine(Directory.GetCurrentDirectory(), "tests", "JKToolKit.CodexSDK.Tests", relative);
-        }
-
-        using var doc = JsonDocument.Parse(File.ReadAllText(fullPath));
-        return doc.RootElement.Clone();
-    }
-
     [Fact]
     public void ParseThreadListThreads_ParsesIds_AndNextCursor()
     {
-        var raw = LoadFixture("thread-list-response.json");
+        var raw = JsonFixtures.Load("thread-list-response.json");
 
         var threads = CodexAppServerClient.ParseThreadListThreads(raw);
         var cursor = CodexAppServerClient.ExtractNextCursor(raw);
@@ -37,7 +25,7 @@ public sealed class ThreadApiParsingTests
     [Fact]
     public void ReadThreadParsing_ExtractsThreadId_FromThreadObject()
     {
-        var raw = LoadFixture("thread-read-response.json");
+        var raw = JsonFixtures.Load("thread-read-response.json");
         raw.TryGetProperty("thread", out var threadObj).Should().BeTrue();
 
         CodexAppServerClient.ExtractThreadId(threadObj).Should().Be("t_read");
@@ -50,15 +38,15 @@ public sealed class ThreadApiParsingTests
     [Fact]
     public void ExtractThreadId_HandlesCommonShapes()
     {
-        CodexAppServerClient.ExtractThreadId(LoadFixture("thread-fork-response.json")).Should().Be("t_forked");
-        CodexAppServerClient.ExtractThreadId(LoadFixture("thread-archive-response.json")).Should().Be("t_arch");
-        CodexAppServerClient.ExtractThreadId(LoadFixture("thread-unarchive-response.json")).Should().Be("t_arch");
+        CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-fork-response.json")).Should().Be("t_forked");
+        CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-archive-response.json")).Should().Be("t_arch");
+        CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-unarchive-response.json")).Should().Be("t_arch");
     }
 
     [Fact]
     public void ParseThreadLoadedListThreadIds_ParsesIds_AndNextCursor()
     {
-        var raw = LoadFixture("thread-loaded-list-response.json");
+        var raw = JsonFixtures.Load("thread-loaded-list-response.json");
 
         var ids = CodexAppServerClient.ParseThreadLoadedListThreadIds(raw);
         var cursor = CodexAppServerClient.ExtractNextCursor(raw);
@@ -70,10 +58,22 @@ public sealed class ThreadApiParsingTests
     [Fact]
     public void ThreadRollbackResponse_ExtractsThreadId_FromThreadObject()
     {
-        var raw = LoadFixture("thread-rollback-response.json");
+        var raw = JsonFixtures.Load("thread-rollback-response.json");
         raw.TryGetProperty("thread", out var threadObj).Should().BeTrue();
 
         CodexAppServerClient.ExtractThreadId(threadObj).Should().Be("t_rb");
+    }
+
+    [Fact]
+    public void ThreadUnarchiveResponse_CapturesExtensionData_ForForwardCompatibility()
+    {
+        var json = JsonFixtures.LoadText("thread-unarchive-response.json");
+        var response = JsonSerializer.Deserialize<ThreadUnarchiveResponse>(json);
+
+        response.Should().NotBeNull();
+        response!.Thread.Should().NotBeNull();
+        response.ExtensionData.Should().NotBeNull();
+        response.ExtensionData!.Should().ContainKey("futureField");
     }
 }
 

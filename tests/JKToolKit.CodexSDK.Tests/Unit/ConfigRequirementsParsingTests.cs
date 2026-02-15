@@ -1,29 +1,16 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class ConfigRequirementsParsingTests
 {
-    private static JsonElement LoadFixture(string name)
-    {
-        var relative = Path.Combine("Fixtures", name);
-        var fullPath = Path.Combine(AppContext.BaseDirectory, relative);
-
-        if (!File.Exists(fullPath))
-        {
-            fullPath = Path.Combine(Directory.GetCurrentDirectory(), "tests", "JKToolKit.CodexSDK.Tests", relative);
-        }
-
-        using var doc = JsonDocument.Parse(File.ReadAllText(fullPath));
-        return doc.RootElement.Clone();
-    }
-
     [Fact]
     public void ParseConfigRequirementsReadRequirements_ExtractsTypedFields_AndPreservesRaw()
     {
-        var raw = LoadFixture("config-requirements-read-response.json");
+        var raw = JsonFixtures.Load("config-requirements-read-response.json");
 
         var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(raw, experimentalApiEnabled: true);
         requirements.Should().NotBeNull();
@@ -43,7 +30,7 @@ public sealed class ConfigRequirementsParsingTests
     [Fact]
     public void ParseConfigRequirementsReadRequirements_DoesNotPopulateNetwork_WhenExperimentalApiDisabled()
     {
-        var raw = LoadFixture("config-requirements-read-response.json");
+        var raw = JsonFixtures.Load("config-requirements-read-response.json");
 
         var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(raw, experimentalApiEnabled: false);
         requirements.Should().NotBeNull();
@@ -59,4 +46,3 @@ public sealed class ConfigRequirementsParsingTests
         requirements.Should().BeNull();
     }
 }
-

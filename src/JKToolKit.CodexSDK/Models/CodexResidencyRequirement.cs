@@ -55,11 +55,10 @@ public readonly record struct CodexResidencyRequirement
     /// <summary>
     /// Converts a <see cref="CodexResidencyRequirement"/> to its wire value.
     /// </summary>
-    public static implicit operator string(CodexResidencyRequirement requirement) => requirement.Value;
+    public static implicit operator string(CodexResidencyRequirement requirement) => requirement.Value ?? string.Empty;
 
     /// <summary>
     /// Returns the underlying wire value.
     /// </summary>
-    public override string ToString() => Value;
+    public override string ToString() => Value ?? string.Empty;
 }
-

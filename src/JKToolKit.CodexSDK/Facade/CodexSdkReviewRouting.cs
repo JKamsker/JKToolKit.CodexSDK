@@ -126,7 +126,13 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
             return;
         }
 
-        await Review.Turn.DisposeAsync();
-        await Client.DisposeAsync();
+        try
+        {
+            await Review.Turn.DisposeAsync();
+        }
+        finally
+        {
+            await Client.DisposeAsync();
+        }
     }
 }

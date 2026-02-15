@@ -33,12 +33,20 @@ internal static class ExperimentalApiGuards
 
     internal static void ValidateThreadFork(ThreadForkOptions options, bool experimentalApiEnabled)
     {
-        if (string.IsNullOrWhiteSpace(options.ThreadId) && string.IsNullOrWhiteSpace(options.Path))
+        var hasThreadId = !string.IsNullOrWhiteSpace(options.ThreadId);
+        var hasPath = !string.IsNullOrWhiteSpace(options.Path);
+
+        if (!hasThreadId && !hasPath)
         {
             throw new ArgumentException("Either ThreadId or Path must be specified.", nameof(options));
         }
 
-        if (!experimentalApiEnabled && !string.IsNullOrWhiteSpace(options.Path))
+        if (hasThreadId && hasPath)
+        {
+            throw new ArgumentException("Specify either ThreadId or Path, not both.", nameof(options));
+        }
+
+        if (!experimentalApiEnabled && hasPath)
         {
             throw new CodexExperimentalApiRequiredException("thread/fork.path");
         }

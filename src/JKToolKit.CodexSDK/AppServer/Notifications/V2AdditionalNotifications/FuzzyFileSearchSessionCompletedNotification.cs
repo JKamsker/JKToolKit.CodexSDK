@@ -15,10 +15,9 @@ public sealed record class FuzzyFileSearchSessionCompletedNotification : AppServ
     /// <summary>
     /// Initializes a new instance of <see cref="FuzzyFileSearchSessionCompletedNotification"/>.
     /// </summary>
-    public FuzzyFileSearchSessionCompletedNotification(string SessionId, JsonElement Params)
-        : base("fuzzyFileSearch/sessionCompleted", Params)
+    public FuzzyFileSearchSessionCompletedNotification(string sessionId, JsonElement @params)
+        : base("fuzzyFileSearch/sessionCompleted", @params)
     {
-        this.SessionId = SessionId;
+        SessionId = sessionId;
     }
 }
-
