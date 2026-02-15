@@ -8,6 +8,7 @@ using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.StructuredOutputs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -293,6 +294,8 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _clientOptions.Validate();
         options.Validate();
 
+        var (effectiveOptions, tempFiles) = MaterializeOutputSchemaIfNeeded(options);
+
         // Resolve paths
         var sessionsRoot = GetEffectiveSessionsRootDirectory();
 
@@ -303,7 +306,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         try
         {
             var sw = Stopwatch.StartNew();
-            process = await _processLauncher.StartSessionAsync(options, _clientOptions, cancellationToken).ConfigureAwait(false);
+            process = await _processLauncher.StartSessionAsync(effectiveOptions, _clientOptions, cancellationToken).ConfigureAwait(false);
             _logger.LogDebug("Codex process started with PID {Pid} after {ElapsedMilliseconds} ms", process.Id, sw.ElapsedMilliseconds);
             sw.Restart();
 
@@ -390,12 +393,14 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 process,
                 _processLauncher,
                 _clientOptions.ProcessExitTimeout,
-                options.IdleTimeout,
-                _loggerFactory.CreateLogger<CodexSessionHandle>()
+                effectiveOptions.IdleTimeout,
+                _loggerFactory.CreateLogger<CodexSessionHandle>(),
+                tempFilesToDeleteOnDispose: tempFiles.Count == 0 ? null : tempFiles
             );
         }
         catch
         {
+            DeleteTempFilesBestEffort(tempFiles);
             if (process != null)
             {
                 await SafeTerminateAsync(process, cancellationToken).ConfigureAwait(false);
@@ -419,6 +424,8 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _clientOptions.Validate();
         options.Validate();
 
+        var (effectiveOptions, tempFiles) = MaterializeOutputSchemaIfNeeded(options);
+
         if (string.IsNullOrWhiteSpace(sessionId.Value))
         {
             throw new ArgumentException("SessionId cannot be empty.", nameof(sessionId));
@@ -432,7 +439,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         try
         {
             process = await _processLauncher
-                .ResumeSessionAsync(sessionId, options, _clientOptions, cancellationToken)
+                .ResumeSessionAsync(sessionId, effectiveOptions, _clientOptions, cancellationToken)
                 .ConfigureAwait(false);
 
             var captureTimeout = TimeSpan.FromMilliseconds(Math.Min(250, _clientOptions.StartTimeout.TotalMilliseconds / 4));
@@ -469,12 +476,14 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 process,
                 _processLauncher,
                 _clientOptions.ProcessExitTimeout,
-                options.IdleTimeout,
-                _loggerFactory.CreateLogger<CodexSessionHandle>()
+                effectiveOptions.IdleTimeout,
+                _loggerFactory.CreateLogger<CodexSessionHandle>(),
+                tempFilesToDeleteOnDispose: tempFiles.Count == 0 ? null : tempFiles
             );
         }
         catch
         {
+            DeleteTempFilesBestEffort(tempFiles);
             if (process != null)
             {
                 await SafeTerminateAsync(process, cancellationToken).ConfigureAwait(false);
@@ -587,8 +596,48 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             _processLauncher,
             _clientOptions.ProcessExitTimeout,
             idleTimeout: null,
-            _loggerFactory.CreateLogger<CodexSessionHandle>()
+            _loggerFactory.CreateLogger<CodexSessionHandle>(),
+            tempFilesToDeleteOnDispose: null
         );
+    }
+
+    private static (CodexSessionOptions Effective, List<string> TempFiles) MaterializeOutputSchemaIfNeeded(CodexSessionOptions options)
+    {
+        if (options.OutputSchema is not { Kind: CodexOutputSchemaKind.Json, Json: { } jsonSchema })
+        {
+            return (options, new List<string>());
+        }
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"codex-output-schema-{Guid.NewGuid():N}.json");
+        File.WriteAllText(tempPath, jsonSchema.GetRawText(), Encoding.UTF8);
+
+        var effective = options.Clone();
+        effective.OutputSchema = CodexOutputSchema.FromFile(tempPath);
+
+        return (effective, new List<string> { tempPath });
+    }
+
+    private static void DeleteTempFilesBestEffort(IReadOnlyList<string> tempFiles)
+    {
+        if (tempFiles.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var path in tempFiles)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Best-effort.
+            }
+        }
     }
 
     /// <summary>

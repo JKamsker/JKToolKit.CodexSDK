@@ -107,6 +107,26 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default))
 }
 ```
 
+### Structured outputs (JSON → DTO)
+
+If you want Codex to return a final answer that matches a JSON Schema, you can provide an output schema and deserialize the final message into a DTO.
+
+```csharp
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.StructuredOutputs;
+
+public sealed record MyResult(string Answer);
+
+await using var client = new CodexClient(new CodexClientOptions());
+
+var result = await client.RunStructuredAsync<MyResult>(new CodexSessionOptions("<repo-path>", "Return JSON only.")
+{
+    Model = CodexModel.Gpt52Codex
+});
+
+Console.WriteLine(result.Value.Answer);
+```
+
 ### Run a non-interactive code review (`codex review`)
 
 ```csharp

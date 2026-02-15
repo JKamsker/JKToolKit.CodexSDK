@@ -1,6 +1,7 @@
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.StructuredOutputs;
 
 namespace JKToolKit.CodexSDK.Facade;
 
@@ -77,4 +78,23 @@ public sealed class CodexExecFacade
     /// </summary>
     public Task<CodexReviewResult> ReviewAsync(CodexReviewOptions options, CancellationToken ct = default) =>
         _client.ReviewAsync(options, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec</c> with a generated output schema for <typeparamref name="T"/> and deserializes the final output.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredAsync<T>(
+        CodexSessionOptions options,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredAsync<T>(options, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec resume</c> with a generated output schema for <typeparamref name="T"/> and deserializes the final output.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredAsync<T>(
+        SessionId sessionId,
+        CodexSessionOptions options,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredAsync<T>(sessionId, options, structured, ct);
 }
