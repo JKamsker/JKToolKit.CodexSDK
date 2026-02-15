@@ -36,46 +36,8 @@ public static class CodexStructuredOutputExtensions
 
         await using var session = await client.StartSessionAsync(effective, ct).ConfigureAwait(false);
 
-        string? raw = null;
-        await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, ct).ConfigureAwait(false))
-        {
-            switch (evt)
-            {
-                case AgentMessageEvent msg:
-                    raw = msg.Text;
-                    break;
-                case TaskCompleteEvent done:
-                    raw = done.LastAgentMessage ?? raw;
-                    goto Done;
-            }
-        }
-
-        Done:
-        raw ??= string.Empty;
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            throw new InvalidOperationException("Codex did not emit a final message to parse as structured output.");
-        }
-
-        var json = CodexStructuredJsonExtractor.ExtractJson(raw, structured.TolerantJsonExtraction);
-
-        T? value;
-        try
-        {
-            value = JsonSerializer.Deserialize<T>(json, serializerOptions);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to deserialize Codex structured output into '{typeof(T).FullName}'. Raw JSON: {json}",
-                ex);
-        }
-
-        if (value is null)
-        {
-            throw new InvalidOperationException(
-                $"Codex structured output deserialized to null for '{typeof(T).FullName}'. Raw JSON: {json}");
-        }
+        var raw = await CaptureExecFinalTextAsync(session, EventStreamOptions.Default, ct).ConfigureAwait(false);
+        var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
 
         return new CodexStructuredResult<T>
         {
@@ -112,48 +74,14 @@ public static class CodexStructuredOutputExtensions
         var effective = options.Clone();
         effective.OutputSchema = CodexOutputSchema.FromJson(schema);
 
+        // When resuming, the session log already contains historical events (including prior TaskCompleteEvent).
+        // Use timestamp filtering to ensure we only consume events from the resumed run.
+        var resumeStart = DateTimeOffset.UtcNow;
+
         await using var session = await client.ResumeSessionAsync(sessionId, effective, ct).ConfigureAwait(false);
 
-        string? raw = null;
-        await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default, ct).ConfigureAwait(false))
-        {
-            switch (evt)
-            {
-                case AgentMessageEvent msg:
-                    raw = msg.Text;
-                    break;
-                case TaskCompleteEvent done:
-                    raw = done.LastAgentMessage ?? raw;
-                    goto Done;
-            }
-        }
-
-        Done:
-        raw ??= string.Empty;
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            throw new InvalidOperationException("Codex did not emit a final message to parse as structured output.");
-        }
-
-        var json = CodexStructuredJsonExtractor.ExtractJson(raw, structured.TolerantJsonExtraction);
-
-        T? value;
-        try
-        {
-            value = JsonSerializer.Deserialize<T>(json, serializerOptions);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to deserialize Codex structured output into '{typeof(T).FullName}'. Raw JSON: {json}",
-                ex);
-        }
-
-        if (value is null)
-        {
-            throw new InvalidOperationException(
-                $"Codex structured output deserialized to null for '{typeof(T).FullName}'. Raw JSON: {json}");
-        }
+        var raw = await CaptureExecFinalTextAsync(session, EventStreamOptions.FromTimestamp(resumeStart, follow: true), ct).ConfigureAwait(false);
+        var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
 
         return new CodexStructuredResult<T>
         {
@@ -204,6 +132,374 @@ public static class CodexStructuredOutputExtensions
 
         await using var turn = await client.StartTurnAsync(threadId, effective, ct).ConfigureAwait(false);
 
+        var raw = await CaptureAppServerFinalTextAsync(turn, ct).ConfigureAwait(false);
+        var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
+
+        return new CodexStructuredResult<T>
+        {
+            Value = value,
+            RawJson = json,
+            RawText = raw,
+            ThreadId = turn.ThreadId,
+            TurnId = turn.TurnId
+        };
+    }
+
+    /// <summary>
+    /// Runs <c>codex exec</c> with a generated output schema and automatically retries (via <c>resume</c>) if parsing fails.
+    /// </summary>
+    public static async Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        this ICodexClient client,
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(options);
+
+        retry ??= new CodexStructuredRetryOptions();
+        structured ??= new CodexStructuredOutputOptions();
+
+        if (retry.MaxAttempts <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
+        }
+
+        var serializerOptions = structured.SerializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var schema = CodexJsonSchemaGenerator.Generate<T>(serializerOptions);
+
+        var effectiveBase = options.Clone();
+        effectiveBase.OutputSchema = CodexOutputSchema.FromJson(schema);
+
+        SessionId? sessionId = null;
+        string? logPath = null;
+        CodexStructuredOutputParseException? lastParse = null;
+
+        for (var attempt = 1; attempt <= retry.MaxAttempts; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                if (attempt == 1)
+                {
+                    await using var session = await client.StartSessionAsync(effectiveBase, ct).ConfigureAwait(false);
+                    sessionId = session.Info.Id;
+                    logPath = session.Info.LogPath;
+
+                    var raw = await CaptureExecFinalTextAsync(session, EventStreamOptions.Default, ct).ConfigureAwait(false);
+                    var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
+
+                    return new CodexStructuredResult<T>
+                    {
+                        Value = value,
+                        RawJson = json,
+                        RawText = raw,
+                        SessionId = session.Info.Id.Value,
+                        LogPath = session.Info.LogPath
+                    };
+                }
+                else
+                {
+                    if (sessionId is null)
+                    {
+                        throw new InvalidOperationException("Retry attempted without a captured session id.");
+                    }
+
+                    var resumeStart = DateTimeOffset.UtcNow;
+                    var retryPrompt = retry.BuildRetryPrompt(new CodexStructuredRetryContext
+                    {
+                        Attempt = attempt - 1,
+                        MaxAttempts = retry.MaxAttempts,
+                        RawText = lastParse?.RawText ?? string.Empty,
+                        ExtractedJson = lastParse?.ExtractedJson,
+                        Exception = (Exception?)lastParse ?? new InvalidOperationException("Unknown parse failure."),
+                        SessionId = sessionId.Value,
+                        LogPath = logPath
+                    });
+
+                    var resumeOptions = effectiveBase.Clone();
+                    resumeOptions.Prompt = retryPrompt;
+
+                    await using var session = await client.ResumeSessionAsync(sessionId.Value, resumeOptions, ct).ConfigureAwait(false);
+                    logPath = session.Info.LogPath;
+
+                    var raw = await CaptureExecFinalTextAsync(session, EventStreamOptions.FromTimestamp(resumeStart, follow: true), ct).ConfigureAwait(false);
+                    var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
+
+                    return new CodexStructuredResult<T>
+                    {
+                        Value = value,
+                        RawJson = json,
+                        RawText = raw,
+                        SessionId = session.Info.Id.Value,
+                        LogPath = session.Info.LogPath
+                    };
+                }
+            }
+            catch (CodexStructuredOutputParseException ex)
+            {
+                lastParse = ex;
+
+                if (attempt >= retry.MaxAttempts)
+                {
+                    throw new CodexStructuredOutputRetryFailedException(
+                        attempts: attempt,
+                        message: $"Failed to parse structured output after {attempt} attempts.",
+                        innerException: ex,
+                        sessionId: sessionId?.Value,
+                        logPath);
+                }
+
+                // Next loop iteration will resume with retry prompt.
+            }
+        }
+
+        throw new CodexStructuredOutputRetryFailedException(
+            attempts: retry.MaxAttempts,
+            message: $"Failed to parse structured output after {retry.MaxAttempts} attempts.",
+            innerException: (Exception?)lastParse ?? new InvalidOperationException("Unknown failure."),
+            sessionId: sessionId?.Value,
+            logPath);
+    }
+
+    /// <summary>
+    /// Runs <c>codex exec resume</c> with a generated output schema and automatically retries (via additional resumes) if parsing fails.
+    /// </summary>
+    public static async Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        this ICodexClient client,
+        SessionId sessionId,
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(sessionId.Value))
+        {
+            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
+        }
+
+        retry ??= new CodexStructuredRetryOptions();
+        structured ??= new CodexStructuredOutputOptions();
+
+        if (retry.MaxAttempts <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
+        }
+
+        var serializerOptions = structured.SerializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var schema = CodexJsonSchemaGenerator.Generate<T>(serializerOptions);
+
+        var effectiveBase = options.Clone();
+        effectiveBase.OutputSchema = CodexOutputSchema.FromJson(schema);
+
+        string? logPath = null;
+        CodexStructuredOutputParseException? lastParse = null;
+
+        for (var attempt = 1; attempt <= retry.MaxAttempts; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var resumeStart = DateTimeOffset.UtcNow;
+            if (attempt > 1)
+            {
+                var retryPrompt = retry.BuildRetryPrompt(new CodexStructuredRetryContext
+                {
+                    Attempt = attempt - 1,
+                    MaxAttempts = retry.MaxAttempts,
+                    RawText = lastParse?.RawText ?? string.Empty,
+                    ExtractedJson = lastParse?.ExtractedJson,
+                    Exception = (Exception?)lastParse ?? new InvalidOperationException("Unknown parse failure."),
+                    SessionId = sessionId.Value,
+                    LogPath = logPath
+                });
+                effectiveBase.Prompt = retryPrompt;
+            }
+
+            try
+            {
+                await using var session = await client.ResumeSessionAsync(sessionId, effectiveBase, ct).ConfigureAwait(false);
+                logPath = session.Info.LogPath;
+
+                var raw = await CaptureExecFinalTextAsync(session, EventStreamOptions.FromTimestamp(resumeStart, follow: true), ct).ConfigureAwait(false);
+                var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
+
+                return new CodexStructuredResult<T>
+                {
+                    Value = value,
+                    RawJson = json,
+                    RawText = raw,
+                    SessionId = session.Info.Id.Value,
+                    LogPath = session.Info.LogPath
+                };
+            }
+            catch (CodexStructuredOutputParseException ex)
+            {
+                lastParse = ex;
+
+                if (attempt >= retry.MaxAttempts)
+                {
+                    throw new CodexStructuredOutputRetryFailedException(
+                        attempts: attempt,
+                        message: $"Failed to parse structured output after {attempt} attempts.",
+                        innerException: ex,
+                        sessionId: sessionId.Value,
+                        logPath);
+                }
+            }
+        }
+
+        throw new CodexStructuredOutputRetryFailedException(
+            attempts: retry.MaxAttempts,
+            message: $"Failed to parse structured output after {retry.MaxAttempts} attempts.",
+            innerException: (Exception?)lastParse ?? new InvalidOperationException("Unknown failure."),
+            sessionId: sessionId.Value,
+            logPath);
+    }
+
+    /// <summary>
+    /// Runs <c>turn/start</c> with a generated output schema and automatically retries (by starting new turns) if parsing fails.
+    /// </summary>
+    public static async Task<CodexStructuredResult<T>> RunTurnStructuredWithRetryAsync<T>(
+        this CodexAppServerClient client,
+        string threadId,
+        TurnStartOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(options);
+
+        retry ??= new CodexStructuredRetryOptions();
+        structured ??= new CodexStructuredOutputOptions();
+
+        if (retry.MaxAttempts <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
+        }
+
+        CodexStructuredOutputParseException? lastParse = null;
+        for (var attempt = 1; attempt <= retry.MaxAttempts; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                if (attempt == 1)
+                {
+                    return await client.RunTurnStructuredAsync<T>(threadId, options, structured, ct).ConfigureAwait(false);
+                }
+
+                var retryPrompt = retry.BuildRetryPrompt(new CodexStructuredRetryContext
+                {
+                    Attempt = attempt - 1,
+                    MaxAttempts = retry.MaxAttempts,
+                    RawText = lastParse?.RawText ?? string.Empty,
+                    ExtractedJson = lastParse?.ExtractedJson,
+                    Exception = (Exception?)lastParse ?? new InvalidOperationException("Unknown parse failure."),
+                    ThreadId = threadId
+                });
+
+                var next = new TurnStartOptions
+                {
+                    Input = [TurnInputItem.Text(retryPrompt)],
+                    Cwd = options.Cwd,
+                    ApprovalPolicy = options.ApprovalPolicy,
+                    SandboxPolicy = options.SandboxPolicy,
+                    Model = options.Model,
+                    Effort = options.Effort,
+                    Summary = options.Summary,
+                    Personality = options.Personality,
+                    CollaborationMode = options.CollaborationMode
+                };
+
+                return await client.RunTurnStructuredAsync<T>(threadId, next, structured, ct).ConfigureAwait(false);
+            }
+            catch (CodexStructuredOutputParseException ex)
+            {
+                lastParse = ex;
+                if (attempt >= retry.MaxAttempts)
+                {
+                    throw;
+                }
+            }
+        }
+
+        throw (Exception?)lastParse ?? new InvalidOperationException("Unknown structured output retry failure.");
+    }
+
+    private static (T Value, string RawJson) DeserializeStructured<T>(string rawText, CodexStructuredOutputOptions structured, JsonSerializerOptions serializerOptions)
+    {
+        var extractedJson = (string?)null;
+        try
+        {
+            extractedJson = CodexStructuredJsonExtractor.ExtractJson(rawText, structured.TolerantJsonExtraction);
+        }
+        catch (Exception ex)
+        {
+            throw new CodexStructuredOutputParseException(
+                message: $"Failed to extract JSON for structured output type '{typeof(T).FullName}'.",
+                rawText: rawText,
+                extractedJson: null,
+                innerException: ex);
+        }
+
+        try
+        {
+            var value = JsonSerializer.Deserialize<T>(extractedJson, serializerOptions);
+            if (value is null)
+            {
+                throw new InvalidOperationException("Deserialized value was null.");
+            }
+
+            return (value, extractedJson);
+        }
+        catch (Exception ex)
+        {
+            throw new CodexStructuredOutputParseException(
+                message: $"Failed to deserialize structured output into '{typeof(T).FullName}'.",
+                rawText: rawText,
+                extractedJson: extractedJson,
+                innerException: ex);
+        }
+    }
+
+    private static async Task<string> CaptureExecFinalTextAsync(ICodexSessionHandle session, EventStreamOptions streamOptions, CancellationToken ct)
+    {
+        string? raw = null;
+        await foreach (var evt in session.GetEventsAsync(streamOptions, ct).ConfigureAwait(false))
+        {
+            switch (evt)
+            {
+                case AgentMessageEvent msg:
+                    raw = msg.Text;
+                    break;
+                case TaskCompleteEvent done:
+                    raw = done.LastAgentMessage ?? raw;
+                    goto Done;
+            }
+        }
+
+        Done:
+        raw ??= string.Empty;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            throw new CodexStructuredOutputParseException(
+                message: "Codex did not emit a final message to parse as structured output.",
+                rawText: raw,
+                extractedJson: null,
+                innerException: new InvalidOperationException("No final message."));
+        }
+
+        return raw;
+    }
+
+    private static async Task<string> CaptureAppServerFinalTextAsync(CodexTurnHandle turn, CancellationToken ct)
+    {
         var deltas = new StringBuilder();
         string? fullText = null;
 
@@ -231,36 +527,13 @@ public static class CodexStructuredOutputExtensions
         var raw = fullText ?? deltas.ToString();
         if (string.IsNullOrWhiteSpace(raw))
         {
-            throw new InvalidOperationException("Codex did not emit a final agent message to parse as structured output.");
+            throw new CodexStructuredOutputParseException(
+                message: "Codex did not emit a final agent message to parse as structured output.",
+                rawText: raw,
+                extractedJson: null,
+                innerException: new InvalidOperationException("No final message."));
         }
 
-        var json = CodexStructuredJsonExtractor.ExtractJson(raw, structured.TolerantJsonExtraction);
-
-        T? value;
-        try
-        {
-            value = JsonSerializer.Deserialize<T>(json, serializerOptions);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to deserialize Codex structured output into '{typeof(T).FullName}'. Raw JSON: {json}",
-                ex);
-        }
-
-        if (value is null)
-        {
-            throw new InvalidOperationException(
-                $"Codex structured output deserialized to null for '{typeof(T).FullName}'. Raw JSON: {json}");
-        }
-
-        return new CodexStructuredResult<T>
-        {
-            Value = value,
-            RawJson = json,
-            RawText = raw,
-            ThreadId = turn.ThreadId,
-            TurnId = turn.TurnId
-        };
+        return raw;
     }
 }

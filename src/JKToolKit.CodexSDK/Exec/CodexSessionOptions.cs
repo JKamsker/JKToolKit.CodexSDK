@@ -261,6 +261,23 @@ public class CodexSessionOptions
                 {
                     throw new InvalidOperationException($"OutputSchema file '{schema.FilePath}' does not exist.");
                 }
+
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(schema.FilePath));
+                    if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                    {
+                        throw new InvalidOperationException("OutputSchema file must contain a JSON object (a valid JSON Schema root).");
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"OutputSchema file '{schema.FilePath}' is not valid JSON.", ex);
+                }
             }
 
             if (schema.Kind == CodexOutputSchemaKind.Json)

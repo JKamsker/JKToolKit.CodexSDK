@@ -127,6 +127,14 @@ var result = await client.RunStructuredAsync<MyResult>(new CodexSessionOptions("
 Console.WriteLine(result.Value.Answer);
 ```
 
+If you want automatic retries when Codex returns invalid JSON, use:
+
+```csharp
+var result = await client.RunStructuredWithRetryAsync<MyResult>(
+    new CodexSessionOptions("<repo-path>", "Return JSON only."),
+    retry: new CodexStructuredRetryOptions { MaxAttempts = 3 });
+```
+
 ### Run a non-interactive code review (`codex review`)
 
 ```csharp

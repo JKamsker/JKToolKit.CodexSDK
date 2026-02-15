@@ -97,4 +97,25 @@ public sealed class CodexExecFacade
         CodexStructuredOutputOptions? structured = null,
         CancellationToken ct = default) =>
         _client.RunStructuredAsync<T>(sessionId, options, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec</c> with a generated output schema for <typeparamref name="T"/> and retries via <c>resume</c> if parsing fails.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredWithRetryAsync<T>(options, retry, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec resume</c> with a generated output schema for <typeparamref name="T"/> and retries via additional resumes if parsing fails.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        SessionId sessionId,
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredWithRetryAsync<T>(sessionId, options, retry, structured, ct);
 }
