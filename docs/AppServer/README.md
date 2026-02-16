@@ -57,9 +57,11 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
   - `StartThreadAsync(...)`, `ResumeThreadAsync(...)`
   - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
   - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
+  - `ReadConfigAsync(...)` (`config/read`)
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
   - `SteerTurnAsync(...)`
   - `StartReviewAsync(...)`
+  - MCP helpers: `ListMcpServerStatusAsync(...)`, `ReloadMcpServersAsync()`, `StartMcpServerOauthLoginAsync(...)`
   - `CallAsync(...)` escape hatch for forward compatibility
 - `CodexTurnHandle`
   - `Events()` → `IAsyncEnumerable<AppServerNotification>`
@@ -250,6 +252,19 @@ await codex.ReloadMcpServersAsync();
 // Start an OAuth login flow for a configured server (completion arrives as a notification)
 var login = await codex.StartMcpServerOauthLoginAsync(new McpServerOauthLoginOptions { Name = "my-server" });
 Console.WriteLine(login.AuthorizationUrl);
+```
+
+To inspect the effective merged config (including project layers as seen from a directory), use `config/read`:
+
+```csharp
+var cfg = await codex.ReadConfigAsync(new ConfigReadOptions
+{
+    IncludeLayers = true,
+    Cwd = "<repo-path>"
+});
+
+// Effective MCP servers as resolved for that cwd (when present)
+var mcp = cfg.McpServers;
 ```
 
 ### Steer an active turn

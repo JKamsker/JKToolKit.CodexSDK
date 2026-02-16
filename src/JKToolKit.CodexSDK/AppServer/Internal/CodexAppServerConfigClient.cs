@@ -30,6 +30,22 @@ internal sealed class CodexAppServerConfigClient
         };
     }
 
+    public async Task<ConfigReadResult> ReadConfigAsync(ConfigReadOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "config/read",
+            new ConfigReadParams
+            {
+                IncludeLayers = options.IncludeLayers,
+                Cwd = options.Cwd
+            },
+            ct);
+
+        return CodexAppServerClientConfigReadParsers.ParseConfigReadResult(result);
+    }
+
     public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
     {
         var result = await _sendRequestAsync(
