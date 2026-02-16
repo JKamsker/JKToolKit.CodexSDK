@@ -275,11 +275,12 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionsRoot,
             filter?.ToString() ?? "none");
 
-        foreach (var filePath in CodexSessionLocatorHelpers.EnumerateSessionFiles(_fileSystem, _logger, sessionsRoot, SessionFilePattern))
+        foreach (var entry in CodexSessionLocatorHelpers.EnumerateSessionFiles(_fileSystem, _logger, sessionsRoot, SessionFilePattern))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var createdAtUtc = CodexSessionLocatorHelpers.TryGetCreationTimeUtc(_fileSystem, _logger, filePath);
+            var filePath = entry.FilePath;
+            var createdAtUtc = entry.CreatedAtUtc;
 
             // Quick pre-filter on creation time if available to avoid opening files that
             // obviously fall outside the requested range.

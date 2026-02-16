@@ -45,4 +45,4 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 - [x] T032 Remove completed turns from app-server turn tracking (avoid unbounded growth).
 - [x] T033 Tighten ReadOnlyAccess override rejection detection (avoid false negatives/poisoning).
 - [x] T034 Sanitize remote error `Data` and sandboxPolicy JSON before embedding in exception messages.
-- [ ] T035 Reduce session scanning cost in rate limits lookup (avoid enumerating/parsing all sessions).
+- [x] T035 Reduce session scanning cost in rate limits lookup (avoid enumerating/parsing all sessions).

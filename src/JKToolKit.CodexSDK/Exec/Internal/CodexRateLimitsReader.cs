@@ -53,13 +53,17 @@ internal sealed class CodexRateLimitsReader
 
             var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
 
-            var mostRecent = new List<CodexSessionInfo>(capacity: MaxSessionsToScan);
+            var sessionsToScan = new List<CodexSessionInfo>(capacity: MaxSessionsToScan);
             await foreach (var session in _sessionLocator.ListSessionsAsync(sessionsRoot, filter: null, cancellationToken))
             {
-                TrackMostRecentSessions(mostRecent, session);
+                sessionsToScan.Add(session);
+                if (sessionsToScan.Count >= MaxSessionsToScan)
+                {
+                    break;
+                }
             }
 
-            foreach (var session in mostRecent.OrderByDescending(s => s.CreatedAt))
+            foreach (var session in sessionsToScan.OrderByDescending(s => s.CreatedAt))
             {
                 RateLimits? limits;
                 try
@@ -89,32 +93,6 @@ internal sealed class CodexRateLimitsReader
         finally
         {
             _cacheLock.Release();
-        }
-    }
-
-    private static void TrackMostRecentSessions(List<CodexSessionInfo> mostRecent, CodexSessionInfo candidate)
-    {
-        if (mostRecent.Count < MaxSessionsToScan)
-        {
-            mostRecent.Add(candidate);
-            return;
-        }
-
-        var minIndex = 0;
-        var minCreated = mostRecent[0].CreatedAt;
-        for (var i = 1; i < mostRecent.Count; i++)
-        {
-            var created = mostRecent[i].CreatedAt;
-            if (created < minCreated)
-            {
-                minCreated = created;
-                minIndex = i;
-            }
-        }
-
-        if (candidate.CreatedAt > minCreated)
-        {
-            mostRecent[minIndex] = candidate;
         }
     }
 

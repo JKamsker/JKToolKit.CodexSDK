@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -252,7 +253,7 @@ internal static class CodexSessionLocatorHelpers
         return Regex.IsMatch(value, regexPattern, RegexOptions.IgnoreCase);
     }
 
-    internal static IEnumerable<string> EnumerateSessionFiles(
+    internal static IEnumerable<(string FilePath, DateTime? CreatedAtUtc)> EnumerateSessionFiles(
         IFileSystem fileSystem,
         ILogger logger,
         string sessionsRoot,
@@ -270,6 +271,8 @@ internal static class CodexSessionLocatorHelpers
             yield break;
         }
 
+        var candidates = new List<(string FilePath, DateTime? CreatedAtUtc)>();
+
         foreach (var file in files)
         {
             if (string.IsNullOrWhiteSpace(file))
@@ -284,7 +287,15 @@ internal static class CodexSessionLocatorHelpers
                 continue;
             }
 
-            yield return file;
+            var createdAtUtc = TryGetCreationTimeUtc(fileSystem, logger, file);
+            candidates.Add((file, createdAtUtc));
+        }
+
+        foreach (var c in candidates
+                     .OrderByDescending(c => c.CreatedAtUtc ?? DateTime.MinValue)
+                     .ThenBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return c;
         }
     }
 
