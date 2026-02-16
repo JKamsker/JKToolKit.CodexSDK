@@ -1,4 +1,6 @@
+using System.Text.Json;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -15,9 +17,14 @@ internal sealed class CodexAppServerReadOnlyAccessOverridesSupport
         }
 
         var msg = ex.Error.Message ?? string.Empty;
-        var data = ex.Error.Data is { ValueKind: not System.Text.Json.JsonValueKind.Null and not System.Text.Json.JsonValueKind.Undefined }
+        var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
             ? ex.Error.Data.Value.GetRawText()
             : string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(data))
+        {
+            data = CodexDiagnosticsSanitizer.Sanitize(data, maxChars: 2000);
+        }
 
         var haystack = msg + "\n" + data;
 
@@ -27,17 +34,25 @@ internal sealed class CodexAppServerReadOnlyAccessOverridesSupport
             haystack.Contains("readonly_access", StringComparison.OrdinalIgnoreCase) ||
             haystack.Contains("readonlyaccess", StringComparison.OrdinalIgnoreCase);
 
-        if (mentionsReadOnlyAccess)
+        if (!mentionsReadOnlyAccess)
         {
-            return true;
+            return false;
         }
 
-        // Heuristic for servers that report unknown fields as JSON-pointer-like paths.
-        var mentionsSandboxPolicy =
-            haystack.Contains("sandboxPolicy", StringComparison.OrdinalIgnoreCase) ||
-            haystack.Contains("sandbox_policy", StringComparison.OrdinalIgnoreCase);
+        var mentionsUnknownFieldIndicator =
+            haystack.Contains("unknown field", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("unrecognized field", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("unknown property", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("unexpected property", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("additional properties", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("was unexpected", StringComparison.OrdinalIgnoreCase);
 
-        return mentionsSandboxPolicy && haystack.Contains("access", StringComparison.OrdinalIgnoreCase);
+        // Heuristic for servers that report unknown fields as JSON-pointer-like paths.
+        var mentionsPointerLikePath =
+            haystack.Contains("/sandboxPolicy", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("/sandbox_policy", StringComparison.OrdinalIgnoreCase);
+
+        return mentionsUnknownFieldIndicator || mentionsPointerLikePath;
     }
 }
 
