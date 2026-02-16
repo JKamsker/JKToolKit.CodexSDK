@@ -345,6 +345,7 @@ internal sealed class CodexSessionRunner
             if (completed == exitTask)
             {
                 timeoutCts.Cancel();
+                _ = metaTask.ContinueWith(t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
                 throw new InvalidOperationException($"Codex process exited with code {process.ExitCode} before session_meta was received.");
             }
         }

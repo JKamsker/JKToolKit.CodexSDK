@@ -223,15 +223,15 @@ internal sealed class CodexAppServerThreadsClient
             ct);
     }
 
-        public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
-        {
-            ArgumentNullException.ThrowIfNull(options);
+    public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
         ExperimentalApiGuards.ValidateThreadFork(options, _experimentalApiEnabled());
 
-            var result = await _sendRequestAsync(
-                "thread/fork",
-                new ThreadForkParams
-                {
+        var result = await _sendRequestAsync(
+            "thread/fork",
+            new ThreadForkParams
+            {
                 ThreadId = options.ThreadId,
                 Path = options.Path
             },

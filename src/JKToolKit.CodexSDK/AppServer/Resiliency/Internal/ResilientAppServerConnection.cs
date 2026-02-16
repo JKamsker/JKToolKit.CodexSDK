@@ -282,6 +282,15 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     {
         _inner = created;
         var newVersion = Interlocked.Increment(ref _innerVersion);
+        CancellationToken disposeToken;
+        try
+        {
+            disposeToken = _disposeCts.Token;
+        }
+        catch (ObjectDisposedException)
+        {
+            disposeToken = new CancellationToken(canceled: true);
+        }
 
         _exitMonitorTask = Task.Run(async () =>
         {
@@ -294,14 +303,14 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
                 // ignore
             }
 
-            if (_disposeCts.IsCancellationRequested)
+            if (disposeToken.IsCancellationRequested)
             {
                 return;
             }
 
             try
             {
-                await EnsureRestartedAsync(newVersion, trigger: _lastDisconnect, reason: "process-exited", _disposeCts.Token)
+                await EnsureRestartedAsync(newVersion, trigger: _lastDisconnect, reason: "process-exited", disposeToken)
                     .ConfigureAwait(false);
             }
             catch
