@@ -19,6 +19,29 @@ public class CodexClientOptions
     private TimeSpan _tailPollInterval = TimeSpan.FromMilliseconds(200);
 
     /// <summary>
+    /// Gets or sets a value indicating whether the client may include sanitized stdout/stderr snippets in thrown exceptions
+    /// during session startup failures.
+    /// </summary>
+    /// <remarks>
+    /// Default is <c>false</c>. When enabled, some exceptions from <see cref="CodexClient.StartSessionAsync(JKToolKit.CodexSDK.Exec.CodexSessionOptions,System.Threading.CancellationToken)"/>
+    /// may include a redacted prefix of the Codex process stdout/stderr to aid debugging.
+    /// </remarks>
+    public bool EnableDiagnosticCapture { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the client may fall back to locating a newly created session log file
+    /// by scanning the sessions directory for <em>any</em> new JSONL file created around session start time.
+    /// </summary>
+    /// <remarks>
+    /// When enabled, <see cref="CodexClient.StartSessionAsync(JKToolKit.CodexSDK.Exec.CodexSessionOptions,System.Threading.CancellationToken)"/>
+    /// may attach to the first matching session file created after the session start timestamp. This is helpful when
+    /// the session id emitted to stdout/stderr cannot be correlated to the JSONL filename, but it can be unsafe in
+    /// environments where multiple sessions may start concurrently (it can pick the wrong file).
+    /// Default is <c>false</c>.
+    /// </remarks>
+    public bool EnableUncorrelatedNewSessionFileDiscovery { get; set; }
+
+    /// <summary>
     /// Gets or sets the path to the Codex CLI executable.
     /// </summary>
     /// <remarks>
@@ -146,7 +169,9 @@ public class CodexClientOptions
         SessionsRootDirectory = SessionsRootDirectory,
         StartTimeout = StartTimeout,
         ProcessExitTimeout = ProcessExitTimeout,
-        TailPollInterval = TailPollInterval
+        TailPollInterval = TailPollInterval,
+        EnableUncorrelatedNewSessionFileDiscovery = EnableUncorrelatedNewSessionFileDiscovery,
+        EnableDiagnosticCapture = EnableDiagnosticCapture
     };
 
     /// <summary>

@@ -17,7 +17,7 @@ namespace JKToolKit.CodexSDK.Infrastructure;
 /// including polling for new sessions, finding specific session logs, and enumerating
 /// sessions with optional filtering.
 /// </remarks>
-public sealed class CodexSessionLocator : ICodexSessionLocator
+public sealed partial class CodexSessionLocator : ICodexSessionLocator
 {
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<CodexSessionLocator> _logger;
@@ -26,9 +26,8 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
     private static readonly TimeSpan DefaultPollInterval = TimeSpan.FromMilliseconds(100);
 
     // Regex patterns for session file matching
-    private static readonly Regex SessionFilePattern = new(
-        @"^(rollout-.*\.jsonl|.*-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.jsonl)$",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    [GeneratedRegex(@"^(rollout-.*\.jsonl|.*-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.jsonl)$", RegexOptions.IgnoreCase)]
+    private static partial Regex SessionFilePattern();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CodexSessionLocator"/> class.
@@ -69,7 +68,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         }
 
         _logger.LogDebug(
-            "Waiting for new session file in {Directory} created after {StartTime}",
+            "Waiting for any new session file in {Directory} created after {StartTime} (uncorrelated discovery)",
             sessionsRoot,
             startTime);
 
@@ -353,7 +352,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             foreach (var file in existingFiles)
             {
                 var fileName = Path.GetFileName(file);
-                if (SessionFilePattern.IsMatch(fileName))
+                if (SessionFilePattern().IsMatch(fileName))
                 {
                     snapshot.Add(file);
                 }
@@ -389,7 +388,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
                     var fileName = Path.GetFileName(filePath);
 
                     // Check if the file name matches the expected pattern
-                    if (!SessionFilePattern.IsMatch(fileName))
+                    if (!SessionFilePattern().IsMatch(fileName))
                     {
                         continue;
                     }
@@ -636,7 +635,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             }
 
             var fileName = Path.GetFileName(file);
-            if (!SessionFilePattern.IsMatch(fileName))
+            if (!SessionFilePattern().IsMatch(fileName))
             {
                 _logger.LogTrace("Skipping non-session file {FilePath}", file);
                 continue;
