@@ -14,9 +14,12 @@ internal sealed class CodexRateLimitsReader
     private readonly IJsonlEventParser _parser;
     private readonly ICodexPathProvider _pathProvider;
     private readonly ILogger<CodexClient> _logger;
+    private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
     private RateLimits? _cachedRateLimits;
     private DateTimeOffset? _cachedRateLimitsTimestamp;
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
+    private const int MaxSessionsToScan = 50;
 
     internal CodexRateLimitsReader(
         CodexClientOptions clientOptions,
@@ -36,35 +39,69 @@ internal sealed class CodexRateLimitsReader
 
     internal async Task<RateLimits?> GetRateLimitsAsync(bool noCache, CancellationToken cancellationToken)
     {
-        if (!noCache && _cachedRateLimits is not null && _cachedRateLimitsTimestamp.HasValue
-            && (DateTimeOffset.UtcNow - _cachedRateLimitsTimestamp.Value) < TimeSpan.FromMinutes(5))
-        {
-            return _cachedRateLimits;
-        }
-
         cancellationToken.ThrowIfCancellationRequested();
         _clientOptions.Validate();
 
-        var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
-
-        var sessions = new List<CodexSessionInfo>();
-        await foreach (var session in _sessionLocator.ListSessionsAsync(sessionsRoot, filter: null, cancellationToken))
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            sessions.Add(session);
+            if (!noCache && _cachedRateLimits is not null && _cachedRateLimitsTimestamp.HasValue
+                && (DateTimeOffset.UtcNow - _cachedRateLimitsTimestamp.Value) < CacheTtl)
+            {
+                return _cachedRateLimits;
+            }
+
+            var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
+
+            var mostRecent = new List<CodexSessionInfo>(capacity: MaxSessionsToScan);
+            await foreach (var session in _sessionLocator.ListSessionsAsync(sessionsRoot, filter: null, cancellationToken))
+            {
+                TrackMostRecentSessions(mostRecent, session);
+            }
+
+            foreach (var session in mostRecent.OrderByDescending(s => s.CreatedAt))
+            {
+                var limits = await ReadLastRateLimitsAsync(session.LogPath, cancellationToken).ConfigureAwait(false);
+                if (limits != null)
+                {
+                    _cachedRateLimits = limits;
+                    _cachedRateLimitsTimestamp = DateTimeOffset.UtcNow;
+                    return limits;
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    private static void TrackMostRecentSessions(List<CodexSessionInfo> mostRecent, CodexSessionInfo candidate)
+    {
+        if (mostRecent.Count < MaxSessionsToScan)
+        {
+            mostRecent.Add(candidate);
+            return;
         }
 
-        foreach (var session in sessions.OrderByDescending(s => s.CreatedAt))
+        var minIndex = 0;
+        var minCreated = mostRecent[0].CreatedAt;
+        for (var i = 1; i < mostRecent.Count; i++)
         {
-            var limits = await ReadLastRateLimitsAsync(session.LogPath, cancellationToken).ConfigureAwait(false);
-            if (limits != null)
+            var created = mostRecent[i].CreatedAt;
+            if (created < minCreated)
             {
-                _cachedRateLimits = limits;
-                _cachedRateLimitsTimestamp = DateTimeOffset.UtcNow;
-                return limits;
+                minCreated = created;
+                minIndex = i;
             }
         }
 
-        return null;
+        if (candidate.CreatedAt > minCreated)
+        {
+            mostRecent[minIndex] = candidate;
+        }
     }
 
     private async Task<RateLimits?> ReadLastRateLimitsAsync(string logPath, CancellationToken cancellationToken)
