@@ -306,21 +306,25 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         Task<string>? newSessionFileTask = null;
         try
         {
-            // Start watching for a new session log file BEFORE launching the process to avoid races where
-            // Codex creates the JSONL file very quickly and a baseline snapshot taken post-launch would miss it.
-            try
+            if (_clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
             {
-                newSessionFileTask = _sessionLocator.WaitForNewSessionFileAsync(
-                    sessionsRoot,
-                    startTime,
-                    _clientOptions.StartTimeout,
-                    cancellationToken);
+                // Start watching for a new session log file BEFORE launching the process to avoid races where
+                // Codex creates the JSONL file very quickly and a baseline snapshot taken post-launch would miss it.
+                try
+                {
+                    newSessionFileTask = _sessionLocator.WaitForNewSessionFileAsync(
+                        sessionsRoot,
+                        startTime,
+                        _clientOptions.StartTimeout,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    newSessionFileTask = Task.FromException<string>(ex);
+                }
+
+                _ = newSessionFileTask.ContinueWith(t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
             }
-            catch (Exception ex)
-            {
-                newSessionFileTask = Task.FromException<string>(ex);
-            }
-            _ = newSessionFileTask.ContinueWith(t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
 
             var sw = Stopwatch.StartNew();
             process = await _processLauncher.StartSessionAsync(effectiveOptions, _clientOptions, cancellationToken).ConfigureAwait(false);
@@ -363,10 +367,22 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "Session log by id not found in time; falling back to time-based locator.");
+                    if (_clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
+                    {
+                        _logger.LogDebug(ex, "Session log by id not found in time; falling back to uncorrelated session file discovery.");
+                    }
+                    else
+                    {
+                        _logger.LogDebug(ex, "Session log by id not found in time; uncorrelated session file discovery is disabled.");
+                    }
+
                     if (newSessionFileTask is null)
                     {
-                        throw;
+                        throw new InvalidOperationException(
+                            "Failed to locate the session log file by session id. " +
+                            "Uncorrelated session file discovery is disabled; enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow " +
+                            "time-based discovery of any new session log file.",
+                            ex);
                     }
 
                     logPath = await newSessionFileTask.ConfigureAwait(false);
@@ -376,7 +392,16 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             {
                 if (newSessionFileTask is null)
                 {
-                    throw new InvalidOperationException("Session log discovery task was not initialized; cannot locate session log.");
+                    var stdoutSnippet = getStartStdoutDiag().TrimEnd();
+                    var stderrSnippet = getStartStderrDiag().TrimEnd();
+
+                    throw new InvalidOperationException(
+                        "Failed to locate Codex session log file. " +
+                        "Codex did not emit a recognizable session id, and uncorrelated session file discovery is disabled. " +
+                        "Enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow time-based discovery of any new session log file. " +
+                        $"Captured stdout (first {SessionStartDiagCaptureChars} chars): {stdoutSnippet}. " +
+                        $"Captured stderr (first {SessionStartDiagCaptureChars} chars): {stderrSnippet}.",
+                        captureException);
                 }
 
                 try

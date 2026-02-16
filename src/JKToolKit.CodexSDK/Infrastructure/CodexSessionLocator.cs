@@ -69,7 +69,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         }
 
         _logger.LogDebug(
-            "Waiting for new session file in {Directory} created after {StartTime}",
+            "Waiting for any new session file in {Directory} created after {StartTime} (uncorrelated discovery)",
             sessionsRoot,
             startTime);
 

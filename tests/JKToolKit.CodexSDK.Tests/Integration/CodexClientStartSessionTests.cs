@@ -78,7 +78,11 @@ public class CodexClientStartSessionTests
     public async Task StartSessionAsync_Fails_WhenProcessExitsBeforeSessionMeta()
     {
         // Arrange
-        var clientOptions = Options.Create(new CodexClientOptions { StartTimeout = TimeSpan.FromSeconds(2) });
+        var clientOptions = Options.Create(new CodexClientOptions
+        {
+            StartTimeout = TimeSpan.FromSeconds(2),
+            EnableUncorrelatedNewSessionFileDiscovery = true
+        });
         var workingDirectory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"codex-tests-{Guid.NewGuid():N}")).FullName;
         var sessionOptions = new CodexSessionOptions(workingDirectory, "prompt");
 
