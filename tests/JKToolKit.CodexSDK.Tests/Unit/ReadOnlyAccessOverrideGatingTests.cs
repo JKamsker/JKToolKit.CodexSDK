@@ -77,7 +77,7 @@ public sealed class ReadOnlyAccessOverrideGatingTests
 
             throw new JsonRpcRemoteException(new JsonRpcError(
                 -32602,
-                "Invalid params",
+                "Invalid params: unknown field sandboxPolicy.access",
                 Data: null));
         }
 

@@ -1,10 +1,10 @@
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure;
@@ -17,7 +17,7 @@ namespace JKToolKit.CodexSDK.Infrastructure;
 /// including polling for new sessions, finding specific session logs, and enumerating
 /// sessions with optional filtering.
 /// </remarks>
-public sealed partial class CodexSessionLocator : ICodexSessionLocator
+public sealed class CodexSessionLocator : ICodexSessionLocator
 {
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<CodexSessionLocator> _logger;
@@ -25,9 +25,7 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
     // Poll interval for waiting for new session files
     private static readonly TimeSpan DefaultPollInterval = TimeSpan.FromMilliseconds(100);
 
-    // Regex patterns for session file matching
-    [GeneratedRegex(@"^(rollout-.*\.jsonl|.*-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.jsonl)$", RegexOptions.IgnoreCase)]
-    private static partial Regex SessionFilePattern();
+    private static readonly Regex SessionFilePattern = CodexSessionFilePattern.Create();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CodexSessionLocator"/> class.
@@ -73,7 +71,7 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
             startTime);
 
         // Snapshot existing files before launch to avoid picking old sessions
-        var baseline = CaptureSessionSnapshot(sessionsRoot);
+        var baseline = CodexSessionLocatorHelpers.CaptureSessionSnapshot(_fileSystem, _logger, sessionsRoot, SessionFilePattern);
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
@@ -85,7 +83,7 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
             while (!timeoutCts.Token.IsCancellationRequested)
             {
                 // Search for .jsonl files created after startTime and not in baseline
-                var newSessionFile = FindNewSessionFile(sessionsRoot, startTimeUtc, baseline);
+                var newSessionFile = CodexSessionLocatorHelpers.FindNewSessionFile(_fileSystem, _logger, sessionsRoot, startTimeUtc, baseline, SessionFilePattern);
 
                 if (newSessionFile != null)
                 {
@@ -277,11 +275,12 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
             sessionsRoot,
             filter?.ToString() ?? "none");
 
-        foreach (var filePath in EnumerateSessionFiles(sessionsRoot))
+        foreach (var entry in CodexSessionLocatorHelpers.EnumerateSessionFiles(_fileSystem, _logger, sessionsRoot, SessionFilePattern))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var createdAtUtc = TryGetCreationTimeUtc(filePath);
+            var filePath = entry.FilePath;
+            var createdAtUtc = entry.CreatedAtUtc;
 
             // Quick pre-filter on creation time if available to avoid opening files that
             // obviously fall outside the requested range.
@@ -307,7 +306,7 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
 
             try
             {
-                sessionInfo = await ParseSessionInfoAsync(filePath, createdAtUtc, cancellationToken);
+                sessionInfo = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(_fileSystem, _logger, filePath, createdAtUtc, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -325,7 +324,7 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
             }
 
             // Apply filter if provided
-            if (filter != null && !MatchesFilter(sessionInfo, filter))
+            if (filter != null && !CodexSessionLocatorHelpers.MatchesFilter(sessionInfo, filter))
             {
                 _logger.LogTrace(
                     "Session {SessionId} does not match filter, skipping",
@@ -334,353 +333,6 @@ public sealed partial class CodexSessionLocator : ICodexSessionLocator
             }
 
             yield return sessionInfo;
-        }
-    }
-
-    /// <summary>
-    /// Captures the set of session files that exist prior to starting Codex.
-    /// </summary>
-    /// <param name="sessionsRoot">The sessions root directory.</param>
-    /// <returns>A snapshot of existing session file paths.</returns>
-    private HashSet<string> CaptureSessionSnapshot(string sessionsRoot)
-    {
-        var snapshot = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        try
-        {
-            var existingFiles = _fileSystem.GetFiles(sessionsRoot, "*.jsonl");
-            foreach (var file in existingFiles)
-            {
-                var fileName = Path.GetFileName(file);
-                if (SessionFilePattern().IsMatch(fileName))
-                {
-                    snapshot.Add(file);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error capturing pre-launch session snapshot in {Directory}", sessionsRoot);
-        }
-
-        return snapshot;
-    }
-
-    /// <summary>
-    /// Finds a new session file created after the specified start time that was not present in the baseline snapshot.
-    /// </summary>
-    /// <param name="sessionsRoot">The sessions root directory.</param>
-    /// <param name="startTimeUtc">The start time in UTC.</param>
-    /// <param name="baseline">The snapshot of files present before launch.</param>
-    /// <returns>The path to a new session file, or null if none found.</returns>
-    private string? FindNewSessionFile(string sessionsRoot, DateTime startTimeUtc, HashSet<string> baseline)
-    {
-        try
-        {
-            var jsonlFiles = _fileSystem.GetFiles(sessionsRoot, "*.jsonl");
-
-            var candidates = new List<(string Path, DateTime CreatedUtc)>();
-
-            foreach (var filePath in jsonlFiles)
-            {
-                try
-                {
-                    var fileName = Path.GetFileName(filePath);
-
-                    // Check if the file name matches the expected pattern
-                    if (!SessionFilePattern().IsMatch(fileName))
-                    {
-                        continue;
-                    }
-
-                    if (baseline.Contains(filePath))
-                    {
-                        continue;
-                    }
-
-                    // Check creation time
-                    var creationTimeUtc = _fileSystem.GetFileCreationTimeUtc(filePath);
-
-                    if (creationTimeUtc >= startTimeUtc)
-                    {
-                        candidates.Add((filePath, creationTimeUtc));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogTrace(ex, "Error checking file: {FilePath}", filePath);
-                }
-            }
-
-            var earliest = candidates
-                .OrderBy(c => c.CreatedUtc)
-                .FirstOrDefault();
-
-            if (earliest != default)
-            {
-                _logger.LogTrace(
-                    "Found candidate session file: {FilePath} (created: {CreationTime})",
-                    earliest.Path,
-                    earliest.CreatedUtc);
-                return earliest.Path;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error searching for new session files in: {Directory}", sessionsRoot);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Parses session information from a session log file.
-    /// </summary>
-    /// <param name="filePath">The path to the session log file.</param>
-    /// <param name="creationTimeUtc">
-    /// Optional file creation time to use when the log does not include a session_meta timestamp.
-    /// </param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>
-    /// A CodexSessionInfo instance if the file contains valid session metadata, otherwise null.
-    /// </returns>
-    private async Task<CodexSessionInfo?> ParseSessionInfoAsync(
-        string filePath,
-        DateTime? creationTimeUtc,
-        CancellationToken cancellationToken)
-    {
-        SessionId? sessionId = null;
-        DateTimeOffset? createdAt = null;
-        string? workingDirectory = null;
-        CodexModel? model = null;
-
-        // Read the file and look for session_meta event
-        using var stream = _fileSystem.OpenRead(filePath);
-        using var reader = new StreamReader(stream);
-
-        string? line;
-        while ((line = await reader.ReadLineAsync(cancellationToken)) != null)
-        {
-
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-
-            try
-            {
-                using var doc = JsonDocument.Parse(line);
-                var root = doc.RootElement;
-
-                // Check if this is a session_meta event
-                if (root.TryGetProperty("type", out var typeElement) &&
-                    typeElement.GetString() == "session_meta")
-                {
-                    // Extract timestamp
-                    if (root.TryGetProperty("timestamp", out var timestampElement))
-                    {
-                        createdAt = timestampElement.GetDateTimeOffset();
-                    }
-
-                    // Extract session metadata from payload
-                    if (root.TryGetProperty("payload", out var payload))
-                    {
-                        if (payload.TryGetProperty("id", out var idElement))
-                        {
-                            var idString = idElement.GetString();
-                            if (!string.IsNullOrWhiteSpace(idString))
-                            {
-                                sessionId = SessionId.Parse(idString);
-                            }
-                        }
-
-                        if (payload.TryGetProperty("cwd", out var cwdElement))
-                        {
-                            workingDirectory = cwdElement.GetString();
-                        }
-
-                        if (payload.TryGetProperty("model", out var modelElement))
-                        {
-                            var modelString = modelElement.GetString();
-                            if (!string.IsNullOrWhiteSpace(modelString) &&
-                                CodexModel.TryParse(modelString, out var parsedModel))
-                            {
-                                model = parsedModel;
-                            }
-                        }
-                    }
-
-                    // We found the session_meta event, we can stop reading
-                    break;
-                }
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogTrace(ex, "Error parsing JSON line in file: {FilePath}", filePath);
-                // Continue to next line
-            }
-        }
-
-        // If we found a valid session ID, create the session info
-        if (!sessionId.HasValue)
-        {
-            sessionId = TryExtractSessionIdFromFilePath(filePath);
-
-            if (!sessionId.HasValue)
-            {
-                return null;
-            }
-        }
-
-        var effectiveCreatedAt = createdAt
-            ?? (creationTimeUtc.HasValue
-                ? new DateTimeOffset(creationTimeUtc.Value, TimeSpan.Zero)
-                : DateTimeOffset.UtcNow);
-
-        return new CodexSessionInfo(
-            Id: sessionId.Value,
-            LogPath: filePath,
-            CreatedAt: effectiveCreatedAt,
-            WorkingDirectory: workingDirectory,
-            Model: model);
-    }
-
-    /// <summary>
-    /// Determines whether a session matches the specified filter criteria.
-    /// </summary>
-    /// <param name="sessionInfo">The session information to check.</param>
-    /// <param name="filter">The filter criteria.</param>
-    /// <returns>True if the session matches the filter; otherwise, false.</returns>
-    private bool MatchesFilter(CodexSessionInfo sessionInfo, SessionFilter filter)
-    {
-        // Check date range
-        if (filter.FromDate.HasValue && sessionInfo.CreatedAt < filter.FromDate.Value)
-        {
-            return false;
-        }
-
-        if (filter.ToDate.HasValue && sessionInfo.CreatedAt > filter.ToDate.Value)
-        {
-            return false;
-        }
-
-        // Check working directory
-        if (!string.IsNullOrWhiteSpace(filter.WorkingDirectory) &&
-            !string.Equals(sessionInfo.WorkingDirectory, filter.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        // Check model
-        if (filter.Model.HasValue)
-        {
-            if (!sessionInfo.Model.HasValue)
-            {
-                return false;
-            }
-
-            if (!string.Equals(sessionInfo.Model.Value.Value, filter.Model.Value.Value, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-        }
-
-        // Check session ID pattern
-        if (!string.IsNullOrWhiteSpace(filter.SessionIdPattern))
-        {
-            if (!MatchesPattern(sessionInfo.Id.Value, filter.SessionIdPattern))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Determines whether a value matches a pattern (supports wildcards).
-    /// </summary>
-    /// <param name="value">The value to check.</param>
-    /// <param name="pattern">The pattern to match against (supports * and ? wildcards).</param>
-    /// <returns>True if the value matches the pattern; otherwise, false.</returns>
-    private bool MatchesPattern(string value, string pattern)
-    {
-        // Convert wildcard pattern to regex
-        var regexPattern = "^" + Regex.Escape(pattern)
-            .Replace("\\*", ".*")
-            .Replace("\\?", ".") + "$";
-
-        return Regex.IsMatch(value, regexPattern, RegexOptions.IgnoreCase);
-    }
-
-    private IEnumerable<string> EnumerateSessionFiles(string sessionsRoot)
-    {
-        IEnumerable<string> files;
-
-        try
-        {
-            files = _fileSystem.GetFiles(sessionsRoot, "*.jsonl");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to enumerate session files in {Directory}", sessionsRoot);
-            yield break;
-        }
-
-        foreach (var file in files)
-        {
-            if (string.IsNullOrWhiteSpace(file))
-            {
-                continue;
-            }
-
-            var fileName = Path.GetFileName(file);
-            if (!SessionFilePattern().IsMatch(fileName))
-            {
-                _logger.LogTrace("Skipping non-session file {FilePath}", file);
-                continue;
-            }
-
-            yield return file;
-        }
-    }
-
-    private DateTime? TryGetCreationTimeUtc(string filePath)
-    {
-        try
-        {
-            return _fileSystem.GetFileCreationTimeUtc(filePath);
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or UnauthorizedAccessException or IOException)
-        {
-            _logger.LogTrace(ex, "Unable to read creation time for {FilePath}", filePath);
-            return null;
-        }
-    }
-
-    private SessionId? TryExtractSessionIdFromFilePath(string filePath)
-    {
-        try
-        {
-            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-            if (string.IsNullOrWhiteSpace(fileNameWithoutExtension))
-            {
-                return null;
-            }
-
-            var lastDash = fileNameWithoutExtension.LastIndexOf('-');
-            if (lastDash < 0 || lastDash == fileNameWithoutExtension.Length - 1)
-            {
-                return null;
-            }
-
-            var candidate = fileNameWithoutExtension[(lastDash + 1)..];
-            return SessionId.Parse(candidate);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogTrace(ex, "Failed to extract session id from file name {FilePath}", filePath);
-            return null;
         }
     }
 }
