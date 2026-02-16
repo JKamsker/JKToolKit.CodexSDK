@@ -189,7 +189,7 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
 
             var heartbeatTask = Task.Run(async () =>
             {
-                var timer = new PeriodicTimer(TimeSpan.FromSeconds(20));
+                using var timer = new PeriodicTimer(TimeSpan.FromSeconds(20));
                 try
                 {
                     while (await timer.WaitForNextTickAsync(progressCts.Token).ConfigureAwait(false))

@@ -83,4 +83,25 @@ public sealed class TurnStartOptions
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     public JsonElement? CollaborationMode { get; set; }
+
+    /// <summary>
+    /// Creates a copy of the current options.
+    /// </summary>
+    /// <returns>A new <see cref="TurnStartOptions"/> instance with the same values.</returns>
+    public TurnStartOptions Clone()
+    {
+        return new TurnStartOptions
+        {
+            Input = Input,
+            Cwd = Cwd,
+            ApprovalPolicy = ApprovalPolicy,
+            SandboxPolicy = SandboxPolicy,
+            Model = Model,
+            Effort = Effort,
+            Summary = Summary,
+            Personality = Personality,
+            OutputSchema = OutputSchema,
+            CollaborationMode = CollaborationMode
+        };
+    }
 }
