@@ -18,7 +18,7 @@ namespace JKToolKit.CodexSDK.Exec;
 /// <summary>
 /// Default implementation of the Codex client.
 /// </summary>
-public sealed class CodexClient : ICodexClient, IAsyncDisposable
+public sealed partial class CodexClient : ICodexClient, IAsyncDisposable
 {
     private const int SessionIdScanWindowChars = 32 * 1024;
     private const int SessionStartDiagCaptureChars = 8 * 1024;
@@ -152,12 +152,12 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         var stderrText = stderrCapture.ToString().TrimEnd();
 
         SessionId? sessionId = null;
-        if (SessionIdRegex.Match(stdoutText) is { Success: true } stdoutMatch &&
+        if (SessionIdRegex().Match(stdoutText) is { Success: true } stdoutMatch &&
             SessionId.TryParse(stdoutMatch.Groups[1].Value, out var stdoutId))
         {
             sessionId = stdoutId;
         }
-        else if (SessionIdRegex.Match(stderrText) is { Success: true } stderrMatch &&
+        else if (SessionIdRegex().Match(stderrText) is { Success: true } stderrMatch &&
                  SessionId.TryParse(stderrMatch.Groups[1].Value, out var stderrId))
         {
             sessionId = stderrId;
@@ -849,7 +849,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                                 scan.Append(tail);
                             }
 
-                            var match = SessionIdRegex.Match(scan.ToString());
+                            var match = SessionIdRegex().Match(scan.ToString());
                             if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
                             {
                                 tcs.TrySetResult(sessionId);
@@ -915,10 +915,6 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         }
     }
 
-    private static readonly Regex SessionIdRegex = new(
-        @"(?:session(?:[_\s-]?id)?|sid)\s*[:=]\s*([0-9a-fA-F\-]+)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
     private string BuildStartFailureMessage(
         string headline,
         string detail,
@@ -938,30 +934,6 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         return $"{headline} {detail} Diagnostic capture is disabled; set CodexClientOptions.EnableDiagnosticCapture=true to include redacted stdout/stderr snippets.";
     }
 
-    private static readonly Regex EmailRegex = new(
-        @"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}",
-        RegexOptions.Compiled);
-
-    private static readonly Regex BearerRegex = new(
-        @"(?i)(authorization\s*[:=]\s*bearer\s+)([^\s""]+)",
-        RegexOptions.Compiled);
-
-    private static readonly Regex KeyValueSecretRegex = new(
-        @"(?i)\b(api[_-]?key|token|access[_-]?token|refresh[_-]?token|openai[_-]?api[_-]?key|github[_-]?token)\b\s*[:=]\s*([^\s""]+)",
-        RegexOptions.Compiled);
-
-    private static readonly Regex OpenAiSkRegex = new(
-        @"\bsk-[A-Za-z0-9]{20,}\b",
-        RegexOptions.Compiled);
-
-    private static readonly Regex GitHubTokenRegex = new(
-        @"\b(gho|ghp|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b",
-        RegexOptions.Compiled);
-
-    private static readonly Regex AwsAccessKeyRegex = new(
-        @"\bAKIA[0-9A-Z]{16}\b",
-        RegexOptions.Compiled);
-
     private static string SanitizeDiagnostics(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -971,13 +943,34 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
 
         var sanitized = input;
 
-        sanitized = BearerRegex.Replace(sanitized, "$1[REDACTED]");
-        sanitized = KeyValueSecretRegex.Replace(sanitized, m => $"{m.Groups[1].Value}=[REDACTED]");
-        sanitized = OpenAiSkRegex.Replace(sanitized, "sk-[REDACTED]");
-        sanitized = GitHubTokenRegex.Replace(sanitized, "[REDACTED_TOKEN]");
-        sanitized = AwsAccessKeyRegex.Replace(sanitized, "AKIA[REDACTED]");
-        sanitized = EmailRegex.Replace(sanitized, "[REDACTED_EMAIL]");
+        sanitized = BearerRegex().Replace(sanitized, "$1[REDACTED]");
+        sanitized = KeyValueSecretRegex().Replace(sanitized, m => $"{m.Groups[1].Value}=[REDACTED]");
+        sanitized = OpenAiSkRegex().Replace(sanitized, "sk-[REDACTED]");
+        sanitized = GitHubTokenRegex().Replace(sanitized, "[REDACTED_TOKEN]");
+        sanitized = AwsAccessKeyRegex().Replace(sanitized, "AKIA[REDACTED]");
+        sanitized = EmailRegex().Replace(sanitized, "[REDACTED_EMAIL]");
 
         return sanitized;
     }
+
+    [GeneratedRegex(@"(?:session(?:[_\s-]?id)?|sid)\s*[:=]\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex SessionIdRegex();
+
+    [GeneratedRegex(@"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")]
+    private static partial Regex EmailRegex();
+
+    [GeneratedRegex(@"(authorization\s*[:=]\s*bearer\s+)([^\s""]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex BearerRegex();
+
+    [GeneratedRegex(@"\b(api[_-]?key|token|access[_-]?token|refresh[_-]?token|openai[_-]?api[_-]?key|github[_-]?token)\b\s*[:=]\s*([^\s""]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex KeyValueSecretRegex();
+
+    [GeneratedRegex(@"\bsk-[A-Za-z0-9]{20,}\b")]
+    private static partial Regex OpenAiSkRegex();
+
+    [GeneratedRegex(@"\b(gho|ghp|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b")]
+    private static partial Regex GitHubTokenRegex();
+
+    [GeneratedRegex(@"\bAKIA[0-9A-Z]{16}\b")]
+    private static partial Regex AwsAccessKeyRegex();
 }
