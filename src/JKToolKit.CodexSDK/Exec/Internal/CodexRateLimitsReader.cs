@@ -68,6 +68,10 @@ internal sealed class CodexRateLimitsReader
                 }
                 catch (Exception ex)
                 {
+                    if (ex is OperationCanceledException or TaskCanceledException || cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
                     _logger.LogDebug(ex, "Failed to read rate limits from session log {LogPath}", session.LogPath);
                     continue;
                 }
