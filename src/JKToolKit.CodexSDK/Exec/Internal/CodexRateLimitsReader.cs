@@ -61,7 +61,17 @@ internal sealed class CodexRateLimitsReader
 
             foreach (var session in mostRecent.OrderByDescending(s => s.CreatedAt))
             {
-                var limits = await ReadLastRateLimitsAsync(session.LogPath, cancellationToken).ConfigureAwait(false);
+                RateLimits? limits;
+                try
+                {
+                    limits = await ReadLastRateLimitsAsync(session.LogPath, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to read rate limits from session log {LogPath}", session.LogPath);
+                    continue;
+                }
+
                 if (limits != null)
                 {
                     _cachedRateLimits = limits;
