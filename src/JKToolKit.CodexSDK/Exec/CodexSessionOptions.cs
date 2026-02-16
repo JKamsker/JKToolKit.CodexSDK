@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.StructuredOutputs;
 
 namespace JKToolKit.CodexSDK.Exec;
 
@@ -20,6 +22,7 @@ public class CodexSessionOptions
     private CodexReasoningEffort _reasoningEffort = CodexReasoningEffort.Medium;
     private IReadOnlyList<string> _additionalOptions = Array.Empty<string>();
     private TimeSpan? _idleTimeout;
+    private CodexOutputSchema? _outputSchema;
 
     /// <summary>
     /// Gets or sets the working directory where the Codex session will run.
@@ -129,6 +132,19 @@ public class CodexSessionOptions
     }
 
     /// <summary>
+    /// Gets or sets an optional JSON Schema that constrains the final assistant message for this session.
+    /// </summary>
+    /// <remarks>
+    /// For exec-mode, Codex expects <c>--output-schema &lt;file&gt;</c>. When provided as in-memory JSON
+    /// (via <see cref="CodexOutputSchemaKind.Json"/>), the SDK materializes it to a temporary file at runtime.
+    /// </remarks>
+    public CodexOutputSchema? OutputSchema
+    {
+        get => _outputSchema;
+        set => _outputSchema = value;
+    }
+
+    /// <summary>
     /// Gets or sets the path to the Codex CLI executable for this specific session.
     /// </summary>
     /// <remarks>
@@ -226,6 +242,72 @@ public class CodexSessionOptions
         {
             throw new InvalidOperationException("IdleTimeout, when set, must be greater than zero.");
         }
+
+        if (_outputSchema is { } schema)
+        {
+            static bool IsOutputSchemaArg(string? arg)
+            {
+                if (string.IsNullOrWhiteSpace(arg))
+                {
+                    return false;
+                }
+
+                if (arg.Equals("--output-schema", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return arg.StartsWith("--output-schema=", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (_additionalOptions.Any(IsOutputSchemaArg))
+            {
+                throw new InvalidOperationException("Do not specify '--output-schema' in AdditionalOptions when OutputSchema is set.");
+            }
+
+            if (schema.Kind == CodexOutputSchemaKind.File)
+            {
+                if (string.IsNullOrWhiteSpace(schema.FilePath))
+                {
+                    throw new InvalidOperationException("OutputSchema file path cannot be empty.");
+                }
+
+                if (!File.Exists(schema.FilePath))
+                {
+                    throw new InvalidOperationException($"OutputSchema file '{schema.FilePath}' does not exist.");
+                }
+
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(schema.FilePath));
+                    if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                    {
+                        throw new InvalidOperationException("OutputSchema file must contain a JSON object (a valid JSON Schema root).");
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"OutputSchema file '{schema.FilePath}' is not valid JSON.", ex);
+                }
+            }
+
+            if (schema.Kind == CodexOutputSchemaKind.Json)
+            {
+                if (schema.Json is null)
+                {
+                    throw new InvalidOperationException("OutputSchema JSON cannot be null when Kind is Json.");
+                }
+
+                if (schema.Json.Value.ValueKind != System.Text.Json.JsonValueKind.Object)
+                {
+                    throw new InvalidOperationException("OutputSchema JSON must be a JSON object (a valid JSON Schema root).");
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -245,7 +327,8 @@ public class CodexSessionOptions
             ReasoningEffort = ReasoningEffort,
             AdditionalOptions = new List<string>(AdditionalOptions),
             CodexBinaryPath = CodexBinaryPath,
-            IdleTimeout = IdleTimeout
+            IdleTimeout = IdleTimeout,
+            OutputSchema = OutputSchema
         };
     }
 }

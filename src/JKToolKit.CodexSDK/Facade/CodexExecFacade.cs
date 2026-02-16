@@ -1,6 +1,7 @@
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.StructuredOutputs;
 
 namespace JKToolKit.CodexSDK.Facade;
 
@@ -77,4 +78,69 @@ public sealed class CodexExecFacade
     /// </summary>
     public Task<CodexReviewResult> ReviewAsync(CodexReviewOptions options, CancellationToken ct = default) =>
         _client.ReviewAsync(options, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec</c> with a generated output schema for <typeparamref name="T"/> and deserializes the final output.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredAsync<T>(
+        CodexSessionOptions options,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredAsync<T>(options, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec resume</c> with a generated output schema for <typeparamref name="T"/> and deserializes the final output.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredAsync<T>(
+        SessionId sessionId,
+        CodexSessionOptions options,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredAsync<T>(sessionId, options, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec</c> with a generated output schema for <typeparamref name="T"/> and retries via <c>resume</c> if parsing fails.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredWithRetryAsync<T>(options, retry, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec</c> with a generated output schema for <typeparamref name="T"/> and retries via <c>resume</c> if parsing fails,
+    /// while streaming progress callbacks.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        CodexSessionOptions options,
+        CodexStructuredRunProgress progress,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredWithRetryAsync<T>(options, progress, retry, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec resume</c> with a generated output schema for <typeparamref name="T"/> and retries via additional resumes if parsing fails.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        SessionId sessionId,
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredWithRetryAsync<T>(sessionId, options, retry, structured, ct);
+
+    /// <summary>
+    /// Runs <c>codex exec resume</c> with a generated output schema for <typeparamref name="T"/> and retries via additional resumes if parsing fails,
+    /// while streaming progress callbacks.
+    /// </summary>
+    public Task<CodexStructuredResult<T>> RunStructuredWithRetryAsync<T>(
+        SessionId sessionId,
+        CodexSessionOptions options,
+        CodexStructuredRunProgress progress,
+        CodexStructuredRetryOptions? retry = null,
+        CodexStructuredOutputOptions? structured = null,
+        CancellationToken ct = default) =>
+        _client.RunStructuredWithRetryAsync<T>(sessionId, options, progress, retry, structured, ct);
 }

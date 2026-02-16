@@ -3,6 +3,7 @@ using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.StructuredOutputs;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
@@ -52,6 +53,47 @@ public class ProcessStartInfoBuilderTests
     }
 
     [Fact]
+    public void CreateProcessStartInfo_BuildsExpectedArguments_WithOutputSchema()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var schemaPath = Path.Combine(workingDirectory, "schema.json");
+            File.WriteAllText(schemaPath, "{ \"type\": \"object\" }");
+
+            var options = new CodexSessionOptions(workingDirectory, "prompt")
+            {
+                Model = CodexModel.Gpt51CodexMini,
+                ReasoningEffort = CodexReasoningEffort.Medium,
+                OutputSchema = CodexOutputSchema.FromFile(schemaPath),
+                AdditionalOptions = new[] { "--flag" }
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
+
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "--model",
+                "gpt-5.1-codex-mini",
+                "--config",
+                "model_reasoning_effort=medium",
+                "--output-schema",
+                schemaPath,
+                "--flag",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CreateResumeStartInfo_BuildsExpectedArguments()
     {
         var workingDirectory = CreateTempDirectory();
@@ -79,6 +121,48 @@ public class ProcessStartInfoBuilderTests
                 "gpt-5.2-codex",
                 "--config",
                 "model_reasoning_effort=medium",
+                "resume",
+                "session-abc",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateResumeStartInfo_BuildsExpectedArguments_WithOutputSchema()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var schemaPath = Path.Combine(workingDirectory, "schema.json");
+            File.WriteAllText(schemaPath, "{ \"type\": \"object\" }");
+
+            var options = new CodexSessionOptions(workingDirectory, "follow-up")
+            {
+                Model = CodexModel.Gpt52Codex,
+                ReasoningEffort = CodexReasoningEffort.Medium,
+                OutputSchema = CodexOutputSchema.FromFile(schemaPath)
+            };
+            var sessionId = SessionId.Parse("session-abc");
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateResumeStartInfo(sessionId, options, clientOptions);
+
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "--model",
+                "gpt-5.2-codex",
+                "--config",
+                "model_reasoning_effort=medium",
+                "--output-schema",
+                schemaPath,
                 "resume",
                 "session-abc",
                 "-");

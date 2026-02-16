@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.Demo.Commands.AppServerStream;
 using JKToolKit.CodexSDK.Demo.Commands.Exec;
 using JKToolKit.CodexSDK.Demo.Commands.McpServer;
 using JKToolKit.CodexSDK.Demo.Commands.Review;
+using JKToolKit.CodexSDK.Demo.Commands.StructuredReview;
 using Spectre.Console.Cli;
 
 namespace JKToolKit.CodexSDK.Demo;
@@ -35,6 +36,9 @@ internal static class Program
 
             config.AddCommand<McpServerCommand>("mcpserver")
                 .WithDescription("Start `codex mcp-server`, list tools, and run a small session.");
+
+            config.AddCommand<StructuredReviewCommand>("structured-review")
+                .WithDescription("Run a structured code review with typed output (issues + fix tasks).");
         });
 
         app.SetDefaultCommand<ExecCommand>();

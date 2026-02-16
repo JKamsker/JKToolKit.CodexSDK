@@ -21,6 +21,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
     private readonly TimeSpan _processExitTimeout;
     private readonly TimeSpan? _idleTimeout;
     private readonly ILogger<CodexSessionHandle> _logger;
+    private readonly IReadOnlyList<string>? _tempFilesToDeleteOnDispose;
     private bool _disposed;
     private readonly object _exitSync = new();
     private bool _exitSignaled;
@@ -40,6 +41,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
     /// <param name="processExitTimeout">Timeout for graceful process termination.</param>
     /// <param name="idleTimeout">Optional idle timeout after which the Codex process will be terminated. Null disables idle termination.</param>
     /// <param name="logger">Logger instance.</param>
+    /// <param name="tempFilesToDeleteOnDispose">Optional temp files to delete when the handle is disposed.</param>
     public CodexSessionHandle(
         CodexSessionInfo info,
         IJsonlTailer tailer,
@@ -48,7 +50,8 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
         ICodexProcessLauncher? processLauncher,
         TimeSpan processExitTimeout,
         TimeSpan? idleTimeout,
-        ILogger<CodexSessionHandle> logger)
+        ILogger<CodexSessionHandle> logger,
+        IReadOnlyList<string>? tempFilesToDeleteOnDispose = null)
     {
         Info = info ?? throw new ArgumentNullException(nameof(info));
         _tailer = tailer ?? throw new ArgumentNullException(nameof(tailer));
@@ -58,6 +61,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
         _processExitTimeout = processExitTimeout;
         _idleTimeout = idleTimeout;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _tempFilesToDeleteOnDispose = tempFilesToDeleteOnDispose;
 
         if (_process != null)
         {
@@ -212,7 +216,32 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
             _logger.LogDebug(ex, "Error disposing process for session {SessionId}", Info.Id);
         }
 
+        DeleteTempFilesBestEffort();
+
         await Task.CompletedTask;
+    }
+
+    private void DeleteTempFilesBestEffort()
+    {
+        if (_tempFilesToDeleteOnDispose is null || _tempFilesToDeleteOnDispose.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var path in _tempFilesToDeleteOnDispose)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogTrace(ex, "Failed to delete temp file '{TempFile}' for session {SessionId}", path, Info.Id);
+            }
+        }
     }
 
     private void ThrowIfDisposed()
