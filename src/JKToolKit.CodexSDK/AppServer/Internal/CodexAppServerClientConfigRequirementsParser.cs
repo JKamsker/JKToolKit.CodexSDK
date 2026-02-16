@@ -18,15 +18,21 @@ internal static class CodexAppServerClientConfigRequirementsParser
         }
 
         var allowedApprovalPolicies = GetOptionalStringArray(req, "allowedApprovalPolicies")
-            ?.Select(CodexApprovalPolicy.Parse)
+            ?.Select(s => CodexApprovalPolicy.TryParse(s, out var p) ? p : (CodexApprovalPolicy?)null)
+            .Where(p => p.HasValue)
+            .Select(p => p!.Value)
             .ToArray();
 
         var allowedSandboxModes = GetOptionalStringArray(req, "allowedSandboxModes")
-            ?.Select(CodexSandboxMode.Parse)
+            ?.Select(s => CodexSandboxMode.TryParse(s, out var m) ? m : (CodexSandboxMode?)null)
+            .Where(m => m.HasValue)
+            .Select(m => m!.Value)
             .ToArray();
 
         var allowedWebSearchModes = GetOptionalStringArray(req, "allowedWebSearchModes")
-            ?.Select(CodexWebSearchMode.Parse)
+            ?.Select(s => CodexWebSearchMode.TryParse(s, out var w) ? w : (CodexWebSearchMode?)null)
+            .Where(w => w.HasValue)
+            .Select(w => w!.Value)
             .ToArray();
 
         CodexResidencyRequirement? residency = null;
