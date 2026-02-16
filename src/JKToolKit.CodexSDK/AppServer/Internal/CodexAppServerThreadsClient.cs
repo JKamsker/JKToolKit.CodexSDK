@@ -67,7 +67,8 @@ internal sealed class CodexAppServerThreadsClient
     public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (options.History is null &&
+        var hasHistory = HasNonEmptyHistory(options.History);
+        if (!hasHistory &&
             string.IsNullOrWhiteSpace(options.Path) &&
             string.IsNullOrWhiteSpace(options.ThreadId))
         {
@@ -76,12 +77,13 @@ internal sealed class CodexAppServerThreadsClient
 
         ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: _experimentalApiEnabled());
 
+        var history = hasHistory ? options.History : null;
         var result = await _sendRequestAsync(
             "thread/resume",
             new ThreadResumeParams
             {
                 ThreadId = options.ThreadId,
-                History = options.History,
+                History = history,
                 Path = options.Path,
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
@@ -102,6 +104,22 @@ internal sealed class CodexAppServerThreadsClient
                 $"thread/resume returned no thread id. Raw result: {result}");
         }
         return new CodexThread(id, result);
+    }
+
+    private static bool HasNonEmptyHistory(JsonElement? history)
+    {
+        if (history is not { } h || h.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return false;
+        }
+
+        if (h.ValueKind == JsonValueKind.Array)
+        {
+            var e = h.EnumerateArray();
+            return e.MoveNext();
+        }
+
+        return true;
     }
 
     public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
