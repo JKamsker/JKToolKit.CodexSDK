@@ -346,6 +346,10 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                     _logger.LogDebug("Captured session id {SessionId} from process output after {ElapsedMilliseconds} ms", capturedId, sw.ElapsedMilliseconds);
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 captureException = ex;
@@ -365,6 +369,10 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                         )
                         .ConfigureAwait(false);
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     if (_clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
@@ -378,10 +386,14 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
 
                     if (newSessionFileTask is null)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         throw new InvalidOperationException(
-                            "Failed to locate the session log file by session id. " +
-                            "Uncorrelated session file discovery is disabled; enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow " +
-                            "time-based discovery of any new session log file.",
+                            BuildStartFailureMessage(
+                                "Failed to locate the session log file by session id.",
+                                "Uncorrelated session file discovery is disabled; enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow time-based discovery of any new session log file.",
+                                getStartStdoutDiag,
+                                getStartStderrDiag),
                             ex);
                     }
 
@@ -392,15 +404,14 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             {
                 if (newSessionFileTask is null)
                 {
-                    var stdoutSnippet = getStartStdoutDiag().TrimEnd();
-                    var stderrSnippet = getStartStderrDiag().TrimEnd();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     throw new InvalidOperationException(
-                        "Failed to locate Codex session log file. " +
-                        "Codex did not emit a recognizable session id, and uncorrelated session file discovery is disabled. " +
-                        "Enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow time-based discovery of any new session log file. " +
-                        $"Captured stdout (first {SessionStartDiagCaptureChars} chars): {stdoutSnippet}. " +
-                        $"Captured stderr (first {SessionStartDiagCaptureChars} chars): {stderrSnippet}.",
+                        BuildStartFailureMessage(
+                            "Failed to locate Codex session log file.",
+                            "Codex did not emit a recognizable session id, and uncorrelated session file discovery is disabled. Enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow time-based discovery of any new session log file.",
+                            getStartStdoutDiag,
+                            getStartStderrDiag),
                         captureException);
                 }
 
@@ -408,16 +419,20 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 {
                     logPath = await newSessionFileTask.ConfigureAwait(false);
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
-                    var stdoutSnippet = getStartStdoutDiag().TrimEnd();
-                    var stderrSnippet = getStartStderrDiag().TrimEnd();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     throw new InvalidOperationException(
-                        "Failed to locate Codex session log file. " +
-                        "Codex did not emit a recognizable session id and no new JSONL session file was discovered. " +
-                        $"Captured stdout (first {SessionStartDiagCaptureChars} chars): {stdoutSnippet}. " +
-                        $"Captured stderr (first {SessionStartDiagCaptureChars} chars): {stderrSnippet}.",
+                        BuildStartFailureMessage(
+                            "Failed to locate Codex session log file.",
+                            "Codex did not emit a recognizable session id and no new JSONL session file was discovered.",
+                            getStartStdoutDiag,
+                            getStartStderrDiag),
                         captureException ?? ex);
                 }
             }
@@ -903,4 +918,66 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     private static readonly Regex SessionIdRegex = new(
         @"(?:session(?:[_\s-]?id)?|sid)\s*[:=]\s*([0-9a-fA-F\-]+)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private string BuildStartFailureMessage(
+        string headline,
+        string detail,
+        Func<string> getStdoutDiag,
+        Func<string> getStderrDiag)
+    {
+        if (_clientOptions.EnableDiagnosticCapture)
+        {
+            var stdoutSnippet = SanitizeDiagnostics(getStdoutDiag().TrimEnd());
+            var stderrSnippet = SanitizeDiagnostics(getStderrDiag().TrimEnd());
+
+            return $"{headline} {detail} " +
+                   $"Captured stdout (first {SessionStartDiagCaptureChars} chars, redacted): {stdoutSnippet}. " +
+                   $"Captured stderr (first {SessionStartDiagCaptureChars} chars, redacted): {stderrSnippet}.";
+        }
+
+        return $"{headline} {detail} Diagnostic capture is disabled; set CodexClientOptions.EnableDiagnosticCapture=true to include redacted stdout/stderr snippets.";
+    }
+
+    private static readonly Regex EmailRegex = new(
+        @"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}",
+        RegexOptions.Compiled);
+
+    private static readonly Regex BearerRegex = new(
+        @"(?i)(authorization\s*[:=]\s*bearer\s+)([^\s""]+)",
+        RegexOptions.Compiled);
+
+    private static readonly Regex KeyValueSecretRegex = new(
+        @"(?i)\b(api[_-]?key|token|access[_-]?token|refresh[_-]?token|openai[_-]?api[_-]?key|github[_-]?token)\b\s*[:=]\s*([^\s""]+)",
+        RegexOptions.Compiled);
+
+    private static readonly Regex OpenAiSkRegex = new(
+        @"\bsk-[A-Za-z0-9]{20,}\b",
+        RegexOptions.Compiled);
+
+    private static readonly Regex GitHubTokenRegex = new(
+        @"\b(gho|ghp|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b",
+        RegexOptions.Compiled);
+
+    private static readonly Regex AwsAccessKeyRegex = new(
+        @"\bAKIA[0-9A-Z]{16}\b",
+        RegexOptions.Compiled);
+
+    private static string SanitizeDiagnostics(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return string.Empty;
+        }
+
+        var sanitized = input;
+
+        sanitized = BearerRegex.Replace(sanitized, "$1[REDACTED]");
+        sanitized = KeyValueSecretRegex.Replace(sanitized, m => $"{m.Groups[1].Value}=[REDACTED]");
+        sanitized = OpenAiSkRegex.Replace(sanitized, "sk-[REDACTED]");
+        sanitized = GitHubTokenRegex.Replace(sanitized, "[REDACTED_TOKEN]");
+        sanitized = AwsAccessKeyRegex.Replace(sanitized, "AKIA[REDACTED]");
+        sanitized = EmailRegex.Replace(sanitized, "[REDACTED_EMAIL]");
+
+        return sanitized;
+    }
 }
