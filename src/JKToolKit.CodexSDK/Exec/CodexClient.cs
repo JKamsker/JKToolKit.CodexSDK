@@ -33,6 +33,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     private readonly ICodexPathProvider _pathProvider;
     private readonly ILogger<CodexClient> _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly CodexReviewRunner _reviewRunner;
     private RateLimits? _cachedRateLimits;
     private DateTimeOffset? _cachedRateLimitsTimestamp;
 
@@ -97,7 +98,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     /// <inheritdoc />
     public async Task<CodexReviewResult> ReviewAsync(CodexReviewOptions options, CancellationToken cancellationToken = default)
     {
-        return await ReviewAsync(options, standardOutputWriter: null, standardErrorWriter: null, cancellationToken).ConfigureAwait(false);
+        return await _reviewRunner.ReviewAsync(options, standardOutputWriter: null, standardErrorWriter: null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -114,115 +115,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         TextWriter? standardErrorWriter,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        _clientOptions.Validate();
-        options.Validate();
-
-        using var process = await _processLauncher.StartReviewAsync(options, _clientOptions, cancellationToken).ConfigureAwait(false);
-
-        var stdoutCapture = new StringBuilder();
-        var stderrCapture = new StringBuilder();
-
-        var pumpStdoutTask = PumpStreamAsync(process.StandardOutput, standardOutputWriter, stdoutCapture, cancellationToken);
-        var pumpStderrTask = PumpStreamAsync(process.StandardError, standardErrorWriter, stderrCapture, cancellationToken);
-
-        try
-        {
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            await Task.WhenAll(pumpStdoutTask, pumpStderrTask).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            TryKill(process);
-
-            try
-            {
-                await Task.WhenAll(pumpStdoutTask, pumpStderrTask).ConfigureAwait(false);
-            }
-            catch
-            {
-                // Best-effort cleanup.
-            }
-
-            throw;
-        }
-
-        var stdoutText = stdoutCapture.ToString().TrimEnd();
-        var stderrText = stderrCapture.ToString().TrimEnd();
-
-        SessionId? sessionId = null;
-        if (CodexClientRegexes.SessionIdRegex().Match(stdoutText) is { Success: true } stdoutMatch &&
-            SessionId.TryParse(stdoutMatch.Groups[1].Value, out var stdoutId))
-        {
-            sessionId = stdoutId;
-        }
-        else if (CodexClientRegexes.SessionIdRegex().Match(stderrText) is { Success: true } stderrMatch &&
-                 SessionId.TryParse(stderrMatch.Groups[1].Value, out var stderrId))
-        {
-            sessionId = stderrId;
-        }
-
-        string? logPath = null;
-        if (sessionId is { } sid)
-        {
-            try
-            {
-                var sessionsRoot = GetEffectiveSessionsRootDirectory();
-                logPath = await _sessionLocator.FindSessionLogAsync(sid, sessionsRoot, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Failed to resolve session log path for review session id {SessionId}", sid);
-            }
-        }
-
-        return new CodexReviewResult(process.ExitCode, stdoutText, stderrText)
-        {
-            SessionId = sessionId,
-            LogPath = logPath
-        };
-    }
-
-    private static async Task PumpStreamAsync(
-        StreamReader reader,
-        TextWriter? mirror,
-        StringBuilder capture,
-        CancellationToken cancellationToken)
-    {
-        var buffer = new char[4096];
-        while (true)
-        {
-            var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-            {
-                break;
-            }
-
-            capture.Append(buffer, 0, read);
-
-            if (mirror is not null)
-            {
-                await mirror.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                await mirror.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-    }
-
-    private static void TryKill(Process process)
-    {
-        try
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
-        }
-        catch
-        {
-            // Best-effort.
-        }
+        return await _reviewRunner.ReviewAsync(options, standardOutputWriter, standardErrorWriter, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -280,6 +173,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>());
         _tailer = tailer ?? new JsonlTailer(fileSystem, _loggerFactory.CreateLogger<JsonlTailer>(), Options.Create(_clientOptions));
         _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>());
+        _reviewRunner = new CodexReviewRunner(_clientOptions, _processLauncher, _sessionLocator, _pathProvider, _logger);
     }
 
     /// <inheritdoc />
