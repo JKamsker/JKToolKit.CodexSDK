@@ -25,8 +25,8 @@ public sealed class StructuredReviewSettings : CommandSettings
     [CommandArgument(0, "[PROMPT]")]
     public string[] Prompt { get; init; } = [];
 
-    [CommandOption("--max-retries <N>")]
-    public int MaxRetries { get; init; } = 3;
+    [CommandOption("--max-attempts|--max-retries <N>")]
+    public int MaxAttempts { get; init; } = 3;
 
     [CommandOption("--base <BRANCH>")]
     public string? BaseBranch { get; init; }

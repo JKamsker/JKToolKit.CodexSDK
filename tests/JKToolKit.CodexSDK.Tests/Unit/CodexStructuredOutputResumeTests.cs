@@ -88,8 +88,10 @@ public sealed class CodexStructuredOutputResumeTests
 
             static async IAsyncEnumerable<CodexEvent> Events()
             {
-                yield return new AgentMessageEvent { Type = "agent_message", Timestamp = DateTimeOffset.UtcNow, RawPayload = JsonDocument.Parse("{}").RootElement, Text = "{\"answer\":\"ok\"}" };
-                yield return new TaskCompleteEvent { Type = "task_complete", Timestamp = DateTimeOffset.UtcNow, RawPayload = JsonDocument.Parse("{}").RootElement, LastAgentMessage = "{\"answer\":\"ok\"}" };
+                using var rawDoc = JsonDocument.Parse("{}");
+                var payload = rawDoc.RootElement.Clone();
+                yield return new AgentMessageEvent { Type = "agent_message", Timestamp = DateTimeOffset.UtcNow, RawPayload = payload, Text = "{\"answer\":\"ok\"}" };
+                yield return new TaskCompleteEvent { Type = "task_complete", Timestamp = DateTimeOffset.UtcNow, RawPayload = payload, LastAgentMessage = "{\"answer\":\"ok\"}" };
                 await Task.CompletedTask;
             }
         }
@@ -107,4 +109,3 @@ public sealed class CodexStructuredOutputResumeTests
         }
     }
 }
-

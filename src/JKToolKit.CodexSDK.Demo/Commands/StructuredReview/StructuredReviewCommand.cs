@@ -48,7 +48,32 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
         var ct = cts.Token;
 
         var workingDirectory = settings.WorkingDirectory ?? Directory.GetCurrentDirectory();
-        var prompt = BuildPrompt(settings);
+        var customPrompt = ResolveCustomPrompt(settings);
+        if (customPrompt is null)
+        {
+            var scopeCount = 0;
+            if (!string.IsNullOrWhiteSpace(settings.BaseBranch)) scopeCount++;
+            if (!string.IsNullOrWhiteSpace(settings.CommitSha)) scopeCount++;
+            if (!string.IsNullOrWhiteSpace(settings.CommitsSince)) scopeCount++;
+
+            if (scopeCount > 1)
+            {
+                LogLine("[red]Invalid scope options: choose only one of --base, --commit, or --since (or omit all to review the full repository).[/]");
+                if (cancelHandler is not null)
+                {
+                    Console.CancelKeyPress -= cancelHandler;
+                }
+                return 1;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(settings.BaseBranch)
+                 || !string.IsNullOrWhiteSpace(settings.CommitSha)
+                 || !string.IsNullOrWhiteSpace(settings.CommitsSince))
+        {
+            LogLine("[yellow]Note: scope options (--base/--commit/--since) are ignored when an explicit prompt is provided.[/]");
+        }
+
+        var prompt = BuildPrompt(settings, customPrompt);
 
         var model = string.IsNullOrWhiteSpace(settings.Model)
             ? CodexModel.Default
@@ -62,7 +87,7 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
         LogLine($"[dim]Directory:[/]    {Markup.Escape(workingDirectory)}");
         LogLine($"[dim]Model:[/]        {Markup.Escape(model.Value)}");
         LogLine($"[dim]Reasoning:[/]    {Markup.Escape(reasoning.Value)}");
-        LogLine($"[dim]Retries:[/]      {settings.MaxRetries}");
+        LogLine($"[dim]Attempts:[/]     {settings.MaxAttempts}");
 
         if (!string.IsNullOrWhiteSpace(settings.BaseBranch))
             LogLine($"[dim]Base branch:[/]  {Markup.Escape(settings.BaseBranch)}");
@@ -194,13 +219,19 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
                 result = await sdk.Exec.RunStructuredWithRetryAsync<StructuredReviewResult>(
                     sessionOptions,
                     progress,
-                    retry: new CodexStructuredRetryOptions { MaxAttempts = settings.MaxRetries },
+                    retry: new CodexStructuredRetryOptions { MaxAttempts = settings.MaxAttempts },
                     ct: ct);
             }
             finally
             {
                 progressCts.Cancel();
                 try { await heartbeatTask.ConfigureAwait(false); } catch { /* best-effort */ }
+            }
+
+            if (result.Value is null)
+            {
+                LogLine("[red]Structured review returned no result (null).[/]");
+                return 1;
             }
 
             RenderResult(result.Value);
@@ -237,8 +268,13 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
 
     private static void RenderResult(StructuredReviewResult review)
     {
+        var summary = review.Summary ?? string.Empty;
+        var severity = review.Severity ?? "unknown";
+        var issues = review.Issues ?? [];
+        var fixTasks = review.FixTasks ?? [];
+
         // Summary panel
-        var severityColor = review.Severity.ToLowerInvariant() switch
+        var severityColor = severity.ToLowerInvariant() switch
         {
             "clean" => "green",
             "low" => "blue",
@@ -248,15 +284,15 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
             _ => "white"
         };
 
-        AnsiConsole.Write(new Panel(review.Summary)
-            .Header($"[{severityColor}]Review — {review.Severity.ToUpperInvariant()}[/]")
-            .BorderColor(review.Severity.ToLowerInvariant() is "clean" or "low" ? Color.Green : Color.Yellow));
+        AnsiConsole.Write(new Panel(summary)
+            .Header($"[{severityColor}]Review — {severity.ToUpperInvariant()}[/]")
+            .BorderColor(severity.ToLowerInvariant() is "clean" or "low" ? Color.Green : Color.Yellow));
 
         // Issues table
-        if (review.Issues.Count > 0)
+        if (issues.Count > 0)
         {
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine($"[bold]Issues ({review.Issues.Count}):[/]");
+            AnsiConsole.MarkupLine($"[bold]Issues ({issues.Count}):[/]");
 
             var table = new Table()
                 .Border(TableBorder.Rounded)
@@ -266,9 +302,14 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
                 .AddColumn("Severity")
                 .AddColumn("Description");
 
-            foreach (var issue in review.Issues)
+            foreach (var issue in issues)
             {
-                var issueSevColor = issue.Severity.ToLowerInvariant() switch
+                var issueFilePath = issue.FilePath ?? "(unknown)";
+                var issueCategory = issue.Category ?? "other";
+                var issueSeverity = issue.Severity ?? "info";
+                var issueDescription = issue.Description ?? string.Empty;
+
+                var issueSevColor = issueSeverity.ToLowerInvariant() switch
                 {
                     "critical" => "red bold",
                     "error" => "red",
@@ -277,11 +318,11 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
                 };
 
                 table.AddRow(
-                    Markup.Escape(issue.FilePath),
+                    Markup.Escape(issueFilePath),
                     Markup.Escape(issue.LineRange ?? "-"),
-                    Markup.Escape(issue.Category),
-                    $"[{issueSevColor}]{Markup.Escape(issue.Severity)}[/]",
-                    Markup.Escape(issue.Description));
+                    Markup.Escape(issueCategory),
+                    $"[{issueSevColor}]{Markup.Escape(issueSeverity)}[/]",
+                    Markup.Escape(issueDescription));
             }
 
             AnsiConsole.Write(table);
@@ -292,16 +333,19 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
         }
 
         // Fix tasks
-        if (review.FixTasks.Count > 0)
+        if (fixTasks.Count > 0)
         {
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine($"[bold]Fix Tasks ({review.FixTasks.Count}):[/]");
+            AnsiConsole.MarkupLine($"[bold]Fix Tasks ({fixTasks.Count}):[/]");
 
-            foreach (var task in review.FixTasks.OrderBy(t => t.Priority))
+            foreach (var task in fixTasks.OrderBy(t => t.Priority))
             {
-                var tree = new Tree($"[bold]P{task.Priority}[/] {Markup.Escape(task.Title)}");
-                tree.AddNode($"[dim]{Markup.Escape(task.Description)}[/]");
-                tree.AddNode($"Files: {Markup.Escape(string.Join(", ", task.AffectedFiles))}");
+                var title = task.Title ?? "(untitled)";
+                var description = task.Description ?? string.Empty;
+
+                var tree = new Tree($"[bold]P{task.Priority}[/] {Markup.Escape(title)}");
+                tree.AddNode($"[dim]{Markup.Escape(description)}[/]");
+                tree.AddNode($"Files: {Markup.Escape(string.Join(", ", task.AffectedFiles ?? []))}");
                 AnsiConsole.Write(tree);
             }
         }
@@ -311,10 +355,9 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
         }
     }
 
-    private static string BuildPrompt(StructuredReviewSettings settings)
+    private static string BuildPrompt(StructuredReviewSettings settings, string? customPrompt)
     {
         // If the user supplied an explicit prompt, use it as-is.
-        var customPrompt = ResolveCustomPrompt(settings);
         if (customPrompt is not null)
             return customPrompt;
 

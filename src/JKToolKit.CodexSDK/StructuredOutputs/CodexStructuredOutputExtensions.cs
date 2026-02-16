@@ -602,6 +602,10 @@ public static class CodexStructuredOutputExtensions
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(client);
+        if (string.IsNullOrWhiteSpace(threadId))
+        {
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        }
         ArgumentNullException.ThrowIfNull(options);
 
         retry ??= new CodexStructuredRetryOptions();
@@ -612,6 +616,9 @@ public static class CodexStructuredOutputExtensions
             throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
         }
 
+        var serializerOptions = structured.SerializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var schema = CodexJsonSchemaGenerator.Generate<T>(serializerOptions);
+
         CodexStructuredOutputParseException? lastParse = null;
         for (var attempt = 1; attempt <= retry.MaxAttempts; attempt++)
         {
@@ -621,7 +628,33 @@ public static class CodexStructuredOutputExtensions
             {
                 if (attempt == 1)
                 {
-                    return await client.RunTurnStructuredAsync<T>(threadId, options, structured, ct).ConfigureAwait(false);
+                    var effective = new TurnStartOptions
+                    {
+                        Input = options.Input,
+                        Cwd = options.Cwd,
+                        ApprovalPolicy = options.ApprovalPolicy,
+                        SandboxPolicy = options.SandboxPolicy,
+                        Model = options.Model,
+                        Effort = options.Effort,
+                        Summary = options.Summary,
+                        Personality = options.Personality,
+                        CollaborationMode = options.CollaborationMode,
+                        OutputSchema = schema
+                    };
+
+                    await using var turn = await client.StartTurnAsync(threadId, effective, ct).ConfigureAwait(false);
+
+                    var raw = await CaptureAppServerFinalTextAsync(turn, ct).ConfigureAwait(false);
+                    var (value, json) = DeserializeStructured<T>(raw, structured, serializerOptions);
+
+                    return new CodexStructuredResult<T>
+                    {
+                        Value = value,
+                        RawJson = json,
+                        RawText = raw,
+                        ThreadId = turn.ThreadId,
+                        TurnId = turn.TurnId
+                    };
                 }
 
                 var retryPrompt = retry.BuildRetryPrompt(new CodexStructuredRetryContext
@@ -644,10 +677,23 @@ public static class CodexStructuredOutputExtensions
                     Effort = options.Effort,
                     Summary = options.Summary,
                     Personality = options.Personality,
-                    CollaborationMode = options.CollaborationMode
+                    CollaborationMode = options.CollaborationMode,
+                    OutputSchema = schema
                 };
 
-                return await client.RunTurnStructuredAsync<T>(threadId, next, structured, ct).ConfigureAwait(false);
+                await using var retryTurn = await client.StartTurnAsync(threadId, next, ct).ConfigureAwait(false);
+
+                var rawRetry = await CaptureAppServerFinalTextAsync(retryTurn, ct).ConfigureAwait(false);
+                var (retryValue, retryJson) = DeserializeStructured<T>(rawRetry, structured, serializerOptions);
+
+                return new CodexStructuredResult<T>
+                {
+                    Value = retryValue,
+                    RawJson = retryJson,
+                    RawText = rawRetry,
+                    ThreadId = retryTurn.ThreadId,
+                    TurnId = retryTurn.TurnId
+                };
             }
             catch (CodexStructuredOutputParseException ex)
             {

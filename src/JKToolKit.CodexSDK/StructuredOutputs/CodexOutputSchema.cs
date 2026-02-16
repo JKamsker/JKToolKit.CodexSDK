@@ -32,8 +32,16 @@ public sealed record CodexOutputSchema
     /// <summary>
     /// Creates an output schema from an in-memory JSON Schema object.
     /// </summary>
-    public static CodexOutputSchema FromJson(JsonElement schema) =>
-        new(CodexOutputSchemaKind.Json, schema, filePath: null);
+    public static CodexOutputSchema FromJson(JsonElement schema)
+    {
+        if (schema.ValueKind == JsonValueKind.Undefined)
+        {
+            throw new ArgumentException("Schema JSON cannot be undefined.", nameof(schema));
+        }
+
+        // Clone to ensure the schema remains valid even if the source JsonDocument is disposed.
+        return new(CodexOutputSchemaKind.Json, schema.Clone(), filePath: null);
+    }
 
     /// <summary>
     /// Creates an output schema from an on-disk JSON Schema file path.

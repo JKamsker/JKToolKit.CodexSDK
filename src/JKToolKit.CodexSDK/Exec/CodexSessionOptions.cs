@@ -245,7 +245,22 @@ public class CodexSessionOptions
 
         if (_outputSchema is { } schema)
         {
-            if (_additionalOptions.Any(o => string.Equals(o, "--output-schema", StringComparison.Ordinal)))
+            static bool IsOutputSchemaArg(string? arg)
+            {
+                if (string.IsNullOrWhiteSpace(arg))
+                {
+                    return false;
+                }
+
+                if (arg.Equals("--output-schema", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return arg.StartsWith("--output-schema=", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (_additionalOptions.Any(IsOutputSchemaArg))
             {
                 throw new InvalidOperationException("Do not specify '--output-schema' in AdditionalOptions when OutputSchema is set.");
             }
