@@ -37,3 +37,12 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 ## Phase 2 - Validation
 
 - [x] T020 Run `dotnet test` and confirm all tests pass.
+
+## Phase 3 - CodeRabbit follow-ups
+
+- [ ] T030 Redact and truncate JSONL parser logging (avoid logging raw JSONL lines).
+- [ ] T031 Harden JSONL event parsing against non-object payload shapes.
+- [ ] T032 Remove completed turns from app-server turn tracking (avoid unbounded growth).
+- [ ] T033 Tighten ReadOnlyAccess override rejection detection (avoid false negatives/poisoning).
+- [ ] T034 Sanitize remote error `Data` and sandboxPolicy JSON before embedding in exception messages.
+- [ ] T035 Reduce session scanning cost in rate limits lookup (avoid enumerating/parsing all sessions).
