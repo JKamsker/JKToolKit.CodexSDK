@@ -237,6 +237,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         await _rpc.DisposeAsync();
         await _process.DisposeAsync();
 
+        try { await _processExitWatcher.ConfigureAwait(false); } catch { /* ignore */ }
         try { _disposeCts.Dispose(); } catch { /* ignore */ }
     }
 
@@ -256,7 +257,18 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             return;
         }
 
-        SignalDisconnect(BuildDisconnectException());
+        try
+        {
+            SignalDisconnect(BuildDisconnectException());
+        }
+        catch
+        {
+            SignalDisconnect(new CodexAppServerDisconnectedException(
+                "Codex app-server subprocess disconnected.",
+                processId: null,
+                exitCode: null,
+                stderrTail: Array.Empty<string>()));
+        }
     }
 
     private Exception BuildDisconnectException()
@@ -272,8 +284,11 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         }
 
         var stderrTail = CodexDiagnosticsSanitizer.SanitizeLines(stderrTailRaw, maxLines: 20, maxCharsPerLine: 400);
-        var exitCode = _process.ExitCode;
-        var pid = _process.ProcessId;
+
+        int? exitCode = null;
+        int? pid = null;
+        try { exitCode = _process.ExitCode; } catch { /* ignore */ }
+        try { pid = _process.ProcessId; } catch { /* ignore */ }
 
         var msg = exitCode is null
             ? "Codex app-server subprocess disconnected."
