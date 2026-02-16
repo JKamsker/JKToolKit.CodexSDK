@@ -63,24 +63,32 @@ public sealed class SourceFileSizeGuardTests
 
     private static int CountLines(string path)
     {
-        var count = 0;
-        foreach (var _ in File.ReadLines(path))
-        {
-            count++;
-        }
-        return count;
+        return File.ReadLines(path).Count();
     }
 
     private static string FindRepoRoot()
     {
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        if (TryFindRepoRoot(Directory.GetCurrentDirectory(), out var root) ||
+            TryFindRepoRoot(AppContext.BaseDirectory, out root))
+        {
+            return root;
+        }
+
+        throw new InvalidOperationException("Could not locate repo root (JKToolKit.CodexSDK.sln) from current directory or AppContext.BaseDirectory.");
+    }
+
+    private static bool TryFindRepoRoot(string startDirectory, out string root)
+    {
+        for (var dir = new DirectoryInfo(startDirectory); dir is not null; dir = dir.Parent)
         {
             if (File.Exists(Path.Combine(dir.FullName, "JKToolKit.CodexSDK.sln")))
             {
-                return dir.FullName;
+                root = dir.FullName;
+                return true;
             }
         }
 
-        throw new InvalidOperationException("Could not locate repo root from AppContext.BaseDirectory.");
+        root = string.Empty;
+        return false;
     }
 }
