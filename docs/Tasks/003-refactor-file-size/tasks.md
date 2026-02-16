@@ -8,12 +8,12 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 
 **Scope**: `src/` only (tests and demos are out of scope for the size limit).
 
-## Phase 0 — Tracking & guardrails
+## Phase 0 - Tracking & guardrails
 
-- [ ] T001 Add a unit-test guard that fails if any `src/**/*.cs` file exceeds 500 lines (and prints soft warnings for >300).
-- [ ] T002 Verify the guard passes in CI (`dotnet test`).
+- [x] T001 Add a unit-test guard that fails if any `src/**/*.cs` file exceeds 500 lines (and prints soft warnings for >300).
+- [x] T002 Verify the guard passes in CI (`dotnet test`).
 
-## Phase 1 — Refactor oversized `src/` files
+## Phase 1 - Refactor oversized `src/` files
 
 - [x] T010 Refactor `CodexAppServerClient` (split into composed internal modules; keep static parsing helpers callable via `CodexAppServerClient.*`).
   - [x] T010a Extract JSON/parsing helpers into internal modules; keep `CodexAppServerClient.*` entrypoints stable.
@@ -32,8 +32,8 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 - [x] T014 Refactor `CodexStructuredOutputExtensions` (split into internal helpers; keep public extensions).
 - [x] T015 Refactor `ResilientCodexAppServerClient` (extract adapter types so the file is <500).
 - [x] T016 Refactor `CodexProcessLauncher` (extract IO/diagnostics helpers; keep tested internals).
-- [ ] T017 Ensure all `src/` files now meet the 500-line max (aim <300 where reasonable).
+- [x] T017 Ensure all `src/` files now meet the 500-line max (aim <300 where reasonable).
 
-## Phase 2 — Validation
+## Phase 2 - Validation
 
-- [ ] T020 Run `dotnet test` and confirm all tests pass.
+- [x] T020 Run `dotnet test` and confirm all tests pass.
