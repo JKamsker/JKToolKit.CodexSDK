@@ -91,8 +91,18 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
                 return (_inner, Volatile.Read(ref _innerVersion));
             }
 
+            var priorState = _state;
             _state = CodexAppServerConnectionState.Restarting;
-            var created = await _startInner(ct).ConfigureAwait(false);
+            ICodexAppServerClientAdapter created;
+            try
+            {
+                created = await _startInner(ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                _state = priorState;
+                throw;
+            }
             SetInner(created);
             _state = CodexAppServerConnectionState.Connected;
             return (created, Volatile.Read(ref _innerVersion));
@@ -294,6 +304,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     private void SetInner(ICodexAppServerClientAdapter created)
     {
         _inner = created;
+        _lastDisconnect = null;
         var newVersion = Interlocked.Increment(ref _innerVersion);
         CancellationToken disposeToken;
         try
