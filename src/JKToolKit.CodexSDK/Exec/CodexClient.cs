@@ -21,10 +21,6 @@ namespace JKToolKit.CodexSDK.Exec;
 /// </summary>
 public sealed class CodexClient : ICodexClient, IAsyncDisposable
 {
-    private const int SessionIdScanWindowChars = 32 * 1024;
-    private const int SessionStartDiagCaptureChars = 8 * 1024;
-    private const string CodexHomeEnvVar = "CODEX_HOME";
-
     private readonly CodexClientOptions _clientOptions;
     private readonly ICodexProcessLauncher _processLauncher;
     private readonly ICodexSessionLocator _sessionLocator;
@@ -33,6 +29,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     private readonly ICodexPathProvider _pathProvider;
     private readonly ILogger<CodexClient> _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly CodexSessionRunner _sessionRunner;
     private readonly CodexReviewRunner _reviewRunner;
     private readonly CodexRateLimitsReader _rateLimitsReader;
 
@@ -57,39 +54,20 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     /// <inheritdoc />
     public async Task<ICodexSessionHandle> ResumeSessionAsync(SessionId sessionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        _clientOptions.Validate();
-
-        if (string.IsNullOrWhiteSpace(sessionId.Value))
-        {
-            throw new ArgumentException("SessionId cannot be empty.", nameof(sessionId));
-        }
-
-        var sessionsRoot = GetEffectiveSessionsRootDirectory();
-
-        var logPath = await _sessionLocator.FindSessionLogAsync(sessionId, sessionsRoot, cancellationToken).ConfigureAwait(false);
-
-        return await CreateHandleFromLogAsync(logPath, cancellationToken).ConfigureAwait(false);
+        return await _sessionRunner.ResumeSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<ICodexSessionHandle> AttachToLogAsync(string logFilePath, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        _clientOptions.Validate();
-
-        var validatedPath = await _sessionLocator.ValidateLogFileAsync(logFilePath, cancellationToken).ConfigureAwait(false);
-
-        return await CreateHandleFromLogAsync(validatedPath, cancellationToken).ConfigureAwait(false);
+        return await _sessionRunner.AttachToLogAsync(logFilePath, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public IAsyncEnumerable<CodexSessionInfo> ListSessionsAsync(SessionFilter? filter = null, CancellationToken cancellationToken = default)
     {
         _clientOptions.Validate();
-        var sessionsRoot = GetEffectiveSessionsRootDirectory();
+        var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
 
         return _sessionLocator.ListSessionsAsync(sessionsRoot, filter, cancellationToken);
     }
@@ -172,6 +150,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>());
         _tailer = tailer ?? new JsonlTailer(fileSystem, _loggerFactory.CreateLogger<JsonlTailer>(), Options.Create(_clientOptions));
         _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>());
+        _sessionRunner = new CodexSessionRunner(_clientOptions, _processLauncher, _sessionLocator, _tailer, _parser, _pathProvider, _loggerFactory, _logger);
         _reviewRunner = new CodexReviewRunner(_clientOptions, _processLauncher, _sessionLocator, _pathProvider, _logger);
         _rateLimitsReader = new CodexRateLimitsReader(_clientOptions, _sessionLocator, _tailer, _parser, _pathProvider, _logger);
     }
@@ -183,195 +162,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
-        ArgumentNullException.ThrowIfNull(options);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        _clientOptions.Validate();
-        options.Validate();
-
-        var (effectiveOptions, tempFiles) = MaterializeOutputSchemaIfNeeded(options);
-
-        // Resolve paths
-        var sessionsRoot = GetEffectiveSessionsRootDirectory();
-
-        var startTime = DateTimeOffset.UtcNow;
-        _logger.LogDebug("Starting Codex session at {StartTime} using sessions root {SessionsRoot}", startTime, sessionsRoot);
-
-        Process? process = null;
-        Task<string>? newSessionFileTask = null;
-        try
-        {
-            if (_clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
-            {
-                // Start watching for a new session log file BEFORE launching the process to avoid races where
-                // Codex creates the JSONL file very quickly and a baseline snapshot taken post-launch would miss it.
-                try
-                {
-                    newSessionFileTask = _sessionLocator.WaitForNewSessionFileAsync(
-                        sessionsRoot,
-                        startTime,
-                        _clientOptions.StartTimeout,
-                        cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    newSessionFileTask = Task.FromException<string>(ex);
-                }
-
-                _ = newSessionFileTask.ContinueWith(t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
-            }
-
-            var sw = Stopwatch.StartNew();
-            process = await _processLauncher.StartSessionAsync(effectiveOptions, _clientOptions, cancellationToken).ConfigureAwait(false);
-            _logger.LogDebug("Codex process started with PID {Pid} after {ElapsedMilliseconds} ms", process.Id, sw.ElapsedMilliseconds);
-            sw.Restart();
-
-            var captureTimeout = TimeSpan.FromSeconds(Math.Max(10, _clientOptions.StartTimeout.TotalSeconds));
-            var (sessionIdCaptureTask, getStartStdoutDiag, getStartStderrDiag) = StartLiveSessionStdIoDrain(process, cancellationToken);
-
-            // Locate the new session log file
-            string logPath;
-            SessionId? capturedId = null;
-            Exception? captureException = null;
-            try
-            {
-                capturedId = await WaitForResultOrTimeoutAsync(sessionIdCaptureTask, captureTimeout, cancellationToken).ConfigureAwait(false);
-                if (capturedId is not null)
-                {
-                    _logger.LogDebug("Captured session id {SessionId} from process output after {ElapsedMilliseconds} ms", capturedId, sw.ElapsedMilliseconds);
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                captureException = ex;
-                _logger.LogDebug(ex, "Failed to capture session id from process output after {ElapsedMilliseconds} ms; falling back to filesystem session discovery.", sw.ElapsedMilliseconds);
-            }
-
-            if (capturedId is { } sid)
-            {
-                try
-                {
-                    logPath = await _sessionLocator.WaitForSessionLogByIdAsync
-                        (
-                            sid,
-                            sessionsRoot,
-                            _clientOptions.StartTimeout,
-                            cancellationToken
-                        )
-                        .ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    if (_clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
-                    {
-                        _logger.LogDebug(ex, "Session log by id not found in time; falling back to uncorrelated session file discovery.");
-                    }
-                    else
-                    {
-                        _logger.LogDebug(ex, "Session log by id not found in time; uncorrelated session file discovery is disabled.");
-                    }
-
-                    if (newSessionFileTask is null)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        throw new InvalidOperationException(
-                            BuildStartFailureMessage(
-                                "Failed to locate the session log file by session id.",
-                                "Uncorrelated session file discovery is disabled; enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow time-based discovery of any new session log file.",
-                                getStartStdoutDiag,
-                                getStartStderrDiag),
-                            ex);
-                    }
-
-                    logPath = await newSessionFileTask.ConfigureAwait(false);
-                }
-            }
-            else
-            {
-                if (newSessionFileTask is null)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    throw new InvalidOperationException(
-                        BuildStartFailureMessage(
-                            "Failed to locate Codex session log file.",
-                            "Codex did not emit a recognizable session id, and uncorrelated session file discovery is disabled. Enable CodexClientOptions.EnableUncorrelatedNewSessionFileDiscovery to allow time-based discovery of any new session log file.",
-                            getStartStdoutDiag,
-                            getStartStderrDiag),
-                        captureException);
-                }
-
-                try
-                {
-                    logPath = await newSessionFileTask.ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    throw new InvalidOperationException(
-                        BuildStartFailureMessage(
-                            "Failed to locate Codex session log file.",
-                            "Codex did not emit a recognizable session id and no new JSONL session file was discovered.",
-                            getStartStdoutDiag,
-                            getStartStderrDiag),
-                        captureException ?? ex);
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(logPath))
-            {
-                throw new InvalidOperationException("Codex session log path was empty; cannot attach to session.");
-            }
-
-            // Extract session_meta
-            var sessionMeta = await WaitForSessionMetaAsync(process, logPath, cancellationToken).ConfigureAwait(false);
-
-            var sessionInfo = new CodexSessionInfo
-            (
-                Id: sessionMeta.SessionId,
-                LogPath: logPath,
-                CreatedAt: sessionMeta.Timestamp,
-                WorkingDirectory: sessionMeta.Cwd,
-                Model: null
-            );
-
-            return new CodexSessionHandle
-            (
-                sessionInfo,
-                _tailer,
-                _parser,
-                process,
-                _processLauncher,
-                _clientOptions.ProcessExitTimeout,
-                effectiveOptions.IdleTimeout,
-                _loggerFactory.CreateLogger<CodexSessionHandle>(),
-                tempFilesToDeleteOnDispose: tempFiles.Count == 0 ? null : tempFiles
-            );
-        }
-        catch
-        {
-            DeleteTempFilesBestEffort(tempFiles);
-            if (process != null)
-            {
-                await SafeTerminateAsync(process, cancellationToken).ConfigureAwait(false);
-            }
-
-            throw;
-        }
+        return await _sessionRunner.StartSessionAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -382,145 +173,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(options);
-
-        _clientOptions.Validate();
-        options.Validate();
-
-        var (effectiveOptions, tempFiles) = MaterializeOutputSchemaIfNeeded(options);
-
-        if (string.IsNullOrWhiteSpace(sessionId.Value))
-        {
-            throw new ArgumentException("SessionId cannot be empty.", nameof(sessionId));
-        }
-
-        var sessionsRoot = GetEffectiveSessionsRootDirectory();
-        var logPath = _pathProvider.ResolveSessionLogPath(sessionId, sessionsRoot);
-        await _sessionLocator.ValidateLogFileAsync(logPath, cancellationToken).ConfigureAwait(false);
-
-        Process? process = null;
-        try
-        {
-            process = await _processLauncher
-                .ResumeSessionAsync(sessionId, effectiveOptions, _clientOptions, cancellationToken)
-                .ConfigureAwait(false);
-
-            var captureTimeout = TimeSpan.FromMilliseconds(Math.Min(250, _clientOptions.StartTimeout.TotalMilliseconds / 4));
-            var (sessionIdCaptureTask, _, _) = StartLiveSessionStdIoDrain(process, cancellationToken);
-            try
-            {
-                var captured = await WaitForResultOrTimeoutAsync(sessionIdCaptureTask, captureTimeout, cancellationToken).ConfigureAwait(false);
-                if (captured != null && !captured.Value.Equals(sessionId))
-                {
-                    _logger.LogDebug("Captured session id {CapturedId} differs from requested {RequestedId}", captured, sessionId);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Failed to capture session id during resume; continuing.");
-            }
-
-            var sessionMeta = await ReadSessionMetaAsync(logPath, cancellationToken).ConfigureAwait(false);
-
-            var sessionInfo = new CodexSessionInfo
-            (
-                Id: sessionMeta.SessionId,
-                LogPath: logPath,
-                CreatedAt: sessionMeta.Timestamp,
-                WorkingDirectory: sessionMeta.Cwd,
-                Model: null
-            );
-
-            return new CodexSessionHandle
-            (
-                sessionInfo,
-                _tailer,
-                _parser,
-                process,
-                _processLauncher,
-                _clientOptions.ProcessExitTimeout,
-                effectiveOptions.IdleTimeout,
-                _loggerFactory.CreateLogger<CodexSessionHandle>(),
-                tempFilesToDeleteOnDispose: tempFiles.Count == 0 ? null : tempFiles
-            );
-        }
-        catch
-        {
-            DeleteTempFilesBestEffort(tempFiles);
-            if (process != null)
-            {
-                await SafeTerminateAsync(process, cancellationToken).ConfigureAwait(false);
-            }
-
-            throw;
-        }
-    }
-
-    private async Task<SessionMetaEvent> WaitForSessionMetaAsync
-    (
-        Process? process,
-        string logPath,
-        CancellationToken cancellationToken
-    )
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(_clientOptions.StartTimeout);
-
-        var metaTask = ReadSessionMetaAsync(logPath, timeoutCts.Token);
-
-        if (process != null)
-        {
-            var exitTask = process.WaitForExitAsync(cancellationToken);
-            var completed = await Task.WhenAny(metaTask, exitTask).ConfigureAwait(false);
-
-            if (completed == exitTask)
-            {
-                timeoutCts.Cancel();
-                throw new InvalidOperationException($"Codex process exited with code {process.ExitCode} before session_meta was received.");
-            }
-        }
-
-        try
-        {
-            return await metaTask.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException("Timed out waiting for session_meta event during start.");
-        }
-    }
-
-    private async Task<SessionMetaEvent> ReadSessionMetaAsync(string logPath, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var lines = _tailer.TailAsync(logPath, EventStreamOptions.Default, cancellationToken);
-        var events = _parser.ParseAsync(lines, cancellationToken);
-
-        await foreach (var evt in events.WithCancellation(cancellationToken))
-        {
-            if (evt is SessionMetaEvent meta)
-            {
-                return meta;
-            }
-        }
-
-        throw new InvalidOperationException("Session stream ended before session_meta was received.");
-    }
-
-    private async Task SafeTerminateAsync(Process process, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _processLauncher.TerminateProcessAsync(process, _clientOptions.ProcessExitTimeout, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Failed to terminate Codex process after start failure.");
-        }
+        return await _sessionRunner.ResumeSessionAsync(sessionId, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -536,247 +189,12 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 
-    private async Task<ICodexSessionHandle> CreateHandleFromLogAsync(string logPath, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var meta = await ReadSessionMetaAsync(logPath, cancellationToken).ConfigureAwait(false);
-
-        var sessionInfo = new CodexSessionInfo
-        (
-            Id: meta.SessionId,
-            LogPath: logPath,
-            CreatedAt: meta.Timestamp,
-            WorkingDirectory: meta.Cwd,
-            Model: null
-        );
-
-        return new CodexSessionHandle
-        (
-            sessionInfo,
-            _tailer,
-            _parser,
-            process: null,
-            _processLauncher,
-            _clientOptions.ProcessExitTimeout,
-            idleTimeout: null,
-            _loggerFactory.CreateLogger<CodexSessionHandle>(),
-            tempFilesToDeleteOnDispose: null
-        );
-    }
-
-    private static (CodexSessionOptions Effective, List<string> TempFiles) MaterializeOutputSchemaIfNeeded(CodexSessionOptions options)
-    {
-        if (options.OutputSchema is not { Kind: CodexOutputSchemaKind.Json, Json: { } jsonSchema })
-        {
-            return (options, new List<string>());
-        }
-
-        var tempPath = Path.Combine(Path.GetTempPath(), $"codex-output-schema-{Guid.NewGuid():N}.json");
-        // Codex CLI expects plain UTF-8 JSON. Some parsers reject a UTF-8 BOM, so avoid emitting it.
-        File.WriteAllText(tempPath, jsonSchema.GetRawText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-
-        var effective = options.Clone();
-        effective.OutputSchema = CodexOutputSchema.FromFile(tempPath);
-
-        return (effective, new List<string> { tempPath });
-    }
-
-    private static void DeleteTempFilesBestEffort(IReadOnlyList<string> tempFiles)
-    {
-        if (tempFiles.Count == 0)
-        {
-            return;
-        }
-
-        foreach (var path in tempFiles)
-        {
-            try
-            {
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
-            }
-            catch
-            {
-                // Best-effort.
-            }
-        }
-    }
-
     /// <summary>
     /// Retrieves the most recent rate limit snapshot emitted by Codex.
     /// </summary>
     /// <param name="noCache">When true, forces reading the latest session logs.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>RateLimits if found; otherwise null.</returns>
-    public async Task<RateLimits?> GetRateLimitsAsync(bool noCache = false, CancellationToken cancellationToken = default)
-    {
-        return await _rateLimitsReader.GetRateLimitsAsync(noCache, cancellationToken).ConfigureAwait(false);
-    }
-
-    private string GetEffectiveSessionsRootDirectory() =>
-        CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
-
-    private (Task<SessionId?> SessionIdTask, Func<string> GetStdoutDiag, Func<string> GetStderrDiag) StartLiveSessionStdIoDrain(
-        Process process,
-        CancellationToken cancellationToken)
-    {
-        var tcs = new TaskCompletionSource<SessionId?>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        // Capture a small prefix of stdout/stderr for diagnostics only.
-        // Most useful output is in the JSONL log, but this helps when Codex fails before emitting session_meta.
-        var stdoutDiag = new StringBuilder(capacity: SessionStartDiagCaptureChars);
-        var stderrDiag = new StringBuilder(capacity: SessionStartDiagCaptureChars);
-        var stdoutDiagLock = new object();
-        var stderrDiagLock = new object();
-
-        int drainCompleted = 0;
-
-        Task DrainAsync(StreamReader? reader, StringBuilder diag, object diagLock, string streamName) =>
-            Task.Run(async () =>
-            {
-                if (reader is null)
-                {
-                    if (Interlocked.Increment(ref drainCompleted) == 2)
-                        tcs.TrySetResult(null);
-                    return;
-                }
-
-                var scan = new StringBuilder(capacity: SessionIdScanWindowChars);
-                var buffer = new char[4096];
-
-                try
-                {
-                    while (true)
-                    {
-                        var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
-                        if (read == 0)
-                        {
-                            break;
-                        }
-
-                        lock (diagLock)
-                        {
-                            if (diag.Length < SessionStartDiagCaptureChars)
-                            {
-                                var remaining = SessionStartDiagCaptureChars - diag.Length;
-                                diag.Append(buffer, 0, Math.Min(read, remaining));
-                            }
-                        }
-
-                        if (!tcs.Task.IsCompleted)
-                        {
-                            scan.Append(buffer, 0, read);
-                            if (scan.Length > SessionIdScanWindowChars)
-                            {
-                                var tail = scan.ToString()[^SessionIdScanWindowChars..];
-                                scan.Clear();
-                                scan.Append(tail);
-                            }
-
-                            var match = CodexClientRegexes.SessionIdRegex().Match(scan.ToString());
-                            if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
-                            {
-                                tcs.TrySetResult(sessionId);
-                            }
-                        }
-                    }
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    // Caller cancelled; best-effort drain.
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogTrace(ex, "Error draining Codex process {Stream} during live session start", streamName);
-                }
-                finally
-                {
-                    if (Interlocked.Increment(ref drainCompleted) == 2)
-                        tcs.TrySetResult(null);
-                }
-            }, CancellationToken.None);
-
-        _ = DrainAsync(process.StartInfo.RedirectStandardOutput ? process.StandardOutput : null, stdoutDiag, stdoutDiagLock, "stdout");
-        _ = DrainAsync(process.StartInfo.RedirectStandardError ? process.StandardError : null, stderrDiag, stderrDiagLock, "stderr");
-
-        string GetStdoutDiag()
-        {
-            lock (stdoutDiagLock)
-            {
-                return stdoutDiag.ToString();
-            }
-        }
-
-        string GetStderrDiag()
-        {
-            lock (stderrDiagLock)
-            {
-                return stderrDiag.ToString();
-            }
-        }
-
-        return (tcs.Task, GetStdoutDiag, GetStderrDiag);
-    }
-
-    private static async Task<T?> WaitForResultOrTimeoutAsync<T>(
-        Task<T?> task,
-        TimeSpan timeout,
-        CancellationToken cancellationToken)
-    {
-        if (task.IsCompleted)
-            return await task.ConfigureAwait(false);
-
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(timeout);
-
-        try
-        {
-            return await task.WaitAsync(timeoutCts.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException($"Timed out after {timeout.TotalSeconds:0.###}s.");
-        }
-    }
-
-    private string BuildStartFailureMessage(
-        string headline,
-        string detail,
-        Func<string> getStdoutDiag,
-        Func<string> getStderrDiag)
-    {
-        if (_clientOptions.EnableDiagnosticCapture)
-        {
-            var stdoutSnippet = SanitizeDiagnostics(getStdoutDiag().TrimEnd());
-            var stderrSnippet = SanitizeDiagnostics(getStderrDiag().TrimEnd());
-
-            return $"{headline} {detail} " +
-                   $"Captured stdout (first {SessionStartDiagCaptureChars} chars, redacted): {stdoutSnippet}. " +
-                   $"Captured stderr (first {SessionStartDiagCaptureChars} chars, redacted): {stderrSnippet}.";
-        }
-
-        return $"{headline} {detail} Diagnostic capture is disabled; set CodexClientOptions.EnableDiagnosticCapture=true to include redacted stdout/stderr snippets.";
-    }
-
-    private static string SanitizeDiagnostics(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return string.Empty;
-        }
-
-        var sanitized = input;
-
-        sanitized = CodexClientRegexes.BearerRegex().Replace(sanitized, "$1[REDACTED]");
-        sanitized = CodexClientRegexes.KeyValueSecretRegex().Replace(sanitized, m => $"{m.Groups[1].Value}=[REDACTED]");
-        sanitized = CodexClientRegexes.OpenAiSkRegex().Replace(sanitized, "sk-[REDACTED]");
-        sanitized = CodexClientRegexes.GitHubTokenRegex().Replace(sanitized, "[REDACTED_TOKEN]");
-        sanitized = CodexClientRegexes.AwsAccessKeyRegex().Replace(sanitized, "AKIA[REDACTED]");
-        sanitized = CodexClientRegexes.EmailRegex().Replace(sanitized, "[REDACTED_EMAIL]");
-
-        return sanitized;
-    }
+    public Task<RateLimits?> GetRateLimitsAsync(bool noCache = false, CancellationToken cancellationToken = default) =>
+        _rateLimitsReader.GetRateLimitsAsync(noCache, cancellationToken);
 }
