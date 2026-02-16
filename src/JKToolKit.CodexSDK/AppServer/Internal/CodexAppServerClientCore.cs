@@ -173,6 +173,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
                 {
                     handle.CompletionTcs.TrySetResult(completed);
                     handle.EventsChannel.Writer.TryComplete();
+                    RemoveTurnHandle(turnId);
                 }
             }
         }
