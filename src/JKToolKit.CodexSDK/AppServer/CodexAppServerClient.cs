@@ -13,6 +13,7 @@ using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
@@ -1257,113 +1258,20 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }
     }
 
-    internal static string? ExtractId(JsonElement element, params string[] propertyNames)
-    {
-        if (element.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
+    internal static string? ExtractId(JsonElement element, params string[] propertyNames) =>
+        CodexAppServerClientJson.ExtractId(element, propertyNames);
 
-        foreach (var name in propertyNames)
-        {
-            if (element.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String)
-            {
-                return prop.GetString();
-            }
-        }
+    internal static string? ExtractThreadId(JsonElement result) =>
+        CodexAppServerClientJson.ExtractThreadId(result);
 
-        return null;
-    }
+    internal static string? ExtractTurnId(JsonElement result) =>
+        CodexAppServerClientJson.ExtractTurnId(result);
 
-    internal static string? ExtractThreadId(JsonElement result)
-    {
-        // Common shapes:
-        // - { "threadId": "..." }
-        // - { "id": "..." }
-        // - { "thread": { "id": "..." } }
-        // - { "thread": { "threadId": "..." } }
-        return ExtractId(result, "threadId", "id") ??
-               ExtractIdByPath(result, "thread", "threadId") ??
-               ExtractIdByPath(result, "thread", "id") ??
-               FindStringPropertyRecursive(result, propertyName: "threadId", maxDepth: 6);
-    }
+    internal static string? ExtractIdByPath(JsonElement element, string p1, string p2) =>
+        CodexAppServerClientJson.ExtractIdByPath(element, p1, p2);
 
-    internal static string? ExtractTurnId(JsonElement result)
-    {
-        // Common shapes:
-        // - { "turnId": "..." }
-        // - { "id": "..." }
-        // - { "turn": { "id": "..." } }
-        // - { "turn": { "turnId": "..." } }
-        return ExtractId(result, "turnId", "id") ??
-               ExtractIdByPath(result, "turn", "turnId") ??
-               ExtractIdByPath(result, "turn", "id") ??
-               FindStringPropertyRecursive(result, propertyName: "turnId", maxDepth: 6);
-    }
-
-    internal static string? ExtractIdByPath(JsonElement element, string p1, string p2)
-    {
-        if (element.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        if (!element.TryGetProperty(p1, out var child) || child.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        return ExtractId(child, p2);
-    }
-
-    internal static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth)
-    {
-        if (maxDepth < 0)
-        {
-            return null;
-        }
-
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-            {
-                if (element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String)
-                {
-                    var value = prop.GetString();
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        return value;
-                    }
-                }
-
-                foreach (var p in element.EnumerateObject())
-                {
-                    var found = FindStringPropertyRecursive(p.Value, propertyName, maxDepth - 1);
-                    if (!string.IsNullOrWhiteSpace(found))
-                    {
-                        return found;
-                    }
-                }
-
-                return null;
-            }
-            case JsonValueKind.Array:
-            {
-                foreach (var item in element.EnumerateArray())
-                {
-                    var found = FindStringPropertyRecursive(item, propertyName, maxDepth - 1);
-                    if (!string.IsNullOrWhiteSpace(found))
-                    {
-                        return found;
-                    }
-                }
-
-                return null;
-            }
-            default:
-                return null;
-        }
-    }
+    internal static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth) =>
+        CodexAppServerClientJson.FindStringPropertyRecursive(element, propertyName, maxDepth);
 
     private static string? TryGetTurnId(AppServerNotification notification) =>
         notification switch
@@ -1390,380 +1298,35 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             _ => null
         };
 
-    internal static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult)
-    {
-        var array =
-            TryGetArray(listResult, "threads") ??
-            TryGetArray(listResult, "items") ??
-            TryGetArray(listResult, "sessions");
+    internal static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult) =>
+        CodexAppServerClientThreadParsers.ParseThreadListThreads(listResult);
 
-        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<CodexThreadSummary>();
-        }
-
-        var threads = new List<CodexThreadSummary>();
-        foreach (var item in array.Value.EnumerateArray())
-        {
-            var summary = ParseThreadSummary(item);
-            if (summary is not null)
-            {
-                threads.Add(summary);
-            }
-        }
-
-        return threads;
-    }
-
-    internal static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject)
-    {
-        if (threadObject.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        var primary = TryGetObject(threadObject, "thread") ?? threadObject;
-
-        var threadId = ExtractThreadId(threadObject);
-        if (string.IsNullOrWhiteSpace(threadId))
-        {
-            return null;
-        }
-
-        var name =
-            GetStringOrNull(primary, "name") ??
-            GetStringOrNull(primary, "threadName") ??
-            GetStringOrNull(primary, "title");
-
-        var archived = GetBoolOrNull(primary, "archived");
-        var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
-        var cwd = GetStringOrNull(primary, "cwd");
-        var model = GetStringOrNull(primary, "model");
-
-        return new CodexThreadSummary
-        {
-            ThreadId = threadId,
-            Name = name,
-            Archived = archived,
-            CreatedAt = createdAt,
-            Cwd = cwd,
-            Model = model,
-            Raw = threadObject
-        };
-    }
+    internal static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject) =>
+        CodexAppServerClientThreadParsers.ParseThreadSummary(threadObject);
 
     internal static string? ExtractNextCursor(JsonElement listResult) =>
-        GetStringOrNull(listResult, "nextCursor") ??
-        GetStringOrNull(listResult, "cursor");
+        CodexAppServerClientThreadParsers.ExtractNextCursor(listResult);
 
-    internal static IReadOnlyList<string> ParseThreadLoadedListThreadIds(JsonElement loadedListResult)
-    {
-        var array =
-            TryGetArray(loadedListResult, "data") ??
-            TryGetArray(loadedListResult, "threads");
+    internal static IReadOnlyList<string> ParseThreadLoadedListThreadIds(JsonElement loadedListResult) =>
+        CodexAppServerClientThreadParsers.ParseThreadLoadedListThreadIds(loadedListResult);
 
-        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<string>();
-        }
+    internal static IReadOnlyList<SkillsListEntryResult> ParseSkillsListEntries(JsonElement skillsListResult) =>
+        CodexAppServerClientSkillsAppsParsers.ParseSkillsListEntries(skillsListResult);
 
-        var ids = new List<string>();
-        foreach (var item in array.Value.EnumerateArray())
-        {
-            if (item.ValueKind == JsonValueKind.String)
-            {
-                var id = item.GetString();
-                if (!string.IsNullOrWhiteSpace(id))
-                {
-                    ids.Add(id);
-                }
-            }
-        }
+    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(JsonElement skillsListResult) =>
+        CodexAppServerClientSkillsAppsParsers.ParseSkillsListSkills(skillsListResult);
 
-        return ids;
-    }
+    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(IReadOnlyList<SkillsListEntryResult> entries) =>
+        CodexAppServerClientSkillsAppsParsers.ParseSkillsListSkills(entries);
 
-    internal static IReadOnlyList<SkillsListEntryResult> ParseSkillsListEntries(JsonElement skillsListResult)
-    {
-        var data = TryGetArray(skillsListResult, "data");
-        if (data is not null && data.Value.ValueKind == JsonValueKind.Array)
-        {
-            var entries = new List<SkillsListEntryResult>();
-            foreach (var entry in data.Value.EnumerateArray())
-            {
-                if (entry.ValueKind != JsonValueKind.Object)
-                {
-                    continue;
-                }
+    internal static IReadOnlyList<AppDescriptor> ParseAppsListApps(JsonElement appsListResult) =>
+        CodexAppServerClientSkillsAppsParsers.ParseAppsListApps(appsListResult);
 
-                var cwd = GetStringOrNull(entry, "cwd");
+    internal static IReadOnlyList<RemoteSkillDescriptor> ParseRemoteSkillsReadSkills(JsonElement remoteSkillsResult) =>
+        CodexAppServerClientSkillsAppsParsers.ParseRemoteSkillsReadSkills(remoteSkillsResult);
 
-                var skills = new List<SkillDescriptor>();
-                var skillsArray = TryGetArray(entry, "skills");
-                if (skillsArray is not null && skillsArray.Value.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var skill in skillsArray.Value.EnumerateArray())
-                    {
-                        if (skill.ValueKind != JsonValueKind.Object)
-                        {
-                            continue;
-                        }
-
-                        var name = GetStringOrNull(skill, "name") ?? GetStringOrNull(skill, "id");
-                        if (string.IsNullOrWhiteSpace(name))
-                        {
-                            continue;
-                        }
-
-                        skills.Add(new SkillDescriptor
-                        {
-                            Name = name,
-                            Description = GetStringOrNull(skill, "description"),
-                            ShortDescription = GetStringOrNull(skill, "shortDescription"),
-                            Path = GetStringOrNull(skill, "path"),
-                            Enabled = GetBoolOrNull(skill, "enabled"),
-                            Cwd = cwd,
-                            Scope = GetStringOrNull(skill, "scope"),
-                            Dependencies = TryGetObject(skill, "dependencies"),
-                            Interface = TryGetObject(skill, "interface"),
-                            Raw = skill
-                        });
-                    }
-                }
-
-                var errors = new List<CodexSkillErrorInfo>();
-                var errorsArray = TryGetArray(entry, "errors");
-                if (errorsArray is not null && errorsArray.Value.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var err in errorsArray.Value.EnumerateArray())
-                    {
-                        if (err.ValueKind != JsonValueKind.Object)
-                        {
-                            continue;
-                        }
-
-                        errors.Add(new CodexSkillErrorInfo
-                        {
-                            Message = GetStringOrNull(err, "message"),
-                            Path = GetStringOrNull(err, "path"),
-                            Raw = err
-                        });
-                    }
-                }
-
-                entries.Add(new SkillsListEntryResult
-                {
-                    Cwd = cwd,
-                    Skills = skills,
-                    Errors = errors,
-                    Raw = entry
-                });
-            }
-
-            return entries;
-        }
-
-        var legacySkills = TryGetArray(skillsListResult, "skills") ?? TryGetArray(skillsListResult, "items");
-        if (legacySkills is not null && legacySkills.Value.ValueKind == JsonValueKind.Array)
-        {
-            var skills = new List<SkillDescriptor>();
-            foreach (var item in legacySkills.Value.EnumerateArray())
-            {
-                if (item.ValueKind != JsonValueKind.Object)
-                {
-                    continue;
-                }
-
-                var name = GetStringOrNull(item, "name") ?? GetStringOrNull(item, "id");
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    continue;
-                }
-
-                skills.Add(new SkillDescriptor
-                {
-                    Name = name,
-                    Description = GetStringOrNull(item, "description"),
-                    ShortDescription = GetStringOrNull(item, "shortDescription"),
-                    Path = GetStringOrNull(item, "path"),
-                    Enabled = GetBoolOrNull(item, "enabled"),
-                    Scope = GetStringOrNull(item, "scope"),
-                    Dependencies = TryGetObject(item, "dependencies"),
-                    Interface = TryGetObject(item, "interface"),
-                    Raw = item
-                });
-            }
-
-            return
-            [
-                new SkillsListEntryResult
-                {
-                    Cwd = null,
-                    Skills = skills,
-                    Errors = Array.Empty<CodexSkillErrorInfo>(),
-                    Raw = skillsListResult
-                }
-            ];
-        }
-
-        return Array.Empty<SkillsListEntryResult>();
-    }
-
-    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(JsonElement skillsListResult)
-    {
-        var entries = ParseSkillsListEntries(skillsListResult);
-        return ParseSkillsListSkills(entries);
-    }
-
-    internal static IReadOnlyList<SkillDescriptor> ParseSkillsListSkills(IReadOnlyList<SkillsListEntryResult> entries)
-    {
-        if (entries.Count == 0)
-        {
-            return Array.Empty<SkillDescriptor>();
-        }
-
-        return entries.SelectMany(e => e.Skills).ToArray();
-    }
-
-    internal static IReadOnlyList<AppDescriptor> ParseAppsListApps(JsonElement appsListResult)
-    {
-        var array =
-            TryGetArray(appsListResult, "data") ??
-            TryGetArray(appsListResult, "apps") ??
-            TryGetArray(appsListResult, "items");
-
-        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<AppDescriptor>();
-        }
-
-        var apps = new List<AppDescriptor>();
-        foreach (var item in array.Value.EnumerateArray())
-        {
-            if (item.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            apps.Add(new AppDescriptor
-            {
-                Id = GetStringOrNull(item, "id"),
-                Name = GetStringOrNull(item, "name"),
-                Description = GetStringOrNull(item, "description"),
-                LogoUrl = GetStringOrNull(item, "logoUrl") ?? GetStringOrNull(item, "logo_url"),
-                LogoUrlDark = GetStringOrNull(item, "logoUrlDark") ?? GetStringOrNull(item, "logo_url_dark"),
-                DistributionChannel = GetStringOrNull(item, "distributionChannel"),
-                InstallUrl = GetStringOrNull(item, "installUrl"),
-                IsAccessible = GetBoolOrNull(item, "isAccessible"),
-                IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
-                Title = GetStringOrNull(item, "title"),
-                DisabledReason = GetStringOrNull(item, "disabledReason"),
-                Raw = item
-            });
-        }
-
-        return apps;
-    }
-
-    internal static IReadOnlyList<RemoteSkillDescriptor> ParseRemoteSkillsReadSkills(JsonElement remoteSkillsResult)
-    {
-        var array =
-            TryGetArray(remoteSkillsResult, "data") ??
-            TryGetArray(remoteSkillsResult, "skills");
-
-        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<RemoteSkillDescriptor>();
-        }
-
-        var skills = new List<RemoteSkillDescriptor>();
-        foreach (var item in array.Value.EnumerateArray())
-        {
-            if (item.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            var id = GetStringOrNull(item, "id");
-            var name = GetStringOrNull(item, "name");
-            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name))
-            {
-                continue;
-            }
-
-            skills.Add(new RemoteSkillDescriptor
-            {
-                Id = id,
-                Name = name,
-                Description = GetStringOrNull(item, "description"),
-                Raw = item
-            });
-        }
-
-        return skills;
-    }
-
-    internal static ConfigRequirements? ParseConfigRequirementsReadRequirements(JsonElement configRequirementsReadResult, bool experimentalApiEnabled)
-    {
-        if (configRequirementsReadResult.ValueKind != JsonValueKind.Object ||
-            !configRequirementsReadResult.TryGetProperty("requirements", out var req) ||
-            req.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        var allowedApprovalPolicies = GetOptionalStringArray(req, "allowedApprovalPolicies")
-            ?.Select(CodexApprovalPolicy.Parse)
-            .ToArray();
-
-        var allowedSandboxModes = GetOptionalStringArray(req, "allowedSandboxModes")
-            ?.Select(CodexSandboxMode.Parse)
-            .ToArray();
-
-        var allowedWebSearchModes = GetOptionalStringArray(req, "allowedWebSearchModes")
-            ?.Select(CodexWebSearchMode.Parse)
-            .ToArray();
-
-        CodexResidencyRequirement? residency = null;
-        if (CodexResidencyRequirement.TryParse(GetStringOrNull(req, "enforceResidency"), out var r))
-        {
-            residency = r;
-        }
-
-        NetworkRequirements? network = null;
-        if (experimentalApiEnabled && TryGetObject(req, "network") is { } net)
-        {
-            network = ParseNetworkRequirements(net);
-        }
-
-        return new ConfigRequirements
-        {
-            AllowedApprovalPolicies = allowedApprovalPolicies,
-            AllowedSandboxModes = allowedSandboxModes,
-            AllowedWebSearchModes = allowedWebSearchModes,
-            EnforceResidency = residency,
-            Network = network,
-            Raw = req.Clone()
-        };
-    }
-
-    private static NetworkRequirements ParseNetworkRequirements(JsonElement network)
-    {
-        return new NetworkRequirements
-        {
-            Enabled = GetBoolOrNull(network, "enabled"),
-            HttpPort = GetInt32OrNull(network, "httpPort"),
-            SocksPort = GetInt32OrNull(network, "socksPort"),
-            AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
-            DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
-            DangerouslyAllowNonLoopbackAdmin = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackAdmin"),
-            AllowedDomains = GetOptionalStringArray(network, "allowedDomains"),
-            DeniedDomains = GetOptionalStringArray(network, "deniedDomains"),
-            AllowUnixSockets = GetOptionalStringArray(network, "allowUnixSockets"),
-            AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
-            Raw = network.Clone()
-        };
-    }
+    internal static ConfigRequirements? ParseConfigRequirementsReadRequirements(JsonElement configRequirementsReadResult, bool experimentalApiEnabled) =>
+        CodexAppServerClientConfigRequirementsParser.ParseConfigRequirementsReadRequirements(configRequirementsReadResult, experimentalApiEnabled);
 
     private static JsonElement? TryGetArray(JsonElement obj, string propertyName) =>
         obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Array
