@@ -2,6 +2,7 @@ using System.Diagnostics;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure;
@@ -69,7 +70,7 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
                 process.Id);
 
             // Write prompt to stdin and close it
-            await WritePromptAndCloseStdinAsync(process, options.Prompt, cancellationToken);
+            await CodexProcessLauncherIo.WritePromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken);
 
             return process;
         }
@@ -97,9 +98,9 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
         {
             _logger.LogError(ex, "Error starting Codex process");
 
-            var stderr = await TryReadStandardErrorAsync(process);
+            var stderr = await CodexProcessLauncherIo.TryReadStandardErrorAsync(process);
             var wrapped = new InvalidOperationException(
-                CreateDiagnosticMessage(stderr, startInfo.FileName),
+                CodexProcessLauncherDiagnostics.CreateDiagnosticMessage(stderr, startInfo.FileName),
                 ex);
 
             // Clean up the process if it was started
@@ -274,7 +275,7 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
                 "Codex resume process started successfully with PID: {ProcessId}",
                 process.Id);
 
-            await WritePromptAndCloseStdinAsync(process, options.Prompt, cancellationToken);
+            await CodexProcessLauncherIo.WritePromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken);
 
             return process;
         }
@@ -302,9 +303,9 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
         {
             _logger.LogError(ex, "Error starting Codex resume process");
 
-            var stderr = await TryReadStandardErrorAsync(process);
+            var stderr = await CodexProcessLauncherIo.TryReadStandardErrorAsync(process);
             var wrapped = new InvalidOperationException(
-                CreateDiagnosticMessage(stderr, startInfo.FileName),
+                CodexProcessLauncherDiagnostics.CreateDiagnosticMessage(stderr, startInfo.FileName),
                 ex);
 
             try
@@ -399,7 +400,7 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
                 "Codex review process started successfully with PID: {ProcessId}",
                 process.Id);
 
-            await WriteOptionalPromptAndCloseStdinAsync(process, options.Prompt, cancellationToken).ConfigureAwait(false);
+            await CodexProcessLauncherIo.WriteOptionalPromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken).ConfigureAwait(false);
 
             return process;
         }
@@ -427,9 +428,9 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
         {
             _logger.LogError(ex, "Error starting Codex review process");
 
-            var stderr = await TryReadStandardErrorAsync(process).ConfigureAwait(false);
+            var stderr = await CodexProcessLauncherIo.TryReadStandardErrorAsync(process).ConfigureAwait(false);
             var wrapped = new InvalidOperationException(
-                CreateDiagnosticMessage(stderr, startInfo.FileName),
+                CodexProcessLauncherDiagnostics.CreateDiagnosticMessage(stderr, startInfo.FileName),
                 ex);
 
             try
@@ -478,100 +479,4 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
 
         startInfo.Environment[CodexHomeEnvVar] = clientOptions.CodexHomeDirectory;
     }
-
-    /// <summary>
-    /// Writes the prompt to the process's standard input and closes the stream.
-    /// </summary>
-    /// <param name="process">The process to write to.</param>
-    /// <param name="prompt">The prompt to write.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task WritePromptAndCloseStdinAsync(
-        Process process,
-        string prompt,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken);
-            await process.StandardInput.FlushAsync(cancellationToken);
-            process.StandardInput.Close();
-
-            _logger.LogDebug(
-                "Wrote prompt to process {ProcessId} and closed stdin",
-                process.Id);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Error writing prompt to process {ProcessId}",
-                process.Id);
-            throw new InvalidOperationException(
-                "Failed to write prompt to Codex process stdin.",
-                ex);
-        }
-    }
-
-    private async Task WriteOptionalPromptAndCloseStdinAsync(
-        Process process,
-        string? prompt,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(prompt))
-            {
-                await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            process.StandardInput.Close();
-            _logger.LogTrace("Closed stdin for process {ProcessId}", process.Id);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error writing optional prompt to process {ProcessId}", process.Id);
-            throw new InvalidOperationException("Failed to write optional prompt to Codex process stdin.", ex);
-        }
-    }
-
-    /// <summary>
-    /// Attempts to read standard error output for diagnostics without blocking indefinitely.
-    /// </summary>
-    private static async Task<string?> TryReadStandardErrorAsync(Process process)
-    {
-        if (!process.StartInfo.RedirectStandardError)
-        {
-            return null;
-        }
-
-        try
-        {
-            var readTask = process.StandardError.ReadToEndAsync();
-            var completed = await Task.WhenAny(readTask, Task.Delay(200));
-            if (completed == readTask)
-            {
-                return (await readTask).Trim();
-            }
-        }
-        catch (Exception)
-        {
-            // Best-effort diagnostic; swallow exceptions.
-        }
-
-        return null;
-    }
-
-    private static string CreateDiagnosticMessage(string? stderr, string executablePath) =>
-        string.IsNullOrWhiteSpace(stderr)
-            ? $"Failed to start Codex CLI process using executable '{executablePath}'. See inner exception for details."
-            : $"Failed to start Codex CLI process using executable '{executablePath}'. Stderr: {stderr}";
 }
