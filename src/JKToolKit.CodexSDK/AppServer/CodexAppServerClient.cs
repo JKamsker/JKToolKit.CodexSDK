@@ -24,6 +24,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerThreadsClient _threadsClient;
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
+    private readonly CodexAppServerMcpClient _mcpClient;
     private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
     private readonly CodexAppServerTurnsClient _turnsClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
@@ -124,6 +125,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, experimentalApiEnabled);
         _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
         _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _mcpClient = new CodexAppServerMcpClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
             options,
@@ -310,6 +312,35 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     /// </summary>
     public Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default) =>
         _configClient.ReadConfigRequirementsAsync(ct);
+
+    /// <summary>
+    /// Reloads MCP server configuration from disk and queues a refresh for loaded threads.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>config/mcpServer/reload</c>.
+    /// Refresh is applied on each thread's next active turn.
+    /// </remarks>
+    public Task ReloadMcpServersAsync(CancellationToken ct = default) =>
+        _mcpClient.ReloadMcpServersAsync(ct);
+
+    /// <summary>
+    /// Lists MCP servers with their tools/resources and auth status.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>mcpServerStatus/list</c>.
+    /// </remarks>
+    public Task<McpServerStatusListPage> ListMcpServerStatusAsync(McpServerStatusListOptions options, CancellationToken ct = default) =>
+        _mcpClient.ListMcpServerStatusAsync(options, ct);
+
+    /// <summary>
+    /// Starts an OAuth login flow for a configured MCP server.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>mcpServer/oauth/login</c>.
+    /// The server later emits <c>mcpServer/oauthLogin/completed</c>.
+    /// </remarks>
+    public Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct = default) =>
+        _mcpClient.StartMcpServerOauthLoginAsync(options, ct);
 
     /// <summary>
     /// Reads remote skills.
