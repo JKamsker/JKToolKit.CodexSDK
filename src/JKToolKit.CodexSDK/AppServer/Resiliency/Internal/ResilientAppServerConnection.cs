@@ -169,7 +169,9 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
                 }
 
                 var windowAttempt = _restartTimes.Count + 1;
-                var delay = ComputeBackoff(policy, windowAttempt);
+                var failureAttempt = consecutiveFailures + 1;
+                var backoffAttempt = Math.Max(windowAttempt, failureAttempt);
+                var delay = ComputeBackoff(policy, backoffAttempt);
                 if (delay > TimeSpan.Zero)
                 {
                     _logger.LogDebug(
