@@ -70,7 +70,11 @@ internal sealed class CodexAppServerTurnsClient
         }
         catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32602 && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
         {
-            Interlocked.Exchange(ref _readOnlyAccessOverridesSupport.Value, -1);
+            if (CodexAppServerReadOnlyAccessOverridesSupport.ShouldMarkRejected(ex))
+            {
+                Interlocked.Exchange(ref _readOnlyAccessOverridesSupport.Value, -1);
+            }
+
             var ua = _initializeResult()?.UserAgent ?? "<unknown userAgent>";
             var sandboxJson = JsonSerializer.Serialize(options.SandboxPolicy, CodexAppServerClient.CreateDefaultSerializerOptions());
             var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
@@ -78,7 +82,7 @@ internal sealed class CodexAppServerTurnsClient
                 : string.Empty;
 
             throw new InvalidOperationException(
-                $"turn/start rejected sandboxPolicy parameters (likely unsupported by this Codex app-server build). userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
+                $"turn/start rejected sandboxPolicy parameters. userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
                 ex);
         }
 
