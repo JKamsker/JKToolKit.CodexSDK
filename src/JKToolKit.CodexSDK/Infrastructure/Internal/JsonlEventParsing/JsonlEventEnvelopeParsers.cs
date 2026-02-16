@@ -226,7 +226,11 @@ internal static class JsonlEventEnvelopeParsers
 
     private static ReviewCodeLocation? TryParseReviewCodeLocation(JsonElement finding)
     {
-        if (!finding.TryGetProperty("code_location", out var loc) || loc.ValueKind != JsonValueKind.Object)
+        if (!finding.TryGetProperty("code_location", out var loc) &&
+            !finding.TryGetProperty("codeLocation", out loc))
+            return null;
+
+        if (loc.ValueKind != JsonValueKind.Object)
             return null;
 
         var file = TryGetString(loc, "absolute_file_path");

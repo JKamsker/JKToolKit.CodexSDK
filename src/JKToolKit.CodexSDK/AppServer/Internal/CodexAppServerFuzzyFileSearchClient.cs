@@ -6,14 +6,14 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 internal sealed class CodexAppServerFuzzyFileSearchClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
-    private readonly bool _experimentalApiEnabled;
+    private readonly Func<bool> _experimentalApiEnabled;
 
     public CodexAppServerFuzzyFileSearchClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
-        bool experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled)
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
-        _experimentalApiEnabled = experimentalApiEnabled;
+        _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
     }
 
     public async Task StartFuzzyFileSearchSessionAsync(string sessionId, IReadOnlyList<string> roots, CancellationToken ct = default)
@@ -22,7 +22,7 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
             throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
         ArgumentNullException.ThrowIfNull(roots);
 
-        if (!_experimentalApiEnabled)
+        if (!_experimentalApiEnabled())
         {
             throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStart");
         }
@@ -44,7 +44,7 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
         if (string.IsNullOrWhiteSpace(query))
             throw new ArgumentException("Query cannot be empty or whitespace.", nameof(query));
 
-        if (!_experimentalApiEnabled)
+        if (!_experimentalApiEnabled())
         {
             throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionUpdate");
         }
@@ -64,7 +64,7 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
         if (string.IsNullOrWhiteSpace(sessionId))
             throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
 
-        if (!_experimentalApiEnabled)
+        if (!_experimentalApiEnabled())
         {
             throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStop");
         }

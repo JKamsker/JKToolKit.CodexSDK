@@ -7,21 +7,21 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 internal sealed class CodexAppServerThreadsClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
-    private readonly bool _experimentalApiEnabled;
+    private readonly Func<bool> _experimentalApiEnabled;
 
     public CodexAppServerThreadsClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
-        bool experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled)
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
-        _experimentalApiEnabled = experimentalApiEnabled;
+        _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
     }
 
     public async Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: _experimentalApiEnabled);
+        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: _experimentalApiEnabled());
 
         var result = await _sendRequestAsync(
             "thread/start",
@@ -74,7 +74,7 @@ internal sealed class CodexAppServerThreadsClient
             throw new ArgumentException("Either ThreadId, History, or Path must be specified.", nameof(options));
         }
 
-        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: _experimentalApiEnabled);
+        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: _experimentalApiEnabled());
 
         var result = await _sendRequestAsync(
             "thread/resume",
@@ -212,7 +212,7 @@ internal sealed class CodexAppServerThreadsClient
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        if (!_experimentalApiEnabled)
+        if (!_experimentalApiEnabled())
         {
             throw new CodexExperimentalApiRequiredException("thread/backgroundTerminals/clean");
         }
@@ -223,15 +223,15 @@ internal sealed class CodexAppServerThreadsClient
             ct);
     }
 
-    public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        ExperimentalApiGuards.ValidateThreadFork(options, _experimentalApiEnabled);
+        public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+        ExperimentalApiGuards.ValidateThreadFork(options, _experimentalApiEnabled());
 
-        var result = await _sendRequestAsync(
-            "thread/fork",
-            new ThreadForkParams
-            {
+            var result = await _sendRequestAsync(
+                "thread/fork",
+                new ThreadForkParams
+                {
                 ThreadId = options.ThreadId,
                 Path = options.Path
             },

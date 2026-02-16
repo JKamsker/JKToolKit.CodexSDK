@@ -13,7 +13,7 @@ internal sealed class CodexAppServerTurnsClient
     private readonly Func<AppServerInitializeResult?> _initializeResult;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport;
-    private readonly bool _experimentalApiEnabled;
+    private readonly Func<bool> _experimentalApiEnabled;
 
     public CodexAppServerTurnsClient(
         CodexAppServerClientOptions options,
@@ -21,14 +21,14 @@ internal sealed class CodexAppServerTurnsClient
         Func<AppServerInitializeResult?> initializeResult,
         Dictionary<string, CodexTurnHandle> turnsById,
         CodexAppServerReadOnlyAccessOverridesSupport readOnlyAccessOverridesSupport,
-        bool experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
         _initializeResult = initializeResult ?? throw new ArgumentNullException(nameof(initializeResult));
         _turnsById = turnsById ?? throw new ArgumentNullException(nameof(turnsById));
         _readOnlyAccessOverridesSupport = readOnlyAccessOverridesSupport ?? throw new ArgumentNullException(nameof(readOnlyAccessOverridesSupport));
-        _experimentalApiEnabled = experimentalApiEnabled;
+        _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
     }
 
     public async Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
@@ -38,7 +38,7 @@ internal sealed class CodexAppServerTurnsClient
 
         ArgumentNullException.ThrowIfNull(options);
 
-        ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: _experimentalApiEnabled);
+        ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: _experimentalApiEnabled());
 
         if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy) &&
             Volatile.Read(ref _readOnlyAccessOverridesSupport.Value) == -1)

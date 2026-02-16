@@ -120,17 +120,18 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
 
-        _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, ExperimentalApiEnabled);
+        Func<bool> experimentalApiEnabled = () => _core.ExperimentalApiEnabled;
+        _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, experimentalApiEnabled);
         _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
-        _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, ExperimentalApiEnabled);
-        _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, ExperimentalApiEnabled);
+        _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
             options,
             _core.SendRequestAsync,
             initializeResult: () => _core.InitializeResult,
             turnsById: _core.TurnsById,
             readOnlyAccessOverridesSupport: _readOnlyAccessOverridesSupport,
-            experimentalApiEnabled: ExperimentalApiEnabled);
+            experimentalApiEnabled: experimentalApiEnabled);
     }
 
     /// <summary>

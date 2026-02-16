@@ -6,14 +6,14 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 internal sealed class CodexAppServerConfigClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
-    private readonly bool _experimentalApiEnabled;
+    private readonly Func<bool> _experimentalApiEnabled;
 
     public CodexAppServerConfigClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
-        bool experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled)
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
-        _experimentalApiEnabled = experimentalApiEnabled;
+        _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
     }
 
     public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
@@ -25,7 +25,7 @@ internal sealed class CodexAppServerConfigClient
 
         return new ConfigRequirementsReadResult
         {
-            Requirements = CodexAppServerClientConfigRequirementsParser.ParseConfigRequirementsReadRequirements(result, experimentalApiEnabled: _experimentalApiEnabled),
+            Requirements = CodexAppServerClientConfigRequirementsParser.ParseConfigRequirementsReadRequirements(result, experimentalApiEnabled: _experimentalApiEnabled()),
             Raw = result
         };
     }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -198,9 +199,14 @@ internal static class CodexAppServerClientJson
             return null;
         }
 
-        if (p.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(p.GetString(), out var dto))
+        if (p.ValueKind == JsonValueKind.String)
         {
-            return dto;
+            var s = p.GetString();
+            if (!string.IsNullOrWhiteSpace(s) &&
+                DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dto))
+            {
+                return dto;
+            }
         }
 
         if (p.ValueKind == JsonValueKind.Number && p.TryGetInt64(out var epoch))

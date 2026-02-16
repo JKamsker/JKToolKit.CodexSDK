@@ -14,7 +14,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Queue<DateTimeOffset> _restartTimes = new();
 
-    private ICodexAppServerClientAdapter? _inner;
+    private volatile ICodexAppServerClientAdapter? _inner;
     private long _innerVersion;
     private int _restartCount;
     private volatile CodexAppServerConnectionState _state = CodexAppServerConnectionState.Connected;
@@ -44,7 +44,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     {
         if (_state == CodexAppServerConnectionState.Disposed)
         {
-            throw new ObjectDisposedException(nameof(ResilientCodexAppServerClient));
+            throw new ObjectDisposedException(nameof(ResilientAppServerConnection));
         }
 
         var fault = _fault;
@@ -339,7 +339,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
         var min = capped.TotalMilliseconds - delta;
         var max = capped.TotalMilliseconds + delta;
         var ms = min + (Random.Shared.NextDouble() * (max - min));
-        return TimeSpan.FromMilliseconds(Math.Max(0, ms));
+        return TimeSpan.FromMilliseconds(Math.Clamp(ms, 0, policy.MaxBackoff.TotalMilliseconds));
     }
 }
 
