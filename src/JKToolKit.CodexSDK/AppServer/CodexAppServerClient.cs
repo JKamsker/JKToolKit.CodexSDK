@@ -1,24 +1,17 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Linq;
-using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
+using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
+using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
-using JKToolKit.CodexSDK.Abstractions;
-using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
-using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
-using JKToolKit.CodexSDK.AppServer.Protocol.V2;
-using JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
-using JKToolKit.CodexSDK.AppServer.Internal;
-using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
-using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
-using JKToolKit.CodexSDK.Models;
-using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -27,10 +20,7 @@ namespace JKToolKit.CodexSDK.AppServer;
 /// </summary>
 public sealed class CodexAppServerClient : IAsyncDisposable
 {
-    private readonly CodexAppServerClientOptions _options;
-    private readonly ILogger _logger;
-    private readonly IStdioProcess _process;
-    private readonly IJsonRpcConnection _rpc;
+    private readonly CodexAppServerClientCore _core;
     private readonly CodexAppServerThreadsClient _threadsClient;
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
@@ -38,14 +28,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerTurnsClient _turnsClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
 
-    private readonly Channel<AppServerNotification> _globalNotifications;
-    private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
-    private int _disposed;
-    private int _disconnectSignaled;
-    private readonly Task _processExitWatcher;
-    private AppServerInitializeResult? _initializeResult;
-
-    private bool ExperimentalApiEnabled => _options.Capabilities?.ExperimentalApi == true || _options.ExperimentalApi;
+    private bool ExperimentalApiEnabled => _core.ExperimentalApiEnabled;
 
     internal static bool TryParseExperimentalApiRequiredMessage(string? message, out string descriptor)
     {
@@ -98,18 +81,6 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         });
     }
 
-    private async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
-    {
-        try
-        {
-            return await _rpc.SendRequestAsync(method, @params, ct);
-        }
-        catch (JsonRpcRemoteException ex) when (TryParseExperimentalApiRequiredMessage(ex.Error.Message, out var descriptor))
-        {
-            throw new CodexExperimentalApiRequiredException(descriptor, ex);
-        }
-    }
-
     internal static InitializeCapabilities? NormalizeCapabilities(InitializeCapabilities? capabilities)
     {
         if (capabilities is null)
@@ -147,33 +118,19 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         ILogger logger,
         bool startExitWatcher = true)
     {
-        _options = options;
-        _process = process;
-        _rpc = rpc;
-        _logger = logger;
-        _threadsClient = new CodexAppServerThreadsClient(SendRequestAsync, ExperimentalApiEnabled);
-        _skillsAppsClient = new CodexAppServerSkillsAppsClient(SendRequestAsync);
-        _configClient = new CodexAppServerConfigClient(SendRequestAsync, ExperimentalApiEnabled);
-        _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(SendRequestAsync, ExperimentalApiEnabled);
+        _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
+
+        _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, ExperimentalApiEnabled);
+        _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
+        _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, ExperimentalApiEnabled);
+        _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, ExperimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
             options,
-            SendRequestAsync,
-            initializeResult: () => _initializeResult,
-            turnsById: _turnsById,
+            _core.SendRequestAsync,
+            initializeResult: () => _core.InitializeResult,
+            turnsById: _core.TurnsById,
             readOnlyAccessOverridesSupport: _readOnlyAccessOverridesSupport,
             experimentalApiEnabled: ExperimentalApiEnabled);
-
-        _globalNotifications = Channel.CreateBounded<AppServerNotification>(new BoundedChannelOptions(options.NotificationBufferCapacity)
-        {
-            SingleReader = false,
-            SingleWriter = true,
-            FullMode = BoundedChannelFullMode.DropOldest
-        });
-
-        _rpc.OnNotification += OnRpcNotificationAsync;
-        _rpc.OnServerRequest = OnRpcServerRequestAsync;
-
-        _processExitWatcher = startExitWatcher ? Task.Run(WatchProcessExitAsync) : Task.CompletedTask;
     }
 
     /// <summary>
@@ -229,71 +186,32 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Performs the JSON-RPC initialization handshake.
     /// </summary>
-    public async Task<AppServerInitializeResult> InitializeAsync(
+    public Task<AppServerInitializeResult> InitializeAsync(
         AppServerClientInfo clientInfo,
-        CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(clientInfo);
-
-        var requestedCapabilities = BuildCapabilitiesFromOptions(_options);
-
-        try
-        {
-            var result = await _rpc.SendRequestAsync(
-                "initialize",
-                BuildInitializeParams(clientInfo, requestedCapabilities),
-                ct);
-
-            await _rpc.SendNotificationAsync("initialized", @params: null, ct);
-
-            _initializeResult = new AppServerInitializeResult(result);
-            return _initializeResult;
-        }
-        catch (JsonRpcRemoteException ex)
-        {
-            var dataJson = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
-                ? ex.Error.Data.Value.GetRawText()
-                : null;
-
-            var wantsCapabilities = requestedCapabilities is not null ||
-                                    _options.ExperimentalApi ||
-                                    (_options.OptOutNotificationMethods is { Count: > 0 });
-
-            var help = wantsCapabilities
-                ? "This may indicate your Codex app-server build does not support the requested initialize capabilities. Try upgrading Codex or omit CodexAppServerClientOptions.Capabilities / ExperimentalApi / OptOutNotificationMethods."
-                : null;
-
-            throw new CodexAppServerInitializeException(
-                ex.Error.Code,
-                ex.Error.Message,
-                dataJson,
-                help,
-                stderrTail: _process.StderrTail,
-                innerException: ex);
-        }
-    }
+        CancellationToken ct = default) =>
+        _core.InitializeAsync(clientInfo, ct);
 
     /// <summary>
     /// Gets the initialize result payload, if <see cref="InitializeAsync"/> has completed successfully.
     /// </summary>
-    public AppServerInitializeResult? InitializeResult => _initializeResult;
+    public AppServerInitializeResult? InitializeResult => _core.InitializeResult;
 
     /// <summary>
     /// Sends an arbitrary JSON-RPC request to the app server.
     /// </summary>
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        SendRequestAsync(method, @params, ct);
+        _core.SendRequestAsync(method, @params, ct);
 
     /// <summary>
     /// A task that completes when the underlying Codex app-server subprocess exits.
     /// </summary>
-    public Task ExitTask => _process.Completion;
+    public Task ExitTask => _core.ExitTask;
 
     /// <summary>
     /// Subscribes to the global app-server notification stream.
     /// </summary>
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
-        _globalNotifications.Reader.ReadAllAsync(ct);
+        _core.Notifications(ct);
 
     /// <summary>
     /// Starts a new thread.
@@ -489,197 +407,10 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             }
         };
 
-    private ValueTask OnRpcNotificationAsync(JsonRpcNotification notification)
-    {
-        var mapped = AppServerNotificationMapper.Map(notification.Method, notification.Params);
-
-        _globalNotifications.Writer.TryWrite(mapped);
-        LogIfBogus(mapped);
-
-        var turnId = TryGetTurnId(mapped);
-        if (!string.IsNullOrWhiteSpace(turnId))
-        {
-            CodexTurnHandle? handle;
-            lock (_turnsById)
-            {
-                _turnsById.TryGetValue(turnId, out handle);
-            }
-
-            if (handle is not null)
-            {
-                handle.EventsChannel.Writer.TryWrite(mapped);
-
-                if (mapped is TurnCompletedNotification completed)
-                {
-                    handle.CompletionTcs.TrySetResult(completed);
-                    handle.EventsChannel.Writer.TryComplete();
-                }
-            }
-        }
-
-        return ValueTask.CompletedTask;
-    }
-
-    private void LogIfBogus(AppServerNotification notification)
-    {
-#if DEBUG
-        var isBogus = notification switch
-        {
-            AgentMessageDeltaNotification d => string.IsNullOrWhiteSpace(d.ThreadId) ||
-                                              string.IsNullOrWhiteSpace(d.TurnId) ||
-                                              string.IsNullOrWhiteSpace(d.ItemId),
-            ItemStartedNotification s => string.IsNullOrWhiteSpace(s.ThreadId) ||
-                                         string.IsNullOrWhiteSpace(s.TurnId) ||
-                                         string.IsNullOrWhiteSpace(s.ItemId),
-            ItemCompletedNotification c => string.IsNullOrWhiteSpace(c.ThreadId) ||
-                                           string.IsNullOrWhiteSpace(c.TurnId) ||
-                                           string.IsNullOrWhiteSpace(c.ItemId),
-            TurnStartedNotification s => string.IsNullOrWhiteSpace(s.ThreadId) ||
-                                         string.IsNullOrWhiteSpace(s.TurnId),
-            TurnCompletedNotification t => string.IsNullOrWhiteSpace(t.ThreadId) ||
-                                           string.IsNullOrWhiteSpace(t.TurnId),
-            TurnDiffUpdatedNotification d => string.IsNullOrWhiteSpace(d.ThreadId) ||
-                                            string.IsNullOrWhiteSpace(d.TurnId),
-            TurnPlanUpdatedNotification p => string.IsNullOrWhiteSpace(p.ThreadId) ||
-                                             string.IsNullOrWhiteSpace(p.TurnId),
-            ThreadTokenUsageUpdatedNotification u => string.IsNullOrWhiteSpace(u.ThreadId) ||
-                                                    string.IsNullOrWhiteSpace(u.TurnId),
-            ErrorNotification e => string.IsNullOrWhiteSpace(e.ThreadId) ||
-                                   string.IsNullOrWhiteSpace(e.TurnId),
-            _ => false
-        };
-
-        if (isBogus)
-        {
-            _logger.LogWarning("Received malformed app-server notification: {Method}. Raw params: {Params}", notification.Method, notification.Params);
-        }
-#endif
-    }
-
-    private async ValueTask<JsonRpcResponse> OnRpcServerRequestAsync(JsonRpcRequest req)
-    {
-        var handler = _options.ApprovalHandler;
-
-        if (handler is null)
-        {
-            return new JsonRpcResponse(
-                req.Id,
-                Result: null,
-                Error: new JsonRpcError(-32601, $"Unhandled server request '{req.Method}'."));
-        }
-
-        try
-        {
-            var result = await handler.HandleAsync(req.Method, req.Params, CancellationToken.None);
-            return new JsonRpcResponse(req.Id, Result: result, Error: null);
-        }
-        catch (Exception ex)
-        {
-            return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(-32000, ex.Message));
-        }
-    }
-
     /// <summary>
     /// Disposes the underlying app-server connection and terminates the process.
     /// </summary>
-    public async ValueTask DisposeAsync()
-    {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
-        {
-            return;
-        }
-
-        _globalNotifications.Writer.TryComplete();
-
-        CodexTurnHandle[] handles;
-        lock (_turnsById)
-        {
-            handles = _turnsById.Values.ToArray();
-            _turnsById.Clear();
-        }
-
-        foreach (var handle in handles)
-        {
-            handle.EventsChannel.Writer.TryComplete();
-            handle.CompletionTcs.TrySetCanceled();
-        }
-
-        await _rpc.DisposeAsync();
-        await _process.DisposeAsync();
-    }
-
-    private async Task WatchProcessExitAsync()
-    {
-        try
-        {
-            await _process.Completion.ConfigureAwait(false);
-        }
-        catch
-        {
-            // ignore
-        }
-
-        if (Volatile.Read(ref _disposed) != 0)
-        {
-            return;
-        }
-
-        SignalDisconnect(BuildDisconnectException());
-    }
-
-    private Exception BuildDisconnectException()
-    {
-        var stderrTail = Array.Empty<string>();
-        try
-        {
-            stderrTail = _process.StderrTail.ToArray();
-        }
-        catch
-        {
-            // ignore
-        }
-
-        var exitCode = _process.ExitCode;
-        var pid = _process.ProcessId;
-
-        var msg = exitCode is null
-            ? "Codex app-server subprocess disconnected."
-            : $"Codex app-server subprocess exited with code {exitCode}.";
-
-        if (stderrTail.Length > 0)
-        {
-            msg += $" (stderr tail: {string.Join(" | ", stderrTail.TakeLast(5))})";
-        }
-
-        return new CodexAppServerDisconnectedException(
-            msg,
-            processId: pid,
-            exitCode: exitCode,
-            stderrTail: stderrTail);
-    }
-
-    private void SignalDisconnect(Exception ex)
-    {
-        if (Interlocked.Exchange(ref _disconnectSignaled, 1) != 0)
-        {
-            return;
-        }
-
-        _globalNotifications.Writer.TryComplete(ex);
-
-        CodexTurnHandle[] handles;
-        lock (_turnsById)
-        {
-            handles = _turnsById.Values.ToArray();
-            _turnsById.Clear();
-        }
-
-        foreach (var handle in handles)
-        {
-            handle.EventsChannel.Writer.TryComplete(ex);
-            handle.CompletionTcs.TrySetException(ex);
-        }
-    }
+    public ValueTask DisposeAsync() => _core.DisposeAsync();
 
     internal static string? ExtractId(JsonElement element, params string[] propertyNames) =>
         CodexAppServerClientJson.ExtractId(element, propertyNames);
@@ -695,31 +426,6 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
     internal static string? FindStringPropertyRecursive(JsonElement element, string propertyName, int maxDepth) =>
         CodexAppServerClientJson.FindStringPropertyRecursive(element, propertyName, maxDepth);
-
-    private static string? TryGetTurnId(AppServerNotification notification) =>
-        notification switch
-        {
-            AgentMessageDeltaNotification d => d.TurnId,
-            ItemStartedNotification s => s.TurnId,
-            ItemCompletedNotification c => c.TurnId,
-            TurnStartedNotification s => s.TurnId,
-            TurnDiffUpdatedNotification d => d.TurnId,
-            TurnPlanUpdatedNotification p => p.TurnId,
-            ThreadTokenUsageUpdatedNotification u => u.TurnId,
-            PlanDeltaNotification d => d.TurnId,
-            RawResponseItemCompletedNotification r => r.TurnId,
-            CommandExecutionOutputDeltaNotification d => d.TurnId,
-            TerminalInteractionNotification t => t.TurnId,
-            FileChangeOutputDeltaNotification d => d.TurnId,
-            McpToolCallProgressNotification p => p.TurnId,
-            ReasoningSummaryTextDeltaNotification d => d.TurnId,
-            ReasoningSummaryPartAddedNotification d => d.TurnId,
-            ReasoningTextDeltaNotification d => d.TurnId,
-            ContextCompactedNotification c => c.TurnId,
-            ErrorNotification e => e.TurnId,
-            TurnCompletedNotification t => t.TurnId,
-            _ => null
-        };
 
     internal static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult) =>
         CodexAppServerClientThreadParsers.ParseThreadListThreads(listResult);
@@ -750,106 +456,4 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
     internal static ConfigRequirements? ParseConfigRequirementsReadRequirements(JsonElement configRequirementsReadResult, bool experimentalApiEnabled) =>
         CodexAppServerClientConfigRequirementsParser.ParseConfigRequirementsReadRequirements(configRequirementsReadResult, experimentalApiEnabled);
-
-    private static JsonElement? TryGetArray(JsonElement obj, string propertyName) =>
-        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Array
-            ? p
-            : null;
-
-    private static JsonElement? TryGetObject(JsonElement obj, string propertyName) =>
-        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.Object
-            ? p
-            : null;
-
-    private static string? GetStringOrNull(JsonElement obj, string propertyName) =>
-        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.String
-            ? p.GetString()
-            : null;
-
-    private static int? GetInt32OrNull(JsonElement obj, string propertyName)
-    {
-        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
-        {
-            return null;
-        }
-
-        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var i))
-        {
-            return i;
-        }
-
-        if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out i))
-        {
-            return i;
-        }
-
-        return null;
-    }
-
-    private static bool? GetBoolOrNull(JsonElement obj, string propertyName)
-    {
-        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
-        {
-            return null;
-        }
-
-        return p.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            _ => null
-        };
-    }
-
-    private static IReadOnlyList<string>? GetOptionalStringArray(JsonElement obj, string propertyName)
-    {
-        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
-        {
-            return null;
-        }
-
-        if (p.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return null;
-        }
-
-        if (p.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
-
-        var list = new List<string>();
-        foreach (var item in p.EnumerateArray())
-        {
-            if (item.ValueKind == JsonValueKind.String)
-            {
-                list.Add(item.GetString() ?? string.Empty);
-            }
-        }
-
-        return list;
-    }
-
-    private static DateTimeOffset? GetDateTimeOffsetOrNull(JsonElement obj, string propertyName)
-    {
-        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
-        {
-            return null;
-        }
-
-        if (p.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(p.GetString(), out var dto))
-        {
-            return dto;
-        }
-
-        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt64(out var epoch))
-        {
-            // Best-effort: treat large values as milliseconds, otherwise seconds.
-            return epoch > 10_000_000_000
-                ? DateTimeOffset.FromUnixTimeMilliseconds(epoch)
-                : DateTimeOffset.FromUnixTimeSeconds(epoch);
-        }
-
-        return null;
-    }
 }

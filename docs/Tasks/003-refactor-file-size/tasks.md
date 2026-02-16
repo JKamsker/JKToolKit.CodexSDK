@@ -15,12 +15,12 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 
 ## Phase 1 — Refactor oversized `src/` files
 
-- [ ] T010 Refactor `CodexAppServerClient` (split into composed internal modules; keep static parsing helpers callable via `CodexAppServerClient.*`).
+- [x] T010 Refactor `CodexAppServerClient` (split into composed internal modules; keep static parsing helpers callable via `CodexAppServerClient.*`).
   - [x] T010a Extract JSON/parsing helpers into internal modules; keep `CodexAppServerClient.*` entrypoints stable.
   - [x] T010b Extract thread/skills/apps/config API methods into composed services.
   - [x] T010c Extract turn/review API methods into composed services.
-  - [ ] T010d Extract RPC notifications, disconnect handling, and lifecycle/dispose into core.
-  - [ ] T010e Reduce `CodexAppServerClient.cs` to <=500 lines and run focused app-server tests.
+  - [x] T010d Extract RPC notifications, disconnect handling, and lifecycle/dispose into core.
+  - [x] T010e Reduce `CodexAppServerClient.cs` to <=500 lines and run focused app-server tests.
 - [x] T011 Refactor `JsonlEventParser` (split into internal parsing components; keep existing behavior and tests).
 - [x] T012 Refactor `CodexClient` to remove `partial` and shrink file size (<=500, aim <300).
 - [x] T012a Keep `[GeneratedRegex]` by extracting regex generators into a small internal helper type.
