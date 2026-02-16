@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 using Microsoft.Extensions.Logging;
 
@@ -107,7 +108,12 @@ public sealed class JsonlEventParser : IJsonlEventParser
 
             if (!TryParseLine(line, out var evt, out var error))
             {
-                _logger.LogWarning("Error parsing line, skipping: {Error}. Line: {Line}", error, line);
+                var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+                _logger.LogWarning(
+                    "Error parsing line, skipping: {Error}. LineSnippet: {LineSnippet} (Length={LineLength})",
+                    error,
+                    snippet,
+                    line.Length);
                 continue;
             }
 

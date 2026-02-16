@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
@@ -15,13 +16,15 @@ internal static class JsonlEventParserCore
 
         if (!root.TryGetProperty("timestamp", out var timestampElement))
         {
-            ctx.Logger.LogWarning("Event missing 'timestamp' field, skipping: {Line}", line);
+            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+            ctx.Logger.LogWarning("Event missing 'timestamp' field, skipping. LineSnippet: {LineSnippet}", snippet);
             return null;
         }
 
         if (!root.TryGetProperty("type", out var typeElement))
         {
-            ctx.Logger.LogWarning("Event missing 'type' field, skipping: {Line}", line);
+            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+            ctx.Logger.LogWarning("Event missing 'type' field, skipping. LineSnippet: {LineSnippet}", snippet);
             return null;
         }
 
@@ -30,7 +33,8 @@ internal static class JsonlEventParserCore
 
         if (string.IsNullOrWhiteSpace(type))
         {
-            ctx.Logger.LogWarning("Event has empty 'type' field, skipping: {Line}", line);
+            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+            ctx.Logger.LogWarning("Event has empty 'type' field, skipping. LineSnippet: {LineSnippet}", snippet);
             return null;
         }
 
