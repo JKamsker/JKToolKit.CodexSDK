@@ -1,24 +1,58 @@
 # Documentation
 
-This repo ships **one NuGet package**: `JKToolKit.CodexSDK`. It provides three ways to integrate with the Codex CLI:
+JKToolKit.CodexSDK ships as **one NuGet package** with three integration modes for the Codex CLI.
 
-| Mode | What you get | When to use |
-|---|---|---|
-| `codex exec` | Start/resume sessions and **stream JSONL session events** | Programmatic control of “normal” Codex runs |
-| `codex app-server` | **Threads / turns / items** + **streaming deltas** + server-initiated requests (approvals) | Deep, event-driven product integrations |
-| `codex mcp-server` | MCP **`tools/list`** + **`tools/call`** wrappers (`codex`, `codex-reply`) | Treat Codex as a tool provider in an MCP-like architecture |
+## Guides
 
-## Start here
+| Guide | Description |
+|-------|-------------|
+| [Exec Mode](exec.md) | Launch `codex exec`, stream JSONL events, structured outputs, code reviews |
+| [App Server](AppServer/README.md) | `codex app-server` — threads, turns, streaming deltas, approvals, DI, resiliency |
+| [MCP Server](McpServer/README.md) | `codex mcp-server` — tool discovery (`tools/list`, `tools/call`), sessions, follow-ups |
 
-- Root overview + quick examples: [`README.md`](../README.md)
-- App Server (`codex app-server`): [`docs/AppServer/README.md`](AppServer/README.md)
-- MCP Server (`codex mcp-server`): [`docs/McpServer/README.md`](McpServer/README.md)
-- Design notes / historical task docs: [`docs/Tasks`](Tasks)
+## At a Glance
 
-## Upgrading from split packages
+| | Exec | App Server | MCP Server |
+|---|---|---|---|
+| **Protocol** | JSONL session log (file tail) | JSON-RPC over stdio | JSON-RPC over stdio (MCP) |
+| **Streaming** | `IAsyncEnumerable<T>` of session events | Real-time delta notifications | Request/response |
+| **Lifecycle** | Session (start / resume) | Thread → Turn | Tool call |
+| **Best for** | Scripting, automation, CI | Rich IDE/product integrations | Plugging Codex into MCP toolchains |
 
-If you previously installed `NCodexSDK.AppServer` and/or `NCodexSDK.McpServer`, you can remove them and keep only `JKToolKit.CodexSDK`. The namespaces remain `JKToolKit.CodexSDK.AppServer` and `JKToolKit.CodexSDK.McpServer`.
+## Install
 
-## NuGet package README
+```bash
+dotnet add package JKToolKit.CodexSDK
+```
 
-The README embedded in the NuGet package lives at [`src/JKToolKit.CodexSDK/README.md`](../src/JKToolKit.CodexSDK/README.md).
+> **Prerequisites:** .NET 10+ SDK and Codex CLI on PATH (`codex --version`).
+
+## Upgrading from Split Packages
+
+If you previously installed `NCodexSDK.AppServer` or `NCodexSDK.McpServer`, remove them — everything is now in `JKToolKit.CodexSDK`. The namespaces remain `JKToolKit.CodexSDK.AppServer` and `JKToolKit.CodexSDK.McpServer`.
+
+## Demos
+
+The demo console app covers all three modes:
+
+```bash
+# Exec (default)
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- "Your prompt here"
+
+# Code review
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- review --commit <sha>
+
+# App Server
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-stream --repo "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout-seconds 30
+
+# MCP Server
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcpserver --repo "<repo-path>"
+```
+
+## Troubleshooting
+
+- **File locked during build** — stop running demo processes: `Get-Process JKToolKit.CodexSDK.Demo | Stop-Process -Force`
+- **Session log not found** — ensure `~/.codex/sessions` exists
+- **Process launch fails** — verify `codex` is on your PATH
+- Mode-specific issues are covered in each guide above

@@ -196,6 +196,26 @@ var completed = await turn.Completion;
 Console.WriteLine($"\nDone: {completed.Status}");
 ```
 
+### Structured outputs (JSON → DTO)
+
+To constrain the final assistant message to a JSON Schema, set <c>TurnStartOptions.OutputSchema</c>. For convenience, you can also use <c>RunTurnStructuredAsync&lt;T&gt;</c> to generate a strict schema from a DTO and deserialize the result:
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.StructuredOutputs;
+
+public sealed record MyResult(string Answer);
+
+var thread = await codex.StartThreadAsync(new ThreadStartOptions { Cwd = "<repo-path>" });
+
+var result = await codex.RunTurnStructuredAsync<MyResult>(thread.Id, new TurnStartOptions
+{
+    Input = [TurnInputItem.Text("Return JSON only.")]
+});
+
+Console.WriteLine(result.Value.Answer);
+```
+
 ### Steer an active turn
 
 ```csharp

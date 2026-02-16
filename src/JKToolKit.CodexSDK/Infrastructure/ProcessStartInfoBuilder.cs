@@ -4,6 +4,7 @@ using System.Linq;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.StructuredOutputs;
 
 namespace JKToolKit.CodexSDK.Infrastructure;
 
@@ -51,6 +52,12 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("--config");
         startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
 
+        if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
+        {
+            startInfo.ArgumentList.Add("--output-schema");
+            startInfo.ArgumentList.Add(schemaPath);
+        }
+
         foreach (var option in options.AdditionalOptions)
         {
             startInfo.ArgumentList.Add(option);
@@ -96,6 +103,12 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add(options.Model.Value);
         startInfo.ArgumentList.Add("--config");
         startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+
+        if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
+        {
+            startInfo.ArgumentList.Add("--output-schema");
+            startInfo.ArgumentList.Add(schemaPath);
+        }
 
         foreach (var option in options.AdditionalOptions)
         {
