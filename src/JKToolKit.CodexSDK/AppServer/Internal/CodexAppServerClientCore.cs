@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Threading.Channels;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
@@ -15,6 +16,8 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
     private readonly ILogger _logger;
     private readonly IStdioProcess _process;
     private readonly IJsonRpcConnection _rpc;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private readonly CancellationToken _disposeToken;
 
     private readonly Channel<AppServerNotification> _globalNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
@@ -45,6 +48,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         _rpc.OnNotification += OnRpcNotificationAsync;
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
 
+        _disposeToken = _disposeCts.Token;
         _processExitWatcher = startExitWatcher ? Task.Run(WatchProcessExitAsync) : Task.CompletedTask;
     }
 
@@ -94,6 +98,10 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             var dataJson = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
                 ? ex.Error.Data.Value.GetRawText()
                 : null;
+            if (!string.IsNullOrWhiteSpace(dataJson))
+            {
+                dataJson = CodexDiagnosticsSanitizer.Sanitize(dataJson, maxChars: 2000);
+            }
 
             var wantsCapabilities = requestedCapabilities is not null ||
                                     _options.ExperimentalApi ||
@@ -108,7 +116,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
                 ex.Error.Message,
                 dataJson,
                 help,
-                stderrTail: _process.StderrTail,
+                stderrTail: CodexDiagnosticsSanitizer.SanitizeLines(_process.StderrTail, maxLines: 20, maxCharsPerLine: 400),
                 innerException: ex);
         }
     }
@@ -194,7 +202,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
         try
         {
-            var result = await handler.HandleAsync(req.Method, req.Params, CancellationToken.None);
+            var result = await handler.HandleAsync(req.Method, req.Params, _disposeToken);
             return new JsonRpcResponse(req.Id, Result: result, Error: null);
         }
         catch (Exception ex)
@@ -210,6 +218,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             return;
         }
 
+        _disposeCts.Cancel();
         _globalNotifications.Writer.TryComplete();
 
         CodexTurnHandle[] handles;
@@ -227,6 +236,8 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
         await _rpc.DisposeAsync();
         await _process.DisposeAsync();
+
+        try { _disposeCts.Dispose(); } catch { /* ignore */ }
     }
 
     private async Task WatchProcessExitAsync()
@@ -250,16 +261,17 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
     private Exception BuildDisconnectException()
     {
-        var stderrTail = Array.Empty<string>();
+        var stderrTailRaw = Array.Empty<string>();
         try
         {
-            stderrTail = _process.StderrTail.ToArray();
+            stderrTailRaw = _process.StderrTail.ToArray();
         }
         catch
         {
             // ignore
         }
 
+        var stderrTail = CodexDiagnosticsSanitizer.SanitizeLines(stderrTailRaw, maxLines: 20, maxCharsPerLine: 400);
         var exitCode = _process.ExitCode;
         var pid = _process.ProcessId;
 
@@ -267,10 +279,9 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             ? "Codex app-server subprocess disconnected."
             : $"Codex app-server subprocess exited with code {exitCode}.";
 
+        // Note: include only redacted/truncated stderr snippets to reduce accidental leakage when exception messages are logged.
         if (stderrTail.Length > 0)
-        {
-            msg += $" (stderr tail: {string.Join(" | ", stderrTail.TakeLast(5))})";
-        }
+            msg += $" (stderr tail, redacted: {string.Join(" | ", stderrTail.TakeLast(5))})";
 
         return new CodexAppServerDisconnectedException(
             msg,
