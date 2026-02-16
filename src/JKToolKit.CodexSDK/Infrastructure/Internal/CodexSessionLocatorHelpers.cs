@@ -146,7 +146,10 @@ internal static class CodexSessionLocatorHelpers
                             var idString = idElement.GetString();
                             if (!string.IsNullOrWhiteSpace(idString))
                             {
-                                sessionId = SessionId.Parse(idString);
+                                if (SessionId.TryParse(idString, out var parsed))
+                                {
+                                    sessionId = parsed;
+                                }
                             }
                         }
 
