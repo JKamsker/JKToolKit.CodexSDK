@@ -22,10 +22,51 @@ internal static class CodexDiagnosticsSanitizer
 
         if (maxChars > 0 && sanitized.Length > maxChars)
         {
-            sanitized = sanitized[..maxChars];
+            sanitized = TruncateWithoutSplittingMarkers(sanitized, maxChars);
         }
 
         return sanitized;
+    }
+
+    private static string TruncateWithoutSplittingMarkers(string sanitized, int maxChars)
+    {
+        if (maxChars <= 0 || sanitized.Length <= maxChars)
+        {
+            return sanitized;
+        }
+
+        var cut = maxChars;
+
+        // Avoid cutting in the middle of any "[...]" placeholder such as "[REDACTED]" or "[REDACTED_EMAIL]".
+        var open = sanitized.LastIndexOf('[', cut - 1);
+        if (open >= 0)
+        {
+            var closeBeforeCut = sanitized.IndexOf(']', open);
+            if (closeBeforeCut < 0 || closeBeforeCut >= cut)
+            {
+                var close = sanitized.IndexOf(']', cut);
+                if (close >= 0 && close - open <= 64)
+                {
+                    cut = close + 1;
+                }
+                else
+                {
+                    cut = open;
+                }
+            }
+        }
+
+        if (cut <= 0)
+        {
+            return string.Empty;
+        }
+
+        if (cut > sanitized.Length)
+        {
+            cut = sanitized.Length;
+        }
+
+        return sanitized[..cut];
     }
 
     internal static string[] SanitizeLines(IEnumerable<string> lines, int maxLines, int maxCharsPerLine)
@@ -47,4 +88,3 @@ internal static class CodexDiagnosticsSanitizer
             .ToArray();
     }
 }
-
