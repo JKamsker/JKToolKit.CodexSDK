@@ -2,6 +2,7 @@ using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -80,9 +81,18 @@ internal sealed class CodexAppServerTurnsClient
 
             var ua = _initializeResult()?.UserAgent ?? "<unknown userAgent>";
             var sandboxJson = JsonSerializer.Serialize(options.SandboxPolicy, CodexAppServerClient.CreateDefaultSerializerOptions());
-            var data = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
-                ? $" Data: {ex.Error.Data.Value.GetRawText()}"
-                : string.Empty;
+            sandboxJson = CodexDiagnosticsSanitizer.Sanitize(sandboxJson, maxChars: 2000);
+
+            var dataJson = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
+                ? ex.Error.Data.Value.GetRawText()
+                : null;
+
+            if (!string.IsNullOrWhiteSpace(dataJson))
+            {
+                dataJson = CodexDiagnosticsSanitizer.Sanitize(dataJson, maxChars: 2000);
+            }
+
+            var data = string.IsNullOrWhiteSpace(dataJson) ? string.Empty : $" Data: {dataJson}";
 
             throw new InvalidOperationException(
                 $"turn/start rejected sandboxPolicy parameters. userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
