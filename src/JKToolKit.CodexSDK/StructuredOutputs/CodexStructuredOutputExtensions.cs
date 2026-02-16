@@ -150,27 +150,15 @@ public static class CodexStructuredOutputExtensions
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(progress);
 
-        retry ??= new CodexStructuredRetryOptions();
-        structured ??= new CodexStructuredOutputOptions();
-
-        if (retry.MaxAttempts <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
-        }
-
-        var serializerOptions = structured.SerializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        var schema = CodexJsonSchemaGenerator.Generate<T>(serializerOptions);
-
-        var effectiveBase = options.Clone();
-        effectiveBase.OutputSchema = CodexOutputSchema.FromJson(schema);
+        var prepared = PrepareExecStructuredRetry<T>(options, retry, structured);
 
         return await RunStructuredWithRetryCoreAsync<T>(
             client,
             initialSessionId: null,
-            effectiveBase,
-            retry,
-            structured,
-            serializerOptions,
+            prepared.EffectiveBase,
+            prepared.Retry,
+            prepared.Structured,
+            prepared.SerializerOptions,
             progress,
             ct).ConfigureAwait(false);
     }
@@ -188,27 +176,15 @@ public static class CodexStructuredOutputExtensions
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(options);
 
-        retry ??= new CodexStructuredRetryOptions();
-        structured ??= new CodexStructuredOutputOptions();
-
-        if (retry.MaxAttempts <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
-        }
-
-        var serializerOptions = structured.SerializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        var schema = CodexJsonSchemaGenerator.Generate<T>(serializerOptions);
-
-        var effectiveBase = options.Clone();
-        effectiveBase.OutputSchema = CodexOutputSchema.FromJson(schema);
+        var prepared = PrepareExecStructuredRetry<T>(options, retry, structured);
 
         return await RunStructuredWithRetryCoreAsync<T>(
             client,
             initialSessionId: null,
-            effectiveBase,
-            retry,
-            structured,
-            serializerOptions,
+            prepared.EffectiveBase,
+            prepared.Retry,
+            prepared.Structured,
+            prepared.SerializerOptions,
             progress: null,
             ct).ConfigureAwait(false);
     }
@@ -234,27 +210,15 @@ public static class CodexStructuredOutputExtensions
             throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
         }
 
-        retry ??= new CodexStructuredRetryOptions();
-        structured ??= new CodexStructuredOutputOptions();
-
-        if (retry.MaxAttempts <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(retry.MaxAttempts), retry.MaxAttempts, "MaxAttempts must be greater than zero.");
-        }
-
-        var serializerOptions = structured.SerializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        var schema = CodexJsonSchemaGenerator.Generate<T>(serializerOptions);
-
-        var effectiveBase = options.Clone();
-        effectiveBase.OutputSchema = CodexOutputSchema.FromJson(schema);
+        var prepared = PrepareExecStructuredRetry<T>(options, retry, structured);
 
         return await RunStructuredWithRetryCoreAsync<T>(
             client,
             sessionId,
-            effectiveBase,
-            retry,
-            structured,
-            serializerOptions,
+            prepared.EffectiveBase,
+            prepared.Retry,
+            prepared.Structured,
+            prepared.SerializerOptions,
             progress,
             ct).ConfigureAwait(false);
     }
@@ -277,6 +241,28 @@ public static class CodexStructuredOutputExtensions
             throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
         }
 
+        var prepared = PrepareExecStructuredRetry<T>(options, retry, structured);
+
+        return await RunStructuredWithRetryCoreAsync<T>(
+            client,
+            sessionId,
+            prepared.EffectiveBase,
+            prepared.Retry,
+            prepared.Structured,
+            prepared.SerializerOptions,
+            progress: null,
+            ct).ConfigureAwait(false);
+    }
+
+    private static (
+        CodexSessionOptions EffectiveBase,
+        CodexStructuredRetryOptions Retry,
+        CodexStructuredOutputOptions Structured,
+        JsonSerializerOptions SerializerOptions) PrepareExecStructuredRetry<T>(
+        CodexSessionOptions options,
+        CodexStructuredRetryOptions? retry,
+        CodexStructuredOutputOptions? structured)
+    {
         retry ??= new CodexStructuredRetryOptions();
         structured ??= new CodexStructuredOutputOptions();
 
@@ -291,15 +277,7 @@ public static class CodexStructuredOutputExtensions
         var effectiveBase = options.Clone();
         effectiveBase.OutputSchema = CodexOutputSchema.FromJson(schema);
 
-        return await RunStructuredWithRetryCoreAsync<T>(
-            client,
-            sessionId,
-            effectiveBase,
-            retry,
-            structured,
-            serializerOptions,
-            progress: null,
-            ct).ConfigureAwait(false);
+        return (effectiveBase, retry, structured, serializerOptions);
     }
 
     private static async Task<CodexStructuredResult<T>> RunStructuredWithRetryCoreAsync<T>(

@@ -195,15 +195,28 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
                     while (await timer.WaitForNextTickAsync(progressCts.Token).ConfigureAwait(false))
                     {
                         var now = DateTimeOffset.UtcNow;
-                        if (now - lastActivityUtc < TimeSpan.FromSeconds(20))
+                        int currentTurns;
+                        int currentEvents;
+                        var shouldLog = false;
+                        lock (consoleLock)
+                        {
+                            currentTurns = turns;
+                            currentEvents = events;
+                            if (now - lastActivityUtc >= TimeSpan.FromSeconds(20))
+                            {
+                                lastActivityUtc = now;
+                                shouldLog = true;
+                            }
+                        }
+
+                        if (!shouldLog)
                         {
                             continue;
                         }
 
                         lock (consoleLock)
                         {
-                            lastActivityUtc = now;
-                            LogLine($"[dim]...running ({started.Elapsed:hh\\:mm\\:ss}) turns={turns}, events={events}[/]");
+                            LogLine($"[dim]...running ({started.Elapsed:hh\\:mm\\:ss}) turns={currentTurns}, events={currentEvents}[/]");
                         }
                     }
                 }
