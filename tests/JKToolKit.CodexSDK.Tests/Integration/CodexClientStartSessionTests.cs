@@ -97,7 +97,7 @@ public class CodexClientStartSessionTests
         try
         {
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => client.StartSessionAsync(sessionOptions));
-            Assert.Contains("session id", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("session_meta", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

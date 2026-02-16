@@ -1,5 +1,7 @@
 using System.Text;
+using System.Diagnostics;
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Facade;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.StructuredOutputs;
@@ -24,17 +26,25 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
         Return your response as JSON only, matching the required schema.
         """;
 
+    private static string TimestampPrefix() =>
+        $"[dim][[{DateTime.Now:dd.MM.yyyy HH:mm:ss}]] [/]";
+
+    private static void LogLine(string markup) =>
+        AnsiConsole.MarkupLine($"{TimestampPrefix()}{markup}");
+
     public override async Task<int> ExecuteAsync(
         CommandContext context,
         StructuredReviewSettings settings,
         CancellationToken cancellationToken)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler? cancelHandler = null;
+        cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
         var workingDirectory = settings.WorkingDirectory ?? Directory.GetCurrentDirectory();
@@ -48,20 +58,21 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
             ? CodexReasoningEffort.Medium
             : CodexReasoningEffort.Parse(settings.Reasoning);
 
-        AnsiConsole.MarkupLine("[bold]Structured Review[/]");
-        AnsiConsole.MarkupLine($"[dim]Directory:[/]    {workingDirectory}");
-        AnsiConsole.MarkupLine($"[dim]Model:[/]        {model.Value}");
-        AnsiConsole.MarkupLine($"[dim]Reasoning:[/]    {reasoning.Value}");
-        AnsiConsole.MarkupLine($"[dim]Retries:[/]      {settings.MaxRetries}");
+        LogLine("[bold]Structured Review[/]");
+        LogLine($"[dim]Directory:[/]    {Markup.Escape(workingDirectory)}");
+        LogLine($"[dim]Model:[/]        {Markup.Escape(model.Value)}");
+        LogLine($"[dim]Reasoning:[/]    {Markup.Escape(reasoning.Value)}");
+        LogLine($"[dim]Retries:[/]      {settings.MaxRetries}");
 
         if (!string.IsNullOrWhiteSpace(settings.BaseBranch))
-            AnsiConsole.MarkupLine($"[dim]Base branch:[/]  {settings.BaseBranch}");
+            LogLine($"[dim]Base branch:[/]  {Markup.Escape(settings.BaseBranch)}");
         if (!string.IsNullOrWhiteSpace(settings.CommitSha))
-            AnsiConsole.MarkupLine($"[dim]Commit:[/]       {settings.CommitSha}");
+            LogLine($"[dim]Commit:[/]       {Markup.Escape(settings.CommitSha)}");
         if (!string.IsNullOrWhiteSpace(settings.CommitsSince))
-            AnsiConsole.MarkupLine($"[dim]Since:[/]        {settings.CommitsSince}");
+            LogLine($"[dim]Since:[/]        {Markup.Escape(settings.CommitsSince)}");
 
         AnsiConsole.WriteLine();
+        LogLine("[dim]Press Ctrl+C to cancel.[/]");
 
         await using var sdk = CodexSdk.Create(builder =>
         {
@@ -71,41 +82,156 @@ public sealed class StructuredReviewCommand : AsyncCommand<StructuredReviewSetti
 
         try
         {
+            var consoleLock = new object();
+            var started = Stopwatch.StartNew();
+            var lastActivityUtc = DateTimeOffset.UtcNow;
+            var turns = 0;
+            var events = 0;
+
             var sessionOptions = new CodexSessionOptions(workingDirectory, prompt)
             {
                 Model = model,
                 ReasoningEffort = reasoning
             };
 
-            AnsiConsole.MarkupLine("[yellow]Running structured review...[/]");
+            LogLine("[yellow]Running structured review...[/]");
 
-            var result = await sdk.Exec.RunStructuredWithRetryAsync<StructuredReviewResult>(
-                sessionOptions,
-                retry: new CodexStructuredRetryOptions { MaxAttempts = settings.MaxRetries },
-                ct: ct);
+            using var progressCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var progress = new CodexStructuredRunProgress
+            {
+                AttemptStarting = (attempt, max, kind) =>
+                {
+                    lock (consoleLock)
+                    {
+                        lastActivityUtc = DateTimeOffset.UtcNow;
+                        LogLine($"[dim]Attempt {attempt}/{max} ({kind})[/]");
+                    }
+                },
+                SessionLocated = (sid, logPath) =>
+                {
+                    lock (consoleLock)
+                    {
+                        lastActivityUtc = DateTimeOffset.UtcNow;
+                        LogLine($"[dim]Session:[/] {Markup.Escape(sid.Value)}");
+                        if (!string.IsNullOrWhiteSpace(logPath))
+                        {
+                            LogLine($"[dim]Log:[/]     {Markup.Escape(logPath)}");
+                        }
+                    }
+                },
+                EventReceived = evt =>
+                {
+                    lock (consoleLock)
+                    {
+                        lastActivityUtc = DateTimeOffset.UtcNow;
+                        events++;
+
+                        switch (evt)
+                        {
+                            case TurnContextEvent ctx:
+                                turns++;
+                                LogLine(
+                                    $"[dim]Turn {turns}:[/] approval={Markup.Escape(ctx.ApprovalPolicy ?? "n/a")}, sandbox={Markup.Escape(ctx.SandboxPolicyType ?? "n/a")}");
+                                break;
+
+                            case TokenCountEvent tokens:
+                                var input = tokens.InputTokens?.ToString() ?? "n/a";
+                                var output = tokens.OutputTokens?.ToString() ?? "n/a";
+                                var reasoningTokens = tokens.ReasoningTokens?.ToString() ?? "n/a";
+                                LogLine($"[dim]Tokens:[/] in={input}, out={output}, reasoning={reasoningTokens}");
+                                break;
+
+                            case TaskCompleteEvent:
+                                LogLine("[dim]Task complete event received.[/]");
+                                break;
+                        }
+                    }
+                },
+                ParseFailed = (attempt, ex) =>
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    lock (consoleLock)
+                    {
+                        lastActivityUtc = DateTimeOffset.UtcNow;
+                        LogLine($"[yellow]Parse failed on attempt {attempt}: {Markup.Escape(ex.Message)}[/]");
+                    }
+                }
+            };
+
+            var heartbeatTask = Task.Run(async () =>
+            {
+                var timer = new PeriodicTimer(TimeSpan.FromSeconds(20));
+                try
+                {
+                    while (await timer.WaitForNextTickAsync(progressCts.Token).ConfigureAwait(false))
+                    {
+                        var now = DateTimeOffset.UtcNow;
+                        if (now - lastActivityUtc < TimeSpan.FromSeconds(20))
+                        {
+                            continue;
+                        }
+
+                        lock (consoleLock)
+                        {
+                            lastActivityUtc = now;
+                            LogLine($"[dim]...running ({started.Elapsed:hh\\:mm\\:ss}) turns={turns}, events={events}[/]");
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected
+                }
+            }, CancellationToken.None);
+
+            CodexStructuredResult<StructuredReviewResult> result;
+            try
+            {
+                result = await sdk.Exec.RunStructuredWithRetryAsync<StructuredReviewResult>(
+                    sessionOptions,
+                    progress,
+                    retry: new CodexStructuredRetryOptions { MaxAttempts = settings.MaxRetries },
+                    ct: ct);
+            }
+            finally
+            {
+                progressCts.Cancel();
+                try { await heartbeatTask.ConfigureAwait(false); } catch { /* best-effort */ }
+            }
 
             RenderResult(result.Value);
 
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine($"[dim]Session:[/] {result.SessionId}");
+            LogLine($"[dim]Session:[/] {Markup.Escape(result.SessionId ?? string.Empty)}");
 
             return 0;
         }
         catch (CodexStructuredOutputRetryFailedException ex)
         {
-            AnsiConsole.MarkupLine($"[red]Failed after {ex.Attempts} attempts.[/]");
-            AnsiConsole.MarkupLine($"[red]{ex.Message}[/]");
+            LogLine($"[red]Failed after {ex.Attempts} attempts.[/]");
+            LogLine($"[red]{Markup.Escape(ex.Message)}[/]");
             return 1;
         }
         catch (OperationCanceledException)
         {
-            AnsiConsole.MarkupLine("[yellow]Cancelled.[/]");
+            LogLine("[yellow]Cancelled.[/]");
             return 1;
         }
         catch (Exception ex)
         {
             AnsiConsole.WriteException(ex);
             return 1;
+        }
+        finally
+        {
+            if (cancelHandler is not null)
+            {
+                Console.CancelKeyPress -= cancelHandler;
+            }
         }
     }
 

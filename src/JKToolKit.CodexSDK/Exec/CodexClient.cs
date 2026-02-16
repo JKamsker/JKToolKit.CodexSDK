@@ -303,8 +303,25 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _logger.LogDebug("Starting Codex session at {StartTime} using sessions root {SessionsRoot}", startTime, sessionsRoot);
 
         Process? process = null;
+        Task<string>? newSessionFileTask = null;
         try
         {
+            // Start watching for a new session log file BEFORE launching the process to avoid races where
+            // Codex creates the JSONL file very quickly and a baseline snapshot taken post-launch would miss it.
+            try
+            {
+                newSessionFileTask = _sessionLocator.WaitForNewSessionFileAsync(
+                    sessionsRoot,
+                    startTime,
+                    _clientOptions.StartTimeout,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                newSessionFileTask = Task.FromException<string>(ex);
+            }
+            _ = newSessionFileTask.ContinueWith(t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+
             var sw = Stopwatch.StartNew();
             process = await _processLauncher.StartSessionAsync(effectiveOptions, _clientOptions, cancellationToken).ConfigureAwait(false);
             _logger.LogDebug("Codex process started with PID {Pid} after {ElapsedMilliseconds} ms", process.Id, sw.ElapsedMilliseconds);
@@ -316,24 +333,19 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
             // Locate the new session log file
             string logPath;
             SessionId? capturedId = null;
+            Exception? captureException = null;
             try
             {
                 capturedId = await WaitForResultOrTimeoutAsync(sessionIdCaptureTask, captureTimeout, cancellationToken).ConfigureAwait(false);
-                _logger.LogDebug("Captured session id {SessionId} from process output after {ElapsedMilliseconds} ms", capturedId, sw.ElapsedMilliseconds);
+                if (capturedId is not null)
+                {
+                    _logger.LogDebug("Captured session id {SessionId} from process output after {ElapsedMilliseconds} ms", capturedId, sw.ElapsedMilliseconds);
+                }
             }
             catch (Exception ex)
             {
-                var stdoutSnippet = getStartStdoutDiag().TrimEnd();
-                var stderrSnippet = getStartStderrDiag().TrimEnd();
-
-                _logger.LogDebug(ex, "Failed to capture session id from process output after {ElapsedMilliseconds} ms.", sw.ElapsedMilliseconds);
-
-                throw new InvalidOperationException(
-                    "Failed to capture session id from Codex process output; cannot locate session log. " +
-                    "This may indicate the Codex CLI did not start correctly or its stdout/stderr were not readable. " +
-                    $"Captured stdout (first {SessionStartDiagCaptureChars} chars): {stdoutSnippet}. " +
-                    $"Captured stderr (first {SessionStartDiagCaptureChars} chars): {stderrSnippet}.",
-                    ex);
+                captureException = ex;
+                _logger.LogDebug(ex, "Failed to capture session id from process output after {ElapsedMilliseconds} ms; falling back to filesystem session discovery.", sw.ElapsedMilliseconds);
             }
 
             if (capturedId is { } sid)
@@ -352,25 +364,42 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
                 catch (Exception ex)
                 {
                     _logger.LogDebug(ex, "Session log by id not found in time; falling back to time-based locator.");
-                    logPath = await _sessionLocator.WaitForNewSessionFileAsync
-                        (
-                            sessionsRoot,
-                            startTime,
-                            _clientOptions.StartTimeout,
-                            cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    if (newSessionFileTask is null)
+                    {
+                        throw;
+                    }
+
+                    logPath = await newSessionFileTask.ConfigureAwait(false);
                 }
             }
             else
             {
-                // Disable for now - produces race conditions in prod
-                // logPath = await _sessionLocator.WaitForNewSessionFileAsync(
-                //     sessionsRoot,
-                //     startTime,
-                //     _clientOptions.StartTimeout,
-                //     cancellationToken).ConfigureAwait(false);
-                throw new InvalidOperationException("Failed to capture session id from process output; cannot locate session log.");
+                if (newSessionFileTask is null)
+                {
+                    throw new InvalidOperationException("Session log discovery task was not initialized; cannot locate session log.");
+                }
+
+                try
+                {
+                    logPath = await newSessionFileTask.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    var stdoutSnippet = getStartStdoutDiag().TrimEnd();
+                    var stderrSnippet = getStartStderrDiag().TrimEnd();
+
+                    throw new InvalidOperationException(
+                        "Failed to locate Codex session log file. " +
+                        "Codex did not emit a recognizable session id and no new JSONL session file was discovered. " +
+                        $"Captured stdout (first {SessionStartDiagCaptureChars} chars): {stdoutSnippet}. " +
+                        $"Captured stderr (first {SessionStartDiagCaptureChars} chars): {stderrSnippet}.",
+                        captureException ?? ex);
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(logPath))
+            {
+                throw new InvalidOperationException("Codex session log path was empty; cannot attach to session.");
             }
 
             // Extract session_meta
@@ -609,7 +638,8 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         }
 
         var tempPath = Path.Combine(Path.GetTempPath(), $"codex-output-schema-{Guid.NewGuid():N}.json");
-        File.WriteAllText(tempPath, jsonSchema.GetRawText(), Encoding.UTF8);
+        // Codex CLI expects plain UTF-8 JSON. Some parsers reject a UTF-8 BOM, so avoid emitting it.
+        File.WriteAllText(tempPath, jsonSchema.GetRawText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
         var effective = options.Clone();
         effective.OutputSchema = CodexOutputSchema.FromFile(tempPath);
@@ -845,5 +875,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         }
     }
 
-    private static readonly Regex SessionIdRegex = new(@"session id\s*[:=]\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex SessionIdRegex = new(
+        @"(?:session(?:[_\s-]?id)?|sid)\s*[:=]\s*([0-9a-fA-F\-]+)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 }

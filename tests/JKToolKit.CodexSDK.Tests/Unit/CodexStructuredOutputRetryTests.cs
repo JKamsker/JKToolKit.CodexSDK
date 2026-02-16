@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Notifications;
@@ -32,6 +33,28 @@ public sealed class CodexStructuredOutputRetryTests
             client.ResumeCalls.Should().Be(1);
             client.LastResumePrompt.Should().NotBeNullOrWhiteSpace();
             client.LastResumePrompt.Should().Contain("Return ONLY valid JSON");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RunStructuredWithRetryAsync_Completes_WhenLiveEventStreamNeverEnds_ButProcessExits()
+    {
+        var workingDirectory = Directory.CreateTempSubdirectory("codexsdk-exit").FullName;
+        try
+        {
+            var client = new FakeCodexClient(
+                start: FakeSessionHandle.CreateLiveNoTaskComplete("session-1", "log.jsonl", lastAgentMessage: "{\"answer\":\"ok\"}"),
+                resume: FakeSessionHandle.Create("session-1", "log.jsonl", lastAgentMessage: "{\"answer\":\"ok\"}"));
+
+            var options = new CodexSessionOptions(workingDirectory, "Return JSON.") { Model = CodexModel.Gpt52Codex };
+
+            var result = await client.RunStructuredWithRetryAsync<MyDto>(options);
+
+            result.Value.Answer.Should().Be("ok");
         }
         finally
         {
@@ -92,31 +115,56 @@ public sealed class CodexStructuredOutputRetryTests
     private sealed class FakeSessionHandle : ICodexSessionHandle
     {
         private readonly string _lastAgentMessage;
+        private readonly bool _noTaskComplete;
+        private readonly bool _blockWhenFollowing;
 
-        private FakeSessionHandle(CodexSessionInfo info, string lastAgentMessage)
+        private FakeSessionHandle(CodexSessionInfo info, string lastAgentMessage, bool noTaskComplete, bool blockWhenFollowing)
         {
             Info = info;
             _lastAgentMessage = lastAgentMessage;
+            _noTaskComplete = noTaskComplete;
+            _blockWhenFollowing = blockWhenFollowing;
         }
 
         public static FakeSessionHandle Create(string sessionId, string logPath, string lastAgentMessage) =>
-            new(new CodexSessionInfo(SessionId.Parse(sessionId), logPath, DateTimeOffset.UtcNow, "/tmp", null), lastAgentMessage);
+            new(new CodexSessionInfo(SessionId.Parse(sessionId), logPath, DateTimeOffset.UtcNow, "/tmp", null), lastAgentMessage, noTaskComplete: false, blockWhenFollowing: false);
+
+        public static FakeSessionHandle CreateLiveNoTaskComplete(string sessionId, string logPath, string lastAgentMessage) =>
+            new(new CodexSessionInfo(SessionId.Parse(sessionId), logPath, DateTimeOffset.UtcNow, "/tmp", null), lastAgentMessage, noTaskComplete: true, blockWhenFollowing: true);
 
         public CodexSessionInfo Info { get; }
         public SessionExitReason ExitReason => SessionExitReason.Unknown;
         public bool IsLive => true;
 
-        public IAsyncEnumerable<CodexEvent> GetEventsAsync(EventStreamOptions? options, CancellationToken cancellationToken) => Events();
+        public IAsyncEnumerable<CodexEvent> GetEventsAsync(EventStreamOptions? options, CancellationToken cancellationToken) => Events(options, cancellationToken);
 
-        private async IAsyncEnumerable<CodexEvent> Events()
+        private async IAsyncEnumerable<CodexEvent> Events(EventStreamOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             using var rawDoc = JsonDocument.Parse("{\"type\":\"event_msg\",\"payload\":{}}");
             yield return new AgentMessageEvent { Type = "agent_message", Timestamp = DateTimeOffset.UtcNow, RawPayload = rawDoc.RootElement.Clone(), Text = _lastAgentMessage };
-            yield return new TaskCompleteEvent { Type = "task_complete", Timestamp = DateTimeOffset.UtcNow, RawPayload = rawDoc.RootElement.Clone(), LastAgentMessage = _lastAgentMessage };
-            await Task.CompletedTask;
+
+            if (!_noTaskComplete)
+            {
+                yield return new TaskCompleteEvent { Type = "task_complete", Timestamp = DateTimeOffset.UtcNow, RawPayload = rawDoc.RootElement.Clone(), LastAgentMessage = _lastAgentMessage };
+                yield break;
+            }
+
+            // Simulate a live follow stream that never completes on its own.
+            if (_blockWhenFollowing && (options?.Follow ?? true))
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
         }
 
-        public Task<int> WaitForExitAsync(CancellationToken cancellationToken) => Task.FromResult(0);
+        public Task<int> WaitForExitAsync(CancellationToken cancellationToken)
+        {
+            // Simulate process exit shortly after start.
+            return Task.Run(async () =>
+            {
+                await Task.Delay(50, cancellationToken);
+                return 0;
+            }, cancellationToken);
+        }
         public Task<int> ExitAsync(CancellationToken cancellationToken) => Task.FromResult(0);
         public IDisposable OnExit(Action<int> callback) => new Noop();
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
