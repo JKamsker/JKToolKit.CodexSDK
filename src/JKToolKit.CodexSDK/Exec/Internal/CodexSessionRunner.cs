@@ -346,7 +346,14 @@ internal sealed class CodexSessionRunner
             {
                 timeoutCts.Cancel();
                 _ = metaTask.ContinueWith(t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
-                throw new InvalidOperationException($"Codex process exited with code {process.ExitCode} before session_meta was received.");
+
+                if (exitTask.IsCompletedSuccessfully || process.HasExited)
+                {
+                    throw new InvalidOperationException($"Codex process exited with code {process.ExitCode} before session_meta was received.");
+                }
+
+                await exitTask.ConfigureAwait(false);
+                throw new InvalidOperationException("Unreachable.");
             }
         }
 
@@ -440,10 +447,28 @@ internal sealed class CodexSessionRunner
         var tempPath = Path.Combine(Path.GetTempPath(), $"codex-output-schema-{Guid.NewGuid():N}.json");
         File.WriteAllText(tempPath, jsonSchema.GetRawText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
-        var effective = options.Clone();
-        effective.OutputSchema = CodexOutputSchema.FromFile(tempPath);
+        try
+        {
+            var effective = options.Clone();
+            effective.OutputSchema = CodexOutputSchema.FromFile(tempPath);
 
-        return (effective, new List<string> { tempPath });
+            return (effective, new List<string> { tempPath });
+        }
+        catch
+        {
+            try
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+            }
+            catch
+            {
+                // Best-effort.
+            }
+            throw;
+        }
     }
 
     private static void DeleteTempFilesBestEffort(IReadOnlyList<string> tempFiles)

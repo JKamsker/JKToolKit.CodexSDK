@@ -258,11 +258,14 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
         _disposeCts.Cancel();
 
         ICodexAppServerClientAdapter? inner;
+        Task? exitMonitorTask;
         await _restartLock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
             inner = _inner;
             _inner = null;
+            exitMonitorTask = _exitMonitorTask;
+            _exitMonitorTask = null;
         }
         finally
         {
@@ -274,8 +277,13 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
             try { await inner.DisposeAsync().ConfigureAwait(false); } catch { /* ignore */ }
         }
 
+        if (exitMonitorTask is not null)
+        {
+            try { await exitMonitorTask.ConfigureAwait(false); } catch { /* ignore */ }
+        }
+
         try { _disposeCts.Dispose(); } catch { /* ignore */ }
-        _restartLock.Dispose();
+        try { _restartLock.Dispose(); } catch { /* ignore */ }
     }
 
     private void SetInner(ICodexAppServerClientAdapter created)
