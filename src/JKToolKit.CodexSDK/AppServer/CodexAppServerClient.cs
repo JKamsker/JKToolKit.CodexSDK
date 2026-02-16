@@ -31,6 +31,10 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private readonly ILogger _logger;
     private readonly IStdioProcess _process;
     private readonly IJsonRpcConnection _rpc;
+    private readonly CodexAppServerThreadsClient _threadsClient;
+    private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
+    private readonly CodexAppServerConfigClient _configClient;
+    private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
 
     private readonly Channel<AppServerNotification> _globalNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
@@ -146,6 +150,10 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _process = process;
         _rpc = rpc;
         _logger = logger;
+        _threadsClient = new CodexAppServerThreadsClient(SendRequestAsync, ExperimentalApiEnabled);
+        _skillsAppsClient = new CodexAppServerSkillsAppsClient(SendRequestAsync);
+        _configClient = new CodexAppServerConfigClient(SendRequestAsync, ExperimentalApiEnabled);
+        _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(SendRequestAsync, ExperimentalApiEnabled);
 
         _globalNotifications = Channel.CreateBounded<AppServerNotification>(new BoundedChannelOptions(options.NotificationBufferCapacity)
         {
@@ -282,547 +290,134 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Starts a new thread.
     /// </summary>
-    public async Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: ExperimentalApiEnabled);
-
-        var result = await SendRequestAsync(
-            "thread/start",
-            new ThreadStartParams
-            {
-                Model = options.Model?.Value,
-                ModelProvider = options.ModelProvider,
-                Cwd = options.Cwd,
-                ApprovalPolicy = options.ApprovalPolicy?.Value,
-                Sandbox = options.Sandbox?.ToAppServerWireValue(),
-                Config = options.Config,
-                BaseInstructions = options.BaseInstructions,
-                DeveloperInstructions = options.DeveloperInstructions,
-                Personality = options.Personality,
-                Ephemeral = options.Ephemeral,
-                ExperimentalRawEvents = options.ExperimentalRawEvents
-            },
-            ct);
-
-        var threadId = ExtractThreadId(result);
-        if (string.IsNullOrWhiteSpace(threadId))
-        {
-            throw new InvalidOperationException(
-                $"thread/start returned no thread id. Raw result: {result}");
-        }
-        return new CodexThread(threadId, result);
-    }
+    public Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct = default) =>
+        _threadsClient.StartThreadAsync(options, ct);
 
     /// <summary>
     /// Resumes an existing thread by ID.
     /// </summary>
-    public async Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        var result = await SendRequestAsync(
-            "thread/resume",
-            new ThreadResumeParams { ThreadId = threadId },
-            ct);
-
-        var id = ExtractThreadId(result) ?? threadId;
-        return new CodexThread(id, result);
-    }
+    public Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.ResumeThreadAsync(threadId, ct);
 
     /// <summary>
     /// Resumes an existing thread using the provided options.
     /// </summary>
-    public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        if (options.History is null &&
-            string.IsNullOrWhiteSpace(options.Path) &&
-            string.IsNullOrWhiteSpace(options.ThreadId))
-        {
-            throw new ArgumentException("Either ThreadId, History, or Path must be specified.", nameof(options));
-        }
-
-        ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: ExperimentalApiEnabled);
-
-        var result = await SendRequestAsync(
-            "thread/resume",
-            new ThreadResumeParams
-            {
-                ThreadId = options.ThreadId,
-                History = options.History,
-                Path = options.Path,
-                Model = options.Model?.Value,
-                ModelProvider = options.ModelProvider,
-                Cwd = options.Cwd,
-                ApprovalPolicy = options.ApprovalPolicy?.Value,
-                Sandbox = options.Sandbox?.ToAppServerWireValue(),
-                Config = options.Config,
-                BaseInstructions = options.BaseInstructions,
-                DeveloperInstructions = options.DeveloperInstructions,
-                Personality = options.Personality
-            },
-            ct);
-
-        var id = ExtractThreadId(result) ?? options.ThreadId;
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            throw new InvalidOperationException(
-                $"thread/resume returned no thread id. Raw result: {result}");
-        }
-        return new CodexThread(id, result);
-    }
+    public Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default) =>
+        _threadsClient.ResumeThreadAsync(options, ct);
 
     /// <summary>
     /// Lists threads with optional filters and paging.
     /// </summary>
-    public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        var result = await SendRequestAsync(
-            "thread/list",
-            new ThreadListParams
-            {
-                Archived = options.Archived,
-                Cwd = options.Cwd,
-                Query = options.Query,
-                PageSize = options.PageSize,
-                Cursor = options.Cursor,
-                SortKey = options.SortKey,
-                SortDirection = options.SortDirection
-            },
-            ct);
-
-        return new CodexThreadListPage
-        {
-            Threads = ParseThreadListThreads(result),
-            NextCursor = ExtractNextCursor(result),
-            Raw = result
-        };
-    }
+    public Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default) =>
+        _threadsClient.ListThreadsAsync(options, ct);
 
     /// <summary>
     /// Reads a thread by ID.
     /// </summary>
-    public async Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        var result = await SendRequestAsync(
-            "thread/read",
-            new ThreadReadParams { ThreadId = threadId },
-            ct);
-
-        var threadObject = TryGetObject(result, "thread") ?? result;
-        var summary = ParseThreadSummary(threadObject) ?? new CodexThreadSummary
-        {
-            ThreadId = threadId,
-            Raw = threadObject
-        };
-
-        return new CodexThreadReadResult
-        {
-            Thread = summary,
-            Raw = result
-        };
-    }
+    public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.ReadThreadAsync(threadId, ct);
 
     /// <summary>
     /// Lists identifiers of threads currently loaded in memory by the app-server.
     /// </summary>
-    public async Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        var result = await SendRequestAsync(
-            "thread/loaded/list",
-            new ThreadLoadedListParams
-            {
-                Cursor = options.Cursor,
-                Limit = options.Limit
-            },
-            ct);
-
-        return new CodexLoadedThreadListPage
-        {
-            ThreadIds = ParseThreadLoadedListThreadIds(result),
-            NextCursor = ExtractNextCursor(result),
-            Raw = result
-        };
-    }
+    public Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default) =>
+        _threadsClient.ListLoadedThreadsAsync(options, ct);
 
     /// <summary>
     /// Starts thread compaction.
     /// </summary>
-    public async Task CompactThreadAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        _ = await SendRequestAsync(
-            "thread/compact/start",
-            new ThreadCompactStartParams { ThreadId = threadId },
-            ct);
-    }
+    public Task CompactThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.CompactThreadAsync(threadId, ct);
 
     /// <summary>
     /// Rolls back the thread by the specified number of turns.
     /// </summary>
-    public async Task<CodexThread> RollbackThreadAsync(string threadId, int numTurns, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-        if (numTurns <= 0)
-            throw new ArgumentOutOfRangeException(nameof(numTurns), numTurns, "NumTurns must be greater than zero.");
-
-        var result = await SendRequestAsync(
-            "thread/rollback",
-            new ThreadRollbackParams
-            {
-                ThreadId = threadId,
-                NumTurns = numTurns
-            },
-            ct);
-
-        var threadObj = TryGetObject(result, "thread") ?? result;
-        var id = ExtractThreadId(threadObj) ?? threadId;
-        return new CodexThread(id, result);
-    }
+    public Task<CodexThread> RollbackThreadAsync(string threadId, int numTurns, CancellationToken ct = default) =>
+        _threadsClient.RollbackThreadAsync(threadId, numTurns, ct);
 
     /// <summary>
     /// Terminates all running background terminals associated with the thread (experimental).
     /// </summary>
-    public async Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        if (!ExperimentalApiEnabled)
-        {
-            throw new CodexExperimentalApiRequiredException("thread/backgroundTerminals/clean");
-        }
-
-        _ = await SendRequestAsync(
-            "thread/backgroundTerminals/clean",
-            new ThreadBackgroundTerminalsCleanParams { ThreadId = threadId },
-            ct);
-    }
+    public Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.CleanThreadBackgroundTerminalsAsync(threadId, ct);
 
     /// <summary>
     /// Forks a thread.
     /// </summary>
-    public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        ExperimentalApiGuards.ValidateThreadFork(options, ExperimentalApiEnabled);
-
-        var result = await SendRequestAsync(
-            "thread/fork",
-            new ThreadForkParams
-            {
-                ThreadId = options.ThreadId,
-                Path = options.Path
-            },
-            ct);
-
-        var threadId = ExtractThreadId(result);
-        if (string.IsNullOrWhiteSpace(threadId))
-        {
-            throw new InvalidOperationException(
-                $"thread/fork returned no thread id. Raw result: {result}");
-        }
-
-        return new CodexThread(threadId, result);
-    }
+    public Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default) =>
+        _threadsClient.ForkThreadAsync(options, ct);
 
     /// <summary>
     /// Archives a thread.
     /// </summary>
-    public async Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        var result = await SendRequestAsync(
-            "thread/archive",
-            new ThreadArchiveParams { ThreadId = threadId },
-            ct);
-
-        var id = ExtractThreadId(result) ?? threadId;
-        return new CodexThread(id, result);
-    }
+    public Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.ArchiveThreadAsync(threadId, ct);
 
     /// <summary>
     /// Unarchives a thread.
     /// </summary>
-    public async Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        var result = await SendRequestAsync(
-            "thread/unarchive",
-            new ThreadUnarchiveParams { ThreadId = threadId },
-            ct);
-
-        var id = ExtractThreadId(result) ?? threadId;
-        return new CodexThread(id, result);
-    }
+    public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.UnarchiveThreadAsync(threadId, ct);
 
     /// <summary>
     /// Sets (or clears) the thread name.
     /// </summary>
-    public async Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        _ = await SendRequestAsync(
-            "thread/name/set",
-            new ThreadSetNameParams { ThreadId = threadId, ThreadName = name },
-            ct);
-    }
+    public Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default) =>
+        _threadsClient.SetThreadNameAsync(threadId, name, ct);
 
     /// <summary>
     /// Lists skills.
     /// </summary>
-    public async Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        IReadOnlyList<string>? cwds = null;
-        if (options.Cwds is { Count: > 0 })
-        {
-            cwds = options.Cwds;
-        }
-        else if (!string.IsNullOrWhiteSpace(options.Cwd))
-        {
-            cwds = [options.Cwd];
-        }
-
-        SkillsListExtraRootsForCwd[]? perCwd = null;
-        if (options.ExtraRootsForCwd is { Count: > 0 })
-        {
-            var cwd = options.Cwd ?? (cwds is { Count: 1 } ? cwds[0] : null);
-            if (string.IsNullOrWhiteSpace(cwd))
-            {
-                throw new ArgumentException("ExtraRootsForCwd requires a single Cwd scope.", nameof(options));
-            }
-
-            perCwd =
-            [
-                new SkillsListExtraRootsForCwd
-                {
-                    Cwd = cwd,
-                    ExtraUserRoots = options.ExtraRootsForCwd
-                }
-            ];
-        }
-
-        var result = await SendRequestAsync(
-            "skills/list",
-            new SkillsListParams
-            {
-                Cwds = cwds,
-                ForceReload = options.ForceReload ? true : null,
-                PerCwdExtraUserRoots = perCwd
-            },
-            ct);
-
-        var entries = ParseSkillsListEntries(result);
-
-        return new SkillsListResult
-        {
-            Entries = entries,
-            Skills = ParseSkillsListSkills(entries),
-            Raw = result
-        };
-    }
+    public Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default) =>
+        _skillsAppsClient.ListSkillsAsync(options, ct);
 
     /// <summary>
     /// Lists apps/connectors.
     /// </summary>
-    public async Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        var result = await SendRequestAsync(
-            "app/list",
-            new AppListParams
-            {
-                Cursor = options.Cursor,
-                Limit = options.Limit,
-                ThreadId = options.ThreadId,
-                ForceRefetch = options.ForceRefetch ? true : null
-            },
-            ct);
-
-        return new AppsListResult
-        {
-            Apps = ParseAppsListApps(result),
-            NextCursor = ExtractNextCursor(result),
-            Raw = result
-        };
-    }
+    public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default) =>
+        _skillsAppsClient.ListAppsAsync(options, ct);
 
     /// <summary>
     /// Reads the active configuration requirements constraints (for example from <c>requirements.toml</c> or MDM).
     /// </summary>
-    public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
-    {
-        var result = await SendRequestAsync(
-            "configRequirements/read",
-            @params: null,
-            ct);
-
-        return new ConfigRequirementsReadResult
-        {
-            Requirements = ParseConfigRequirementsReadRequirements(result, experimentalApiEnabled: ExperimentalApiEnabled),
-            Raw = result
-        };
-    }
+    public Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default) =>
+        _configClient.ReadConfigRequirementsAsync(ct);
 
     /// <summary>
     /// Reads remote skills.
     /// </summary>
-    public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
-    {
-        var result = await SendRequestAsync(
-            "skills/remote/read",
-            @params: null,
-            ct);
-
-        return new RemoteSkillsReadResult
-        {
-            Skills = ParseRemoteSkillsReadSkills(result),
-            Raw = result
-        };
-    }
+    public Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default) =>
+        _configClient.ReadRemoteSkillsAsync(ct);
 
     /// <summary>
     /// Writes a remote skill reference.
     /// </summary>
-    public async Task<RemoteSkillWriteResult> WriteRemoteSkillAsync(string hazelnutId, bool isPreload, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(hazelnutId))
-            throw new ArgumentException("HazelnutId cannot be empty or whitespace.", nameof(hazelnutId));
-
-        var result = await SendRequestAsync(
-            "skills/remote/write",
-            new SkillsRemoteWriteParams
-            {
-                HazelnutId = hazelnutId,
-                IsPreload = isPreload
-            },
-            ct);
-
-        return new RemoteSkillWriteResult
-        {
-            Id = GetStringOrNull(result, "id"),
-            Name = GetStringOrNull(result, "name"),
-            Path = GetStringOrNull(result, "path"),
-            Raw = result
-        };
-    }
+    public Task<RemoteSkillWriteResult> WriteRemoteSkillAsync(string hazelnutId, bool isPreload, CancellationToken ct = default) =>
+        _configClient.WriteRemoteSkillAsync(hazelnutId, isPreload, ct);
 
     /// <summary>
     /// Writes skills configuration.
     /// </summary>
-    public async Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            throw new ArgumentException("Path cannot be empty or whitespace.", nameof(path));
-
-        var result = await SendRequestAsync(
-            "skills/config/write",
-            new SkillsConfigWriteParams
-            {
-                Enabled = enabled,
-                Path = path
-            },
-            ct);
-
-        return new SkillsConfigWriteResult
-        {
-            EffectiveEnabled = GetBoolOrNull(result, "effectiveEnabled"),
-            Raw = result
-        };
-    }
+    public Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default) =>
+        _configClient.WriteSkillsConfigAsync(enabled, path, ct);
 
     /// <summary>
     /// Starts a fuzzy file search session (experimental).
     /// </summary>
-    public async Task StartFuzzyFileSearchSessionAsync(string sessionId, IReadOnlyList<string> roots, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(sessionId))
-            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
-        ArgumentNullException.ThrowIfNull(roots);
-
-        if (!ExperimentalApiEnabled)
-        {
-            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStart");
-        }
-
-        _ = await SendRequestAsync(
-            "fuzzyFileSearch/sessionStart",
-            new FuzzyFileSearchSessionStartParams
-            {
-                SessionId = sessionId,
-                Roots = roots
-            },
-            ct);
-    }
+    public Task StartFuzzyFileSearchSessionAsync(string sessionId, IReadOnlyList<string> roots, CancellationToken ct = default) =>
+        _fuzzyFileSearchClient.StartFuzzyFileSearchSessionAsync(sessionId, roots, ct);
 
     /// <summary>
     /// Updates a fuzzy file search session query (experimental).
     /// </summary>
-    public async Task UpdateFuzzyFileSearchSessionAsync(string sessionId, string query, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(sessionId))
-            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
-        if (string.IsNullOrWhiteSpace(query))
-            throw new ArgumentException("Query cannot be empty or whitespace.", nameof(query));
-
-        if (!ExperimentalApiEnabled)
-        {
-            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionUpdate");
-        }
-
-        _ = await SendRequestAsync(
-            "fuzzyFileSearch/sessionUpdate",
-            new FuzzyFileSearchSessionUpdateParams
-            {
-                SessionId = sessionId,
-                Query = query
-            },
-            ct);
-    }
+    public Task UpdateFuzzyFileSearchSessionAsync(string sessionId, string query, CancellationToken ct = default) =>
+        _fuzzyFileSearchClient.UpdateFuzzyFileSearchSessionAsync(sessionId, query, ct);
 
     /// <summary>
     /// Stops a fuzzy file search session (experimental).
     /// </summary>
-    public async Task StopFuzzyFileSearchSessionAsync(string sessionId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(sessionId))
-            throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
-
-        if (!ExperimentalApiEnabled)
-        {
-            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStop");
-        }
-
-        _ = await SendRequestAsync(
-            "fuzzyFileSearch/sessionStop",
-            new FuzzyFileSearchSessionStopParams
-            {
-                SessionId = sessionId
-            },
-            ct);
-    }
+    public Task StopFuzzyFileSearchSessionAsync(string sessionId, CancellationToken ct = default) =>
+        _fuzzyFileSearchClient.StopFuzzyFileSearchSessionAsync(sessionId, ct);
 
     /// <summary>
     /// Starts a new turn within the specified thread.
