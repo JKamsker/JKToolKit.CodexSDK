@@ -129,7 +129,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             options,
             _core.SendRequestAsync,
             initializeResult: () => _core.InitializeResult,
-            turnsById: _core.TurnsById,
+            registerTurnHandle: _core.RegisterTurnHandle,
+            removeTurnHandle: _core.RemoveTurnHandle,
             readOnlyAccessOverridesSupport: _readOnlyAccessOverridesSupport,
             experimentalApiEnabled: experimentalApiEnabled);
     }

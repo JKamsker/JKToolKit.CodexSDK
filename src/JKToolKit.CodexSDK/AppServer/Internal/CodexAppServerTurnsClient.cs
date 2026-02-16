@@ -11,7 +11,8 @@ internal sealed class CodexAppServerTurnsClient
     private readonly CodexAppServerClientOptions _options;
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<AppServerInitializeResult?> _initializeResult;
-    private readonly Dictionary<string, CodexTurnHandle> _turnsById;
+    private readonly Action<string, CodexTurnHandle> _registerTurnHandle;
+    private readonly Action<string> _removeTurnHandle;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport;
     private readonly Func<bool> _experimentalApiEnabled;
 
@@ -19,14 +20,16 @@ internal sealed class CodexAppServerTurnsClient
         CodexAppServerClientOptions options,
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
         Func<AppServerInitializeResult?> initializeResult,
-        Dictionary<string, CodexTurnHandle> turnsById,
+        Action<string, CodexTurnHandle> registerTurnHandle,
+        Action<string> removeTurnHandle,
         CodexAppServerReadOnlyAccessOverridesSupport readOnlyAccessOverridesSupport,
         Func<bool> experimentalApiEnabled)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
         _initializeResult = initializeResult ?? throw new ArgumentNullException(nameof(initializeResult));
-        _turnsById = turnsById ?? throw new ArgumentNullException(nameof(turnsById));
+        _registerTurnHandle = registerTurnHandle ?? throw new ArgumentNullException(nameof(registerTurnHandle));
+        _removeTurnHandle = removeTurnHandle ?? throw new ArgumentNullException(nameof(removeTurnHandle));
         _readOnlyAccessOverridesSupport = readOnlyAccessOverridesSupport ?? throw new ArgumentNullException(nameof(readOnlyAccessOverridesSupport));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
     }
@@ -198,17 +201,11 @@ internal sealed class CodexAppServerTurnsClient
             steerRaw: (input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
             onDispose: () =>
             {
-                lock (_turnsById)
-                {
-                    _turnsById.Remove(turnId);
-                }
+                _removeTurnHandle(turnId);
             },
             bufferCapacity: _options.NotificationBufferCapacity);
 
-        lock (_turnsById)
-        {
-            _turnsById[turnId] = handle;
-        }
+        _registerTurnHandle(turnId, handle);
 
         return handle;
     }

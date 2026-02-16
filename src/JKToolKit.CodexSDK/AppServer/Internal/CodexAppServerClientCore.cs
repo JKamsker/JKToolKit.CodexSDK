@@ -61,7 +61,39 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct) =>
         _globalNotifications.Reader.ReadAllAsync(ct);
 
-    public Dictionary<string, CodexTurnHandle> TurnsById => _turnsById;
+    internal bool TryGetTurnHandle(string turnId, out CodexTurnHandle? handle)
+    {
+        lock (_turnsById)
+        {
+            return _turnsById.TryGetValue(turnId, out handle);
+        }
+    }
+
+    internal void RegisterTurnHandle(string turnId, CodexTurnHandle handle)
+    {
+        lock (_turnsById)
+        {
+            _turnsById[turnId] = handle;
+        }
+    }
+
+    internal void RemoveTurnHandle(string turnId)
+    {
+        lock (_turnsById)
+        {
+            _turnsById.Remove(turnId);
+        }
+    }
+
+    private CodexTurnHandle[] SnapshotAndClearTurns()
+    {
+        lock (_turnsById)
+        {
+            var handles = _turnsById.Values.ToArray();
+            _turnsById.Clear();
+            return handles;
+        }
+    }
 
     public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
     {
@@ -131,11 +163,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         var turnId = TryGetTurnId(mapped);
         if (!string.IsNullOrWhiteSpace(turnId))
         {
-            CodexTurnHandle? handle;
-            lock (_turnsById)
-            {
-                _turnsById.TryGetValue(turnId, out handle);
-            }
+            _ = TryGetTurnHandle(turnId, out var handle);
 
             if (handle is not null)
             {
@@ -221,12 +249,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         _disposeCts.Cancel();
         _globalNotifications.Writer.TryComplete();
 
-        CodexTurnHandle[] handles;
-        lock (_turnsById)
-        {
-            handles = _turnsById.Values.ToArray();
-            _turnsById.Clear();
-        }
+        var handles = SnapshotAndClearTurns();
 
         foreach (var handle in handles)
         {
@@ -314,12 +337,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
         _globalNotifications.Writer.TryComplete(ex);
 
-        CodexTurnHandle[] handles;
-        lock (_turnsById)
-        {
-            handles = _turnsById.Values.ToArray();
-            _turnsById.Clear();
-        }
+        var handles = SnapshotAndClearTurns();
 
         foreach (var handle in handles)
         {
