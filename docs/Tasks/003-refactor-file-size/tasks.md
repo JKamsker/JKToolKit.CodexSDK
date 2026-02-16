@@ -20,7 +20,7 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 - [ ] T012 Refactor `CodexClient` to remove `partial` (replace `[GeneratedRegex]` usage; compose internal helpers).
 - [ ] T013 Refactor `CodexSessionLocator` to remove `partial` (replace `[GeneratedRegex]`; extract helpers).
 - [ ] T014 Refactor `CodexStructuredOutputExtensions` (split into internal helpers; keep public extensions).
-- [ ] T015 Refactor `ResilientCodexAppServerClient` (extract adapter types so the file is <500).
+- [x] T015 Refactor `ResilientCodexAppServerClient` (extract adapter types so the file is <500).
 - [ ] T016 Refactor `CodexProcessLauncher` (extract IO/diagnostics helpers; keep tested internals).
 - [ ] T017 Ensure all `src/` files now meet the 500-line max (aim <300 where reasonable).
 

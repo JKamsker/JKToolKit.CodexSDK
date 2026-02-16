@@ -217,7 +217,7 @@ public sealed class ResilientCodexAppServerClientTests
         var logger = NullLogger.Instance;
 
         var resilient = new ResilientCodexAppServerClient(
-            startInner: ct => Task.FromResult<ResilientCodexAppServerClient.ICodexAppServerClientAdapter>(factory.Start()),
+            startInner: ct => Task.FromResult<ICodexAppServerClientAdapter>(factory.Start()),
             options: options,
             logger: logger);
 
@@ -254,7 +254,7 @@ public sealed class ResilientCodexAppServerClientTests
         }
     }
 
-    private sealed class FakeAdapter : ResilientCodexAppServerClient.ICodexAppServerClientAdapter
+    private sealed class FakeAdapter : ICodexAppServerClientAdapter
     {
         private readonly TaskCompletionSource _exit = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
