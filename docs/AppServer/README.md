@@ -57,9 +57,11 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
   - `StartThreadAsync(...)`, `ResumeThreadAsync(...)`
   - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
   - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
+  - `ReadConfigAsync(...)` (`config/read`)
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
   - `SteerTurnAsync(...)`
   - `StartReviewAsync(...)`
+  - MCP helpers: `ListMcpServerStatusAsync(...)`, `ReloadMcpServersAsync()`, `StartMcpServerOauthLoginAsync(...)`
   - `CallAsync(...)` escape hatch for forward compatibility
 - `CodexTurnHandle`
   - `Events()` → `IAsyncEnumerable<AppServerNotification>`
@@ -214,6 +216,55 @@ var result = await codex.RunTurnStructuredAsync<MyResult>(thread.Id, new TurnSta
 });
 
 Console.WriteLine(result.Value.Answer);
+```
+
+### MCP servers (per thread + management)
+
+Codex loads MCP server configuration from layered `config.toml` sources, but app-server also supports **per-thread** config overrides using the `thread/start` (and `thread/resume`) `config` bag.
+
+This SDK exposes a small helper for building that dotted-key override object:
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+
+var overrides = new CodexConfigOverridesBuilder()
+    .SetMcpServerStdio(
+        name: "shell-tool",
+        command: "npx",
+        args: ["-y", "@openai/codex-shell-tool-mcp"]);
+
+var thread = await codex.StartThreadAsync(new ThreadStartOptions
+{
+    Cwd = "<repo-path>",
+    Config = overrides.Build()
+});
+```
+
+To manage MCP servers on a running app-server process:
+
+```csharp
+// List configured MCP servers + tools/resources/auth status
+var status = await codex.ListMcpServerStatusAsync(new McpServerStatusListOptions());
+
+// Reload MCP server config from disk and queue a refresh for loaded threads
+await codex.ReloadMcpServersAsync();
+
+// Start an OAuth login flow for a configured server (completion arrives as a notification)
+var login = await codex.StartMcpServerOauthLoginAsync(new McpServerOauthLoginOptions { Name = "my-server" });
+Console.WriteLine(login.AuthorizationUrl);
+```
+
+To inspect the effective merged config (including project layers as seen from a directory), use `config/read`:
+
+```csharp
+var cfg = await codex.ReadConfigAsync(new ConfigReadOptions
+{
+    IncludeLayers = true,
+    Cwd = "<repo-path>"
+});
+
+// Effective MCP servers as resolved for that cwd (when present)
+var mcp = cfg.McpServers;
 ```
 
 ### Steer an active turn
