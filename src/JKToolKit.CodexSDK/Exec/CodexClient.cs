@@ -9,6 +9,7 @@ using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.StructuredOutputs;
+using JKToolKit.CodexSDK.Exec.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -18,7 +19,7 @@ namespace JKToolKit.CodexSDK.Exec;
 /// <summary>
 /// Default implementation of the Codex client.
 /// </summary>
-public sealed partial class CodexClient : ICodexClient, IAsyncDisposable
+public sealed class CodexClient : ICodexClient, IAsyncDisposable
 {
     private const int SessionIdScanWindowChars = 32 * 1024;
     private const int SessionStartDiagCaptureChars = 8 * 1024;
@@ -152,12 +153,12 @@ public sealed partial class CodexClient : ICodexClient, IAsyncDisposable
         var stderrText = stderrCapture.ToString().TrimEnd();
 
         SessionId? sessionId = null;
-        if (SessionIdRegex().Match(stdoutText) is { Success: true } stdoutMatch &&
+        if (CodexClientRegexes.SessionIdRegex().Match(stdoutText) is { Success: true } stdoutMatch &&
             SessionId.TryParse(stdoutMatch.Groups[1].Value, out var stdoutId))
         {
             sessionId = stdoutId;
         }
-        else if (SessionIdRegex().Match(stderrText) is { Success: true } stderrMatch &&
+        else if (CodexClientRegexes.SessionIdRegex().Match(stderrText) is { Success: true } stderrMatch &&
                  SessionId.TryParse(stderrMatch.Groups[1].Value, out var stderrId))
         {
             sessionId = stderrId;
@@ -849,7 +850,7 @@ public sealed partial class CodexClient : ICodexClient, IAsyncDisposable
                                 scan.Append(tail);
                             }
 
-                            var match = SessionIdRegex().Match(scan.ToString());
+                            var match = CodexClientRegexes.SessionIdRegex().Match(scan.ToString());
                             if (match.Success && SessionId.TryParse(match.Groups[1].Value, out var sessionId))
                             {
                                 tcs.TrySetResult(sessionId);
@@ -943,34 +944,13 @@ public sealed partial class CodexClient : ICodexClient, IAsyncDisposable
 
         var sanitized = input;
 
-        sanitized = BearerRegex().Replace(sanitized, "$1[REDACTED]");
-        sanitized = KeyValueSecretRegex().Replace(sanitized, m => $"{m.Groups[1].Value}=[REDACTED]");
-        sanitized = OpenAiSkRegex().Replace(sanitized, "sk-[REDACTED]");
-        sanitized = GitHubTokenRegex().Replace(sanitized, "[REDACTED_TOKEN]");
-        sanitized = AwsAccessKeyRegex().Replace(sanitized, "AKIA[REDACTED]");
-        sanitized = EmailRegex().Replace(sanitized, "[REDACTED_EMAIL]");
+        sanitized = CodexClientRegexes.BearerRegex().Replace(sanitized, "$1[REDACTED]");
+        sanitized = CodexClientRegexes.KeyValueSecretRegex().Replace(sanitized, m => $"{m.Groups[1].Value}=[REDACTED]");
+        sanitized = CodexClientRegexes.OpenAiSkRegex().Replace(sanitized, "sk-[REDACTED]");
+        sanitized = CodexClientRegexes.GitHubTokenRegex().Replace(sanitized, "[REDACTED_TOKEN]");
+        sanitized = CodexClientRegexes.AwsAccessKeyRegex().Replace(sanitized, "AKIA[REDACTED]");
+        sanitized = CodexClientRegexes.EmailRegex().Replace(sanitized, "[REDACTED_EMAIL]");
 
         return sanitized;
     }
-
-    [GeneratedRegex(@"(?:session(?:[_\s-]?id)?|sid)\s*[:=]\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase)]
-    private static partial Regex SessionIdRegex();
-
-    [GeneratedRegex(@"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")]
-    private static partial Regex EmailRegex();
-
-    [GeneratedRegex(@"(authorization\s*[:=]\s*bearer\s+)([^\s""]+)", RegexOptions.IgnoreCase)]
-    private static partial Regex BearerRegex();
-
-    [GeneratedRegex(@"\b(api[_-]?key|token|access[_-]?token|refresh[_-]?token|openai[_-]?api[_-]?key|github[_-]?token)\b\s*[:=]\s*([^\s""]+)", RegexOptions.IgnoreCase)]
-    private static partial Regex KeyValueSecretRegex();
-
-    [GeneratedRegex(@"\bsk-[A-Za-z0-9]{20,}\b")]
-    private static partial Regex OpenAiSkRegex();
-
-    [GeneratedRegex(@"\b(gho|ghp|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b")]
-    private static partial Regex GitHubTokenRegex();
-
-    [GeneratedRegex(@"\bAKIA[0-9A-Z]{16}\b")]
-    private static partial Regex AwsAccessKeyRegex();
 }
