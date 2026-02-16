@@ -244,7 +244,9 @@ internal sealed class CodexSessionRunner
             DeleteTempFilesBestEffort(tempFiles);
             if (process != null)
             {
-                await SafeTerminateAsync(process, cancellationToken).ConfigureAwait(false);
+                await SafeTerminateAsync(process, CancellationToken.None).ConfigureAwait(false);
+                TryKillProcessTreeBestEffort(process);
+                try { process.Dispose(); } catch { /* ignore */ }
             }
 
             throw;
@@ -317,7 +319,9 @@ internal sealed class CodexSessionRunner
             DeleteTempFilesBestEffort(tempFiles);
             if (process != null)
             {
-                await SafeTerminateAsync(process, cancellationToken).ConfigureAwait(false);
+                await SafeTerminateAsync(process, CancellationToken.None).ConfigureAwait(false);
+                TryKillProcessTreeBestEffort(process);
+                try { process.Dispose(); } catch { /* ignore */ }
             }
 
             throw;
@@ -382,6 +386,21 @@ internal sealed class CodexSessionRunner
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Failed to terminate Codex process after start failure.");
+        }
+    }
+
+    private void TryKillProcessTreeBestEffort(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogTrace(ex, "Error killing Codex process after start failure.");
         }
     }
 

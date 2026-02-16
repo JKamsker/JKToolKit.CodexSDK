@@ -26,7 +26,13 @@ internal static class CodexSessionsRootResolver
             Directory.CreateDirectory(overrideDirectory);
         }
 
-        return pathProvider.GetSessionsRootDirectory(overrideDirectory);
+        var effective = pathProvider.GetSessionsRootDirectory(overrideDirectory);
+        if (!string.IsNullOrWhiteSpace(effective))
+        {
+            Directory.CreateDirectory(effective);
+        }
+
+        return effective;
     }
 }
 
