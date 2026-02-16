@@ -34,11 +34,6 @@ internal sealed class CodexAppServerReadOnlyAccessOverridesSupport
             haystack.Contains("readonly_access", StringComparison.OrdinalIgnoreCase) ||
             haystack.Contains("readonlyaccess", StringComparison.OrdinalIgnoreCase);
 
-        if (!mentionsReadOnlyAccess)
-        {
-            return false;
-        }
-
         var mentionsUnknownFieldIndicator =
             haystack.Contains("unknown field", StringComparison.OrdinalIgnoreCase) ||
             haystack.Contains("unrecognized field", StringComparison.OrdinalIgnoreCase) ||
@@ -46,6 +41,22 @@ internal sealed class CodexAppServerReadOnlyAccessOverridesSupport
             haystack.Contains("unexpected property", StringComparison.OrdinalIgnoreCase) ||
             haystack.Contains("additional properties", StringComparison.OrdinalIgnoreCase) ||
             haystack.Contains("was unexpected", StringComparison.OrdinalIgnoreCase);
+
+        var mentionsSandboxPolicyAccessField =
+            haystack.Contains("sandboxPolicy.access", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("sandbox_policy.access", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("/sandboxPolicy/access", StringComparison.OrdinalIgnoreCase) ||
+            haystack.Contains("/sandbox_policy/access", StringComparison.OrdinalIgnoreCase);
+
+        if (mentionsUnknownFieldIndicator && mentionsSandboxPolicyAccessField)
+        {
+            return true;
+        }
+
+        if (!mentionsReadOnlyAccess)
+        {
+            return false;
+        }
 
         // Heuristic for servers that report unknown fields as JSON-pointer-like paths.
         var mentionsPointerLikePath =
