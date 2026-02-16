@@ -22,6 +22,12 @@ internal static class JsonlEventBasicParsers
             return null;
         }
 
+        if (payload.ValueKind != JsonValueKind.Object)
+        {
+            ctx.Logger.LogWarning("session_meta event has non-object 'payload' field");
+            return null;
+        }
+
         if (!payload.TryGetProperty("id", out var idElement))
         {
             ctx.Logger.LogWarning("session_meta event missing 'payload.id' field");
@@ -35,7 +41,12 @@ internal static class JsonlEventBasicParsers
             return null;
         }
 
-        var sessionId = SessionId.Parse(idString);
+        if (!SessionId.TryParse(idString, out var sessionId))
+        {
+            ctx.Logger.LogWarning("session_meta event has invalid 'payload.id' field");
+            return null;
+        }
+
         var cwd = payload.TryGetProperty("cwd", out var cwdElement)
             ? cwdElement.GetString()
             : null;
@@ -86,6 +97,12 @@ internal static class JsonlEventBasicParsers
         if (!root.TryGetProperty("payload", out var payload))
         {
             ctx.Logger.LogWarning("user_message event missing 'payload' field");
+            return null;
+        }
+
+        if (payload.ValueKind != JsonValueKind.Object)
+        {
+            ctx.Logger.LogWarning("user_message event has non-object 'payload' field");
             return null;
         }
 

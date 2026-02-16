@@ -23,6 +23,12 @@ internal static class JsonlEventResponseItemParsers
             return null;
         }
 
+        if (payload.ValueKind != JsonValueKind.Object)
+        {
+            ctx.Logger.LogWarning("response_item event has non-object 'payload' field");
+            return null;
+        }
+
         var payloadType = payload.TryGetProperty("type", out var typeElement)
             ? typeElement.GetString()
             : null;
