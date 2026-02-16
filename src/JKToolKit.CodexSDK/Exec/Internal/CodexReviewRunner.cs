@@ -8,7 +8,6 @@ namespace JKToolKit.CodexSDK.Exec.Internal;
 
 internal sealed class CodexReviewRunner
 {
-    private const string CodexHomeEnvVar = "CODEX_HOME";
     private readonly CodexClientOptions _clientOptions;
     private readonly ICodexProcessLauncher _processLauncher;
     private readonly ICodexSessionLocator _sessionLocator;
@@ -90,7 +89,7 @@ internal sealed class CodexReviewRunner
         {
             try
             {
-                var sessionsRoot = GetEffectiveSessionsRootDirectory();
+                var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
                 logPath = await _sessionLocator.FindSessionLogAsync(sid, sessionsRoot, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -104,29 +103,6 @@ internal sealed class CodexReviewRunner
             SessionId = sessionId,
             LogPath = logPath
         };
-    }
-
-    private string GetEffectiveSessionsRootDirectory()
-    {
-        var overrideDirectory = _clientOptions.SessionsRootDirectory;
-        if (string.IsNullOrWhiteSpace(overrideDirectory))
-        {
-            var home =
-                _clientOptions.CodexHomeDirectory ??
-                Environment.GetEnvironmentVariable(CodexHomeEnvVar);
-
-            if (!string.IsNullOrWhiteSpace(home))
-            {
-                overrideDirectory = Path.Combine(home, "sessions");
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(overrideDirectory))
-        {
-            Directory.CreateDirectory(overrideDirectory);
-        }
-
-        return _pathProvider.GetSessionsRootDirectory(overrideDirectory);
     }
 
     private static async Task PumpStreamAsync(

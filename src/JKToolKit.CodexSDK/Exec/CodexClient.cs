@@ -34,8 +34,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     private readonly ILogger<CodexClient> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly CodexReviewRunner _reviewRunner;
-    private RateLimits? _cachedRateLimits;
-    private DateTimeOffset? _cachedRateLimitsTimestamp;
+    private readonly CodexRateLimitsReader _rateLimitsReader;
 
     /// <summary>
     /// Creates a CodexClient with default infrastructure implementations.
@@ -174,6 +173,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _tailer = tailer ?? new JsonlTailer(fileSystem, _loggerFactory.CreateLogger<JsonlTailer>(), Options.Create(_clientOptions));
         _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>());
         _reviewRunner = new CodexReviewRunner(_clientOptions, _processLauncher, _sessionLocator, _pathProvider, _logger);
+        _rateLimitsReader = new CodexRateLimitsReader(_clientOptions, _sessionLocator, _tailer, _parser, _pathProvider, _logger);
     }
 
     /// <inheritdoc />
@@ -613,79 +613,11 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     /// <returns>RateLimits if found; otherwise null.</returns>
     public async Task<RateLimits?> GetRateLimitsAsync(bool noCache = false, CancellationToken cancellationToken = default)
     {
-        if (!noCache && _cachedRateLimits is not null && _cachedRateLimitsTimestamp.HasValue
-            && (DateTimeOffset.UtcNow - _cachedRateLimitsTimestamp.Value) < TimeSpan.FromMinutes(5))
-        {
-            return _cachedRateLimits;
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-        _clientOptions.Validate();
-
-        var sessionsRoot = GetEffectiveSessionsRootDirectory();
-
-        // Collect sessions and scan newest first for a token_count event with rate limits
-        var sessions = new List<CodexSessionInfo>();
-        await foreach (var session in _sessionLocator.ListSessionsAsync(sessionsRoot, filter: null, cancellationToken))
-        {
-            sessions.Add(session);
-        }
-
-        foreach (var session in sessions.OrderByDescending(s => s.CreatedAt))
-        {
-            var limits = await ReadLastRateLimitsAsync(session.LogPath, cancellationToken).ConfigureAwait(false);
-            if (limits != null)
-            {
-                _cachedRateLimits = limits;
-                _cachedRateLimitsTimestamp = DateTimeOffset.UtcNow;
-                return limits;
-            }
-        }
-
-        return null;
+        return await _rateLimitsReader.GetRateLimitsAsync(noCache, cancellationToken).ConfigureAwait(false);
     }
 
-    private string GetEffectiveSessionsRootDirectory()
-    {
-        var overrideDirectory = _clientOptions.SessionsRootDirectory;
-        if (string.IsNullOrWhiteSpace(overrideDirectory))
-        {
-            var home =
-                _clientOptions.CodexHomeDirectory ??
-                Environment.GetEnvironmentVariable(CodexHomeEnvVar);
-
-            if (!string.IsNullOrWhiteSpace(home))
-            {
-                overrideDirectory = Path.Combine(home, "sessions");
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(overrideDirectory))
-        {
-            Directory.CreateDirectory(overrideDirectory);
-        }
-
-        return _pathProvider.GetSessionsRootDirectory(overrideDirectory);
-    }
-
-    private async Task<RateLimits?> ReadLastRateLimitsAsync(string logPath, CancellationToken cancellationToken)
-    {
-        var options = new EventStreamOptions(FromBeginning: true, AfterTimestamp: null, FromByteOffset: null, Follow: false);
-        RateLimits? last = null;
-
-        var lines = _tailer.TailAsync(logPath, options, cancellationToken);
-        var events = _parser.ParseAsync(lines, cancellationToken);
-
-        await foreach (var evt in events.WithCancellation(cancellationToken))
-        {
-            if (evt is TokenCountEvent token && token.RateLimits is not null)
-            {
-                last = token.RateLimits;
-            }
-        }
-
-        return last;
-    }
+    private string GetEffectiveSessionsRootDirectory() =>
+        CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
 
     private (Task<SessionId?> SessionIdTask, Func<string> GetStdoutDiag, Func<string> GetStderrDiag) StartLiveSessionStdIoDrain(
         Process process,

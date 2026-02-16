@@ -21,6 +21,7 @@ description: "Refactor oversized source files: max 500 LOC, aim <300, avoid part
 - [x] T012a Keep `[GeneratedRegex]` by extracting regex generators into a small internal helper type.
 - [ ] T012b Extract CodexClient workflows into internal services (sessions/review/rate-limits/diagnostics) and make `CodexClient.cs` a thin facade.
 - [x] T012c Extract review execution into `CodexReviewRunner`.
+- [x] T012d Extract rate-limit scanning/caching into `CodexRateLimitsReader`.
 - [x] T013 Refactor `CodexSessionLocator` to remove `partial` (replace `[GeneratedRegex]`; extract helpers).
 - [x] T014 Refactor `CodexStructuredOutputExtensions` (split into internal helpers; keep public extensions).
 - [x] T015 Refactor `ResilientCodexAppServerClient` (extract adapter types so the file is <500).
