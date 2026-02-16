@@ -17,7 +17,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     private volatile ICodexAppServerClientAdapter? _inner;
     private long _innerVersion;
     private int _restartCount;
-    private volatile CodexAppServerConnectionState _state = CodexAppServerConnectionState.Connected;
+    private volatile CodexAppServerConnectionState _state = CodexAppServerConnectionState.Restarting;
     private volatile Exception? _fault;
     private CodexAppServerDisconnectedException? _lastDisconnect;
     private Task? _exitMonitorTask;
@@ -147,6 +147,9 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
 
             Exception? lastStartFailure = null;
             var consecutiveFailures = 0;
+            // Note: we currently reuse MaxRestarts for both (a) successful restarts within the sliding window and
+            // (b) consecutive start failures. This couples two knobs; keep it explicit so tuning behavior is predictable.
+            var maxConsecutiveFailures = policy.MaxRestarts;
             while (true)
             {
                 // enforce restart window (sliding) over SUCCESSFUL restarts only
@@ -207,7 +210,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
                         windowAttempt,
                         policy.MaxRestarts);
 
-                    if (consecutiveFailures >= policy.MaxRestarts)
+                    if (consecutiveFailures >= maxConsecutiveFailures)
                     {
                         var fail = new CodexAppServerUnavailableException(
                             $"Failed to restart codex app-server after {consecutiveFailures} consecutive attempts.",
