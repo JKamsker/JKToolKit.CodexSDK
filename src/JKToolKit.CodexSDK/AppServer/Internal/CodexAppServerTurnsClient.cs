@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -223,7 +224,7 @@ internal sealed class CodexAppServerTurnsClient
     private Task InterruptAsync(string threadId, string turnId, CancellationToken ct) =>
         _sendRequestAsync(
             "turn/interrupt",
-            new TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
+            new UpstreamV2.TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
             ct);
 
     private static bool ContainsReadOnlyAccessOverrides(SandboxPolicy? policy) =>
