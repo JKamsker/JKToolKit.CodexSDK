@@ -151,15 +151,35 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(options.Prompt))
             throw new ArgumentException("Prompt is required.", nameof(options));
 
-        var args = new Dictionary<string, object?>
+        var args = new Dictionary<string, object>
         {
-            ["prompt"] = options.Prompt,
-            ["approval-policy"] = options.ApprovalPolicy?.ToMcpWireValue(),
-            ["sandbox"] = options.Sandbox?.ToMcpWireValue(),
-            ["cwd"] = options.Cwd,
-            ["model"] = options.Model?.Value,
-            ["include-plan-tool"] = options.IncludePlanTool
+            ["prompt"] = options.Prompt
         };
+
+        if (options.ApprovalPolicy is { } approvalPolicy)
+        {
+            args["approval-policy"] = approvalPolicy.ToMcpWireValue();
+        }
+
+        if (options.Sandbox is { } sandbox)
+        {
+            args["sandbox"] = sandbox.ToMcpWireValue();
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Cwd))
+        {
+            args["cwd"] = options.Cwd;
+        }
+
+        if (options.Model is { } model)
+        {
+            args["model"] = model.Value;
+        }
+
+        if (options.IncludePlanTool is { } includePlanTool)
+        {
+            args["include-plan-tool"] = includePlanTool;
+        }
 
         var call = await CallToolAsync("codex", args, ct);
         var parsed = ParseCodexToolResult("codex", call.Raw);
