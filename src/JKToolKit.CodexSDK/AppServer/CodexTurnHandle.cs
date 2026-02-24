@@ -16,6 +16,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     private int _disposed;
 
     internal Channel<AppServerNotification> EventsChannel { get; }
+    internal Channel<AppServerRpcNotification> RawEventsChannel { get; }
     internal TaskCompletionSource<TurnCompletedNotification> CompletionTcs { get; }
 
     /// <summary>
@@ -56,6 +57,13 @@ public sealed class CodexTurnHandle : IAsyncDisposable
             FullMode = BoundedChannelFullMode.DropOldest
         });
 
+        RawEventsChannel = System.Threading.Channels.Channel.CreateBounded<AppServerRpcNotification>(new BoundedChannelOptions(bufferCapacity)
+        {
+            SingleReader = false,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
+
         CompletionTcs = new TaskCompletionSource<TurnCompletedNotification>(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
@@ -64,6 +72,12 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     /// </summary>
     public IAsyncEnumerable<AppServerNotification> Events(CancellationToken ct = default) =>
         EventsChannel.Reader.ReadAllAsync(ct);
+
+    /// <summary>
+    /// Subscribes to this turn's raw JSON-RPC notification stream (method + params).
+    /// </summary>
+    public IAsyncEnumerable<AppServerRpcNotification> EventsRaw(CancellationToken ct = default) =>
+        RawEventsChannel.Reader.ReadAllAsync(ct);
 
     /// <summary>
     /// Requests that the server interrupt the turn.
@@ -114,6 +128,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
 
         _onDispose();
         EventsChannel.Writer.TryComplete();
+        RawEventsChannel.Writer.TryComplete();
         CompletionTcs.TrySetCanceled();
 
         return ValueTask.CompletedTask;

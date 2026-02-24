@@ -325,7 +325,8 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             }
         }
 
-        _globalRawNotifications.Writer.TryWrite(new AppServerRpcNotification(method, @params));
+        var raw = new AppServerRpcNotification(method, @params);
+        _globalRawNotifications.Writer.TryWrite(raw);
 
         AppServerNotification mapped;
         var customMappers = _options.NotificationMappers;
@@ -364,11 +365,13 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             if (handle is not null)
             {
                 handle.EventsChannel.Writer.TryWrite(mapped);
+                handle.RawEventsChannel.Writer.TryWrite(raw);
 
                 if (mapped is TurnCompletedNotification completed)
                 {
                     handle.CompletionTcs.TrySetResult(completed);
                     handle.EventsChannel.Writer.TryComplete();
+                    handle.RawEventsChannel.Writer.TryComplete();
                     RemoveTurnHandle(turnId);
                 }
             }
@@ -452,6 +455,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         foreach (var handle in handles)
         {
             handle.EventsChannel.Writer.TryComplete();
+            handle.RawEventsChannel.Writer.TryComplete();
             handle.CompletionTcs.TrySetCanceled();
         }
 

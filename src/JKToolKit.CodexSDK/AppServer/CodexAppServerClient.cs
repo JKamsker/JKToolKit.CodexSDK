@@ -21,6 +21,7 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed partial class CodexAppServerClient : IAsyncDisposable
 {
     private readonly CodexAppServerClientCore _core;
+    private readonly JsonSerializerOptions _serializerOptions;
     private readonly CodexAppServerThreadsClient _threadsClient;
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
@@ -119,6 +120,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         ILogger logger,
         bool startExitWatcher = true)
     {
+        _serializerOptions = options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions();
         _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
 
         Func<bool> experimentalApiEnabled = () => _core.ExperimentalApiEnabled;
@@ -205,6 +207,19 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// </summary>
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
         _core.SendRequestAsync(method, @params, ct);
+
+    /// <summary>
+    /// Sends an arbitrary JSON-RPC request to the app server and deserializes the <c>result</c> payload.
+    /// </summary>
+    public async Task<TResult?> CallAsync<TResult>(
+        string method,
+        object? @params,
+        JsonSerializerOptions? serializerOptions = null,
+        CancellationToken ct = default)
+    {
+        var result = await _core.SendRequestAsync(method, @params, ct);
+        return result.Deserialize<TResult>(serializerOptions ?? _serializerOptions);
+    }
 
     /// <summary>
     /// A task that completes when the underlying Codex app-server subprocess exits.

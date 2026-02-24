@@ -30,7 +30,7 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 - [x] T010 Add app-server override interfaces + options (no behavior change).
 - [x] T011 Implement request/response transformer pipeline in app-server core.
 - [x] T012 Implement notification transformer pipeline + pluggable notification mappers + raw notification stream.
-- [ ] T013 Add `CallAsync<T>` + raw notification helpers on `CodexAppServerClient`/`CodexTurnHandle`.
+- [x] T013 Add `CallAsync<T>` + raw notification helpers on `CodexAppServerClient`/`CodexTurnHandle`.
 - [ ] T014 Add unit tests covering override ordering + safety.
 
 ## Phase 2 — Align SDK requests/responses to upstream (reduce drift)
