@@ -26,9 +26,9 @@ public sealed record class ThreadListParams
     public string? Query { get; init; }
 
     /// <summary>
-    /// Gets an optional page size, if supported upstream.
+    /// Gets an optional limit (page size), if supported upstream.
     /// </summary>
-    [JsonPropertyName("pageSize")]
+    [JsonPropertyName("limit")]
     public int? PageSize { get; init; }
 
     /// <summary>

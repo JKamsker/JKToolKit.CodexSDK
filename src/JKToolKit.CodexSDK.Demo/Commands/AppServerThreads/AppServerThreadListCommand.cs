@@ -67,7 +67,7 @@ public sealed class AppServerThreadListSettings : AppServerThreadsSettingsBase
     [CommandOption("--query <QUERY>")]
     public string? Query { get; init; }
 
-    [CommandOption("--page-size <N>")]
+    [CommandOption("--limit|--page-size <N>")]
     public int? PageSize { get; init; }
 
     [CommandOption("--cursor <CURSOR>")]
