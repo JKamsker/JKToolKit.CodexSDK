@@ -9,7 +9,7 @@ public sealed class AppServerThreadListCommand : AsyncCommand<AppServerThreadLis
     public override Task<int> ExecuteAsync(CommandContext context, AppServerThreadListSettings settings, CancellationToken cancellationToken) =>
         AppServerThreadCommandHelpers.RunWithClientAsync(settings, cancellationToken, async (codex, ct) =>
         {
-            var limit = settings.Limit is > 0 ? settings.Limit : null;
+            var limit = settings.Limit > 0 ? settings.Limit : null;
             var page = await codex.ListThreadsAsync(new ThreadListOptions
             {
                 Archived = settings.Archived,
