@@ -227,6 +227,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         _globalRawNotifications.Writer.TryWrite(raw);
 
         AppServerNotification mapped;
+        var usedCustomMapper = false;
         var customMappers = _options.NotificationMappers;
         if (customMappers is { Count: > 0 })
         {
@@ -238,17 +239,18 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     continue;
                 }
 
-                try
-                {
-                    customMapped = mapper.TryMap(method, @params);
-                    if (customMapped is not null)
+                    try
                     {
-                        break;
+                        customMapped = mapper.TryMap(method, @params);
+                        if (customMapped is not null)
+                        {
+                            usedCustomMapper = true;
+                            break;
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex, "App-server notification mapper threw (method={Method}).", method);
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "App-server notification mapper threw (method={Method}).", method);
                 }
             }
 
@@ -275,6 +277,23 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                 var completed = mapped as TurnCompletedNotification;
                 if (completed is null && method == "turn/completed")
                 {
+                    if (usedCustomMapper)
+                    {
+                        _logger.LogWarning(
+                            "Custom mapper returned {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
+                            mapped.GetType().FullName,
+                            method,
+                            typeof(TurnCompletedNotification).FullName);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Mapped {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
+                            mapped.GetType().FullName,
+                            method,
+                            typeof(TurnCompletedNotification).FullName);
+                    }
+
                     completed = SafeMap(method, @params) as TurnCompletedNotification;
                 }
 

@@ -12,7 +12,9 @@ public sealed class AppServerThreadListLoadedCommand : AsyncCommand<AppServerThr
         CancellationToken cancellationToken) =>
         AppServerThreadCommandHelpers.RunWithClientAsync(settings, cancellationToken, async (codex, ct) =>
         {
-            var limit = settings.Limit > 0 ? settings.Limit : null;
+            var limit = settings.Limit is { } limitValue && limitValue > 0
+                ? settings.Limit
+                : null;
             var page = await codex.ListLoadedThreadsAsync(new ThreadLoadedListOptions
             {
                 Cursor = string.IsNullOrWhiteSpace(settings.Cursor) ? null : settings.Cursor,
