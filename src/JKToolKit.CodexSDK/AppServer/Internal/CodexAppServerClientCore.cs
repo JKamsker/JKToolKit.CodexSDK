@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
@@ -13,7 +14,10 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 {
     private static readonly JsonElement EmptyObject = CreateEmptyObject();
-    private static readonly JsonSerializerOptions DefaultSerializerOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions DefaultSerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
     private static JsonElement CreateEmptyObject()
     {
         using var doc = JsonDocument.Parse("{}");
@@ -157,7 +161,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogTrace(ex, "App-server message observer threw in OnRequest (method={Method}).", method);
+                        _logger.LogDebug(ex, "App-server message observer threw in OnRequest (method={Method}).", method);
                     }
                 }
             }
@@ -193,7 +197,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogTrace(ex, "App-server message observer threw in OnResponse (method={Method}).", method);
+                        _logger.LogDebug(ex, "App-server message observer threw in OnResponse (method={Method}).", method);
                     }
                 }
             }
@@ -220,7 +224,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
         if (value is JsonDocument doc)
         {
-            return doc.RootElement;
+            return doc.RootElement.Clone();
         }
 
         var options = _options.SerializerOptionsOverride ?? DefaultSerializerOptions;

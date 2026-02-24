@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Linq;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;

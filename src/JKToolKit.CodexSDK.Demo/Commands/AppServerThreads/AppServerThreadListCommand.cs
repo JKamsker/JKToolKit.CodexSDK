@@ -9,11 +9,12 @@ public sealed class AppServerThreadListCommand : AsyncCommand<AppServerThreadLis
     public override Task<int> ExecuteAsync(CommandContext context, AppServerThreadListSettings settings, CancellationToken cancellationToken) =>
         AppServerThreadCommandHelpers.RunWithClientAsync(settings, cancellationToken, async (codex, ct) =>
         {
+            var limit = settings.Limit is > 0 ? settings.Limit : null;
             var page = await codex.ListThreadsAsync(new ThreadListOptions
             {
                 Archived = settings.Archived,
                 Cwd = string.IsNullOrWhiteSpace(settings.Cwd) ? null : settings.Cwd,
-                Limit = settings.Limit,
+                Limit = limit,
                 Cursor = string.IsNullOrWhiteSpace(settings.Cursor) ? null : settings.Cursor,
                 SortKey = string.IsNullOrWhiteSpace(settings.SortKey) ? null : settings.SortKey,
             }, ct);

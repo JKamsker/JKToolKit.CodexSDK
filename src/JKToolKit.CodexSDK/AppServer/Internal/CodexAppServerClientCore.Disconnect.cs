@@ -77,16 +77,23 @@ internal sealed partial class CodexAppServerClientCore
             return;
         }
 
-        _globalNotifications.Writer.TryComplete(ex);
-        _globalRawNotifications.Writer.TryComplete(ex);
-
-        var handles = SnapshotAndClearTurns();
-
-        foreach (var handle in handles)
+        try
         {
-            handle.EventsChannel.Writer.TryComplete(ex);
-            handle.RawEventsChannel.Writer.TryComplete(ex);
-            handle.CompletionTcs.TrySetException(ex);
+            _globalNotifications.Writer.TryComplete(ex);
+            _globalRawNotifications.Writer.TryComplete(ex);
+
+            var handles = SnapshotAndClearTurns();
+
+            foreach (var handle in handles)
+            {
+                handle.EventsChannel.Writer.TryComplete(ex);
+                handle.RawEventsChannel.Writer.TryComplete(ex);
+                handle.CompletionTcs.TrySetException(ex);
+            }
+        }
+        catch
+        {
+            // ignore
         }
     }
 
@@ -115,4 +122,3 @@ internal sealed partial class CodexAppServerClientCore
             _ => null
         };
 }
-

@@ -160,7 +160,11 @@ public sealed class CodexSdkBuilder
         SerializerOptionsOverride = options.SerializerOptionsOverride,
         NotificationBufferCapacity = options.NotificationBufferCapacity,
         ClientInfo = options.ClientInfo,
-        ElicitationHandler = options.ElicitationHandler
+        ElicitationHandler = options.ElicitationHandler,
+        ResponseTransformers = options.ResponseTransformers,
+        ToolsListMappers = options.ToolsListMappers,
+        CodexToolResultTransformers = options.CodexToolResultTransformers,
+        CodexToolResultMappers = options.CodexToolResultMappers
     };
 }
 
