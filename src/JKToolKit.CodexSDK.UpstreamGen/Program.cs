@@ -18,7 +18,7 @@ internal static class Program
         {
             "schema-info" => SchemaInfoCommand.Run(args.Skip(1).ToArray()),
             "generate" => GenerateCommand.Run(args.Skip(1).ToArray()),
-            "check" => NotImplemented(cmd),
+            "check" => CheckCommand.Run(args.Skip(1).ToArray()),
             _ => UnknownCommand(cmd)
         };
     }

@@ -52,7 +52,6 @@ internal static class UpstreamSchemaDiscovery
             SchemaSha256 = ComputeSha256Hex(schemaPath),
             CodexCliVersion = codexVersion,
             CodexCliPackageJsonPath = codexPackageJsonPath,
-            GeneratedAtUtc = DateTimeOffset.UtcNow
         };
     }
 
@@ -103,6 +102,4 @@ internal sealed record class UpstreamSchemaMetadata
     public required string SchemaSha256 { get; init; }
     public string? CodexCliVersion { get; init; }
     public string? CodexCliPackageJsonPath { get; init; }
-    public required DateTimeOffset GeneratedAtUtc { get; init; }
 }
-
