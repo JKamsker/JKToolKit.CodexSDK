@@ -79,6 +79,45 @@ The library maps a small must-have subset of notifications into typed records:
 - `TurnCompletedNotification` (`turn/completed`)
 - `UnknownNotification` fallback for forward-compatibility
 
+## Override Hooks (Forward Compatibility)
+
+Upstream `codex app-server` wire payloads can drift over time. The SDK is stable-only by default, preserves raw JSON, and provides hook points so you can override request/response/notification shapes without forking.
+
+`CodexAppServerClientOptions` hooks:
+
+- `RequestParamsTransformers` — rewrite outgoing request params by method name
+- `ResponseTransformers` — rewrite incoming response results by method name
+- `NotificationTransformers` — rewrite `(method, params)` before mapping
+- `NotificationMappers` — override notification mapping (first non-null wins)
+- `MessageObservers` — best-effort observers for raw traffic (exceptions swallowed)
+
+Raw escape hatches:
+
+- `CodexAppServerClient.CallAsync(...)` / `CallAsync<T>(...)`
+- `CodexAppServerClient.NotificationsRaw(...)` (method + params stream)
+
+Example: map a new upstream notification method into your own typed record:
+
+```csharp
+using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.AppServer.Overrides;
+
+public sealed record MyNewNotification(string Method, JsonElement Params) : AppServerNotification(Method, Params);
+
+public sealed class MyMapper : IAppServerNotificationMapper
+{
+    public AppServerNotification? TryMap(string method, JsonElement @params) =>
+        method == "thread/archived" ? new MyNewNotification(method, @params) : null;
+}
+
+await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    NotificationMappers = new IAppServerNotificationMapper[] { new MyMapper() }
+});
+```
+
 ## Stable vs Experimental (Upstream Compatibility)
 
 Newer upstream Codex builds increasingly gate fields/methods behind an initialize-time capability:

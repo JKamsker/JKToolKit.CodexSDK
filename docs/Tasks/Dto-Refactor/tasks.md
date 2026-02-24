@@ -56,7 +56,7 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 
 - [x] T050 Add Exec-mode JSONL event override hooks (transform/map by event `type`) + tests.
 - [x] T051 Add McpServer parsing override hooks (tools list + reply parsing) + tests.
-- [ ] T052 Document override hooks with examples (AppServer/Exec/McpServer).
+- [x] T052 Document override hooks with examples (AppServer/Exec/McpServer).
 
 ## Phase 6 — Final validation
 
