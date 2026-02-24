@@ -36,7 +36,7 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 ## Phase 2 — Align SDK requests/responses to upstream (reduce drift)
 
 - [x] T020 Fix known wire mismatches (e.g., `thread/list` uses `limit` upstream, not `pageSize`) + tests + demo updates.
-- [ ] T021 Audit other high-traffic endpoints (threads/turns/skills/apps/config/mcp mgmt) for param/shape mismatches and harden parsers.
+- [x] T021 Audit other high-traffic endpoints (threads/turns/skills/apps/config/mcp mgmt) for param/shape mismatches and harden parsers.
 
 ## Phase 3 — Generator tool (schema → internal wire DTOs)
 

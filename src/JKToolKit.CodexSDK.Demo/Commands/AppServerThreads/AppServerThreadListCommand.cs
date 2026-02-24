@@ -13,11 +13,9 @@ public sealed class AppServerThreadListCommand : AsyncCommand<AppServerThreadLis
             {
                 Archived = settings.Archived,
                 Cwd = string.IsNullOrWhiteSpace(settings.Cwd) ? null : settings.Cwd,
-                Query = string.IsNullOrWhiteSpace(settings.Query) ? null : settings.Query,
-                PageSize = settings.PageSize,
+                Limit = settings.Limit,
                 Cursor = string.IsNullOrWhiteSpace(settings.Cursor) ? null : settings.Cursor,
                 SortKey = string.IsNullOrWhiteSpace(settings.SortKey) ? null : settings.SortKey,
-                SortDirection = string.IsNullOrWhiteSpace(settings.SortDirection) ? null : settings.SortDirection,
             }, ct);
 
             if (settings.Json)
@@ -64,19 +62,13 @@ public sealed class AppServerThreadListSettings : AppServerThreadsSettingsBase
     [CommandOption("--cwd <DIR>")]
     public string? Cwd { get; init; }
 
-    [CommandOption("--query <QUERY>")]
-    public string? Query { get; init; }
-
     [CommandOption("--limit|--page-size <N>")]
-    public int? PageSize { get; init; }
+    public int? Limit { get; init; }
 
     [CommandOption("--cursor <CURSOR>")]
     public string? Cursor { get; init; }
 
     [CommandOption("--sort-key <KEY>")]
     public string? SortKey { get; init; }
-
-    [CommandOption("--sort-dir <DIR>")]
-    public string? SortDirection { get; init; }
 }
 

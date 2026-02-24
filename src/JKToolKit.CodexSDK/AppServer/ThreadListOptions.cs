@@ -16,14 +16,19 @@ public sealed class ThreadListOptions
     public string? Cwd { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional search query filter, if supported upstream.
-    /// </summary>
-    public string? Query { get; set; }
-
-    /// <summary>
     /// Gets or sets an optional page size, if supported upstream.
     /// </summary>
-    public int? PageSize { get; set; }
+    public int? Limit { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional model provider filter, if supported upstream.
+    /// </summary>
+    public IReadOnlyList<string>? ModelProviders { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional source kind filter, if supported upstream.
+    /// </summary>
+    public IReadOnlyList<string>? SourceKinds { get; set; }
 
     /// <summary>
     /// Gets or sets an optional cursor for paging.
@@ -31,13 +36,8 @@ public sealed class ThreadListOptions
     public string? Cursor { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional sort key, if supported upstream.
+    /// Gets or sets an optional sort key, if supported upstream (for example, <c>created_at</c> or <c>updated_at</c>).
     /// </summary>
     public string? SortKey { get; set; }
-
-    /// <summary>
-    /// Gets or sets an optional sort direction (e.g. "asc" / "desc"), if supported upstream.
-    /// </summary>
-    public string? SortDirection { get; set; }
 }
 

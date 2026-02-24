@@ -20,16 +20,22 @@ public sealed record class ThreadListParams
     public string? Cwd { get; init; }
 
     /// <summary>
-    /// Gets an optional search query filter, if supported upstream.
-    /// </summary>
-    [JsonPropertyName("query")]
-    public string? Query { get; init; }
-
-    /// <summary>
     /// Gets an optional limit (page size), if supported upstream.
     /// </summary>
     [JsonPropertyName("limit")]
-    public int? PageSize { get; init; }
+    public int? Limit { get; init; }
+
+    /// <summary>
+    /// Gets an optional model provider filter, if supported upstream.
+    /// </summary>
+    [JsonPropertyName("modelProviders")]
+    public IReadOnlyList<string>? ModelProviders { get; init; }
+
+    /// <summary>
+    /// Gets an optional source kind filter, if supported upstream.
+    /// </summary>
+    [JsonPropertyName("sourceKinds")]
+    public IReadOnlyList<string>? SourceKinds { get; init; }
 
     /// <summary>
     /// Gets an optional cursor for paging.
@@ -42,10 +48,4 @@ public sealed record class ThreadListParams
     /// </summary>
     [JsonPropertyName("sortKey")]
     public string? SortKey { get; init; }
-
-    /// <summary>
-    /// Gets an optional sort direction (e.g. "asc"/"desc"), if supported upstream.
-    /// </summary>
-    [JsonPropertyName("sortDirection")]
-    public string? SortDirection { get; init; }
 }

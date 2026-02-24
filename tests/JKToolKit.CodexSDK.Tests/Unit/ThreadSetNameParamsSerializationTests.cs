@@ -8,16 +8,16 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class ThreadSetNameParamsSerializationTests
 {
     [Fact]
-    public void Serialize_IncludesThreadNameNull_ToClear()
+    public void Serialize_UsesNameFieldName()
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
-        var json = JsonSerializer.Serialize(new ThreadSetNameParams { ThreadId = "thr_123", ThreadName = null }, options);
+        var json = JsonSerializer.Serialize(new ThreadSetNameParams { ThreadId = "thr_123", Name = "Hello" }, options);
 
-        json.Should().Contain("\"threadName\":null");
+        json.Should().Contain("\"name\":\"Hello\"");
+        json.Should().NotContain("threadName");
     }
 }
-

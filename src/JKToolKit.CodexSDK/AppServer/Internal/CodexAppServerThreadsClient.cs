@@ -132,11 +132,11 @@ internal sealed class CodexAppServerThreadsClient
             {
                 Archived = options.Archived,
                 Cwd = options.Cwd,
-                Query = options.Query,
-                PageSize = options.PageSize,
+                Limit = options.Limit,
+                ModelProviders = options.ModelProviders,
+                SourceKinds = options.SourceKinds,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,
-                SortDirection = options.SortDirection
             },
             ct);
 
@@ -300,7 +300,7 @@ internal sealed class CodexAppServerThreadsClient
 
         _ = await _sendRequestAsync(
             "thread/name/set",
-            new ThreadSetNameParams { ThreadId = threadId, ThreadName = name },
+            new ThreadSetNameParams { ThreadId = threadId, Name = name ?? string.Empty },
             ct);
     }
 }
