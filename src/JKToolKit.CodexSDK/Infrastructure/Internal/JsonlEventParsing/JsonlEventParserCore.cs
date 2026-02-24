@@ -7,12 +7,10 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 
 internal static class JsonlEventParserCore
 {
-    public static CodexEvent? ParseLine(string line, ILogger logger)
+    public static CodexEvent? ParseLine(string line, JsonlEventParserContext ctx)
     {
         using var doc = JsonDocument.Parse(line);
         var root = doc.RootElement;
-
-        var ctx = new JsonlEventParserContext(logger);
 
         if (!root.TryGetProperty("timestamp", out var timestampElement))
         {
@@ -38,20 +36,65 @@ internal static class JsonlEventParserCore
             return null;
         }
 
-        var rawPayload = root.Clone();
+        var payload = root.Clone();
 
+        if (ctx.Transformers is { Count: > 0 })
+        {
+            foreach (var transformer in ctx.Transformers)
+            {
+                if (transformer is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    (type, payload) = transformer.Transform(type, payload);
+                }
+                catch (Exception ex)
+                {
+                    ctx.Logger.LogTrace(ex, "Exec event transformer threw (type={Type}).", type);
+                }
+            }
+        }
+
+        if (ctx.Mappers is { Count: > 0 })
+        {
+            foreach (var mapper in ctx.Mappers)
+            {
+                if (mapper is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var mapped = mapper.TryMap(timestamp, type, payload);
+                    if (mapped is not null)
+                    {
+                        return mapped;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ctx.Logger.LogTrace(ex, "Exec event mapper threw (type={Type}).", type);
+                }
+            }
+        }
+
+        var rawPayload = payload;
         return type switch
         {
-            "session_meta" => JsonlEventBasicParsers.ParseSessionMetaEvent(root, timestamp, type, rawPayload, ctx),
-            "user_message" => JsonlEventBasicParsers.ParseUserMessageEvent(root, timestamp, type, rawPayload, ctx),
-            "agent_message" => JsonlEventBasicParsers.ParseAgentMessageEvent(root, timestamp, type, rawPayload, ctx),
-            "agent_reasoning" => JsonlEventBasicParsers.ParseAgentReasoningEvent(root, timestamp, type, rawPayload, ctx),
-            "token_count" => JsonlEventBasicParsers.ParseTokenCountEvent(root, timestamp, type, rawPayload, ctx),
-            "turn_context" => JsonlEventBasicParsers.ParseTurnContextEvent(root, timestamp, type, rawPayload, ctx),
-            "response_item" => JsonlEventResponseItemParsers.ParseResponseItemEvent(root, timestamp, type, rawPayload, ctx),
-            "event_msg" => JsonlEventEnvelopeParsers.ParseEventMsgEvent(root, timestamp, rawPayload, ctx),
-            "event" => JsonlEventEnvelopeParsers.ParseEventEnvelopeEvent(root, timestamp, rawPayload, ctx),
-            "compacted" => JsonlEventBasicParsers.ParseCompactedEvent(root, timestamp, type, rawPayload, ctx),
+            "session_meta" => JsonlEventBasicParsers.ParseSessionMetaEvent(payload, timestamp, type, rawPayload, ctx),
+            "user_message" => JsonlEventBasicParsers.ParseUserMessageEvent(payload, timestamp, type, rawPayload, ctx),
+            "agent_message" => JsonlEventBasicParsers.ParseAgentMessageEvent(payload, timestamp, type, rawPayload, ctx),
+            "agent_reasoning" => JsonlEventBasicParsers.ParseAgentReasoningEvent(payload, timestamp, type, rawPayload, ctx),
+            "token_count" => JsonlEventBasicParsers.ParseTokenCountEvent(payload, timestamp, type, rawPayload, ctx),
+            "turn_context" => JsonlEventBasicParsers.ParseTurnContextEvent(payload, timestamp, type, rawPayload, ctx),
+            "response_item" => JsonlEventResponseItemParsers.ParseResponseItemEvent(payload, timestamp, type, rawPayload, ctx),
+            "event_msg" => JsonlEventEnvelopeParsers.ParseEventMsgEvent(payload, timestamp, rawPayload, ctx),
+            "event" => JsonlEventEnvelopeParsers.ParseEventEnvelopeEvent(payload, timestamp, rawPayload, ctx),
+            "compacted" => JsonlEventBasicParsers.ParseCompactedEvent(payload, timestamp, type, rawPayload, ctx),
             _ => JsonlEventBasicParsers.ParseUnknownEvent(timestamp, type, rawPayload, ctx)
         };
     }

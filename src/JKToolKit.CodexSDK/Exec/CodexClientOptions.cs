@@ -2,6 +2,8 @@ using System.IO;
 
 namespace JKToolKit.CodexSDK.Exec;
 
+using JKToolKit.CodexSDK.Exec.Overrides;
+
 /// <summary>
 /// Represents configuration options for the Codex client.
 /// </summary>
@@ -67,6 +69,16 @@ public class CodexClientOptions
     /// on Unix-like systems or %USERPROFILE%\.codex\sessions on Windows).
     /// </remarks>
     public string? SessionsRootDirectory { get; set; }
+
+    /// <summary>
+    /// Optional transformers applied to inbound JSONL events (type + payload) before mapping.
+    /// </summary>
+    public IReadOnlyList<IExecEventTransformer>? EventTransformers { get; set; }
+
+    /// <summary>
+    /// Optional mappers applied to inbound JSONL events (highest priority first).
+    /// </summary>
+    public IReadOnlyList<IExecEventMapper>? EventMappers { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum time to wait for the Codex process to start.
@@ -171,7 +183,9 @@ public class CodexClientOptions
         ProcessExitTimeout = ProcessExitTimeout,
         TailPollInterval = TailPollInterval,
         EnableUncorrelatedNewSessionFileDiscovery = EnableUncorrelatedNewSessionFileDiscovery,
-        EnableDiagnosticCapture = EnableDiagnosticCapture
+        EnableDiagnosticCapture = EnableDiagnosticCapture,
+        EventTransformers = EventTransformers,
+        EventMappers = EventMappers
     };
 
     /// <summary>
