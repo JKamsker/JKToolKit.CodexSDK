@@ -16,7 +16,7 @@ internal static class Program
 
         return cmd switch
         {
-            "schema-info" => NotImplemented(cmd),
+            "schema-info" => SchemaInfoCommand.Run(args.Skip(1).ToArray()),
             "generate" => NotImplemented(cmd),
             "check" => NotImplemented(cmd),
             _ => UnknownCommand(cmd)
@@ -58,6 +58,9 @@ internal static class Program
         Console.WriteLine("  generate      Generate internal upstream wire DTOs");
         Console.WriteLine("  check         Verify generated output is up-to-date");
         Console.WriteLine();
+        Console.WriteLine("schema-info options:");
+        Console.WriteLine("  --schema <PATH>    Path to codex_app_server_protocol.schemas.json");
+        Console.WriteLine("  --write <PATH>     Write metadata JSON to this path");
+        Console.WriteLine();
     }
 }
-
