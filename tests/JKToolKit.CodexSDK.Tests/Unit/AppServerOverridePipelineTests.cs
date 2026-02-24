@@ -220,6 +220,57 @@ public sealed class AppServerOverridePipelineTests
     }
 
     [Fact]
+    public async Task TurnHandle_Completes_When_CustomMappedTurnCompletedNotification_HasNoTurnId()
+    {
+        var rpc = new FakeJsonRpcConnection();
+
+        var options = new CodexAppServerClientOptions
+        {
+            NotificationBufferCapacity = 10,
+            NotificationMappers = new IAppServerNotificationMapper[]
+            {
+                new NotificationMapper((method, p) =>
+                    method == "turn/completed" ? new CustomNotification(method, p) : null)
+            }
+        };
+
+        await using var core = new CodexAppServerClientCore(
+            options,
+            process: new FakeStdioProcess(),
+            rpc: rpc,
+            logger: NullLogger.Instance,
+            startExitWatcher: false);
+
+        await using var handle = new CodexTurnHandle(
+            threadId: "th",
+            turnId: "turn1",
+            interrupt: _ => Task.CompletedTask,
+            steer: null,
+            steerRaw: null,
+            onDispose: () => { },
+            bufferCapacity: 10);
+
+        core.RegisterTurnHandle("turn1", handle);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        var rawTask = ReadOneAsync(handle.EventsRaw(cts.Token), cts.Token);
+        var typedTask = ReadOneAsync(handle.Events(cts.Token), cts.Token);
+
+        await rpc.EmitNotificationAsync("turn/completed", Parse("""{"threadId":"th","turn":{"id":"turn1","status":"completed"}}"""));
+
+        var raw = await rawTask;
+        raw.Method.Should().Be("turn/completed");
+
+        var typed = await typedTask;
+        typed.Should().BeOfType<CustomNotification>();
+        typed.Method.Should().Be("turn/completed");
+
+        var completed = await handle.Completion.WaitAsync(cts.Token);
+        completed.TurnId.Should().Be("turn1");
+        completed.Status.Should().Be("completed");
+    }
+
+    [Fact]
     public async Task Notifications_SwallowObserverExceptions()
     {
         var rpc = new FakeJsonRpcConnection();
@@ -395,4 +446,3 @@ public sealed class AppServerOverridePipelineTests
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }
-

@@ -264,12 +264,10 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         _globalNotifications.Writer.TryWrite(mapped);
         LogIfBogus(mapped);
 
-        var turnId = TryGetTurnId(mapped);
+        var turnId = TryGetTurnId(mapped) ?? TryGetTurnIdFromParams(@params);
         if (!string.IsNullOrWhiteSpace(turnId))
         {
-            _ = TryGetTurnHandle(turnId, out var handle);
-
-            if (handle is not null)
+            if (TryGetTurnHandle(turnId, out var handle) && handle is not null)
             {
                 handle.EventsChannel.Writer.TryWrite(mapped);
                 handle.RawEventsChannel.Writer.TryWrite(raw);

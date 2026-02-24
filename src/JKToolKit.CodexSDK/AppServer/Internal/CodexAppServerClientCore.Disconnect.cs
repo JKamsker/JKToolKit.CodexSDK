@@ -129,15 +129,46 @@ internal sealed partial class CodexAppServerClientCore
             return turnId;
         }
 
-        var @params = notification.Params;
-        if (@params.ValueKind == JsonValueKind.Object &&
-            @params.TryGetProperty("turnId", out var prop) &&
-            prop.ValueKind == JsonValueKind.String)
+        return TryGetTurnIdFromParams(notification.Params);
+    }
+
+    private static string? TryGetTurnIdFromParams(JsonElement @params)
+    {
+        if (@params.ValueKind != JsonValueKind.Object)
         {
-            var value = prop.GetString();
+            return null;
+        }
+
+        if (@params.TryGetProperty("turnId", out var turnIdProp) &&
+            turnIdProp.ValueKind == JsonValueKind.String)
+        {
+            var value = turnIdProp.GetString();
             if (!string.IsNullOrWhiteSpace(value))
             {
                 return value;
+            }
+        }
+
+        if (@params.TryGetProperty("turn", out var turnProp))
+        {
+            if (turnProp.ValueKind == JsonValueKind.String)
+            {
+                var value = turnProp.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            if (turnProp.ValueKind == JsonValueKind.Object &&
+                turnProp.TryGetProperty("id", out var turnIdNestedProp) &&
+                turnIdNestedProp.ValueKind == JsonValueKind.String)
+            {
+                var value = turnIdNestedProp.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
             }
         }
 
