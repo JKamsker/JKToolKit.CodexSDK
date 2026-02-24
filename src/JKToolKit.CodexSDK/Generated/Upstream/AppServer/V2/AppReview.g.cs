@@ -10,11 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class SkillsRemoteWriteParams
+internal partial class AppReview
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("hazelnutId")]
-    public string HazelnutId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("status")]
+    public string Status { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

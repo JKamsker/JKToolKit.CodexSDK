@@ -10,11 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class SkillsRemoteWriteParams
+internal partial class AppScreenshot
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("hazelnutId")]
-    public string HazelnutId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("fileId")]
+    public string? FileId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("url")]
+    public string? Url { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("userPrompt")]
+    public string UserPrompt { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

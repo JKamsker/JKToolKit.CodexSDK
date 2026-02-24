@@ -49,7 +49,7 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 
 ## Phase 4 — Upstream release sync automation
 
-- [ ] T040 Add `UPSTREAM_CODEX_VERSION.txt` pin + local developer docs.
+- [x] T040 Add `UPSTREAM_CODEX_VERSION.txt` pin + local developer docs.
 - [ ] T041 Add GitHub workflow: detect new `@openai/codex` version → generate schema → run generator → build/test → open PR only if green.
 
 ## Phase 5 — Scope “Everything”: Exec + MCP override hooks

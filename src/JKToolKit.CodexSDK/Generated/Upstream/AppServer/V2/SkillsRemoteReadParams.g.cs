@@ -13,6 +13,17 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class SkillsRemoteReadParams
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("enabled")]
+    public bool? Enabled { get; set; } = false;
+
+    [System.Text.Json.Serialization.JsonPropertyName("hazelnutScope")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HazelnutScope>))]
+    public HazelnutScope? HazelnutScope { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("productSurface")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ProductSurface>))]
+    public ProductSurface? ProductSurface { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

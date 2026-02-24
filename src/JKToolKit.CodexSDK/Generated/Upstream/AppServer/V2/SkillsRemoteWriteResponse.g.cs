@@ -16,9 +16,6 @@ internal partial class SkillsRemoteWriteResponse
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("path")]
     public string Path { get; set; } = default!;
 

@@ -16,6 +16,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class AppInfo
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("appMetadata")]
+    public AppMetadata2? AppMetadata { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("branding")]
+    public Branding? Branding { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string? Description { get; set; } = default!;
 
@@ -36,6 +42,9 @@ internal partial class AppInfo
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("isEnabled")]
     public bool? IsEnabled { get; set; } = true;
+
+    [System.Text.Json.Serialization.JsonPropertyName("labels")]
+    public System.Collections.Generic.IDictionary<string, string>? Labels { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("logoUrl")]
     public string? LogoUrl { get; set; } = default!;

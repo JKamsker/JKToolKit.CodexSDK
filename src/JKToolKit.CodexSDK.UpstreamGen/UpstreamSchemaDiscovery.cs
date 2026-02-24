@@ -6,6 +6,8 @@ namespace JKToolKit.CodexSDK.UpstreamGen;
 
 internal static class UpstreamSchemaDiscovery
 {
+    private const string UpstreamCodexVersionPinFileName = "UPSTREAM_CODEX_VERSION.txt";
+
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
@@ -43,13 +45,15 @@ internal static class UpstreamSchemaDiscovery
         }
 
         var (codexVersion, codexPackageJsonPath) = TryGetCodexCliVersion(repoRoot);
+        var (pinnedVersion, pinnedVersionPath) = TryGetPinnedCodexVersion(repoRoot);
 
         return new UpstreamSchemaMetadata
         {
             SchemaPath = MakeRepoRelativePath(repoRoot, schemaPath),
             SchemaBytes = new FileInfo(schemaPath).Length,
             SchemaSha256 = ComputeSha256Hex(schemaPath),
-            CodexCliVersion = codexVersion,
+            CodexCliVersion = pinnedVersion ?? codexVersion,
+            CodexCliVersionPinPath = pinnedVersionPath is null ? null : MakeRepoRelativePath(repoRoot, pinnedVersionPath),
             CodexCliPackageJsonPath = codexPackageJsonPath is null ? null : MakeRepoRelativePath(repoRoot, codexPackageJsonPath),
         };
     }
@@ -73,6 +77,33 @@ internal static class UpstreamSchemaDiscovery
         using var sha = SHA256.Create();
         var hash = sha.ComputeHash(stream);
         return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static (string? Version, string? VersionPinPath) TryGetPinnedCodexVersion(string repoRoot)
+    {
+        var versionPath = Path.Combine(repoRoot, UpstreamCodexVersionPinFileName);
+        if (!File.Exists(versionPath))
+        {
+            return (null, null);
+        }
+
+        foreach (var rawLine in File.ReadLines(versionPath))
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            if (line.StartsWith('#'))
+            {
+                continue;
+            }
+
+            return (line, versionPath);
+        }
+
+        return (null, versionPath);
     }
 
     private static (string? Version, string? PackageJsonPath) TryGetCodexCliVersion(string repoRoot)
@@ -112,5 +143,6 @@ internal sealed record class UpstreamSchemaMetadata
     public required long SchemaBytes { get; init; }
     public required string SchemaSha256 { get; init; }
     public string? CodexCliVersion { get; init; }
+    public string? CodexCliVersionPinPath { get; init; }
     public string? CodexCliPackageJsonPath { get; init; }
 }
