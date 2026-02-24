@@ -46,13 +46,25 @@ internal static class UpstreamSchemaDiscovery
 
         return new UpstreamSchemaMetadata
         {
-            RepoRoot = repoRoot,
-            SchemaPath = schemaPath,
+            SchemaPath = MakeRepoRelativePath(repoRoot, schemaPath),
             SchemaBytes = new FileInfo(schemaPath).Length,
             SchemaSha256 = ComputeSha256Hex(schemaPath),
             CodexCliVersion = codexVersion,
-            CodexCliPackageJsonPath = codexPackageJsonPath,
+            CodexCliPackageJsonPath = codexPackageJsonPath is null ? null : MakeRepoRelativePath(repoRoot, codexPackageJsonPath),
         };
+    }
+
+    private static string MakeRepoRelativePath(string repoRoot, string path)
+    {
+        try
+        {
+            var relative = Path.GetRelativePath(repoRoot, path);
+            return relative.Replace('\\', '/');
+        }
+        catch
+        {
+            return path.Replace('\\', '/');
+        }
     }
 
     private static string ComputeSha256Hex(string path)
@@ -96,7 +108,6 @@ internal static class UpstreamSchemaDiscovery
 
 internal sealed record class UpstreamSchemaMetadata
 {
-    public required string RepoRoot { get; init; }
     public required string SchemaPath { get; init; }
     public required long SchemaBytes { get; init; }
     public required string SchemaSha256 { get; init; }

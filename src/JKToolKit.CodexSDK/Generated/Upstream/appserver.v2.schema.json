@@ -1,8 +1,7 @@
 {
-  "repoRoot": "C:\\Users\\Jonas\\repos\\private\\JKamsker\\JKamsker.CodexSDK",
-  "schemaPath": "C:\\Users\\Jonas\\repos\\private\\JKamsker\\JKamsker.CodexSDK\\external\\codex\\codex-rs\\app-server-protocol\\schema\\json\\codex_app_server_protocol.schemas.json",
+  "schemaPath": "external/codex/codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
   "schemaBytes": 452413,
   "schemaSha256": "44803cc8c6a4f55c4a6604018c91f8875e42477921764e491124ab7afc3173e1",
   "codexCliVersion": "0.0.0-dev",
-  "codexCliPackageJsonPath": "C:\\Users\\Jonas\\repos\\private\\JKamsker\\JKamsker.CodexSDK\\external\\codex\\codex-cli\\package.json"
+  "codexCliPackageJsonPath": "external/codex/codex-cli/package.json"
 }
