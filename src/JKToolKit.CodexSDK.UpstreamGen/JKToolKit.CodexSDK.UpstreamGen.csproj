@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>JKToolKit.CodexSDK.UpstreamGen</AssemblyName>
+    <RootNamespace>JKToolKit.CodexSDK.UpstreamGen</RootNamespace>
+  </PropertyGroup>
+
+</Project>
+
