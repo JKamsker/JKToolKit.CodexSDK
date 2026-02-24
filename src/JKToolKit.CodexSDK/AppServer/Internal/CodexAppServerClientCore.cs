@@ -28,6 +28,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
     private readonly CancellationToken _disposeToken;
 
     private readonly Channel<AppServerNotification> _globalNotifications;
+    private readonly Channel<AppServerRpcNotification> _globalRawNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
     private int _disposed;
     private int _disconnectSignaled;
@@ -53,6 +54,13 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             FullMode = BoundedChannelFullMode.DropOldest
         });
 
+        _globalRawNotifications = Channel.CreateBounded<AppServerRpcNotification>(new BoundedChannelOptions(options.NotificationBufferCapacity)
+        {
+            SingleReader = false,
+            SingleWriter = true,
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
+
         _rpc.OnNotification += OnRpcNotificationAsync;
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
 
@@ -68,6 +76,9 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct) =>
         _globalNotifications.Reader.ReadAllAsync(ct);
+
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct) =>
+        _globalRawNotifications.Reader.ReadAllAsync(ct);
 
     internal bool TryGetTurnHandle(string turnId, out CodexTurnHandle? handle)
     {
@@ -264,7 +275,83 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
     private ValueTask OnRpcNotificationAsync(JsonRpcNotification notification)
     {
-        var mapped = AppServerNotificationMapper.Map(notification.Method, notification.Params);
+        var method = notification.Method;
+
+        var @params = notification.Params ?? EmptyObject;
+        if (@params.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            @params = EmptyObject;
+        }
+
+        var transformers = _options.NotificationTransformers;
+        if (transformers is { Count: > 0 })
+        {
+            foreach (var transformer in transformers)
+            {
+                if (transformer is null)
+                {
+                    continue;
+                }
+
+                var t = transformer.Transform(method, @params);
+                method = t.Method;
+                @params = t.Params;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(method))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        var observers = _options.MessageObservers;
+        if (observers is { Count: > 0 })
+        {
+            foreach (var observer in observers)
+            {
+                if (observer is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    observer.OnNotification(method, @params);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "App-server message observer threw in OnNotification (method={Method}).", method);
+                }
+            }
+        }
+
+        _globalRawNotifications.Writer.TryWrite(new AppServerRpcNotification(method, @params));
+
+        AppServerNotification mapped;
+        var customMappers = _options.NotificationMappers;
+        if (customMappers is { Count: > 0 })
+        {
+            AppServerNotification? customMapped = null;
+            foreach (var mapper in customMappers)
+            {
+                if (mapper is null)
+                {
+                    continue;
+                }
+
+                customMapped = mapper.TryMap(method, @params);
+                if (customMapped is not null)
+                {
+                    break;
+                }
+            }
+
+            mapped = customMapped ?? AppServerNotificationMapper.Map(method, @params);
+        }
+        else
+        {
+            mapped = AppServerNotificationMapper.Map(method, @params);
+        }
 
         _globalNotifications.Writer.TryWrite(mapped);
         LogIfBogus(mapped);
@@ -358,6 +445,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
         _disposeCts.Cancel();
         _globalNotifications.Writer.TryComplete();
+        _globalRawNotifications.Writer.TryComplete();
 
         var handles = SnapshotAndClearTurns();
 

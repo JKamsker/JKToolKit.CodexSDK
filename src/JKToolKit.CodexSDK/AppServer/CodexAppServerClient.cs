@@ -218,6 +218,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _core.Notifications(ct);
 
     /// <summary>
+    /// Subscribes to the global raw JSON-RPC notification stream (method + params).
+    /// </summary>
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
+        _core.NotificationsRaw(ct);
+
+    /// <summary>
     /// Starts a new thread.
     /// </summary>
     public Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct = default) =>
