@@ -9,6 +9,7 @@ internal static class CodexAppServerClientThreadParsers
     public static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult)
     {
         var array =
+            TryGetArray(listResult, "data") ??
             TryGetArray(listResult, "threads") ??
             TryGetArray(listResult, "items") ??
             TryGetArray(listResult, "sessions");
@@ -49,12 +50,15 @@ internal static class CodexAppServerClientThreadParsers
         var name =
             GetStringOrNull(primary, "name") ??
             GetStringOrNull(primary, "threadName") ??
-            GetStringOrNull(primary, "title");
+            GetStringOrNull(primary, "title") ??
+            GetStringOrNull(primary, "preview");
 
         var archived = GetBoolOrNull(primary, "archived");
         var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
         var cwd = GetStringOrNull(primary, "cwd");
-        var model = GetStringOrNull(primary, "model");
+        var model =
+            GetStringOrNull(primary, "model") ??
+            GetStringOrNull(primary, "modelProvider");
 
         return new CodexThreadSummary
         {

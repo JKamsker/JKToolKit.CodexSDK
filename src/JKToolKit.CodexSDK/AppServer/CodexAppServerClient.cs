@@ -18,12 +18,13 @@ namespace JKToolKit.CodexSDK.AppServer;
 /// <summary>
 /// A client for interacting with the Codex CLI "app-server" JSON-RPC interface.
 /// </summary>
-public sealed class CodexAppServerClient : IAsyncDisposable
+public sealed partial class CodexAppServerClient : IAsyncDisposable
 {
     private readonly CodexAppServerClientCore _core;
     private readonly CodexAppServerThreadsClient _threadsClient;
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
+    private readonly CodexAppServerMcpClient _mcpClient;
     private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
     private readonly CodexAppServerTurnsClient _turnsClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
@@ -124,6 +125,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, experimentalApiEnabled);
         _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
         _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _mcpClient = new CodexAppServerMcpClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
             options,
