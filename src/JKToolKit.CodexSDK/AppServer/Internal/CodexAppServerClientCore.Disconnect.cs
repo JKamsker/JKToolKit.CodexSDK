@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
@@ -97,8 +98,9 @@ internal sealed partial class CodexAppServerClientCore
         }
     }
 
-    private static string? TryGetTurnId(AppServerNotification notification) =>
-        notification switch
+    private static string? TryGetTurnId(AppServerNotification notification)
+    {
+        var turnId = notification switch
         {
             AgentMessageDeltaNotification d => d.TurnId,
             ItemStartedNotification s => s.TurnId,
@@ -121,4 +123,24 @@ internal sealed partial class CodexAppServerClientCore
             TurnCompletedNotification t => t.TurnId,
             _ => null
         };
+
+        if (!string.IsNullOrWhiteSpace(turnId))
+        {
+            return turnId;
+        }
+
+        var @params = notification.Params;
+        if (@params.ValueKind == JsonValueKind.Object &&
+            @params.TryGetProperty("turnId", out var prop) &&
+            prop.ValueKind == JsonValueKind.String)
+        {
+            var value = prop.GetString();
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
 }

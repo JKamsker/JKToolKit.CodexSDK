@@ -297,9 +297,16 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     continue;
                 }
 
-                var t = transformer.Transform(method, @params);
-                method = t.Method;
-                @params = t.Params;
+                try
+                {
+                    var t = transformer.Transform(method, @params);
+                    method = t.Method;
+                    @params = t.Params;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "App-server notification transformer threw (method={Method}).", method);
+                }
             }
         }
 
@@ -344,18 +351,25 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     continue;
                 }
 
-                customMapped = mapper.TryMap(method, @params);
-                if (customMapped is not null)
+                try
                 {
-                    break;
+                    customMapped = mapper.TryMap(method, @params);
+                    if (customMapped is not null)
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "App-server notification mapper threw (method={Method}).", method);
                 }
             }
 
-            mapped = customMapped ?? AppServerNotificationMapper.Map(method, @params);
+            mapped = customMapped ?? SafeMap(method, @params);
         }
         else
         {
-            mapped = AppServerNotificationMapper.Map(method, @params);
+            mapped = SafeMap(method, @params);
         }
 
         _globalNotifications.Writer.TryWrite(mapped);
@@ -371,7 +385,13 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                 handle.EventsChannel.Writer.TryWrite(mapped);
                 handle.RawEventsChannel.Writer.TryWrite(raw);
 
-                if (mapped is TurnCompletedNotification completed)
+                var completed = mapped as TurnCompletedNotification;
+                if (completed is null && method == "turn/completed")
+                {
+                    completed = SafeMap(method, @params) as TurnCompletedNotification;
+                }
+
+                if (completed is not null)
                 {
                     handle.CompletionTcs.TrySetResult(completed);
                     handle.EventsChannel.Writer.TryComplete();

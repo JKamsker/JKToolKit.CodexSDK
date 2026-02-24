@@ -81,8 +81,11 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
     /// <summary>
     /// Sends an arbitrary JSON-RPC request to the MCP server.
     /// </summary>
-    public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        _rpc.SendRequestAsync(method, @params, ct);
+    public async Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default)
+    {
+        var result = await _rpc.SendRequestAsync(method, @params, ct);
+        return ApplyResponseTransformers(method, result);
+    }
 
     /// <summary>
     /// Lists tools provided by the MCP server.
