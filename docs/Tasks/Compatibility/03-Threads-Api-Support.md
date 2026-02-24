@@ -94,7 +94,7 @@ This is a “shape guide” for what to implement first. The SDK should treat un
 | `thread/fork` | fork a thread into a new thread | ✅ (by `threadId`) | `path`-based fork is experimental upstream; require opt-in. |
 | `thread/archive` | move thread to archived sessions | ✅ | None expected. |
 | `thread/unarchive` | restore archived thread | ✅ | None expected. |
-| `thread/name/set` | set/clear thread name | ✅ | None expected. |
+| `thread/name/set` | set thread name | ✅ | None expected. |
 | `thread/compact/start` | trigger compaction | ✅ | Ensure we document side effects; may evolve. |
 | `thread/rollback` | roll back to a prior point | ✅ | Params likely include turn ids; keep raw. |
 | `thread/loaded/list` | list loaded threads in memory | ✅ | Mostly a debugging/UX helper. |

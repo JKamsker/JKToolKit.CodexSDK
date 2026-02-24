@@ -311,9 +311,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.UnarchiveThreadAsync(threadId, ct);
 
     /// <summary>
-    /// Sets (or clears) the thread name.
+    /// Sets the thread name.
     /// </summary>
-    public Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default) =>
+    public Task SetThreadNameAsync(string threadId, string name, CancellationToken ct = default) =>
         _threadsClient.SetThreadNameAsync(threadId, name, ct);
 
     /// <summary>

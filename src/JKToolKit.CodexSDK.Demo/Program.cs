@@ -70,7 +70,7 @@ internal static class Program
                     .WithDescription("Unarchive a thread.");
 
                 thread.AddCommand<AppServerThreadSetNameCommand>("set-name")
-                    .WithDescription("Set or clear a thread name.");
+                    .WithDescription("Set a thread name.");
 
                 thread.AddCommand<AppServerThreadCleanBackgroundTerminalsCommand>("clean-bg-terminals")
                     .WithDescription("Clean background terminals for a thread.");

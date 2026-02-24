@@ -156,7 +156,7 @@ internal sealed class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/read",
-            new UpstreamV2.ThreadReadParams { ThreadId = threadId, IncludeTurns = null },
+            new UpstreamV2.ThreadReadParams { ThreadId = threadId, IncludeTurns = false },
             ct);
 
         var threadObject = CodexAppServerClientJson.TryGetObject(result, "thread") ?? result;
@@ -294,14 +294,16 @@ internal sealed class CodexAppServerThreadsClient
         return new CodexThread(id, result);
     }
 
-    public async Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)
+    public async Task SetThreadNameAsync(string threadId, string name, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be empty or whitespace.", nameof(name));
 
         _ = await _sendRequestAsync(
             "thread/name/set",
-            new UpstreamV2.ThreadSetNameParams { ThreadId = threadId, Name = name ?? string.Empty },
+            new UpstreamV2.ThreadSetNameParams { ThreadId = threadId, Name = name },
             ct);
     }
 }

@@ -16,6 +16,9 @@ public abstract class AppServerThreadsSettingsBase : CommandSettings
     [CommandOption("--timeout-seconds <SECONDS>")]
     public int? TimeoutSeconds { get; init; }
 
+    [CommandOption("--experimental-api")]
+    public bool ExperimentalApi { get; init; }
+
     [CommandOption("--json")]
     public bool Json { get; init; }
 }

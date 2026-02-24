@@ -20,7 +20,9 @@ public sealed class AppServerThreadRollbackCommand : AsyncCommand<AppServerThrea
                 return 1;
             }
 
-            var thread = await codex.RollbackThreadAsync(settings.ThreadId, settings.NumTurns, ct);
+            // Some thread operations require the thread to be loaded into the current app-server process.
+            var loaded = await codex.ResumeThreadAsync(settings.ThreadId, ct);
+            var thread = await codex.RollbackThreadAsync(loaded.Id, settings.NumTurns, ct);
             Console.WriteLine($"Rolled back thread: {thread.Id}");
             if (settings.Json)
             {

@@ -13,8 +13,10 @@ public sealed class AppServerThreadCompactCommand : AsyncCommand<AppServerThread
                 return 1;
             }
 
-            await codex.CompactThreadAsync(settings.ThreadId, ct);
-            Console.WriteLine($"Compacted thread: {settings.ThreadId}");
+            // Some thread operations require the thread to be loaded into the current app-server process.
+            var thread = await codex.ResumeThreadAsync(settings.ThreadId, ct);
+            await codex.CompactThreadAsync(thread.Id, ct);
+            Console.WriteLine($"Compacted thread: {thread.Id}");
             return 0;
         });
 }
