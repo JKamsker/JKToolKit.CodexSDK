@@ -60,4 +60,4 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 
 ## Phase 6 — Final validation
 
-- [ ] T060 Run full `dotnet test` and ensure docs/examples compile.
+- [x] T060 Run full `dotnet test` and ensure docs/examples compile.
