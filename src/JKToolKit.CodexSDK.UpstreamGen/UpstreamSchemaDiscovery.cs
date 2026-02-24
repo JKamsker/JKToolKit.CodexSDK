@@ -47,11 +47,13 @@ internal static class UpstreamSchemaDiscovery
         var (codexVersion, codexPackageJsonPath) = TryGetCodexCliVersion(repoRoot);
         var (pinnedVersion, pinnedVersionPath) = TryGetPinnedCodexVersion(repoRoot);
 
+        var normalized = ComputeNormalizedSha256AndBytes(schemaPath);
+
         return new UpstreamSchemaMetadata
         {
             SchemaPath = MakeRepoRelativePath(repoRoot, schemaPath),
-            SchemaBytes = new FileInfo(schemaPath).Length,
-            SchemaSha256 = ComputeSha256Hex(schemaPath),
+            SchemaBytes = normalized.Bytes,
+            SchemaSha256 = normalized.Sha256,
             CodexCliVersion = pinnedVersion ?? codexVersion,
             CodexCliVersionPinPath = pinnedVersionPath is null ? null : MakeRepoRelativePath(repoRoot, pinnedVersionPath),
             CodexCliPackageJsonPath = codexPackageJsonPath is null ? null : MakeRepoRelativePath(repoRoot, codexPackageJsonPath),
@@ -71,12 +73,60 @@ internal static class UpstreamSchemaDiscovery
         }
     }
 
-    private static string ComputeSha256Hex(string path)
+    private static (long Bytes, string Sha256) ComputeNormalizedSha256AndBytes(string path)
     {
-        using var stream = File.OpenRead(path);
+        var bytes = File.ReadAllBytes(path);
+
+        var normalized = NormalizeNewlines(bytes);
         using var sha = SHA256.Create();
-        var hash = sha.ComputeHash(stream);
-        return Convert.ToHexString(hash).ToLowerInvariant();
+        var hash = sha.ComputeHash(normalized);
+        return (normalized.Length, Convert.ToHexString(hash).ToLowerInvariant());
+    }
+
+    private static byte[] NormalizeNewlines(byte[] bytes)
+    {
+        var containsCr = false;
+        foreach (var b in bytes)
+        {
+            if (b == (byte)'\r')
+            {
+                containsCr = true;
+                break;
+            }
+        }
+
+        if (!containsCr)
+        {
+            return bytes;
+        }
+
+        var output = new byte[bytes.Length];
+        var outIndex = 0;
+
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            var b = bytes[i];
+
+            if (b == (byte)'\r')
+            {
+                if (i + 1 < bytes.Length && bytes[i + 1] == (byte)'\n')
+                {
+                    i++;
+                }
+
+                output[outIndex++] = (byte)'\n';
+                continue;
+            }
+
+            output[outIndex++] = b;
+        }
+
+        if (outIndex == output.Length)
+        {
+            return output;
+        }
+
+        return output.AsSpan(0, outIndex).ToArray();
     }
 
     private static (string? Version, string? VersionPinPath) TryGetPinnedCodexVersion(string repoRoot)
