@@ -17,7 +17,7 @@ internal static class Program
         return cmd switch
         {
             "schema-info" => SchemaInfoCommand.Run(args.Skip(1).ToArray()),
-            "generate" => NotImplemented(cmd),
+            "generate" => GenerateCommand.Run(args.Skip(1).ToArray()),
             "check" => NotImplemented(cmd),
             _ => UnknownCommand(cmd)
         };

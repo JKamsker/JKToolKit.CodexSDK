@@ -42,7 +42,7 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 
 - [x] T030 Add `JKToolKit.CodexSDK.UpstreamGen` tool project + CLI skeleton.
 - [x] T031 Implement schema discovery + metadata output (Codex version + schema hash).
-- [ ] T032 Generate internal C# wire DTOs from `codex_app_server_protocol.schemas.json` and commit output under `src/JKToolKit.CodexSDK/Generated/Upstream/`.
+- [x] T032 Generate internal C# wire DTOs from `codex_app_server_protocol.schemas.json` and commit output under `src/JKToolKit.CodexSDK/Generated/Upstream/`.
 - [ ] T033 Refactor app-server internals to use generated DTOs where it reduces drift risk (while keeping public wrappers stable).
 - [ ] T034 Add generator `--check` mode + CI guard (fails if generated output is stale).
 

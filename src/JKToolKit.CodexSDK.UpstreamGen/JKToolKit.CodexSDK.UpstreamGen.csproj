@@ -10,5 +10,8 @@
     <RootNamespace>JKToolKit.CodexSDK.UpstreamGen</RootNamespace>
   </PropertyGroup>
 
-</Project>
+  <ItemGroup>
+    <PackageReference Include="NJsonSchema.CodeGeneration.CSharp" Version="11.5.2" />
+  </ItemGroup>
 
+</Project>
