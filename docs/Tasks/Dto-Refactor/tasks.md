@@ -27,7 +27,7 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 
 ## Phase 1 — App-server override pipeline (DTO hooks)
 
-- [ ] T010 Add app-server override interfaces + options (no behavior change).
+- [x] T010 Add app-server override interfaces + options (no behavior change).
 - [ ] T011 Implement request/response transformer pipeline in app-server core.
 - [ ] T012 Implement notification transformer pipeline + pluggable notification mappers + raw notification stream.
 - [ ] T013 Add `CallAsync<T>` + raw notification helpers on `CodexAppServerClient`/`CodexTurnHandle`.
@@ -60,4 +60,3 @@ description: "Schema-driven DTO refactor + upstream sync automation (Codex CLI)"
 ## Phase 6 — Final validation
 
 - [ ] T060 Run full `dotnet test` and ensure docs/examples compile.
-

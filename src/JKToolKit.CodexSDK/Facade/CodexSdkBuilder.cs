@@ -139,7 +139,15 @@ public sealed class CodexSdkBuilder
         DefaultClientInfo = options.DefaultClientInfo,
         SerializerOptionsOverride = options.SerializerOptionsOverride,
         NotificationBufferCapacity = options.NotificationBufferCapacity,
-        ApprovalHandler = options.ApprovalHandler
+        ApprovalHandler = options.ApprovalHandler,
+        Capabilities = options.Capabilities,
+        ExperimentalApi = options.ExperimentalApi,
+        OptOutNotificationMethods = options.OptOutNotificationMethods,
+        RequestParamsTransformers = options.RequestParamsTransformers,
+        ResponseTransformers = options.ResponseTransformers,
+        NotificationTransformers = options.NotificationTransformers,
+        NotificationMappers = options.NotificationMappers,
+        MessageObservers = options.MessageObservers
     };
 
     private static CodexMcpServerClientOptions Clone(CodexMcpServerClientOptions options) => new()
