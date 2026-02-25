@@ -58,8 +58,6 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
                 }
 
                 // Phase 2: Apply a workspaceWrite sandbox policy override and verify writes succeed.
-                TryDeleteFile(allowedFile);
-
                 Console.WriteLine();
                 Console.WriteLine("> Phase 2 (sandboxPolicy=workspaceWrite):");
                 Console.WriteLine($"> {prompt}");

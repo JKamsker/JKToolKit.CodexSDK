@@ -74,7 +74,7 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    Console.Error.WriteLine($"\nCompletion failed: {ex.Message}");
+                    Console.Error.WriteLine($"\nCompletion failed: {ex}");
                     exitCode = 1;
                 }
             }
