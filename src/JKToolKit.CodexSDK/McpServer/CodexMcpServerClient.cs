@@ -293,13 +293,25 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
     internal async Task InitializeAsync(CancellationToken ct)
     {
         var clientInfo = _options.ClientInfo;
+        object capabilities = _options.ElicitationHandler is null
+            ? new { }
+            : new
+            {
+                elicitation = new
+                {
+                    // Matches the MCP capability surface used by upstream rmcp clients.
+                    form = new { schemaValidation = (bool?)null },
+                    url = (object?)null
+                }
+            };
+
         await _rpc.SendRequestAsync(
             "initialize",
             new
             {
                 protocolVersion = "2025-06-18",
                 clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version },
-                capabilities = new { }
+                capabilities
             },
             ct);
 

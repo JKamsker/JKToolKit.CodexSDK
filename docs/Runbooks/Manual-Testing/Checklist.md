@@ -15,6 +15,7 @@ Use this as a release / PR verification checklist. Commands assume PowerShell an
 - [ ] `exec` resumes the session (follow-up) and completes
 - [ ] `exec-list` lists recent sessions
 - [ ] `exec-attach` can attach to a printed log path and stream events
+- [ ] `exec-overrides` shows transformer/mapper markers + a custom mapped event
 
 ## Structured outputs
 
@@ -47,13 +48,23 @@ Use this as a release / PR verification checklist. Commands assume PowerShell an
 - [ ] `appserver-fuzzy --experimental-api` produces at least one update
 - [ ] `appserver-review --target custom ...` starts a review and completes
 - [ ] `appserver-resilient-stream --restart-between-turns` emits a restart marker and completes both turns
+- [ ] `appserver-overrides` shows response/notification transformer+mapper markers
+- [ ] `appserver-optout-notifications` reduces delta notifications (baseline>0, optOut==0)
+- [ ] `appserver-output-schema` produces parseable JSON output and prints `ok`
+- [ ] `appserver-sandbox-policy` blocks writes in read-only phase and allows writes in workspace-write phase
+- [ ] `appserver-collaboration-mode` exercises guard + `collaborationMode/list` (experimental)
 
 ## MCP-server mode (`codex mcp-server`)
 
 - [ ] `mcpserver` lists tools and can start a session
 - [ ] `mcpserver --low-level` exercises `CallAsync("tools/list")` and `CallToolAsync("codex-reply", ...)`
+- [ ] `mcp-overrides` shows Codex tool override markers and handles at least one elicitation request
 
 ## DI + Overrides
 
 - [ ] `di-overrides` runs and prints `ok` (and shows observer/transformer markers)
 - [ ] (Optional) Scratch app scenarios in `DI-and-Overrides.md` still work
+
+## Facade routing
+
+- [ ] `sdk-review-route` runs both Exec + AppServer review routes and prints `ok`

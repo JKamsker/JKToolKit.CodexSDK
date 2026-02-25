@@ -30,3 +30,23 @@ Verify:
 - It prints: `[low-level] CallAsync(tools/list): tools=...`
 - It still prints the follow-up reply text (exercising `CallToolAsync` directly).
 
+## 3) Codex tool result override hooks + elicitation handling
+
+This validates:
+
+- `CodexMcpServerClientOptions.CodexToolResultTransformers`
+- `CodexMcpServerClientOptions.CodexToolResultMappers`
+- `CodexMcpServerClientOptions.ElicitationHandler` (server-initiated requests)
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcp-overrides --timeout-seconds 240
+```
+
+Verify:
+
+- It prints override markers:
+  - `[codex-tool-result-transformer] ...`
+  - `[codex-tool-result-mapper] ...`
+- It prints at least one `[elicitation] ...` line.
+- It reports `.git exists: True`.
+- It prints `ok`.

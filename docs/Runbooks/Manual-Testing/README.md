@@ -10,6 +10,7 @@ Primary test harness: the demo console app (`src/JKToolKit.CodexSDK.Demo`).
 - [Exec mode](Exec.md) (`codex exec`, JSONL streaming, attach/resume, structured outputs, `codex review`)
 - [App-server mode](AppServer.md) (`codex app-server`, JSON-RPC, threads/turns, notifications, approvals, resiliency, config/skills/apps)
 - [MCP-server mode](McpServer.md) (`codex mcp-server`, tools/list/tools/call, sessions, low-level escape hatches)
+- [Facade routing](Facade.md) (`CodexSdk.ReviewAsync` routing)
 - [DI + override hooks](DI-and-Overrides.md) (service registration + transformers/mappers)
 - [Troubleshooting](Troubleshooting.md)
 
@@ -87,6 +88,14 @@ Template (copy/paste):
 - [ ] [PENDING] TC19 - MCP-server: tools + session + reply (`demo mcpserver`)
 - [ ] [PENDING] TC20 - MCP-server: low-level escape hatches (`demo mcpserver --low-level`)
 - [ ] [PENDING] TC21 - DI + override hooks (`demo di-overrides`) (see: `DI-and-Overrides.md`)
+- [ ] [PENDING] TC22 - Exec: override hooks (`demo exec-overrides`)
+- [ ] [PENDING] TC23 - App-server: override hooks (`demo appserver-overrides`)
+- [ ] [PENDING] TC24 - App-server: opt-out notification methods (`demo appserver-optout-notifications`)
+- [ ] [PENDING] TC25 - App-server: output schema (`demo appserver-output-schema`)
+- [ ] [PENDING] TC26 - App-server: sandbox policy (`demo appserver-sandbox-policy`)
+- [ ] [PENDING] TC27 - App-server: collaboration mode (experimental) (`demo appserver-collaboration-mode`)
+- [ ] [PENDING] TC28 - MCP-server: codex tool overrides + elicitation (`demo mcp-overrides`)
+- [ ] [PENDING] TC29 - Facade: review routing (`demo sdk-review-route`)
 
 ## Failures
 <!--

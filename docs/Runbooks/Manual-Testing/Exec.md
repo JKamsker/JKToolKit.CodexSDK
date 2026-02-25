@@ -50,7 +50,7 @@ Verify:
 
 The demo includes a `structured-review` command that uses the structured-output pipeline.
 
-Run a minimal prompt (fast/cheap) to verify the JSON → DTO path works:
+Run a minimal prompt (fast/cheap) to verify the JSON -> DTO path works:
 
 ```powershell
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- structured-review --max-attempts 1 --reasoning low --prompt "Return JSON only matching the schema with: summary='ok', severity='clean', issues=[], fixTasks=[]."
@@ -59,7 +59,7 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- structured-review --max-atte
 Verify:
 
 - It completes in a single attempt.
-- It renders a summary panel with `ok`, and shows “No issues found” / “No fix tasks needed.”
+- It renders a summary panel with `ok`, and shows "No issues found." / "No fix tasks needed."
 
 ## 5) Non-interactive code review (`codex review`)
 
@@ -102,3 +102,20 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- review "Focus on correctness
 ```
 
 Verify it runs and prints a review response based on your instructions.
+
+## 6) Exec override hooks (EventTransformers + EventMappers)
+
+This validates:
+
+- `CodexClientOptions.EventTransformers`
+- `CodexClientOptions.EventMappers`
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- exec-overrides --timeout-seconds 120
+```
+
+Verify:
+
+- It prints `[transformer] ...` and `[mapper] ...` marker lines.
+- It prints a `[custom-event] ...` line (custom type mapped by the demo mapper).
+- It prints `ok`.

@@ -11,8 +11,16 @@ using JKToolKit.CodexSDK.Demo.Commands.AppServerTurnControl;
 using JKToolKit.CodexSDK.Demo.Commands.DiOverrides;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerThreads;
 using JKToolKit.CodexSDK.Demo.Commands.Exec;
+using JKToolKit.CodexSDK.Demo.Commands.ExecOverrides;
+using JKToolKit.CodexSDK.Demo.Commands.AppServerOverrides;
+using JKToolKit.CodexSDK.Demo.Commands.AppServerOptOutNotifications;
+using JKToolKit.CodexSDK.Demo.Commands.AppServerOutputSchema;
+using JKToolKit.CodexSDK.Demo.Commands.AppServerSandboxPolicy;
+using JKToolKit.CodexSDK.Demo.Commands.AppServerCollaborationMode;
 using JKToolKit.CodexSDK.Demo.Commands.McpServer;
+using JKToolKit.CodexSDK.Demo.Commands.McpOverrides;
 using JKToolKit.CodexSDK.Demo.Commands.Review;
+using JKToolKit.CodexSDK.Demo.Commands.SdkReviewRoute;
 using JKToolKit.CodexSDK.Demo.Commands.StructuredReview;
 using Spectre.Console.Cli;
 
@@ -36,6 +44,9 @@ internal static class Program
 
             config.AddCommand<ExecAttachCommand>("exec-attach")
                 .WithDescription("Attach to an existing Exec-mode JSONL log and stream events.");
+
+            config.AddCommand<ExecOverridesCommand>("exec-overrides")
+                .WithDescription("Exec mode: validate EventTransformers/EventMappers override hooks.");
 
             config.AddCommand<ReviewCommand>("review")
                 .WithDescription("Run a non-interactive `codex review` and print stdout/stderr.");
@@ -72,6 +83,21 @@ internal static class Program
 
             config.AddCommand<AppServerNotificationsCommand>("appserver-notifications")
                 .WithDescription("Start `codex app-server` and observe global notifications (typed + raw).");
+
+            config.AddCommand<AppServerOverridesCommand>("appserver-overrides")
+                .WithDescription("App-server: validate response/notification override hooks (transformers + mappers).");
+
+            config.AddCommand<AppServerOptOutNotificationsCommand>("appserver-optout-notifications")
+                .WithDescription("App-server: validate OptOutNotificationMethods capability reduces delta notifications.");
+
+            config.AddCommand<AppServerOutputSchemaCommand>("appserver-output-schema")
+                .WithDescription("App-server: validate TurnStartOptions.OutputSchema produces JSON output.");
+
+            config.AddCommand<AppServerSandboxPolicyCommand>("appserver-sandbox-policy")
+                .WithDescription("App-server: validate TurnStartOptions.SandboxPolicy writable-roots restrictions.");
+
+            config.AddCommand<AppServerCollaborationModeCommand>("appserver-collaboration-mode")
+                .WithDescription("App-server: validate collaborationMode/list and turn/start.collaborationMode (experimental).");
 
             config.AddBranch("appserver-thread", thread =>
             {
@@ -117,11 +143,17 @@ internal static class Program
             config.AddCommand<McpServerCommand>("mcpserver")
                 .WithDescription("Start `codex mcp-server`, list tools, and run a small session.");
 
+            config.AddCommand<McpOverridesCommand>("mcp-overrides")
+                .WithDescription("MCP-server: validate Codex tool result override hooks and elicitation handling.");
+
             config.AddCommand<StructuredReviewCommand>("structured-review")
                 .WithDescription("Run a structured code review with typed output (issues + fix tasks).");
 
             config.AddCommand<DiOverridesCommand>("di-overrides")
                 .WithDescription("Validate DI registration and override hooks (app-server + mcp-server).");
+
+            config.AddCommand<SdkReviewRouteCommand>("sdk-review-route")
+                .WithDescription("Validate CodexSdk.ReviewAsync routing (Exec + AppServer).");
         });
 
         app.SetDefaultCommand<ExecCommand>();

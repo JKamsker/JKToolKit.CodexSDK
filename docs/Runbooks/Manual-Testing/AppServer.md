@@ -211,3 +211,82 @@ Verify:
 - It emits a restart marker: `[resiliency] restarted #...`
 - Both turns complete.
 
+## 12) Override hooks (response/notification transformers + mappers)
+
+This validates:
+
+- `CodexAppServerClientOptions.ResponseTransformers`
+- `CodexAppServerClientOptions.NotificationTransformers`
+- `CodexAppServerClientOptions.NotificationMappers`
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-overrides --timeout-seconds 120
+```
+
+Verify:
+
+- It prints marker lines:
+  - `[response-transformer] ...`
+  - `[notification-transformer] ...`
+  - `[notification-mapper] ...`
+- It prints `ok`.
+
+## 13) Opt-out notification methods (initialize capabilities)
+
+This validates `InitializeCapabilities.OptOutNotificationMethods` reduces notification volume.
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-optout-notifications --timeout-seconds 120
+```
+
+Verify:
+
+- It prints `baseline=<N>` where `<N> > 0`.
+- It prints `optOut=0`.
+- It prints `ok`.
+
+## 14) Output schema (turn/start.outputSchema)
+
+This validates `TurnStartOptions.OutputSchema` produces parseable JSON output.
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-output-schema --timeout-seconds 120
+```
+
+Verify:
+
+- It prints JSON (no backticks / no extra prose).
+- It prints `Parsed answer: ...`.
+- It prints `ok`.
+
+## 15) Sandbox policy (turn/start.sandboxPolicy)
+
+This validates `TurnStartOptions.SandboxPolicy` can override sandbox policy per turn (e.g. `readOnly` vs `workspaceWrite`).
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-sandbox-policy --timeout-seconds 180
+```
+
+Verify:
+
+- Phase 1 (`sandboxPolicy=readOnly`) reports `allowed.txt exists (phase1): False`
+- Phase 2 (`sandboxPolicy=workspaceWrite`) reports `allowed.txt exists (phase2): True`
+- It prints `ok`.
+
+## 16) Collaboration mode (experimental)
+
+This validates:
+
+- the SDK guardrails for `turn/start.collaborationMode` (stable-only client throws `CodexExperimentalApiRequiredException`)
+- the experimental endpoint `collaborationMode/list`
+- starting a turn with `TurnStartOptions.CollaborationMode` when experimental API is enabled
+
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-collaboration-mode --timeout-seconds 180
+```
+
+Verify:
+
+- Phase 1 prints an expected exception with `Descriptor='turn/start.collaborationMode'`.
+- Phase 2 prints a preset summary and completes a turn.
+- It prints `ok`.
