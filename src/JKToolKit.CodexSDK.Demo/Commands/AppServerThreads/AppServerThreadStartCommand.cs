@@ -48,6 +48,10 @@ public sealed class AppServerThreadStartCommand : AsyncCommand<AppServerThreadSt
                 var completed = await turn.Completion;
                 Console.WriteLine($"Seed turn done: {completed.Status}");
             }
+            else
+            {
+                Console.WriteLine("Note: threads with no turns may not appear in `appserver-thread list`. Use `--seed` to create a first turn.");
+            }
 
             if (settings.Json)
             {

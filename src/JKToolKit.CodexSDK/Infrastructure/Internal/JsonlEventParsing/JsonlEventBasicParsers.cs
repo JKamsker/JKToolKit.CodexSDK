@@ -94,28 +94,11 @@ internal static class JsonlEventBasicParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload))
-        {
-            ctx.Logger.LogWarning("user_message event missing 'payload' field");
-            return null;
-        }
-
-        if (payload.ValueKind != JsonValueKind.Object)
-        {
-            ctx.Logger.LogWarning("user_message event has non-object 'payload' field");
-            return null;
-        }
-
-        if (!payload.TryGetProperty("message", out var msgElement))
-        {
-            ctx.Logger.LogWarning("user_message event missing 'payload.message' field");
-            return null;
-        }
-
-        var msgString = msgElement.GetString();
+        var payload = GetEventBody(root);
+        var msgString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
         if (string.IsNullOrWhiteSpace(msgString))
         {
-            ctx.Logger.LogWarning("user_message event has empty 'payload.message' field");
+            ctx.Logger.LogWarning("user_message event has empty message/text field");
             return null;
         }
 

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
+using JKToolKit.CodexSDK.AppServer.Overrides;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -83,4 +84,29 @@ public sealed class CodexAppServerClientOptions
     /// Prefer <see cref="Capabilities"/> if you need to configure multiple capability fields.
     /// </remarks>
     public IReadOnlyList<string>? OptOutNotificationMethods { get; set; }
+
+    /// <summary>
+    /// Optional transformers applied to outbound request params (method-based).
+    /// </summary>
+    public IReadOnlyList<IAppServerRequestParamsTransformer>? RequestParamsTransformers { get; set; }
+
+    /// <summary>
+    /// Optional transformers applied to inbound response results (method-based).
+    /// </summary>
+    public IReadOnlyList<IAppServerResponseTransformer>? ResponseTransformers { get; set; }
+
+    /// <summary>
+    /// Optional transformers applied to inbound notifications (method + params) before mapping.
+    /// </summary>
+    public IReadOnlyList<IAppServerNotificationTransformer>? NotificationTransformers { get; set; }
+
+    /// <summary>
+    /// Optional notification mappers (highest priority first).
+    /// </summary>
+    public IReadOnlyList<IAppServerNotificationMapper>? NotificationMappers { get; set; }
+
+    /// <summary>
+    /// Optional observers for raw JSON-RPC traffic (best-effort).
+    /// </summary>
+    public IReadOnlyList<IAppServerMessageObserver>? MessageObservers { get; set; }
 }

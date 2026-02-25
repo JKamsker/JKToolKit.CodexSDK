@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.McpServer.Overrides;
 
 namespace JKToolKit.CodexSDK.McpServer;
 
@@ -52,5 +53,25 @@ public sealed class CodexMcpServerClientOptions
     /// Gets or sets an optional handler for server-initiated elicitation requests.
     /// </summary>
     public IMcpElicitationHandler? ElicitationHandler { get; set; }
+
+    /// <summary>
+    /// Optional transformers applied to inbound JSON-RPC response results (method-based).
+    /// </summary>
+    public IReadOnlyList<IMcpServerResponseTransformer>? ResponseTransformers { get; set; }
+
+    /// <summary>
+    /// Optional mappers applied to the <c>tools/list</c> result (highest priority first).
+    /// </summary>
+    public IReadOnlyList<IMcpToolsListMapper>? ToolsListMappers { get; set; }
+
+    /// <summary>
+    /// Optional transformers applied to Codex MCP tool results (tool-name based) before parsing.
+    /// </summary>
+    public IReadOnlyList<ICodexMcpToolResultTransformer>? CodexToolResultTransformers { get; set; }
+
+    /// <summary>
+    /// Optional mappers applied to Codex MCP tool results (highest priority first).
+    /// </summary>
+    public IReadOnlyList<ICodexMcpToolResultMapper>? CodexToolResultMappers { get; set; }
 }
 

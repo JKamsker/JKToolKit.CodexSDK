@@ -21,6 +21,7 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed partial class CodexAppServerClient : IAsyncDisposable
 {
     private readonly CodexAppServerClientCore _core;
+    private readonly JsonSerializerOptions _serializerOptions;
     private readonly CodexAppServerThreadsClient _threadsClient;
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
@@ -119,6 +120,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         ILogger logger,
         bool startExitWatcher = true)
     {
+        _serializerOptions = options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions();
         _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
 
         Func<bool> experimentalApiEnabled = () => _core.ExperimentalApiEnabled;
@@ -207,6 +209,19 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _core.SendRequestAsync(method, @params, ct);
 
     /// <summary>
+    /// Sends an arbitrary JSON-RPC request to the app server and deserializes the <c>result</c> payload.
+    /// </summary>
+    public async Task<TResult?> CallAsync<TResult>(
+        string method,
+        object? @params,
+        JsonSerializerOptions? serializerOptions = null,
+        CancellationToken ct = default)
+    {
+        var result = await _core.SendRequestAsync(method, @params, ct);
+        return result.Deserialize<TResult>(serializerOptions ?? _serializerOptions);
+    }
+
+    /// <summary>
     /// A task that completes when the underlying Codex app-server subprocess exits.
     /// </summary>
     public Task ExitTask => _core.ExitTask;
@@ -216,6 +231,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// </summary>
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
         _core.Notifications(ct);
+
+    /// <summary>
+    /// Subscribes to the global raw JSON-RPC notification stream (method + params).
+    /// </summary>
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
+        _core.NotificationsRaw(ct);
 
     /// <summary>
     /// Starts a new thread.
@@ -290,9 +311,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.UnarchiveThreadAsync(threadId, ct);
 
     /// <summary>
-    /// Sets (or clears) the thread name.
+    /// Sets the thread name.
     /// </summary>
-    public Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default) =>
+    public Task SetThreadNameAsync(string threadId, string name, CancellationToken ct = default) =>
         _threadsClient.SetThreadNameAsync(threadId, name, ct);
 
     /// <summary>

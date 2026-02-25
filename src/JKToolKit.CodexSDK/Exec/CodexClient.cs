@@ -149,7 +149,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         _processLauncher = processLauncher ?? new CodexProcessLauncher(_pathProvider, _loggerFactory.CreateLogger<CodexProcessLauncher>());
         _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>());
         _tailer = tailer ?? new JsonlTailer(fileSystem, _loggerFactory.CreateLogger<JsonlTailer>(), Options.Create(_clientOptions));
-        _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>());
+        _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>(), options);
         _sessionRunner = new CodexSessionRunner(_clientOptions, _processLauncher, _sessionLocator, _tailer, _parser, _pathProvider, _loggerFactory, _logger);
         _reviewRunner = new CodexReviewRunner(_clientOptions, _processLauncher, _sessionLocator, _pathProvider, _logger);
         _rateLimitsReader = new CodexRateLimitsReader(_clientOptions, _sessionLocator, _tailer, _parser, _pathProvider, _logger);

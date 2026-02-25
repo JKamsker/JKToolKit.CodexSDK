@@ -1,5 +1,6 @@
 using System.Text.Json;
-using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using System.Linq;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -26,7 +27,7 @@ internal sealed class CodexAppServerSkillsAppsClient
             cwds = [options.Cwd];
         }
 
-        SkillsListExtraRootsForCwd[]? perCwd = null;
+        UpstreamV2.SkillsListExtraRootsForCwd[]? perCwd = null;
         if (options.ExtraRootsForCwd is { Count: > 0 })
         {
             var cwd = options.Cwd ?? (cwds is { Count: 1 } ? cwds[0] : null);
@@ -37,19 +38,19 @@ internal sealed class CodexAppServerSkillsAppsClient
 
             perCwd =
             [
-                new SkillsListExtraRootsForCwd
+                new UpstreamV2.SkillsListExtraRootsForCwd
                 {
                     Cwd = cwd,
-                    ExtraUserRoots = options.ExtraRootsForCwd
+                    ExtraUserRoots = options.ExtraRootsForCwd.ToArray()
                 }
             ];
         }
 
         var result = await _sendRequestAsync(
             "skills/list",
-            new SkillsListParams
+            new UpstreamV2.SkillsListParams
             {
-                Cwds = cwds,
+                Cwds = cwds?.ToArray(),
                 ForceReload = options.ForceReload ? true : null,
                 PerCwdExtraUserRoots = perCwd
             },
@@ -71,7 +72,7 @@ internal sealed class CodexAppServerSkillsAppsClient
 
         var result = await _sendRequestAsync(
             "app/list",
-            new AppListParams
+            new UpstreamV2.AppsListParams
             {
                 Cursor = options.Cursor,
                 Limit = options.Limit,

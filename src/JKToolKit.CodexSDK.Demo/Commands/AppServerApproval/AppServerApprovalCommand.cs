@@ -53,7 +53,7 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
                 Model = model,
                 Cwd = workDir,
                 ApprovalPolicy = CodexApprovalPolicy.OnRequest,
-                Sandbox = CodexSandboxMode.ReadOnly
+                Sandbox = CodexSandboxMode.WorkspaceWrite
             }, ct);
 
             await using var turn = await codex.StartTurnAsync(thread.Id, new TurnStartOptions

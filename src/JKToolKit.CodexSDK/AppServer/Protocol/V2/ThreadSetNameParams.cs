@@ -14,9 +14,8 @@ public sealed record class ThreadSetNameParams
     public required string ThreadId { get; init; }
 
     /// <summary>
-    /// Gets the new thread name, or <see langword="null"/> to clear.
+    /// Gets the new thread name.
     /// </summary>
-    [JsonPropertyName("threadName")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-    public string? ThreadName { get; init; }
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
 }

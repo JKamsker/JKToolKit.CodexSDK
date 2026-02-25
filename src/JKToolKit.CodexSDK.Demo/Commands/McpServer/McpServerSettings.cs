@@ -30,4 +30,7 @@ public sealed class McpServerSettings : CommandSettings
 
     [CommandOption("--include-plan-tool")]
     public bool IncludePlanTool { get; init; }
+
+    [CommandOption("--low-level")]
+    public bool UseLowLevelCalls { get; init; }
 }

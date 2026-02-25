@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
@@ -10,8 +11,19 @@ using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
-internal sealed class CodexAppServerClientCore : IAsyncDisposable
+internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 {
+    private static readonly JsonElement EmptyObject = CreateEmptyObject();
+    private static readonly JsonSerializerOptions DefaultSerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+    private static JsonElement CreateEmptyObject()
+    {
+        using var doc = JsonDocument.Parse("{}");
+        return doc.RootElement.Clone();
+    }
+
     private readonly CodexAppServerClientOptions _options;
     private readonly ILogger _logger;
     private readonly IStdioProcess _process;
@@ -20,6 +32,7 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
     private readonly CancellationToken _disposeToken;
 
     private readonly Channel<AppServerNotification> _globalNotifications;
+    private readonly Channel<AppServerRpcNotification> _globalRawNotifications;
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
     private int _disposed;
     private int _disconnectSignaled;
@@ -45,6 +58,13 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             FullMode = BoundedChannelFullMode.DropOldest
         });
 
+        _globalRawNotifications = Channel.CreateBounded<AppServerRpcNotification>(new BoundedChannelOptions(options.NotificationBufferCapacity)
+        {
+            SingleReader = false,
+            SingleWriter = true,
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
+
         _rpc.OnNotification += OnRpcNotificationAsync;
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
 
@@ -60,6 +80,9 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct) =>
         _globalNotifications.Reader.ReadAllAsync(ct);
+
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct) =>
+        _globalRawNotifications.Reader.ReadAllAsync(ct);
 
     internal bool TryGetTurnHandle(string turnId, out CodexTurnHandle? handle)
     {
@@ -92,18 +115,6 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
             var handles = _turnsById.Values.ToArray();
             _turnsById.Clear();
             return handles;
-        }
-    }
-
-    public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
-    {
-        try
-        {
-            return await _rpc.SendRequestAsync(method, @params, ct);
-        }
-        catch (JsonRpcRemoteException ex) when (CodexAppServerClient.TryParseExperimentalApiRequiredMessage(ex.Error.Message, out var descriptor))
-        {
-            throw new CodexExperimentalApiRequiredException(descriptor, ex);
         }
     }
 
@@ -155,24 +166,140 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
     private ValueTask OnRpcNotificationAsync(JsonRpcNotification notification)
     {
-        var mapped = AppServerNotificationMapper.Map(notification.Method, notification.Params);
+        var method = notification.Method;
+
+        var @params = notification.Params ?? EmptyObject;
+        if (@params.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            @params = EmptyObject;
+        }
+
+        var transformers = _options.NotificationTransformers;
+        if (transformers is { Count: > 0 })
+        {
+            foreach (var transformer in transformers)
+            {
+                if (transformer is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var t = transformer.Transform(method, @params);
+                    method = t.Method;
+                    @params = t.Params;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "App-server notification transformer threw (method={Method}).", method);
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(method))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        var observers = _options.MessageObservers;
+        if (observers is { Count: > 0 })
+        {
+            foreach (var observer in observers)
+            {
+                if (observer is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    observer.OnNotification(method, @params);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "App-server message observer threw in OnNotification (method={Method}).", method);
+                }
+            }
+        }
+
+        var raw = new AppServerRpcNotification(method, @params);
+        _globalRawNotifications.Writer.TryWrite(raw);
+
+        AppServerNotification mapped;
+        var usedCustomMapper = false;
+        var customMappers = _options.NotificationMappers;
+        if (customMappers is { Count: > 0 })
+        {
+            AppServerNotification? customMapped = null;
+            foreach (var mapper in customMappers)
+            {
+                if (mapper is null)
+                {
+                    continue;
+                }
+
+                    try
+                    {
+                        customMapped = mapper.TryMap(method, @params);
+                        if (customMapped is not null)
+                        {
+                            usedCustomMapper = true;
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "App-server notification mapper threw (method={Method}).", method);
+                }
+            }
+
+            mapped = customMapped ?? SafeMap(method, @params);
+        }
+        else
+        {
+            mapped = SafeMap(method, @params);
+        }
 
         _globalNotifications.Writer.TryWrite(mapped);
         LogIfBogus(mapped);
 
-        var turnId = TryGetTurnId(mapped);
+        var turnId = TryGetTurnId(mapped) ?? TryGetTurnIdFromParams(@params);
         if (!string.IsNullOrWhiteSpace(turnId))
         {
-            _ = TryGetTurnHandle(turnId, out var handle);
-
-            if (handle is not null)
+            if (TryGetTurnHandle(turnId, out var handle) && handle is not null)
             {
                 handle.EventsChannel.Writer.TryWrite(mapped);
+                handle.RawEventsChannel.Writer.TryWrite(raw);
 
-                if (mapped is TurnCompletedNotification completed)
+                var completed = mapped as TurnCompletedNotification;
+                if (completed is null && method == "turn/completed")
+                {
+                    if (usedCustomMapper)
+                    {
+                        _logger.LogWarning(
+                            "Custom mapper returned {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
+                            mapped.GetType().FullName,
+                            method,
+                            typeof(TurnCompletedNotification).FullName);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Mapped {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
+                            mapped.GetType().FullName,
+                            method,
+                            typeof(TurnCompletedNotification).FullName);
+                    }
+
+                    completed = SafeMap(method, @params) as TurnCompletedNotification;
+                }
+
+                if (completed is not null)
                 {
                     handle.CompletionTcs.TrySetResult(completed);
                     handle.EventsChannel.Writer.TryComplete();
+                    handle.RawEventsChannel.Writer.TryComplete();
                     RemoveTurnHandle(turnId);
                 }
             }
@@ -249,12 +376,14 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
 
         _disposeCts.Cancel();
         _globalNotifications.Writer.TryComplete();
+        _globalRawNotifications.Writer.TryComplete();
 
         var handles = SnapshotAndClearTurns();
 
         foreach (var handle in handles)
         {
             handle.EventsChannel.Writer.TryComplete();
+            handle.RawEventsChannel.Writer.TryComplete();
             handle.CompletionTcs.TrySetCanceled();
         }
 
@@ -264,112 +393,5 @@ internal sealed class CodexAppServerClientCore : IAsyncDisposable
         try { await _processExitWatcher.ConfigureAwait(false); } catch { /* ignore */ }
         try { _disposeCts.Dispose(); } catch { /* ignore */ }
     }
-
-    private async Task WatchProcessExitAsync()
-    {
-        try
-        {
-            await _process.Completion.ConfigureAwait(false);
-        }
-        catch
-        {
-            // ignore
-        }
-
-        if (Volatile.Read(ref _disposed) != 0)
-        {
-            return;
-        }
-
-        try
-        {
-            SignalDisconnect(BuildDisconnectException());
-        }
-        catch
-        {
-            SignalDisconnect(new CodexAppServerDisconnectedException(
-                "Codex app-server subprocess disconnected.",
-                processId: null,
-                exitCode: null,
-                stderrTail: Array.Empty<string>()));
-        }
-    }
-
-    private Exception BuildDisconnectException()
-    {
-        var stderrTailRaw = Array.Empty<string>();
-        try
-        {
-            stderrTailRaw = _process.StderrTail.ToArray();
-        }
-        catch
-        {
-            // ignore
-        }
-
-        var stderrTail = CodexDiagnosticsSanitizer.SanitizeLines(stderrTailRaw, maxLines: 20, maxCharsPerLine: 400);
-
-        int? exitCode = null;
-        int? pid = null;
-        try { exitCode = _process.ExitCode; } catch { /* ignore */ }
-        try { pid = _process.ProcessId; } catch { /* ignore */ }
-
-        var msg = exitCode is null
-            ? "Codex app-server subprocess disconnected."
-            : $"Codex app-server subprocess exited with code {exitCode}.";
-
-        // Note: include only redacted/truncated stderr snippets to reduce accidental leakage when exception messages are logged.
-        if (stderrTail.Length > 0)
-            msg += $" (stderr tail, redacted: {string.Join(" | ", stderrTail.TakeLast(5))})";
-
-        return new CodexAppServerDisconnectedException(
-            msg,
-            processId: pid,
-            exitCode: exitCode,
-            stderrTail: stderrTail);
-    }
-
-    private void SignalDisconnect(Exception ex)
-    {
-        if (Interlocked.Exchange(ref _disconnectSignaled, 1) != 0)
-        {
-            return;
-        }
-
-        _globalNotifications.Writer.TryComplete(ex);
-
-        var handles = SnapshotAndClearTurns();
-
-        foreach (var handle in handles)
-        {
-            handle.EventsChannel.Writer.TryComplete(ex);
-            handle.CompletionTcs.TrySetException(ex);
-        }
-    }
-
-    private static string? TryGetTurnId(AppServerNotification notification) =>
-        notification switch
-        {
-            AgentMessageDeltaNotification d => d.TurnId,
-            ItemStartedNotification s => s.TurnId,
-            ItemCompletedNotification c => c.TurnId,
-            TurnStartedNotification s => s.TurnId,
-            TurnDiffUpdatedNotification d => d.TurnId,
-            TurnPlanUpdatedNotification p => p.TurnId,
-            ThreadTokenUsageUpdatedNotification u => u.TurnId,
-            PlanDeltaNotification d => d.TurnId,
-            RawResponseItemCompletedNotification r => r.TurnId,
-            CommandExecutionOutputDeltaNotification d => d.TurnId,
-            TerminalInteractionNotification t => t.TurnId,
-            FileChangeOutputDeltaNotification d => d.TurnId,
-            McpToolCallProgressNotification p => p.TurnId,
-            ReasoningSummaryTextDeltaNotification d => d.TurnId,
-            ReasoningSummaryPartAddedNotification d => d.TurnId,
-            ReasoningTextDeltaNotification d => d.TurnId,
-            ContextCompactedNotification c => c.TurnId,
-            ErrorNotification e => e.TurnId,
-            TurnCompletedNotification t => t.TurnId,
-            _ => null
-        };
 }
 

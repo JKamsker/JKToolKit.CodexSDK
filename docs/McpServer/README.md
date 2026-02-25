@@ -69,6 +69,45 @@ Models:
 - `CodexMcpSessionStartResult` / `CodexMcpReplyResult`
 - `CodexMcpStartOptions`
 
+## Override Hooks (Forward Compatibility)
+
+MCP payload shapes can evolve upstream. The MCP client exposes parsing hooks so you can stay compatible without waiting for an SDK release:
+
+- `CodexMcpServerClientOptions.ResponseTransformers` — rewrite JSON-RPC `result` payloads by method name
+- `CodexMcpServerClientOptions.ToolsListMappers` — override `tools/list` parsing (first non-null wins)
+- `CodexMcpServerClientOptions.CodexToolResultTransformers` — rewrite Codex tool results (`codex`, `codex-reply`) before parsing
+- `CodexMcpServerClientOptions.CodexToolResultMappers` — override Codex tool result parsing (first non-null wins)
+
+Example: accept a renamed result field from a newer server:
+
+```csharp
+using System.Text.Json;
+using JKToolKit.CodexSDK.McpServer;
+using JKToolKit.CodexSDK.McpServer.Overrides;
+
+public sealed class CompatTransformer : IMcpServerResponseTransformer
+{
+    public JsonElement Transform(string method, JsonElement result)
+    {
+        // Example only: upstream renamed "tools" -> "items"
+        if (method != "tools/list" || !result.TryGetProperty("items", out var items))
+        {
+            return result;
+        }
+
+        using var doc = JsonDocument.Parse($$"""{"tools":{{items}}}""");
+        return doc.RootElement.Clone();
+    }
+}
+
+await using var codex = await CodexMcpServerClient.StartAsync(new CodexMcpServerClientOptions
+{
+    ResponseTransformers = new IMcpServerResponseTransformer[] { new CompatTransformer() }
+});
+
+var tools = await codex.ListToolsAsync();
+```
+
 ## Getting Started
 
 ### Install

@@ -16,8 +16,10 @@ public sealed class AppServerThreadCleanBackgroundTerminalsCommand : AsyncComman
                 return 1;
             }
 
-            await codex.CleanThreadBackgroundTerminalsAsync(settings.ThreadId, ct);
-            Console.WriteLine($"Cleaned background terminals for thread: {settings.ThreadId}");
+            // Some thread operations require the thread to be loaded into the current app-server process.
+            var thread = await codex.ResumeThreadAsync(settings.ThreadId, ct);
+            await codex.CleanThreadBackgroundTerminalsAsync(thread.Id, ct);
+            Console.WriteLine($"Cleaned background terminals for thread: {thread.Id}");
             return 0;
         });
 }

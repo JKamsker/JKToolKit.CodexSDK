@@ -27,6 +27,7 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
     {
         var options = _options.Value;
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
+        var serializerOptions = options.SerializerOptionsOverride ?? CodexAppServerClient.CreateDefaultSerializerOptions();
 
         var (process, rpc) = await CodexJsonRpcBootstrap.StartAsync(
             _stdioFactory,
@@ -36,7 +37,7 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
             options.StartupTimeout,
             options.ShutdownTimeout,
             options.NotificationBufferCapacity,
-            options.SerializerOptionsOverride,
+            serializerOptions,
             includeJsonRpcHeader: false,
             ct);
 

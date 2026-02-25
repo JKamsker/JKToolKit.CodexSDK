@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -38,6 +40,9 @@ jobs:
 
       - name: Restore
         run: dotnet restore JKToolKit.CodexSDK.sln
+
+      - name: Verify Generated DTOs
+        run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release --no-restore -- check
 
       - name: Build
         run: dotnet build JKToolKit.CodexSDK.sln --configuration Release --no-restore

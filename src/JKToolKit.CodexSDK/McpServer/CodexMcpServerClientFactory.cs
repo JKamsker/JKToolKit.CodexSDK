@@ -40,7 +40,7 @@ internal sealed class CodexMcpServerClientFactory : ICodexMcpServerClientFactory
             includeJsonRpcHeader: true,
             ct);
 
-        var client = new CodexMcpServerClient(options, process, rpc);
+        var client = new CodexMcpServerClient(options, process, rpc, _loggerFactory.CreateLogger<CodexMcpServerClient>());
         await client.InitializeAsync(ct);
 
         return client;

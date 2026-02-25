@@ -9,6 +9,7 @@ using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.McpServer.Internal;
+using JKToolKit.CodexSDK.McpServer.Overrides;
 
 namespace JKToolKit.CodexSDK.McpServer;
 
@@ -18,18 +19,21 @@ namespace JKToolKit.CodexSDK.McpServer;
 public sealed class CodexMcpServerClient : IAsyncDisposable
 {
     private readonly CodexMcpServerClientOptions _options;
-    private readonly JsonRpcConnection _rpc;
-    private readonly StdioProcess _process;
+    private readonly IJsonRpcConnection _rpc;
+    private readonly IStdioProcess _process;
+    private readonly ILogger<CodexMcpServerClient> _logger;
     private int _disposed;
 
     internal CodexMcpServerClient(
         CodexMcpServerClientOptions options,
-        StdioProcess process,
-        JsonRpcConnection rpc)
+        IStdioProcess process,
+        IJsonRpcConnection rpc,
+        ILogger<CodexMcpServerClient> logger)
     {
         _options = options;
         _process = process;
         _rpc = rpc;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
     }
@@ -59,7 +63,7 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             includeJsonRpcHeader: true,
             ct);
 
-        var client = new CodexMcpServerClient(options, process, rpc);
+        var client = new CodexMcpServerClient(options, process, rpc, NullLogger<CodexMcpServerClient>.Instance);
         await client.InitializeAsync(ct);
         return client;
     }
@@ -77,8 +81,11 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
     /// <summary>
     /// Sends an arbitrary JSON-RPC request to the MCP server.
     /// </summary>
-    public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        _rpc.SendRequestAsync(method, @params, ct);
+    public async Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default)
+    {
+        var result = await _rpc.SendRequestAsync(method, @params, ct);
+        return ApplyResponseTransformers(method, result);
+    }
 
     /// <summary>
     /// Lists tools provided by the MCP server.
@@ -86,7 +93,34 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
     public async Task<IReadOnlyList<McpToolDescriptor>> ListToolsAsync(CancellationToken ct = default)
     {
         var result = await _rpc.SendRequestAsync("tools/list", @params: null, ct);
-        return McpToolsListParser.Parse(result);
+        var transformed = ApplyResponseTransformers("tools/list", result);
+
+        var customMappers = _options.ToolsListMappers;
+        if (customMappers is { Count: > 0 })
+        {
+            foreach (var mapper in customMappers)
+            {
+                if (mapper is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var mapped = mapper.TryMap(transformed);
+                    if (mapped is not null)
+                    {
+                        return mapped;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "MCP tools list mapper threw.");
+                }
+            }
+        }
+
+        return McpToolsListParser.Parse(transformed);
     }
 
     /// <summary>
@@ -104,7 +138,8 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             new { name = toolName, arguments },
             ct);
 
-        return new McpToolCallResult(result);
+        var transformed = ApplyResponseTransformers("tools/call", result);
+        return new McpToolCallResult(transformed);
     }
 
     /// <summary>
@@ -116,18 +151,38 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(options.Prompt))
             throw new ArgumentException("Prompt is required.", nameof(options));
 
-        var args = new Dictionary<string, object?>
+        var args = new Dictionary<string, object>
         {
-            ["prompt"] = options.Prompt,
-            ["approval-policy"] = options.ApprovalPolicy?.ToMcpWireValue(),
-            ["sandbox"] = options.Sandbox?.ToMcpWireValue(),
-            ["cwd"] = options.Cwd,
-            ["model"] = options.Model?.Value,
-            ["include-plan-tool"] = options.IncludePlanTool
+            ["prompt"] = options.Prompt
         };
 
+        if (options.ApprovalPolicy is { } approvalPolicy)
+        {
+            args["approval-policy"] = approvalPolicy.ToMcpWireValue();
+        }
+
+        if (options.Sandbox is { } sandbox)
+        {
+            args["sandbox"] = sandbox.ToMcpWireValue();
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Cwd))
+        {
+            args["cwd"] = options.Cwd;
+        }
+
+        if (options.Model is { } model)
+        {
+            args["model"] = model.Value;
+        }
+
+        if (options.IncludePlanTool is { } includePlanTool)
+        {
+            args["include-plan-tool"] = includePlanTool;
+        }
+
         var call = await CallToolAsync("codex", args, ct);
-        var parsed = CodexMcpResultParser.Parse(call.Raw);
+        var parsed = ParseCodexToolResult("codex", call.Raw);
         return new CodexMcpSessionStartResult(parsed.ThreadId, parsed.Text, parsed.StructuredContent, parsed.Raw);
     }
 
@@ -148,20 +203,115 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         };
 
         var call = await CallToolAsync("codex-reply", args, ct);
-        var parsed = CodexMcpResultParser.Parse(call.Raw);
+        var parsed = ParseCodexToolResult("codex-reply", call.Raw);
         return new CodexMcpReplyResult(parsed.ThreadId, parsed.Text, parsed.StructuredContent, parsed.Raw);
+    }
+
+    private JsonElement ApplyResponseTransformers(string method, JsonElement result)
+    {
+        var transformers = _options.ResponseTransformers;
+        if (transformers is not { Count: > 0 })
+        {
+            return result;
+        }
+
+        var transformed = result;
+        foreach (var transformer in transformers)
+        {
+            if (transformer is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                transformed = transformer.Transform(method, transformed);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogTrace(ex, "MCP response transformer threw (method={Method}).", method);
+            }
+        }
+
+        return transformed;
+    }
+
+    private CodexMcpToolParsedResult ParseCodexToolResult(string toolName, JsonElement raw)
+    {
+        var transformed = raw;
+
+        var transformers = _options.CodexToolResultTransformers;
+        if (transformers is { Count: > 0 })
+        {
+            foreach (var transformer in transformers)
+            {
+                if (transformer is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    transformed = transformer.Transform(toolName, transformed);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "Codex MCP tool result transformer threw (tool={ToolName}).", toolName);
+                }
+            }
+        }
+
+        var mappers = _options.CodexToolResultMappers;
+        if (mappers is { Count: > 0 })
+        {
+            foreach (var mapper in mappers)
+            {
+                if (mapper is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var mapped = mapper.TryMap(toolName, transformed);
+                    if (mapped is not null)
+                    {
+                        return mapped;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "Codex MCP tool result mapper threw (tool={ToolName}).", toolName);
+                }
+            }
+        }
+
+        var parsed = CodexMcpResultParser.Parse(transformed);
+        return new CodexMcpToolParsedResult(parsed.ThreadId, parsed.Text, parsed.StructuredContent, parsed.Raw);
     }
 
     internal async Task InitializeAsync(CancellationToken ct)
     {
         var clientInfo = _options.ClientInfo;
+        object capabilities = _options.ElicitationHandler is null
+            ? new { }
+            : new
+            {
+                elicitation = new
+                {
+                    // Matches the MCP capability surface used by upstream rmcp clients.
+                    form = new { schemaValidation = (bool?)null },
+                    url = (object?)null
+                }
+            };
+
         await _rpc.SendRequestAsync(
             "initialize",
             new
             {
                 protocolVersion = "2025-06-18",
                 clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version },
-                capabilities = new { }
+                capabilities
             },
             ct);
 

@@ -54,6 +54,12 @@ internal static class CodexAppServerClientThreadParsers
             GetStringOrNull(primary, "preview");
 
         var archived = GetBoolOrNull(primary, "archived");
+        if (archived is null &&
+            GetStringOrNull(primary, "path") is { Length: > 0 } path &&
+            path.Contains("archived_sessions", StringComparison.OrdinalIgnoreCase))
+        {
+            archived = true;
+        }
         var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
         var cwd = GetStringOrNull(primary, "cwd");
         var model =

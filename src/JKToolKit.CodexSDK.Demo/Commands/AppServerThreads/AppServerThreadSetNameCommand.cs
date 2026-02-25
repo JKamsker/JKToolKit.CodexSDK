@@ -13,17 +13,16 @@ public sealed class AppServerThreadSetNameCommand : AsyncCommand<AppServerThread
                 return 1;
             }
 
-            if (!settings.Clear && string.IsNullOrWhiteSpace(settings.Name))
+            if (string.IsNullOrWhiteSpace(settings.Name))
             {
-                Console.Error.WriteLine("Specify --name or pass --clear.");
+                Console.Error.WriteLine("Specify --name <NAME>.");
                 return 1;
             }
 
-            var name = settings.Clear ? null : settings.Name;
-            await codex.SetThreadNameAsync(settings.ThreadId, name, ct);
-            Console.WriteLine(settings.Clear
-                ? $"Cleared thread name: {settings.ThreadId}"
-                : $"Set thread name: {settings.ThreadId} -> {settings.Name}");
+            // Some thread operations require the thread to be loaded into the current app-server process.
+            var thread = await codex.ResumeThreadAsync(settings.ThreadId, ct);
+            await codex.SetThreadNameAsync(thread.Id, settings.Name, ct);
+            Console.WriteLine($"Set thread name: {thread.Id} -> {settings.Name}");
             return 0;
         });
 }
@@ -35,7 +34,4 @@ public sealed class AppServerThreadSetNameSettings : AppServerThreadsSettingsBas
 
     [CommandOption("--name <NAME>")]
     public string? Name { get; init; }
-
-    [CommandOption("--clear")]
-    public bool Clear { get; init; }
 }

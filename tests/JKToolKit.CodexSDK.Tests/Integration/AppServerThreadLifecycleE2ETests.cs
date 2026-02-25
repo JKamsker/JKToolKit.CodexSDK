@@ -26,7 +26,7 @@ public sealed class AppServerThreadLifecycleE2ETests
 
         var list = await client.ListThreadsAsync(new ThreadListOptions
         {
-            PageSize = 50
+            Limit = 50
         }, cts.Token);
 
         list.Threads.Select(t => t.ThreadId).Should().Contain(thread.Id);
@@ -39,7 +39,7 @@ public sealed class AppServerThreadLifecycleE2ETests
         var archivedList = await client.ListThreadsAsync(new ThreadListOptions
         {
             Archived = true,
-            PageSize = 50
+            Limit = 50
         }, cts.Token);
 
         archivedList.Threads.Select(t => t.ThreadId).Should().Contain(thread.Id);
@@ -48,7 +48,7 @@ public sealed class AppServerThreadLifecycleE2ETests
 
         var unarchivedList = await client.ListThreadsAsync(new ThreadListOptions
         {
-            PageSize = 50
+            Limit = 50
         }, cts.Token);
 
         unarchivedList.Threads.Select(t => t.ThreadId).Should().Contain(thread.Id);

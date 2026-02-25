@@ -113,6 +113,44 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default))
 | `ResponseItemEvent` | Individual response items with typed payloads |
 | `TokenCountEvent` | Token usage statistics |
 
+## Override Hooks (Forward Compatibility)
+
+Exec-mode event payloads can evolve upstream. By default, unknown event `type`s are mapped to `UnknownCodexEvent` and the original JSON is preserved as `CodexEvent.RawPayload`.
+
+If you need to keep working through upstream changes without forking the SDK, you can hook the JSONL parsing pipeline:
+
+- `CodexClientOptions.EventTransformers` — rewrite `(type, rawJson)` before mapping
+- `CodexClientOptions.EventMappers` — custom mapping by event `type` (first non-null wins)
+
+Example:
+
+```csharp
+using System.Text.Json;
+using JKToolKit.CodexSDK.Exec;
+using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Overrides;
+
+public sealed class RenameTypeTransformer : IExecEventTransformer
+{
+    public (string Type, JsonElement RawPayload) Transform(string type, JsonElement rawPayload) =>
+        type == "agent_message_delta" ? ("agent_message", rawPayload) : (type, rawPayload);
+}
+
+public sealed class MyEventMapper : IExecEventMapper
+{
+    public CodexEvent? TryMap(DateTimeOffset timestamp, string type, JsonElement rawPayload) =>
+        type == "my_new_event"
+            ? new UnknownCodexEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload }
+            : null;
+}
+
+await using var client = new CodexClient(new CodexClientOptions
+{
+    EventTransformers = new IExecEventTransformer[] { new RenameTypeTransformer() },
+    EventMappers = new IExecEventMapper[] { new MyEventMapper() }
+});
+```
+
 ## Dependency Injection
 
 ```csharp

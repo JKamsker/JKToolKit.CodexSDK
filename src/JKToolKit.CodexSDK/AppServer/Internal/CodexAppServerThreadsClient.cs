@@ -1,6 +1,7 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Models;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -132,11 +133,11 @@ internal sealed class CodexAppServerThreadsClient
             {
                 Archived = options.Archived,
                 Cwd = options.Cwd,
-                Query = options.Query,
-                PageSize = options.PageSize,
+                Limit = options.Limit,
+                ModelProviders = options.ModelProviders,
+                SourceKinds = options.SourceKinds,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,
-                SortDirection = options.SortDirection
             },
             ct);
 
@@ -155,7 +156,7 @@ internal sealed class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/read",
-            new ThreadReadParams { ThreadId = threadId },
+            new UpstreamV2.ThreadReadParams { ThreadId = threadId, IncludeTurns = false },
             ct);
 
         var threadObject = CodexAppServerClientJson.TryGetObject(result, "thread") ?? result;
@@ -178,7 +179,7 @@ internal sealed class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/loaded/list",
-            new ThreadLoadedListParams
+            new UpstreamV2.ThreadLoadedListParams
             {
                 Cursor = options.Cursor,
                 Limit = options.Limit
@@ -200,7 +201,7 @@ internal sealed class CodexAppServerThreadsClient
 
         _ = await _sendRequestAsync(
             "thread/compact/start",
-            new ThreadCompactStartParams { ThreadId = threadId },
+            new UpstreamV2.ThreadCompactStartParams { ThreadId = threadId },
             ct);
     }
 
@@ -213,7 +214,7 @@ internal sealed class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/rollback",
-            new ThreadRollbackParams
+            new UpstreamV2.ThreadRollbackParams
             {
                 ThreadId = threadId,
                 NumTurns = numTurns
@@ -272,7 +273,7 @@ internal sealed class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/archive",
-            new ThreadArchiveParams { ThreadId = threadId },
+            new UpstreamV2.ThreadArchiveParams { ThreadId = threadId },
             ct);
 
         var id = CodexAppServerClientJson.ExtractThreadId(result) ?? threadId;
@@ -286,21 +287,23 @@ internal sealed class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/unarchive",
-            new ThreadUnarchiveParams { ThreadId = threadId },
+            new UpstreamV2.ThreadUnarchiveParams { ThreadId = threadId },
             ct);
 
         var id = CodexAppServerClientJson.ExtractThreadId(result) ?? threadId;
         return new CodexThread(id, result);
     }
 
-    public async Task SetThreadNameAsync(string threadId, string? name, CancellationToken ct = default)
+    public async Task SetThreadNameAsync(string threadId, string name, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be empty or whitespace.", nameof(name));
 
         _ = await _sendRequestAsync(
             "thread/name/set",
-            new ThreadSetNameParams { ThreadId = threadId, ThreadName = name },
+            new UpstreamV2.ThreadSetNameParams { ThreadId = threadId, Name = name },
             ct);
     }
 }

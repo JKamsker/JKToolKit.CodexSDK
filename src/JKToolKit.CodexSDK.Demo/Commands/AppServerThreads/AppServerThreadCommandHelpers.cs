@@ -39,7 +39,10 @@ internal static class AppServerThreadCommandHelpers
             builder.CodexExecutablePath = settings.CodexExecutablePath;
             builder.CodexHomeDirectory = settings.CodexHomeDirectory;
             builder.ConfigureAppServer(o =>
-                o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Demo", "1.0.0"));
+            {
+                o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Demo", "1.0.0");
+                o.ExperimentalApi = settings.ExperimentalApi;
+            });
         });
 
         try

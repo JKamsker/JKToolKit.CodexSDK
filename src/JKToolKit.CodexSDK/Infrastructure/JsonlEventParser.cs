@@ -1,10 +1,13 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using JKToolKit.CodexSDK.Abstractions;
+using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Notifications;
+using JKToolKit.CodexSDK.Exec.Overrides;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace JKToolKit.CodexSDK.Infrastructure;
 
@@ -19,6 +22,8 @@ namespace JKToolKit.CodexSDK.Infrastructure;
 public sealed class JsonlEventParser : IJsonlEventParser
 {
     private readonly ILogger<JsonlEventParser> _logger;
+    private readonly IReadOnlyList<IExecEventTransformer>? _transformers;
+    private readonly IReadOnlyList<IExecEventMapper>? _mappers;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonlEventParser"/> class.
@@ -27,6 +32,20 @@ public sealed class JsonlEventParser : IJsonlEventParser
     public JsonlEventParser(ILogger<JsonlEventParser> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonlEventParser"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="options">Optional client options providing override hooks.</param>
+    public JsonlEventParser(ILogger<JsonlEventParser> logger, IOptions<CodexClientOptions>? options)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        var o = options?.Value;
+        _transformers = o?.EventTransformers;
+        _mappers = o?.EventMappers;
     }
 
     /// <summary>
@@ -45,7 +64,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
 
         try
         {
-            evt = JsonlEventParserCore.ParseLine(line, _logger);
+            evt = JsonlEventParserCore.ParseLine(line, new JsonlEventParserContext(_logger, _transformers, _mappers));
             if (evt == null)
             {
                 error = "Line could not be parsed (missing required fields or unsupported shape).";

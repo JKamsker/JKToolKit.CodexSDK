@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 /// <summary>
-/// Wire parameters for the <c>skills/remote/write</c> request (v2 protocol).
+/// Wire parameters for the <c>skills/remote/export</c> request (v2 protocol).
+/// Older Codex versions may still use <c>skills/remote/write</c>.
 /// </summary>
 public sealed record class SkillsRemoteWriteParams
 {
@@ -19,4 +20,3 @@ public sealed record class SkillsRemoteWriteParams
     [JsonPropertyName("isPreload")]
     public bool IsPreload { get; init; }
 }
-

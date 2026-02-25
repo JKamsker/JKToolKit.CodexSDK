@@ -1,0 +1,89 @@
+name: Upstream Sync (@openai/codex)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Resolve Codex Versions
+        id: versions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PINNED="$(tr -d '\r' < UPSTREAM_CODEX_VERSION.txt | head -n 1 | xargs)"
+          LATEST="$(npm view @openai/codex version | xargs)"
+
+          echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+
+          if [ "$PINNED" = "$LATEST" ]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update pin + submodule
+        if: steps.versions.outputs.up_to_date != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "${{ steps.versions.outputs.latest }}" > UPSTREAM_CODEX_VERSION.txt
+
+          git -C external/codex fetch --tags --force
+          git -C external/codex checkout "rust-v${{ steps.versions.outputs.latest }}"
+
+      - name: Regenerate DTOs
+        if: steps.versions.outputs.up_to_date != 'true'
+        run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- generate
+
+      - name: Verify Generated DTOs
+        if: steps.versions.outputs.up_to_date != 'true'
+        run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check
+
+      - name: Test
+        if: steps.versions.outputs.up_to_date != 'true'
+        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release
+
+      - name: Create pull request
+        if: steps.versions.outputs.up_to_date != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: automation/upstream-codex-${{ steps.versions.outputs.latest }}
+          commit-message: "chore(upstream): bump @openai/codex to ${{ steps.versions.outputs.latest }}"
+          title: "chore(upstream): bump @openai/codex to ${{ steps.versions.outputs.latest }}"
+          body: |
+            Automated upstream sync of Codex schema + generated DTOs.
+
+            - Previous: ${{ steps.versions.outputs.pinned }}
+            - Latest: ${{ steps.versions.outputs.latest }}
+          delete-branch: true
