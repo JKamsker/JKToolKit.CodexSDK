@@ -59,7 +59,7 @@ internal sealed class CodexAppServerTurnsClient
             ThreadId = threadId,
             Input = options.Input.Select(i => i.Wire).ToArray(),
             Cwd = options.Cwd,
-            ApprovalPolicy = BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+            ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
             SandboxPolicy = options.SandboxPolicy,
             Model = options.Model?.Value,
             Effort = options.Effort?.Value,
@@ -115,9 +115,6 @@ internal sealed class CodexAppServerTurnsClient
 
         return CreateTurnHandle(threadId, turnId);
     }
-
-    private static object? BuildAskForApproval(CodexAskForApproval? askForApproval, CodexApprovalPolicy? policy) =>
-        askForApproval is { } a && !a.Equals(default(CodexAskForApproval)) ? a.ToWireValue() : policy?.Value;
 
     public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
     {

@@ -32,7 +32,7 @@ internal sealed class CodexAppServerThreadsClient
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
                 ServiceName = options.ServiceName,
-                ApprovalPolicy = BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+                ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
@@ -90,7 +90,7 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                ApprovalPolicy = BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+                ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
@@ -123,9 +123,6 @@ internal sealed class CodexAppServerThreadsClient
 
         return true;
     }
-
-    private static object? BuildAskForApproval(CodexAskForApproval? askForApproval, CodexApprovalPolicy? policy) =>
-        askForApproval is { } a && !a.Equals(default(CodexAskForApproval)) ? a.ToWireValue() : policy?.Value;
 
     public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
     {

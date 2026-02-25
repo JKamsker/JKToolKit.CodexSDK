@@ -178,7 +178,7 @@ internal sealed class CodexAppServerConfigClient
 
         _ = await _sendRequestAsync(
             "externalAgentConfig/import",
-            new { migrationItems },
+            new ExternalAgentConfigImportParams { MigrationItems = migrationItems },
             ct);
     }
 

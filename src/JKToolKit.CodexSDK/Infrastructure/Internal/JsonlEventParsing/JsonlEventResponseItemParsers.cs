@@ -218,26 +218,9 @@ internal static class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "web_search_call", StringComparison.OrdinalIgnoreCase))
         {
             WebSearchAction? action = null;
-            if (payload.TryGetProperty("action", out var actionEl) && actionEl.ValueKind == JsonValueKind.Object)
+            if (payload.TryGetProperty("action", out var actionEl))
             {
-                IReadOnlyList<string>? queries = null;
-                if (actionEl.TryGetProperty("queries", out var queriesEl) && queriesEl.ValueKind == JsonValueKind.Array)
-                {
-                    queries = queriesEl.EnumerateArray()
-                        .Select(q => q.ValueKind == JsonValueKind.String ? q.GetString() : null)
-                        .Where(q => !string.IsNullOrWhiteSpace(q))
-                        .Cast<string>()
-                        .ToArray();
-                }
-
-                action = new WebSearchAction(
-                    Type: TryGetString(actionEl, "type"),
-                    Query: TryGetString(actionEl, "query"),
-                    Queries: queries)
-                {
-                    Url = TryGetString(actionEl, "url"),
-                    Pattern = TryGetString(actionEl, "pattern")
-                };
+                action = JsonlEventEnvelopeParsers.ParseWebSearchAction(actionEl);
             }
 
             return new WebSearchCallResponseItemPayload

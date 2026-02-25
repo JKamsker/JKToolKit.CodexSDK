@@ -13,5 +13,9 @@ public sealed record ViewImageToolCallEvent : CodexEvent
     /// <summary>
     /// Gets the local filesystem path that was provided to the tool.
     /// </summary>
+    /// <remarks>
+    /// This value may contain sensitive information (for example user/profile names or workspace paths).
+    /// Redact or transform <see cref="Path"/> before sending it to telemetry or logs.
+    /// </remarks>
     public required string Path { get; init; }
 }

@@ -9,7 +9,7 @@ using static JsonlEventJson;
 
 internal static partial class JsonlEventEnvelopeParsers
 {
-    private static WebSearchAction? ParseWebSearchAction(JsonElement actionEl)
+    internal static WebSearchAction? ParseWebSearchAction(JsonElement actionEl)
     {
         if (actionEl.ValueKind != JsonValueKind.Object)
             return null;
@@ -438,4 +438,3 @@ internal static partial class JsonlEventEnvelopeParsers
         };
     }
 }
-
