@@ -9,19 +9,21 @@ namespace JKToolKit.CodexSDK.Demo.Commands.AppServerSandboxPolicy;
 
 public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandboxPolicySettings>
 {
-    public override Task<int> ExecuteAsync(CommandContext context, AppServerSandboxPolicySettings settings, CancellationToken cancellationToken) =>
-        AppServerThreadCommandHelpers.RunWithClientAsync(settings, cancellationToken, async (codex, ct) =>
+    public override async Task<int> ExecuteAsync(CommandContext context, AppServerSandboxPolicySettings settings, CancellationToken cancellationToken)
+    {
+        var demoRoot = Path.Combine(Directory.GetCurrentDirectory(), ".tmp", "appserver-sandbox-policy", Guid.NewGuid().ToString("N"));
+
+        try
         {
-            var demoRoot = Path.Combine(Directory.GetCurrentDirectory(), ".tmp", "appserver-sandbox-policy", Guid.NewGuid().ToString("N"));
-            var allowedDir = Path.Combine(demoRoot, "allowed");
-            var allowedFile = Path.Combine(allowedDir, "allowed.txt");
-
-            var prompt = string.IsNullOrWhiteSpace(settings.Prompt)
-                ? "Create a file named allowed.txt in the current directory with content 'ok'. Finally, say 'done'."
-                : settings.Prompt;
-
-            try
+            return await AppServerThreadCommandHelpers.RunWithClientAsync(settings, cancellationToken, async (codex, ct) =>
             {
+                var allowedDir = Path.Combine(demoRoot, "allowed");
+                var allowedFile = Path.Combine(allowedDir, "allowed.txt");
+
+                var prompt = string.IsNullOrWhiteSpace(settings.Prompt)
+                    ? "Create a file named allowed.txt in the current directory with content 'ok'. Finally, say 'done'."
+                    : settings.Prompt;
+
                 Directory.CreateDirectory(allowedDir);
 
                 Console.WriteLine($"Demo root: {demoRoot}");
@@ -85,13 +87,13 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
 
                 Console.WriteLine("ok");
                 return 0;
-            }
-            finally
-            {
-                // Best-effort cleanup.
-                TryDeleteDirectory(demoRoot);
-            }
-        });
+            }).ConfigureAwait(false);
+        }
+        finally
+        {
+            TryDeleteDirectory(demoRoot);
+        }
+    }
 
     private static async Task RunTurnAsync(
         CodexAppServerClient codex,

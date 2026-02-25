@@ -154,7 +154,7 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
                 try
                 {
                     p.Kill(entireProcessTree: true);
-                    p.WaitForExit(2000);
+                    _ = p.WaitForExit(2000); // best-effort drain; ignore whether it elapsed
                 }
                 catch
                 {

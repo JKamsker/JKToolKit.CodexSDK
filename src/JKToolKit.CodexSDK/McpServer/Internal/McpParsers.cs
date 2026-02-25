@@ -44,7 +44,7 @@ internal static class CodexMcpResultParser
 {
     public static (string ThreadId, string? Text, JsonElement StructuredContent, JsonElement Raw) Parse(JsonElement raw)
     {
-        var structured = TryGet(raw, "structuredContent") ?? TryGet(raw, "structured_content");
+        var structured = TryGetObject(raw, "structuredContent") ?? TryGetObject(raw, "structured_content");
 
         var threadId =
             (structured is { } s && TryGetString(s, "threadId") is { Length: > 0 } sid) ? sid :
@@ -90,10 +90,14 @@ internal static class CodexMcpResultParser
             }
         }
 
-        if ((raw.TryGetProperty("structuredContent", out var structured) || raw.TryGetProperty("structured_content", out structured)) &&
-            structured.ValueKind == JsonValueKind.Object &&
-            structured.TryGetProperty("content", out var structuredText) &&
-            structuredText.ValueKind == JsonValueKind.String)
+        if (raw.TryGetProperty("structuredContent", out var structured) && structured.ValueKind == JsonValueKind.Object &&
+            structured.TryGetProperty("content", out var structuredText) && structuredText.ValueKind == JsonValueKind.String)
+        {
+            return structuredText.GetString();
+        }
+
+        if (raw.TryGetProperty("structured_content", out structured) && structured.ValueKind == JsonValueKind.Object &&
+            structured.TryGetProperty("content", out structuredText) && structuredText.ValueKind == JsonValueKind.String)
         {
             return structuredText.GetString();
         }
@@ -101,8 +105,10 @@ internal static class CodexMcpResultParser
         return null;
     }
 
-    private static JsonElement? TryGet(JsonElement obj, string propertyName) =>
-        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var prop)
+    private static JsonElement? TryGetObject(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object &&
+        obj.TryGetProperty(propertyName, out var prop) &&
+        prop.ValueKind == JsonValueKind.Object
             ? prop.Clone()
             : null;
 

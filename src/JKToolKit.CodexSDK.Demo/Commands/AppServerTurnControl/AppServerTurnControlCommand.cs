@@ -42,8 +42,11 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
                 Input = [TurnInputItem.Text(settings.Prompt)]
             }, ct);
 
-            var steerTask = StartSteerTask(turn, settings, ct);
-            var interruptTask = StartInterruptTask(turn, settings, ct);
+            using var steerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var interruptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+            var steerTask = StartSteerTask(turn, settings, steerCts.Token);
+            var interruptTask = StartInterruptTask(turn, settings, interruptCts.Token);
 
             var exitCode = 0;
             try
@@ -77,6 +80,9 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
             }
             finally
             {
+                steerCts.Cancel();
+                interruptCts.Cancel();
+
                 try { await steerTask.ConfigureAwait(false); } catch { /* errors logged inside task */ }
                 try { await interruptTask.ConfigureAwait(false); } catch { /* errors logged inside task */ }
             }

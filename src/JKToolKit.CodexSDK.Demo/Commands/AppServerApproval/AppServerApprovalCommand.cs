@@ -103,9 +103,9 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
                         Directory.Delete(workDir, recursive: true);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignore
+                    Console.Error.WriteLine($"Cleanup failed (dir): {workDir}: {ex.Message}");
                 }
             }
         }

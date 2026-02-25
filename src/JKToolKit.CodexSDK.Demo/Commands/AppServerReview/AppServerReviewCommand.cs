@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerThreads;
@@ -25,7 +26,7 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
                 ? CodexSandboxMode.WorkspaceWrite
                 : CodexSandboxMode.Parse(settings.Sandbox);
 
-            var target = ResolveTarget(settings);
+            var target = ResolveTarget(settings, repoPath);
             var delivery = ResolveDelivery(settings.Delivery);
 
             var thread = await codex.StartThreadAsync(new ThreadStartOptions
@@ -69,7 +70,7 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
             return 0;
         });
 
-    private static ReviewTarget ResolveTarget(AppServerReviewSettings settings)
+    private static ReviewTarget ResolveTarget(AppServerReviewSettings settings, string repoPath)
     {
         var target = (settings.Target ?? string.Empty).Trim().ToLowerInvariant();
 
@@ -77,7 +78,7 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
         {
             "" or "uncommitted" => new ReviewTarget.UncommittedChanges(),
             "base" or "base-branch" => new ReviewTarget.BaseBranch(
-                string.IsNullOrWhiteSpace(settings.BaseBranch) ? "master" : settings.BaseBranch.Trim()),
+                ResolveBaseBranch(repoPath, settings.BaseBranch)),
             "commit" => new ReviewTarget.Commit(
                 sha: string.IsNullOrWhiteSpace(settings.CommitSha)
                     ? throw new InvalidOperationException("--commit-sha is required when --target=commit.")
@@ -89,6 +90,70 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
                     : settings.Instructions.Trim()),
             _ => throw new InvalidOperationException($"Unknown --target '{settings.Target}'. Use: uncommitted|base|commit|custom.")
         };
+    }
+
+    private static string ResolveBaseBranch(string repoPath, string? baseBranch)
+    {
+        if (!string.IsNullOrWhiteSpace(baseBranch))
+        {
+            return baseBranch.Trim();
+        }
+
+        var resolved =
+            TryResolveRemoteDefaultBranch(repoPath, "origin") ??
+            TryResolveRemoteDefaultBranch(repoPath, "upstream");
+
+        if (!string.IsNullOrWhiteSpace(resolved))
+        {
+            return resolved;
+        }
+
+        throw new InvalidOperationException("--base-branch is required when --target=base (unable to resolve repository default branch).");
+    }
+
+    private static string? TryResolveRemoteDefaultBranch(string repoPath, string remoteName)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"symbolic-ref --quiet --short refs/remotes/{remoteName}/HEAD",
+                WorkingDirectory = repoPath,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var p = Process.Start(psi);
+            if (p is null)
+            {
+                return null;
+            }
+
+            if (!p.WaitForExit(2000) || p.ExitCode != 0)
+            {
+                return null;
+            }
+
+            var output = p.StandardOutput.ReadToEnd().Trim();
+            if (string.IsNullOrWhiteSpace(output))
+            {
+                return null;
+            }
+
+            var idx = output.LastIndexOf('/');
+            if (idx >= 0 && idx < output.Length - 1)
+            {
+                return output[(idx + 1)..];
+            }
+
+            return output;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static ReviewDelivery? ResolveDelivery(string? raw)
