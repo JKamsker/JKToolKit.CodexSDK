@@ -31,7 +31,7 @@ Primary test harness: the demo console app (`src/JKToolKit.CodexSDK.Demo`).
 
 For **every** manual testing run, create a new “task document” under:
 
-`/.tmp/manual_testing/<run_number>.md`
+`.tmp/manual_testing/<run_number>.md`
 
 Use a monotonically increasing, zero-padded run number (e.g. `0001.md`, `0002.md`, …).
 
