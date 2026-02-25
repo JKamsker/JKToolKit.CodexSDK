@@ -10,15 +10,15 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum AppDisabledReason
+internal enum WindowsSandboxSetupMode
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"elevated")]
+    Elevated = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"user")]
-    User = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"unelevated")]
+    Unelevated = 1,
 
 
 }

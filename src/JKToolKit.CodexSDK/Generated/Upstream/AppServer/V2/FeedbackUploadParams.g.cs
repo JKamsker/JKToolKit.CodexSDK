@@ -16,6 +16,9 @@ internal partial class FeedbackUploadParams
     [System.Text.Json.Serialization.JsonPropertyName("classification")]
     public string Classification { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("extraLogFiles")]
+    public System.Collections.Generic.ICollection<string>? ExtraLogFiles { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("includeLogs")]
     public bool IncludeLogs { get; set; } = default!;
 

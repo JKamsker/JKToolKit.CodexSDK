@@ -14,8 +14,8 @@ internal partial class ThreadForkResponse
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("approvalPolicy")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AskForApproval>))]
-    public AskForApproval ApprovalPolicy { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AllowedApprovalPolicies>))]
+    public AllowedApprovalPolicies ApprovalPolicy { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;

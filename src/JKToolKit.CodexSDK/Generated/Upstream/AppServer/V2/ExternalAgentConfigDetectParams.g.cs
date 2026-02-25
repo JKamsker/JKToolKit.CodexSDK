@@ -10,8 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AskForApproval
+internal partial class ExternalAgentConfigDetectParams
 {
+
+    /// <summary>
+    /// Zero or more working directories to include for repo-scoped detection.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cwds")]
+    public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
+
+    /// <summary>
+    /// If true, include detection under the user's home (~/.claude, ~/.codex, etc.).
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("includeHome")]
+    public bool? IncludeHome { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

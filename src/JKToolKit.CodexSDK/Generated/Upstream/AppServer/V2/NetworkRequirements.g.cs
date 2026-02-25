@@ -25,6 +25,9 @@ internal partial class NetworkRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowedDomains")]
     public System.Collections.Generic.ICollection<string>? AllowedDomains { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("dangerouslyAllowAllUnixSockets")]
+    public bool? DangerouslyAllowAllUnixSockets { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("dangerouslyAllowNonLoopbackAdmin")]
     public bool? DangerouslyAllowNonLoopbackAdmin { get; set; } = default!;
 

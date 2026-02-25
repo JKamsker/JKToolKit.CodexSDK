@@ -10,8 +10,18 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AskForApproval
+internal partial class WindowsSandboxSetupCompletedNotification
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("error")]
+    public string? Error { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("mode")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<WindowsSandboxSetupMode>))]
+    public WindowsSandboxSetupMode Mode { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("success")]
+    public bool Success { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

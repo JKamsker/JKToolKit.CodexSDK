@@ -44,6 +44,12 @@ internal partial class ThreadListParams
     public System.Collections.Generic.ICollection<string>? ModelProviders { get; set; } = default!;
 
     /// <summary>
+    /// Optional substring filter for the extracted thread title.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("searchTerm")]
+    public string? SearchTerm { get; set; } = default!;
+
+    /// <summary>
     /// Optional sort key; defaults to created_at.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("sortKey")]

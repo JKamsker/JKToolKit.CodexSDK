@@ -14,6 +14,18 @@ internal partial class Thread
 {
 
     /// <summary>
+    /// Optional random unique nickname assigned to an AgentControl-spawned sub-agent.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("agentNickname")]
+    public string? AgentNickname { get; set; } = default!;
+
+    /// <summary>
+    /// Optional role (agent_role) assigned to an AgentControl-spawned sub-agent.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("agentRole")]
+    public string? AgentRole { get; set; } = default!;
+
+    /// <summary>
     /// Version of the CLI that created the thread.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("cliVersion")]
@@ -47,6 +59,12 @@ internal partial class Thread
     public string ModelProvider { get; set; } = default!;
 
     /// <summary>
+    /// Optional user-facing thread title.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string? Name { get; set; } = default!;
+
+    /// <summary>
     /// [UNSTABLE] Path to the thread on disk.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("path")]
@@ -61,6 +79,9 @@ internal partial class Thread
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Source>))]
     public Source Source { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("status")]
+    public Status Status { get; set; } = default!;
 
     /// <summary>
     /// Only populated on `thread/resume`, `thread/rollback`, `thread/fork`, and `thread/read` (when `includeTurns` is true) responses. For all other responses and notifications returning a Thread, the turns field will be an empty list.

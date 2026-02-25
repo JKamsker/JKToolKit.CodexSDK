@@ -14,8 +14,7 @@ internal partial class ConfigRequirements
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("allowedApprovalPolicies")]
-    // TODO(system.text.json): Add ItemConverterType with enum converter when supported
-    public System.Collections.Generic.ICollection<AskForApproval>? AllowedApprovalPolicies { get; set; } = default!;
+    public System.Collections.Generic.ICollection<AllowedApprovalPolicies>? AllowedApprovalPolicies { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("allowedSandboxModes")]
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported

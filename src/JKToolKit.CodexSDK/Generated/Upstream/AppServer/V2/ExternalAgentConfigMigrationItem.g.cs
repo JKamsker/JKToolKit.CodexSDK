@@ -10,8 +10,21 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AskForApproval
+internal partial class ExternalAgentConfigMigrationItem
 {
+
+    /// <summary>
+    /// Null or empty means home-scoped migration; non-empty means repo-scoped migration.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
+    public string? Cwd { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("description")]
+    public string Description { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("itemType")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ExternalAgentConfigMigrationItemType>))]
+    public ExternalAgentConfigMigrationItemType ItemType { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
