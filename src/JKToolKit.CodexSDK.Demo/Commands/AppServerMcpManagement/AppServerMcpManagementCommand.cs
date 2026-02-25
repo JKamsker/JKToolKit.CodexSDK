@@ -9,6 +9,14 @@ public sealed class AppServerMcpManagementCommand : AsyncCommand<AppServerMcpMan
     public override Task<int> ExecuteAsync(CommandContext context, AppServerMcpManagementSettings settings, CancellationToken cancellationToken) =>
         AppServerThreadCommandHelpers.RunWithClientAsync(settings, cancellationToken, async (codex, ct) =>
         {
+            if (!string.IsNullOrWhiteSpace(settings.OauthName) &&
+                settings.OauthTimeoutSeconds is { } timeout &&
+                timeout <= 0)
+            {
+                Console.Error.WriteLine("--oauth-timeout-seconds must be > 0.");
+                return 1;
+            }
+
             if (!settings.NoReload)
             {
                 if (!settings.Json)
@@ -39,12 +47,6 @@ public sealed class AppServerMcpManagementCommand : AsyncCommand<AppServerMcpMan
 
             if (!string.IsNullOrWhiteSpace(settings.OauthName))
             {
-                if (settings.OauthTimeoutSeconds is { } timeout && timeout <= 0)
-                {
-                    Console.Error.WriteLine("--oauth-timeout-seconds must be > 0.");
-                    return 1;
-                }
-
                 if (!settings.Json)
                 {
                     Console.WriteLine();

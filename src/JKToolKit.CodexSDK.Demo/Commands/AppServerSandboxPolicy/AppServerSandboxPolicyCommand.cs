@@ -128,9 +128,9 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
                 File.Delete(path);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            System.Diagnostics.Debug.WriteLine($"Cleanup failed (file): {path}: {ex}");
         }
     }
 
@@ -143,9 +143,9 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
                 Directory.Delete(path, recursive: true);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            System.Diagnostics.Debug.WriteLine($"Cleanup failed (dir): {path}: {ex}");
         }
     }
 }

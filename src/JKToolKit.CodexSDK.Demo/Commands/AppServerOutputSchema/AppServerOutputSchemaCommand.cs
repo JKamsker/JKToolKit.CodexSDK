@@ -38,21 +38,22 @@ public sealed class AppServerOutputSchemaCommand : AsyncCommand<AppServerOutputS
             e.Cancel = true;
             cts.Cancel();
         };
-        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
-
-        using var schemaDoc = JsonDocument.Parse(SchemaJson);
-        var schema = schemaDoc.RootElement.Clone();
-
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-            builder.ConfigureAppServer(o => o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK OutputSchema Demo", "1.0.0"));
-        });
 
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
+            using var schemaDoc = JsonDocument.Parse(SchemaJson);
+            var schema = schemaDoc.RootElement.Clone();
+
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+                builder.ConfigureAppServer(o => o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK OutputSchema Demo", "1.0.0"));
+            });
+
             await using var codex = await sdk.AppServer.StartAsync(ct);
 
             var thread = await codex.StartThreadAsync(new ThreadStartOptions

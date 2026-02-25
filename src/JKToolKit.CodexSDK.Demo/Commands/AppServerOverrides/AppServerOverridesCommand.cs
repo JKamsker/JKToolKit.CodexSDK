@@ -26,29 +26,30 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
             e.Cancel = true;
             cts.Cancel();
         };
-        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
-
-        var responseTransformer = new MarkerResponseTransformer(maxLogLines: settings.PrintLimit);
-        var notificationTransformer = new MarkerNotificationTransformer(maxLogLines: settings.PrintLimit);
-        var notificationMapper = new MarkerNotificationMapper(maxLogLines: settings.PrintLimit);
-
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-            builder.ConfigureAppServer(o =>
-            {
-                o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Overrides Demo", "1.0.0");
-                o.ExperimentalApi = settings.ExperimentalApi;
-                o.ResponseTransformers = new IAppServerResponseTransformer[] { responseTransformer };
-                o.NotificationTransformers = new IAppServerNotificationTransformer[] { notificationTransformer };
-                o.NotificationMappers = new IAppServerNotificationMapper[] { notificationMapper };
-            });
-        });
 
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
+            var responseTransformer = new MarkerResponseTransformer(maxLogLines: settings.PrintLimit);
+            var notificationTransformer = new MarkerNotificationTransformer(maxLogLines: settings.PrintLimit);
+            var notificationMapper = new MarkerNotificationMapper(maxLogLines: settings.PrintLimit);
+
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+                builder.ConfigureAppServer(o =>
+                {
+                    o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Overrides Demo", "1.0.0");
+                    o.ExperimentalApi = settings.ExperimentalApi;
+                    o.ResponseTransformers = new IAppServerResponseTransformer[] { responseTransformer };
+                    o.NotificationTransformers = new IAppServerNotificationTransformer[] { notificationTransformer };
+                    o.NotificationMappers = new IAppServerNotificationMapper[] { notificationMapper };
+                });
+            });
+
             await using var codex = await sdk.AppServer.StartAsync(ct);
 
             var thread = await codex.StartThreadAsync(new ThreadStartOptions

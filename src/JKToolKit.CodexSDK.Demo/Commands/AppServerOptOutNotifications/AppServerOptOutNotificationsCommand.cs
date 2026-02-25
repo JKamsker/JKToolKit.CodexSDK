@@ -34,11 +34,12 @@ public sealed class AppServerOptOutNotificationsCommand : AsyncCommand<AppServer
             e.Cancel = true;
             cts.Cancel();
         };
-        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
             Console.WriteLine("Baseline run (no opt-out)...");
             var baseline = await RunOnceAsync(repoPath, settings, optOutAgentDeltas: false, ct);
 

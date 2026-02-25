@@ -121,8 +121,11 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         JsonSerializerOptions serializerOptions,
         bool startExitWatcher = true)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(process);
+        ArgumentNullException.ThrowIfNull(rpc);
+        ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(serializerOptions);
-
         _serializerOptions = serializerOptions;
         _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
 
@@ -148,7 +151,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         IJsonRpcConnection rpc,
         ILogger logger,
         bool startExitWatcher = true)
-        : this(options, process, rpc, logger, options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions(), startExitWatcher)
+        : this(options, process, rpc, logger, options?.SerializerOptionsOverride ?? CreateDefaultSerializerOptions(), startExitWatcher)
     {
     }
 

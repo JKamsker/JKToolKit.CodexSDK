@@ -21,6 +21,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$InformationPreference = 'Continue'
 
 function Get-SafeExternalOutput {
     param(
@@ -178,5 +179,10 @@ $content = $content.Replace('__CODEX_CLI__', $codexVersion)
 $content = $content.Replace('__DOTNET_SDK__', $dotnetVersion)
 $content = $content.Replace('__OS__', $os)
 
-Set-Content -LiteralPath $outFile -Value $content -Encoding utf8
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    Set-Content -LiteralPath $outFile -Value $content -Encoding utf8NoBOM
+}
+else {
+    [System.IO.File]::WriteAllText($outFile, $content, (New-Object System.Text.UTF8Encoding($false)))
+}
 Write-Information "Created manual testing run file: $outFile"

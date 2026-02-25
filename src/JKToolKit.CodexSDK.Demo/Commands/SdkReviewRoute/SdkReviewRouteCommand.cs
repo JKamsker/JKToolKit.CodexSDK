@@ -33,14 +33,14 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
         Console.WriteLine($"HEAD: {(headSha ?? "n/a")}");
         Console.WriteLine();
 
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-        });
-
         try
         {
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+            });
+
             // 1) Exec review routing
             if (!string.IsNullOrWhiteSpace(headSha))
             {
@@ -138,7 +138,6 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
                 Arguments = "rev-parse HEAD",
                 WorkingDirectory = repoPath,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };

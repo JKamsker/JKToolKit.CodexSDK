@@ -21,25 +21,25 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
                 ? CodexApprovalPolicy.Never
                 : CodexApprovalPolicy.Parse(settings.ApprovalPolicy);
 
-            var sandbox = string.IsNullOrWhiteSpace(settings.Sandbox)
-                ? CodexSandboxMode.WorkspaceWrite
-                : CodexSandboxMode.Parse(settings.Sandbox);
-
-            var thread = await codex.StartThreadAsync(new ThreadStartOptions
-            {
-                Model = model,
-                Cwd = repoPath,
-                ApprovalPolicy = approvalPolicy,
-                Sandbox = sandbox
-            }, ct);
-
-            var target = ResolveTarget(settings);
-            var delivery = ResolveDelivery(settings.Delivery);
-
-            Console.WriteLine($"Thread: {thread.Id}");
-            Console.WriteLine($"Target: {settings.Target}");
-            Console.WriteLine($"Delivery: {(delivery?.ToString() ?? "default")}");
-            Console.WriteLine();
+             var sandbox = string.IsNullOrWhiteSpace(settings.Sandbox)
+                 ? CodexSandboxMode.WorkspaceWrite
+                 : CodexSandboxMode.Parse(settings.Sandbox);
+ 
+             var target = ResolveTarget(settings);
+             var delivery = ResolveDelivery(settings.Delivery);
+ 
+             var thread = await codex.StartThreadAsync(new ThreadStartOptions
+             {
+                 Model = model,
+                 Cwd = repoPath,
+                 ApprovalPolicy = approvalPolicy,
+                 Sandbox = sandbox
+             }, ct);
+ 
+             Console.WriteLine($"Thread: {thread.Id}");
+             Console.WriteLine($"Target: {settings.Target}");
+             Console.WriteLine($"Delivery: {(delivery?.ToString() ?? "default")}");
+             Console.WriteLine();
 
             var review = await codex.StartReviewAsync(new ReviewStartOptions
             {

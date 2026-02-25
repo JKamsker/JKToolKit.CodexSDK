@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.McpServer;
 using JKToolKit.CodexSDK.Models;
@@ -12,53 +13,61 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
         var repoPath = settings.RepoPath ?? Directory.GetCurrentDirectory();
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
         var ct = cts.Token;
 
-        var model = string.IsNullOrWhiteSpace(settings.Model)
-            ? CodexModel.Gpt52Codex
-            : CodexModel.Parse(settings.Model);
-
-        var approvalPolicy = string.IsNullOrWhiteSpace(settings.ApprovalPolicy)
-            ? CodexApprovalPolicy.Never
-            : CodexApprovalPolicy.Parse(settings.ApprovalPolicy);
-
-        var sandbox = string.IsNullOrWhiteSpace(settings.Sandbox)
-            ? CodexSandboxMode.WorkspaceWrite
-            : CodexSandboxMode.Parse(settings.Sandbox);
-
-        var prompt = string.IsNullOrWhiteSpace(settings.Prompt)
-            ? "Run tests and summarize failures."
-            : settings.Prompt;
-
-        var followUp = string.IsNullOrWhiteSpace(settings.FollowUp)
-            ? "Now propose fixes."
-            : settings.FollowUp;
-
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-        });
-
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
+            var model = string.IsNullOrWhiteSpace(settings.Model)
+                ? CodexModel.Gpt52Codex
+                : CodexModel.Parse(settings.Model);
+
+            var approvalPolicy = string.IsNullOrWhiteSpace(settings.ApprovalPolicy)
+                ? CodexApprovalPolicy.Never
+                : CodexApprovalPolicy.Parse(settings.ApprovalPolicy);
+
+            var sandbox = string.IsNullOrWhiteSpace(settings.Sandbox)
+                ? CodexSandboxMode.WorkspaceWrite
+                : CodexSandboxMode.Parse(settings.Sandbox);
+
+            var prompt = string.IsNullOrWhiteSpace(settings.Prompt)
+                ? "Run tests and summarize failures."
+                : settings.Prompt;
+
+            var followUp = string.IsNullOrWhiteSpace(settings.FollowUp)
+                ? "Now propose fixes."
+                : settings.FollowUp;
+
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+            });
+
             await using var codex = await sdk.McpServer.StartAsync(ct);
 
-            var tools = await codex.ListToolsAsync(ct);
+            IReadOnlyList<McpToolDescriptor> tools;
+            if (settings.UseLowLevelCalls)
+            {
+                var rawTools = await codex.CallAsync("tools/list", @params: null, ct);
+                tools = ParseToolsList(rawTools);
+                Console.WriteLine($"[low-level] CallAsync(tools/list): tools={tools.Count}");
+            }
+            else
+            {
+                tools = await codex.ListToolsAsync(ct);
+            }
+
             Console.WriteLine("Tools:");
             foreach (var tool in tools)
             {
                 Console.WriteLine($"- {tool.Name}");
-            }
-
-            if (settings.UseLowLevelCalls)
-            {
-                Console.WriteLine($"[low-level] tools/list: tools={tools.Count}");
             }
 
             var run = await codex.StartSessionAsync(new CodexMcpStartOptions
@@ -113,5 +122,45 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
             Console.Error.WriteLine(ex);
             return 1;
         }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
+    }
+
+    private static IReadOnlyList<McpToolDescriptor> ParseToolsList(JsonElement result)
+    {
+        if (result.ValueKind != JsonValueKind.Object ||
+            !result.TryGetProperty("tools", out var toolsProp) ||
+            toolsProp.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<McpToolDescriptor>();
+        }
+
+        var list = new List<McpToolDescriptor>();
+        foreach (var tool in toolsProp.EnumerateArray())
+        {
+            if (tool.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var name = tool.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var description = tool.TryGetProperty("description", out var descProp) ? descProp.GetString() : null;
+            JsonElement? schema = null;
+            if (tool.TryGetProperty("inputSchema", out var schemaProp))
+            {
+                schema = schemaProp.Clone();
+            }
+
+            list.Add(new McpToolDescriptor(name, description, schema));
+        }
+
+        return list;
     }
 }

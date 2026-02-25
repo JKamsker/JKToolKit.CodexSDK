@@ -45,28 +45,41 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
             var steerTask = StartSteerTask(turn, settings, ct);
             var interruptTask = StartInterruptTask(turn, settings, ct);
 
-            await foreach (var ev in turn.Events(ct))
-            {
-                if (ev is AgentMessageDeltaNotification delta)
-                {
-                    Console.Write(delta.Delta);
-                }
-            }
-
             var exitCode = 0;
             try
             {
-                var completed = await turn.Completion;
-                Console.WriteLine($"\nDone: {completed.Status}");
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"\nCompletion failed: {ex.Message}");
-                exitCode = 1;
-            }
+                try
+                {
+                    await foreach (var ev in turn.Events(ct))
+                    {
+                        if (ev is AgentMessageDeltaNotification delta)
+                        {
+                            Console.Write(delta.Delta);
+                        }
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Console.Error.WriteLine(ex);
+                    exitCode = 1;
+                }
 
-            try { await steerTask.ConfigureAwait(false); } catch { /* ignore */ }
-            try { await interruptTask.ConfigureAwait(false); } catch { /* ignore */ }
+                try
+                {
+                    var completed = await turn.Completion;
+                    Console.WriteLine($"\nDone: {completed.Status}");
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Console.Error.WriteLine($"\nCompletion failed: {ex.Message}");
+                    exitCode = 1;
+                }
+            }
+            finally
+            {
+                try { await steerTask.ConfigureAwait(false); } catch { /* ignore */ }
+                try { await interruptTask.ConfigureAwait(false); } catch { /* ignore */ }
+            }
 
             return exitCode;
         });

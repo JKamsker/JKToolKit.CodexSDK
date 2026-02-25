@@ -24,14 +24,14 @@ public sealed class ExecAttachCommand : AsyncCommand<ExecAttachSettings>
         Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-        });
-
         try
         {
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+            });
+
             await using var session = await sdk.Exec.AttachToLogAsync(settings.LogFilePath, ct);
             Console.WriteLine($"Attached: {session.Info.Id.Value}");
             Console.WriteLine($"Log     : {session.Info.LogPath}");
