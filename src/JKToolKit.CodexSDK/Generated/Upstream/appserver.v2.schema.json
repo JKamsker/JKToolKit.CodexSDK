@@ -1,6 +1,6 @@
 {
   "schemaPath": "external/codex/codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
-  "schemaBytes": 445515,
+  "schemaByteCount": 445515,
   "schemaSha256": "16fece41cb5e422b49a8cc58ed55d3f3b8b47a1eaebae184c20ae51128c0da7d",
   "codexCliVersion": "0.104.0",
   "codexCliVersionPinPath": "UPSTREAM_CODEX_VERSION.txt",

@@ -29,7 +29,7 @@ public sealed class AppServerOptOutNotificationsCommand : AsyncCommand<AppServer
             cts.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds.Value));
         }
 
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
@@ -38,6 +38,8 @@ public sealed class AppServerOptOutNotificationsCommand : AsyncCommand<AppServer
 
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
             Console.WriteLine("Baseline run (no opt-out)...");
             var baseline = await RunOnceAsync(repoPath, settings, optOutAgentDeltas: false, ct);
 
@@ -71,6 +73,10 @@ public sealed class AppServerOptOutNotificationsCommand : AsyncCommand<AppServer
         {
             Console.Error.WriteLine(ex);
             return 1;
+        }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
         }
     }
 

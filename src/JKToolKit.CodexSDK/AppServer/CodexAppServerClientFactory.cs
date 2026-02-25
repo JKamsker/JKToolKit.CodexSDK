@@ -45,7 +45,8 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
             options,
             process,
             rpc,
-            _loggerFactory.CreateLogger<CodexAppServerClient>());
+            _loggerFactory.CreateLogger<CodexAppServerClient>(),
+            serializerOptions);
 
         await client.InitializeAsync(options.DefaultClientInfo, ct);
 

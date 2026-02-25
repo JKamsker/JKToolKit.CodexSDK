@@ -8,7 +8,7 @@ internal static class UpstreamSchemaDiscovery
 {
     private const string UpstreamCodexVersionPinFileName = "UPSTREAM_CODEX_VERSION.txt";
 
-    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
@@ -52,7 +52,7 @@ internal static class UpstreamSchemaDiscovery
         return new UpstreamSchemaMetadata
         {
             SchemaPath = MakeRepoRelativePath(repoRoot, schemaPath),
-            SchemaBytes = normalized.Bytes,
+            SchemaByteCount = normalized.NormalizedByteCount,
             SchemaSha256 = normalized.Sha256,
             CodexCliVersion = pinnedVersion ?? codexVersion,
             CodexCliVersionPinPath = pinnedVersionPath is null ? null : MakeRepoRelativePath(repoRoot, pinnedVersionPath),
@@ -67,13 +67,13 @@ internal static class UpstreamSchemaDiscovery
             var relative = Path.GetRelativePath(repoRoot, path);
             return relative.Replace('\\', '/');
         }
-        catch
+        catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException)
         {
             return path.Replace('\\', '/');
         }
     }
 
-    private static (long Bytes, string Sha256) ComputeNormalizedSha256AndBytes(string path)
+    private static (long NormalizedByteCount, string Sha256) ComputeNormalizedSha256AndBytes(string path)
     {
         var bytes = File.ReadAllBytes(path);
 
@@ -153,7 +153,7 @@ internal static class UpstreamSchemaDiscovery
             return (line, versionPath);
         }
 
-        return (null, versionPath);
+        return (null, null);
     }
 
     private static (string? Version, string? PackageJsonPath) TryGetCodexCliVersion(string repoRoot)
@@ -190,7 +190,7 @@ internal static class UpstreamSchemaDiscovery
 internal sealed record class UpstreamSchemaMetadata
 {
     public required string SchemaPath { get; init; }
-    public required long SchemaBytes { get; init; }
+    public required long SchemaByteCount { get; init; }
     public required string SchemaSha256 { get; init; }
     public string? CodexCliVersion { get; init; }
     public string? CodexCliVersionPinPath { get; init; }

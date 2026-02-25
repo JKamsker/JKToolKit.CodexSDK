@@ -13,7 +13,7 @@ param(
     # If 0, the next run number is inferred from existing run files.
     [int]$RunNumber = 0,
 
-    # If omitted, defaults to $env:USERNAME.
+    # If omitted, defaults to $env:USERNAME (Windows) or $env:USER (Linux/macOS).
     [string]$Tester = '',
 
     [switch]$Force
@@ -21,8 +21,9 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$InformationPreference = 'Continue'
 
-function Try-GetExternalOutput {
+function Get-SafeExternalOutput {
     param(
         [Parameter(Mandatory = $true)]
         [string]$FileName,
@@ -76,18 +77,21 @@ if ((Test-Path -LiteralPath $outFile) -and -not $Force) {
 }
 
 $dateUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm')
-$testerValue = if ([string]::IsNullOrWhiteSpace($Tester)) { $env:USERNAME } else { $Tester }
+$defaultTester = $env:USERNAME
+if ([string]::IsNullOrWhiteSpace($defaultTester)) { $defaultTester = $env:USER }
+$testerValue = if ([string]::IsNullOrWhiteSpace($Tester)) { $defaultTester } else { $Tester }
+if ([string]::IsNullOrWhiteSpace($testerValue)) { $testerValue = 'n/a' }
 
-$branch = Try-GetExternalOutput -FileName 'git' -Arguments @('-C', $RepoRoot, 'rev-parse', '--abbrev-ref', 'HEAD')
+$branch = Get-SafeExternalOutput -FileName 'git' -Arguments @('-C', $RepoRoot, 'rev-parse', '--abbrev-ref', 'HEAD')
 if ([string]::IsNullOrWhiteSpace($branch)) { $branch = 'n/a' }
 
-$head = Try-GetExternalOutput -FileName 'git' -Arguments @('-C', $RepoRoot, 'rev-parse', 'HEAD')
+$head = Get-SafeExternalOutput -FileName 'git' -Arguments @('-C', $RepoRoot, 'rev-parse', 'HEAD')
 if ([string]::IsNullOrWhiteSpace($head)) { $head = 'n/a' }
 
-$codexVersion = Try-GetExternalOutput -FileName 'codex' -Arguments @('--version')
+$codexVersion = Get-SafeExternalOutput -FileName 'codex' -Arguments @('--version')
 if ([string]::IsNullOrWhiteSpace($codexVersion)) { $codexVersion = 'n/a' }
 
-$dotnetVersion = Try-GetExternalOutput -FileName 'dotnet' -Arguments @('--version')
+$dotnetVersion = Get-SafeExternalOutput -FileName 'dotnet' -Arguments @('--version')
 if ([string]::IsNullOrWhiteSpace($dotnetVersion)) { $dotnetVersion = 'n/a' }
 
 $os = $null
@@ -175,5 +179,10 @@ $content = $content.Replace('__CODEX_CLI__', $codexVersion)
 $content = $content.Replace('__DOTNET_SDK__', $dotnetVersion)
 $content = $content.Replace('__OS__', $os)
 
-Set-Content -LiteralPath $outFile -Value $content -Encoding utf8NoBOM
-Write-Host "Created manual testing run file: $outFile"
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    Set-Content -LiteralPath $outFile -Value $content -Encoding utf8NoBOM
+}
+else {
+    [System.IO.File]::WriteAllText($outFile, $content, (New-Object System.Text.UTF8Encoding($false)))
+}
+Write-Information "Created manual testing run file: $outFile"

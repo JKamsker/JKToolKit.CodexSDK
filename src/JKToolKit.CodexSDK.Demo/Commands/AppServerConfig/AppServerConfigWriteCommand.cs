@@ -29,8 +29,8 @@ public sealed class AppServerConfigWriteCommand : AsyncCommand<AppServerConfigWr
 
                 var remote = await codex.ReadRemoteSkillsAsync(ct);
                 var match = remote.Skills.FirstOrDefault(s =>
-                    (!string.IsNullOrWhiteSpace(settings.RemoteSkillId) && s.Id.Equals(settings.RemoteSkillId, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrWhiteSpace(settings.RemoteSkillName) && s.Name.Equals(settings.RemoteSkillName, StringComparison.OrdinalIgnoreCase)));
+                    (!string.IsNullOrWhiteSpace(settings.RemoteSkillId) && string.Equals(s.Id, settings.RemoteSkillId, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(settings.RemoteSkillName) && string.Equals(s.Name, settings.RemoteSkillName, StringComparison.OrdinalIgnoreCase)));
 
                 if (match is null)
                 {
@@ -81,4 +81,3 @@ public sealed class AppServerConfigWriteSettings : AppServerThreadsSettingsBase
     [CommandOption("--skills-path <PATH>")]
     public string? SkillsPath { get; init; }
 }
-

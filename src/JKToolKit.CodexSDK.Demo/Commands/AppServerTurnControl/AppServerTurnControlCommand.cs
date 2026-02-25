@@ -42,31 +42,57 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
                 Input = [TurnInputItem.Text(settings.Prompt)]
             }, ct);
 
-            var steerTask = StartSteerTask(turn, settings, ct);
-            var interruptTask = StartInterruptTask(turn, settings, ct);
+            using var steerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var interruptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-            await foreach (var ev in turn.Events(ct))
-            {
-                if (ev is AgentMessageDeltaNotification delta)
-                {
-                    Console.Write(delta.Delta);
-                }
-            }
+            var steerTask = StartSteerTask(turn, settings, steerCts.Token);
+            var interruptTask = StartInterruptTask(turn, settings, interruptCts.Token);
 
+            var exitCode = 0;
+            var eventsFailed = false;
             try
             {
-                var completed = await turn.Completion;
-                Console.WriteLine($"\nDone: {completed.Status}");
+                try
+                {
+                    await foreach (var ev in turn.Events(ct))
+                    {
+                        if (ev is AgentMessageDeltaNotification delta)
+                        {
+                            Console.Write(delta.Delta);
+                        }
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Console.Error.WriteLine(ex);
+                    eventsFailed = true;
+                    exitCode = 1;
+                }
+
+                if (!eventsFailed)
+                {
+                    try
+                    {
+                        var completed = await turn.Completion;
+                        Console.WriteLine($"\nDone: {completed.Status}");
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        Console.Error.WriteLine($"\nCompletion failed: {ex}");
+                        exitCode = 1;
+                    }
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                Console.Error.WriteLine($"\nCompletion failed: {ex.Message}");
+                steerCts.Cancel();
+                interruptCts.Cancel();
+
+                try { await steerTask.ConfigureAwait(false); } catch { /* errors logged inside task */ }
+                try { await interruptTask.ConfigureAwait(false); } catch { /* errors logged inside task */ }
             }
 
-            try { await steerTask.ConfigureAwait(false); } catch { /* ignore */ }
-            try { await interruptTask.ConfigureAwait(false); } catch { /* ignore */ }
-
-            return 0;
+            return exitCode;
         });
 
     private static Task StartSteerTask(CodexTurnHandle turn, AppServerTurnControlSettings settings, CancellationToken ct)
@@ -162,4 +188,3 @@ public sealed class AppServerTurnControlSettings : AppServerThreadsSettingsBase
     [CommandOption("--interrupt-after-ms <MS>")]
     public int InterruptAfterMs { get; init; } = 3500;
 }
-

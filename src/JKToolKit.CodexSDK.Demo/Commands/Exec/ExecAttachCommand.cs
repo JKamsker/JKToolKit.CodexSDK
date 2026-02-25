@@ -16,21 +16,22 @@ public sealed class ExecAttachCommand : AsyncCommand<ExecAttachSettings>
         }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
-
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-        });
 
         try
         {
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+            });
+
             await using var session = await sdk.Exec.AttachToLogAsync(settings.LogFilePath, ct);
             Console.WriteLine($"Attached: {session.Info.Id.Value}");
             Console.WriteLine($"Log     : {session.Info.LogPath}");
@@ -62,6 +63,9 @@ public sealed class ExecAttachCommand : AsyncCommand<ExecAttachSettings>
             Console.Error.WriteLine(ex.Message);
             return 1;
         }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
     }
 }
-

@@ -21,33 +21,35 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
             cts.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds.Value));
         }
 
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
         var ct = cts.Token;
 
-        var responseTransformer = new MarkerResponseTransformer(maxLogLines: settings.PrintLimit);
-        var notificationTransformer = new MarkerNotificationTransformer(maxLogLines: settings.PrintLimit);
-        var notificationMapper = new MarkerNotificationMapper(maxLogLines: settings.PrintLimit);
-
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-            builder.ConfigureAppServer(o =>
-            {
-                o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Overrides Demo", "1.0.0");
-                o.ExperimentalApi = settings.ExperimentalApi;
-                o.ResponseTransformers = new IAppServerResponseTransformer[] { responseTransformer };
-                o.NotificationTransformers = new IAppServerNotificationTransformer[] { notificationTransformer };
-                o.NotificationMappers = new IAppServerNotificationMapper[] { notificationMapper };
-            });
-        });
-
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
+            var responseTransformer = new MarkerResponseTransformer(maxLogLines: settings.PrintLimit);
+            var notificationTransformer = new MarkerNotificationTransformer(maxLogLines: settings.PrintLimit);
+            var notificationMapper = new MarkerNotificationMapper(maxLogLines: settings.PrintLimit);
+
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+                builder.ConfigureAppServer(o =>
+                {
+                    o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Overrides Demo", "1.0.0");
+                    o.ExperimentalApi = settings.ExperimentalApi;
+                    o.ResponseTransformers = new IAppServerResponseTransformer[] { responseTransformer };
+                    o.NotificationTransformers = new IAppServerNotificationTransformer[] { notificationTransformer };
+                    o.NotificationMappers = new IAppServerNotificationMapper[] { notificationMapper };
+                });
+            });
+
             await using var codex = await sdk.AppServer.StartAsync(ct);
 
             var thread = await codex.StartThreadAsync(new ThreadStartOptions
@@ -107,14 +109,19 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
             Console.Error.WriteLine(ex);
             return 1;
         }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
     }
 
     private sealed class MarkerResponseTransformer : IAppServerResponseTransformer
     {
         private readonly int _maxLogLines;
         private int _logged;
+        private int _callCount;
 
-        public int CallCount { get; private set; }
+        public int CallCount => Volatile.Read(ref _callCount);
 
         public MarkerResponseTransformer(int maxLogLines)
         {
@@ -123,7 +130,7 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
 
         public JsonElement Transform(string method, JsonElement result)
         {
-            CallCount++;
+            Interlocked.Increment(ref _callCount);
             if (Interlocked.Increment(ref _logged) <= _maxLogLines)
             {
                 Console.WriteLine($"[response-transformer] {method} resultKind={result.ValueKind}");
@@ -137,8 +144,9 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
     {
         private readonly int _maxLogLines;
         private int _logged;
+        private int _callCount;
 
-        public int CallCount { get; private set; }
+        public int CallCount => Volatile.Read(ref _callCount);
 
         public MarkerNotificationTransformer(int maxLogLines)
         {
@@ -147,7 +155,7 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
 
         public (string Method, JsonElement Params) Transform(string method, JsonElement @params)
         {
-            CallCount++;
+            Interlocked.Increment(ref _callCount);
             if (Interlocked.Increment(ref _logged) <= _maxLogLines)
             {
                 Console.WriteLine($"[notification-transformer] {method} paramsKind={@params.ValueKind}");
@@ -161,8 +169,9 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
     {
         private readonly int _maxLogLines;
         private int _logged;
+        private int _callCount;
 
-        public int CallCount { get; private set; }
+        public int CallCount => Volatile.Read(ref _callCount);
 
         public MarkerNotificationMapper(int maxLogLines)
         {
@@ -171,7 +180,7 @@ public sealed class AppServerOverridesCommand : AsyncCommand<AppServerOverridesS
 
         public AppServerNotification? TryMap(string method, JsonElement @params)
         {
-            CallCount++;
+            Interlocked.Increment(ref _callCount);
             if (Interlocked.Increment(ref _logged) <= _maxLogLines)
             {
                 Console.WriteLine($"[notification-mapper] {method} paramsKind={@params.ValueKind}");

@@ -239,18 +239,18 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     continue;
                 }
 
-                    try
+                try
+                {
+                    customMapped = mapper.TryMap(method, @params);
+                    if (customMapped is not null)
                     {
-                        customMapped = mapper.TryMap(method, @params);
-                        if (customMapped is not null)
-                        {
-                            usedCustomMapper = true;
-                            break;
-                        }
+                        usedCustomMapper = true;
+                        break;
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "App-server notification mapper threw (method={Method}).", method);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "App-server notification mapper threw (method={Method}).", method);
                 }
             }
 

@@ -116,8 +116,9 @@ public sealed class ExecOverridesCommand : AsyncCommand<ExecOverridesSettings>
         private readonly int _maxLogLines;
         private int _logged;
         private int _transformed;
+        private int _callCount;
 
-        public int CallCount { get; private set; }
+        public int CallCount => Volatile.Read(ref _callCount);
 
         public FirstEventTypeTransformer(int maxLogLines)
         {
@@ -126,7 +127,7 @@ public sealed class ExecOverridesCommand : AsyncCommand<ExecOverridesSettings>
 
         public (string Type, JsonElement RawPayload) Transform(string type, JsonElement rawPayload)
         {
-            CallCount++;
+            Interlocked.Increment(ref _callCount);
 
             if (Interlocked.Increment(ref _logged) <= _maxLogLines)
             {
@@ -149,8 +150,9 @@ public sealed class ExecOverridesCommand : AsyncCommand<ExecOverridesSettings>
     {
         private readonly int _maxLogLines;
         private int _logged;
+        private int _callCount;
 
-        public int CallCount { get; private set; }
+        public int CallCount => Volatile.Read(ref _callCount);
 
         public DemoEventMapper(int maxLogLines)
         {
@@ -159,7 +161,7 @@ public sealed class ExecOverridesCommand : AsyncCommand<ExecOverridesSettings>
 
         public CodexEvent? TryMap(DateTimeOffset timestamp, string type, JsonElement rawPayload)
         {
-            CallCount++;
+            Interlocked.Increment(ref _callCount);
 
             if (Interlocked.Increment(ref _logged) <= _maxLogLines)
             {

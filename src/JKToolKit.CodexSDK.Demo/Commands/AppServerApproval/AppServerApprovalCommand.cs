@@ -17,35 +17,37 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
             cts.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds.Value));
         }
 
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
-        var model = string.IsNullOrWhiteSpace(settings.Model)
-            ? CodexModel.Gpt52Codex
-            : CodexModel.Parse(settings.Model);
-
-        var workDir = Directory.CreateDirectory(
-            Path.Combine(Path.GetTempPath(), $"ncodexsdk-appserver-approval-demo-{Guid.NewGuid():N}")).FullName;
-
-        var handler = new AllowOnlyTestTxtHandler();
-
-        await using var sdk = CodexSdk.Create(builder =>
-        {
-            builder.CodexExecutablePath = settings.CodexExecutablePath;
-            builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-            builder.ConfigureAppServer(o =>
-            {
-                o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Approval Demo", "1.0.0");
-                o.ApprovalHandler = handler;
-            });
-        });
-
+        var workDir = string.Empty;
         try
         {
+            var model = string.IsNullOrWhiteSpace(settings.Model)
+                ? CodexModel.Gpt52Codex
+                : CodexModel.Parse(settings.Model);
+
+            workDir = Directory.CreateDirectory(
+                Path.Combine(Path.GetTempPath(), $"ncodexsdk-appserver-approval-demo-{Guid.NewGuid():N}")).FullName;
+
+            var handler = new AllowOnlyTestTxtHandler();
+
+            await using var sdk = CodexSdk.Create(builder =>
+            {
+                builder.CodexExecutablePath = settings.CodexExecutablePath;
+                builder.CodexHomeDirectory = settings.CodexHomeDirectory;
+                builder.ConfigureAppServer(o =>
+                {
+                    o.DefaultClientInfo = new("ncodexsdk-demo", "JKToolKit.CodexSDK AppServer Approval Demo", "1.0.0");
+                    o.ApprovalHandler = handler;
+                });
+            });
+
             await using var codex = await sdk.AppServer.StartAsync(ct);
 
             var thread = await codex.StartThreadAsync(new ThreadStartOptions
@@ -53,6 +55,7 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
                 Model = model,
                 Cwd = workDir,
                 ApprovalPolicy = CodexApprovalPolicy.OnRequest,
+                // Demo-only: write-enabled sandbox for local testing; do not copy this mode into production (prefer read-only).
                 Sandbox = CodexSandboxMode.WorkspaceWrite
             }, ct);
 
@@ -87,6 +90,24 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
         {
             Console.Error.WriteLine(ex);
             return 1;
+        }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+            if (!string.IsNullOrWhiteSpace(workDir))
+            {
+                try
+                {
+                    if (Directory.Exists(workDir))
+                    {
+                        Directory.Delete(workDir, recursive: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Cleanup failed (dir): {workDir}: {ex.Message}");
+                }
+            }
         }
     }
 

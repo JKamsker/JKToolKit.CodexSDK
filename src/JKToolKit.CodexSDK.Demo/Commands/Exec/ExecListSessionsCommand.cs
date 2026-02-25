@@ -63,7 +63,7 @@ public sealed class ExecListSessionsCommand : AsyncCommand<ExecListSessionsSetti
         catch (OperationCanceledException)
         {
             Console.Error.WriteLine("Cancelled.");
-            return 1;
+            return 0;
         }
         catch (Exception ex)
         {
@@ -78,4 +78,3 @@ public sealed class ExecListSessionsCommand : AsyncCommand<ExecListSessionsSetti
             ".codex",
             "sessions");
 }
-
