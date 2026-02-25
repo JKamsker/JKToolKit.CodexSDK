@@ -49,6 +49,7 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
             var interruptTask = StartInterruptTask(turn, settings, interruptCts.Token);
 
             var exitCode = 0;
+            var eventsFailed = false;
             try
             {
                 try
@@ -64,18 +65,22 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     Console.Error.WriteLine(ex);
+                    eventsFailed = true;
                     exitCode = 1;
                 }
 
-                try
+                if (!eventsFailed)
                 {
-                    var completed = await turn.Completion;
-                    Console.WriteLine($"\nDone: {completed.Status}");
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    Console.Error.WriteLine($"\nCompletion failed: {ex}");
-                    exitCode = 1;
+                    try
+                    {
+                        var completed = await turn.Completion;
+                        Console.WriteLine($"\nDone: {completed.Status}");
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        Console.Error.WriteLine($"\nCompletion failed: {ex}");
+                        exitCode = 1;
+                    }
                 }
             }
             finally
