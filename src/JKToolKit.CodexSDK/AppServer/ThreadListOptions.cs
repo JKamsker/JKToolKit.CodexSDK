@@ -16,6 +16,11 @@ public sealed class ThreadListOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional substring filter for the extracted thread title, if supported upstream.
+    /// </summary>
+    public string? SearchTerm { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional page size, if supported upstream.
     /// </summary>
     public int? Limit { get; set; }

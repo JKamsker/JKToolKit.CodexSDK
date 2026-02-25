@@ -31,7 +31,8 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                ServiceName = options.ServiceName,
+                ApprovalPolicy = BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
@@ -89,7 +90,7 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                ApprovalPolicy = options.ApprovalPolicy?.Value,
+                ApprovalPolicy = BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
@@ -123,6 +124,9 @@ internal sealed class CodexAppServerThreadsClient
         return true;
     }
 
+    private static object? BuildAskForApproval(CodexAskForApproval? askForApproval, CodexApprovalPolicy? policy) =>
+        askForApproval is { } a ? a.ToWireValue() : policy?.Value;
+
     public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -135,6 +139,7 @@ internal sealed class CodexAppServerThreadsClient
                 Cwd = options.Cwd,
                 Limit = options.Limit,
                 ModelProviders = options.ModelProviders,
+                SearchTerm = options.SearchTerm,
                 SourceKinds = options.SourceKinds,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,

@@ -40,6 +40,19 @@ internal static class AppServerNotificationMapper
                 TokenUsage: GetAny(p, "tokenUsage"),
                 Params: p),
 
+            "thread/status/changed" => new ThreadStatusChangedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Status: GetAny(p, "status"),
+                Params: p),
+
+            "thread/archived" => new ThreadArchivedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
+            "thread/unarchived" => new ThreadUnarchivedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
             "turn/started" => new TurnStartedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Turn: GetAny(p, "turn"),
@@ -196,6 +209,12 @@ internal static class AppServerNotificationMapper
                 SamplePaths: GetStringArray(p, "samplePaths"),
                 ExtraCount: GetInt32(p, "extraCount"),
                 FailedScan: GetBool(p, "failedScan"),
+                Params: p),
+
+            "windowsSandbox/setupCompleted" => new WindowsSandboxSetupCompletedNotification(
+                Mode: GetString(p, "mode") ?? string.Empty,
+                Success: GetBool(p, "success"),
+                Error: GetStringOrNull(p, "error"),
                 Params: p),
 
             "account/login/completed" => new AccountLoginCompletedNotification(

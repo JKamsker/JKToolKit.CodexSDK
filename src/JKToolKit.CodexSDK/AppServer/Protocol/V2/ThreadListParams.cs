@@ -20,6 +20,12 @@ public sealed record class ThreadListParams
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets an optional substring filter for the extracted thread title, if supported upstream.
+    /// </summary>
+    [JsonPropertyName("searchTerm")]
+    public string? SearchTerm { get; init; }
+
+    /// <summary>
     /// Gets an optional limit (page size), if supported upstream.
     /// </summary>
     [JsonPropertyName("limit")]

@@ -33,6 +33,15 @@ public sealed class TurnStartOptions
     public CodexApprovalPolicy? ApprovalPolicy { get; set; }
 
     /// <summary>
+    /// Gets or sets advanced approval policy configuration (object form).
+    /// </summary>
+    /// <remarks>
+    /// When set, this takes precedence over <see cref="ApprovalPolicy"/> and enables upstream features such as
+    /// selectively rejecting specific approval prompt types.
+    /// </remarks>
+    public CodexAskForApproval? AskForApproval { get; set; }
+
+    /// <summary>
     /// Optional sandbox policy override for this turn and subsequent turns.
     /// </summary>
     public SandboxPolicy? SandboxPolicy { get; set; }
@@ -95,6 +104,7 @@ public sealed class TurnStartOptions
             Input = Input,
             Cwd = Cwd,
             ApprovalPolicy = ApprovalPolicy,
+            AskForApproval = AskForApproval,
             SandboxPolicy = SandboxPolicy,
             Model = Model,
             Effort = Effort,

@@ -59,13 +59,14 @@ public sealed record class ThreadResumeParams
     public string? Cwd { get; init; }
 
     /// <summary>
-    /// Gets an optional approval policy override for the resumed thread (wire value).
+    /// Gets an optional approval policy override for the resumed thread.
     /// </summary>
     /// <remarks>
-    /// Known values include <c>untrusted</c>, <c>on-failure</c>, <c>on-request</c>, and <c>never</c>.
+    /// This supports the upstream <c>AskForApproval</c> union:
+    /// either a simple string policy (for example <c>untrusted</c>) or an object form (for example <c>{"reject":{...}}</c>).
     /// </remarks>
     [JsonPropertyName("approvalPolicy")]
-    public string? ApprovalPolicy { get; init; }
+    public object? ApprovalPolicy { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the resumed thread (wire value).

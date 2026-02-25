@@ -123,6 +123,85 @@ internal sealed class CodexAppServerConfigClient
         };
     }
 
+    public async Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "externalAgentConfig/detect",
+            options,
+            ct);
+
+        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items");
+        if (itemsArray is null)
+        {
+            return new ExternalAgentConfigDetectResult
+            {
+                Items = Array.Empty<ExternalAgentConfigMigrationItem>(),
+                Raw = result
+            };
+        }
+
+        var items = new List<ExternalAgentConfigMigrationItem>();
+        foreach (var item in itemsArray.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var description = CodexAppServerClientJson.GetStringOrNull(item, "description");
+            var itemType = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
+            if (string.IsNullOrWhiteSpace(description) || string.IsNullOrWhiteSpace(itemType))
+            {
+                continue;
+            }
+
+            items.Add(new ExternalAgentConfigMigrationItem
+            {
+                Cwd = CodexAppServerClientJson.GetStringOrNull(item, "cwd"),
+                Description = description,
+                ItemType = itemType
+            });
+        }
+
+        return new ExternalAgentConfigDetectResult
+        {
+            Items = items,
+            Raw = result
+        };
+    }
+
+    public async Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(migrationItems);
+
+        _ = await _sendRequestAsync(
+            "externalAgentConfig/import",
+            new { migrationItems },
+            ct);
+    }
+
+    public async Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(mode))
+            throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(mode));
+
+        var result = await _sendRequestAsync(
+            "windowsSandbox/setupStart",
+            new { mode },
+            ct);
+
+        var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
+        if (started is null)
+        {
+            throw new InvalidOperationException(
+                $"windowsSandbox/setupStart returned no 'started' field. Raw result: {result}");
+        }
+
+        return started.Value;
+    }
+
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)
     {
         var error = ex.Error;

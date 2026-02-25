@@ -23,6 +23,23 @@ public sealed record class CodexThreadSummary
     public bool? Archived { get; init; }
 
     /// <summary>
+    /// Gets the upstream thread status type, when present.
+    /// </summary>
+    /// <remarks>
+    /// Known values include <c>notLoaded</c>, <c>idle</c>, <c>active</c>, and <c>systemError</c>.
+    /// </remarks>
+    public string? StatusType { get; init; }
+
+    /// <summary>
+    /// Gets active status flags, when present.
+    /// </summary>
+    /// <remarks>
+    /// Only present when <see cref="StatusType"/> is <c>active</c>.
+    /// Known values include <c>waitingOnApproval</c> and <c>waitingOnUserInput</c>.
+    /// </remarks>
+    public IReadOnlyList<string>? ActiveFlags { get; init; }
+
+    /// <summary>
     /// Gets the thread creation timestamp, when present.
     /// </summary>
     public DateTimeOffset? CreatedAt { get; init; }

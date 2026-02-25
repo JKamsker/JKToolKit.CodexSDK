@@ -53,6 +53,10 @@ internal static class CodexAppServerClientThreadParsers
             GetStringOrNull(primary, "title") ??
             GetStringOrNull(primary, "preview");
 
+        var status = TryGetObject(primary, "status");
+        var statusType = status is { } st ? GetStringOrNull(st, "type") : null;
+        var activeFlags = status is { } sf ? GetOptionalStringArray(sf, "activeFlags") : null;
+
         var archived = GetBoolOrNull(primary, "archived");
         if (archived is null &&
             GetStringOrNull(primary, "path") is { Length: > 0 } path &&
@@ -71,6 +75,8 @@ internal static class CodexAppServerClientThreadParsers
             ThreadId = threadId,
             Name = name,
             Archived = archived,
+            StatusType = statusType,
+            ActiveFlags = activeFlags,
             CreatedAt = createdAt,
             Cwd = cwd,
             Model = model,
