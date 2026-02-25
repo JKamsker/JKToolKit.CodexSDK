@@ -25,16 +25,17 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
             e.Cancel = true;
             cts.Cancel();
         };
-        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
-
-        var headSha = TryGetGitHeadSha(repoPath);
-        Console.WriteLine($"Repo: {repoPath}");
-        Console.WriteLine($"HEAD: {(headSha ?? "n/a")}");
-        Console.WriteLine();
 
         try
         {
+            Console.CancelKeyPress += cancelHandler;
+
+            var headSha = TryGetGitHeadSha(repoPath);
+            Console.WriteLine($"Repo: {repoPath}");
+            Console.WriteLine($"HEAD: {(headSha ?? "n/a")}");
+            Console.WriteLine();
+
             await using var sdk = CodexSdk.Create(builder =>
             {
                 builder.CodexExecutablePath = settings.CodexExecutablePath;
@@ -148,7 +149,22 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
                 return null;
             }
 
-            if (!p.WaitForExit(2000) || p.ExitCode != 0)
+            if (!p.WaitForExit(2000))
+            {
+                try
+                {
+                    p.Kill(entireProcessTree: true);
+                    p.WaitForExit(2000);
+                }
+                catch
+                {
+                    // ignore
+                }
+
+                return null;
+            }
+
+            if (p.ExitCode != 0)
             {
                 return null;
             }

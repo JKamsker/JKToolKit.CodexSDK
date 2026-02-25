@@ -77,8 +77,8 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
             }
             finally
             {
-                try { await steerTask.ConfigureAwait(false); } catch { /* ignore */ }
-                try { await interruptTask.ConfigureAwait(false); } catch { /* ignore */ }
+                try { await steerTask.ConfigureAwait(false); } catch { /* errors logged inside task */ }
+                try { await interruptTask.ConfigureAwait(false); } catch { /* errors logged inside task */ }
             }
 
             return exitCode;

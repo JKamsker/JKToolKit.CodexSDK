@@ -1,4 +1,3 @@
-using System.Text.Json;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.McpServer;
 using JKToolKit.CodexSDK.Models;
@@ -56,7 +55,7 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
             if (settings.UseLowLevelCalls)
             {
                 var rawTools = await codex.CallAsync("tools/list", @params: null, ct);
-                tools = ParseToolsList(rawTools);
+                tools = CodexMcpToolResultParsers.ParseToolsList(rawTools);
                 Console.WriteLine($"[low-level] CallAsync(tools/list): tools={tools.Count}");
             }
             else
@@ -126,41 +125,5 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
         {
             Console.CancelKeyPress -= cancelHandler;
         }
-    }
-
-    private static IReadOnlyList<McpToolDescriptor> ParseToolsList(JsonElement result)
-    {
-        if (result.ValueKind != JsonValueKind.Object ||
-            !result.TryGetProperty("tools", out var toolsProp) ||
-            toolsProp.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<McpToolDescriptor>();
-        }
-
-        var list = new List<McpToolDescriptor>();
-        foreach (var tool in toolsProp.EnumerateArray())
-        {
-            if (tool.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            var name = tool.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                continue;
-            }
-
-            var description = tool.TryGetProperty("description", out var descProp) ? descProp.GetString() : null;
-            JsonElement? schema = null;
-            if (tool.TryGetProperty("inputSchema", out var schemaProp))
-            {
-                schema = schemaProp.Clone();
-            }
-
-            list.Add(new McpToolDescriptor(name, description, schema));
-        }
-
-        return list;
     }
 }

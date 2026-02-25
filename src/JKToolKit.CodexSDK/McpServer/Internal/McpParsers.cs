@@ -18,10 +18,14 @@ internal static class McpToolsListParser
         {
             if (tool.ValueKind != JsonValueKind.Object) continue;
 
-            var name = tool.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
+            var name = tool.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String
+                ? nameProp.GetString()
+                : null;
             if (string.IsNullOrWhiteSpace(name)) continue;
 
-            var description = tool.TryGetProperty("description", out var descProp) ? descProp.GetString() : null;
+            var description = tool.TryGetProperty("description", out var descProp) && descProp.ValueKind == JsonValueKind.String
+                ? descProp.GetString()
+                : null;
 
             JsonElement? schema = null;
             if (tool.TryGetProperty("inputSchema", out var schemaProp))

@@ -14,10 +14,7 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
         {
             var demoRoot = Path.Combine(Directory.GetCurrentDirectory(), ".tmp", "appserver-sandbox-policy", Guid.NewGuid().ToString("N"));
             var allowedDir = Path.Combine(demoRoot, "allowed");
-            Directory.CreateDirectory(allowedDir);
-
             var allowedFile = Path.Combine(allowedDir, "allowed.txt");
-            TryDeleteFile(allowedFile);
 
             var prompt = string.IsNullOrWhiteSpace(settings.Prompt)
                 ? "Create a file named allowed.txt in the current directory with content 'ok'. Finally, say 'done'."
@@ -25,6 +22,8 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
 
             try
             {
+                Directory.CreateDirectory(allowedDir);
+
                 Console.WriteLine($"Demo root: {demoRoot}");
                 Console.WriteLine($"Allowed dir: {allowedDir}");
 
@@ -130,7 +129,7 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Cleanup failed (file): {path}: {ex}");
+            Console.Error.WriteLine($"Cleanup failed (file): {path}: {ex.Message}");
         }
     }
 
@@ -145,7 +144,7 @@ public sealed class AppServerSandboxPolicyCommand : AsyncCommand<AppServerSandbo
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Cleanup failed (dir): {path}: {ex}");
+            Console.Error.WriteLine($"Cleanup failed (dir): {path}: {ex.Message}");
         }
     }
 }

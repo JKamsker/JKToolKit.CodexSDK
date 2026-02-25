@@ -21,25 +21,25 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
                 ? CodexApprovalPolicy.Never
                 : CodexApprovalPolicy.Parse(settings.ApprovalPolicy);
 
-             var sandbox = string.IsNullOrWhiteSpace(settings.Sandbox)
-                 ? CodexSandboxMode.WorkspaceWrite
-                 : CodexSandboxMode.Parse(settings.Sandbox);
- 
-             var target = ResolveTarget(settings);
-             var delivery = ResolveDelivery(settings.Delivery);
- 
-             var thread = await codex.StartThreadAsync(new ThreadStartOptions
-             {
-                 Model = model,
-                 Cwd = repoPath,
-                 ApprovalPolicy = approvalPolicy,
-                 Sandbox = sandbox
-             }, ct);
- 
-             Console.WriteLine($"Thread: {thread.Id}");
-             Console.WriteLine($"Target: {settings.Target}");
-             Console.WriteLine($"Delivery: {(delivery?.ToString() ?? "default")}");
-             Console.WriteLine();
+            var sandbox = string.IsNullOrWhiteSpace(settings.Sandbox)
+                ? CodexSandboxMode.WorkspaceWrite
+                : CodexSandboxMode.Parse(settings.Sandbox);
+
+            var target = ResolveTarget(settings);
+            var delivery = ResolveDelivery(settings.Delivery);
+
+            var thread = await codex.StartThreadAsync(new ThreadStartOptions
+            {
+                Model = model,
+                Cwd = repoPath,
+                ApprovalPolicy = approvalPolicy,
+                Sandbox = sandbox
+            }, ct);
+
+            Console.WriteLine($"Thread: {thread.Id}");
+            Console.WriteLine($"Target: {settings.Target}");
+            Console.WriteLine($"Delivery: {(delivery?.ToString() ?? "default")}");
+            Console.WriteLine();
 
             var review = await codex.StartReviewAsync(new ReviewStartOptions
             {
@@ -77,7 +77,7 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
         {
             "" or "uncommitted" => new ReviewTarget.UncommittedChanges(),
             "base" or "base-branch" => new ReviewTarget.BaseBranch(
-                string.IsNullOrWhiteSpace(settings.BaseBranch) ? "master" : settings.BaseBranch),
+                string.IsNullOrWhiteSpace(settings.BaseBranch) ? "master" : settings.BaseBranch.Trim()),
             "commit" => new ReviewTarget.Commit(
                 sha: string.IsNullOrWhiteSpace(settings.CommitSha)
                     ? throw new InvalidOperationException("--commit-sha is required when --target=commit.")

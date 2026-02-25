@@ -25,13 +25,14 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
         Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
+        var workDir = string.Empty;
         try
         {
             var model = string.IsNullOrWhiteSpace(settings.Model)
                 ? CodexModel.Gpt52Codex
                 : CodexModel.Parse(settings.Model);
 
-            var workDir = Directory.CreateDirectory(
+            workDir = Directory.CreateDirectory(
                 Path.Combine(Path.GetTempPath(), $"ncodexsdk-appserver-approval-demo-{Guid.NewGuid():N}")).FullName;
 
             var handler = new AllowOnlyTestTxtHandler();
@@ -93,6 +94,20 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
         finally
         {
             Console.CancelKeyPress -= cancelHandler;
+            if (!string.IsNullOrWhiteSpace(workDir))
+            {
+                try
+                {
+                    if (Directory.Exists(workDir))
+                    {
+                        Directory.Delete(workDir, recursive: true);
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
         }
     }
 
