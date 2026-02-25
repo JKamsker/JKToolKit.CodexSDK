@@ -55,6 +55,52 @@ public sealed record MessageResponseItemPayload : ResponseItemPayload
 }
 
 /// <summary>
+/// Represents a <c>local_shell_call</c> response item payload emitted by Codex.
+/// </summary>
+public sealed record LocalShellCallResponseItemPayload : ResponseItemPayload
+{
+    /// <summary>
+    /// Gets the status of the shell call (e.g. completed, in_progress), when provided.
+    /// </summary>
+    public string? Status { get; init; }
+
+    /// <summary>
+    /// Gets the call id associated with this shell call, when provided.
+    /// </summary>
+    public string? CallId { get; init; }
+
+    /// <summary>
+    /// Gets the action discriminator (e.g. <c>exec</c>), when provided.
+    /// </summary>
+    public string? ActionType { get; init; }
+
+    /// <summary>
+    /// Gets the command argv for <c>action.type=exec</c>, when provided.
+    /// </summary>
+    public IReadOnlyList<string>? Command { get; init; }
+
+    /// <summary>
+    /// Gets the optional timeout in milliseconds for <c>action.type=exec</c>, when provided.
+    /// </summary>
+    public long? TimeoutMs { get; init; }
+
+    /// <summary>
+    /// Gets the optional working directory override for <c>action.type=exec</c>, when provided.
+    /// </summary>
+    public string? WorkingDirectory { get; init; }
+
+    /// <summary>
+    /// Gets the optional environment variables for <c>action.type=exec</c>, when provided.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Env { get; init; }
+
+    /// <summary>
+    /// Gets the optional user for <c>action.type=exec</c>, when provided.
+    /// </summary>
+    public string? User { get; init; }
+}
+
+/// <summary>
 /// Represents a <c>function_call</c> response item payload emitted by Codex.
 /// </summary>
 public sealed record FunctionCallResponseItemPayload : ResponseItemPayload
@@ -155,7 +201,18 @@ public sealed record WebSearchCallResponseItemPayload : ResponseItemPayload
 /// <param name="Type">Action type (implementation-defined).</param>
 /// <param name="Query">The query string, when provided.</param>
 /// <param name="Queries">A list of queries, when provided.</param>
-public sealed record WebSearchAction(string? Type, string? Query, IReadOnlyList<string>? Queries);
+public sealed record WebSearchAction(string? Type, string? Query, IReadOnlyList<string>? Queries)
+{
+    /// <summary>
+    /// Gets the url for actions that operate on a specific page (e.g. open_page / find_in_page), when provided.
+    /// </summary>
+    public string? Url { get; init; }
+
+    /// <summary>
+    /// Gets the search pattern for actions that operate on a page (e.g. find_in_page), when provided.
+    /// </summary>
+    public string? Pattern { get; init; }
+}
 
 /// <summary>
 /// Represents a <c>ghost_snapshot</c> response item payload emitted by Codex.

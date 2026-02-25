@@ -24,12 +24,26 @@ public sealed class ThreadStartOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional service name identifier for the thread.
+    /// </summary>
+    public string? ServiceName { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional approval policy.
     /// </summary>
     /// <remarks>
     /// Known values include <c>untrusted</c>, <c>on-failure</c>, <c>on-request</c>, and <c>never</c>.
     /// </remarks>
     public CodexApprovalPolicy? ApprovalPolicy { get; set; }
+
+    /// <summary>
+    /// Gets or sets advanced approval policy configuration (object form).
+    /// </summary>
+    /// <remarks>
+    /// When set, this takes precedence over <see cref="ApprovalPolicy"/> and enables upstream features such as
+    /// selectively rejecting specific approval prompt types.
+    /// </remarks>
+    public CodexAskForApproval? AskForApproval { get; set; }
 
     /// <summary>
     /// Gets or sets an optional sandbox mode.

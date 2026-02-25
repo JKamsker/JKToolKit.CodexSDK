@@ -58,6 +58,8 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
   - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
   - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
   - `ReadConfigAsync(...)` (`config/read`)
+  - `DetectExternalAgentConfigAsync(...)`, `ImportExternalAgentConfigAsync(...)` (`externalAgentConfig/detect`, `externalAgentConfig/import`)
+  - `StartWindowsSandboxSetupAsync(...)` (`windowsSandbox/setupStart`)
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
   - `SteerTurnAsync(...)`
   - `StartReviewAsync(...)`
@@ -78,6 +80,13 @@ The library maps a small must-have subset of notifications into typed records:
 - `ItemCompletedNotification` (`item/completed`)
 - `TurnCompletedNotification` (`turn/completed`)
 - `UnknownNotification` fallback for forward-compatibility
+
+It also includes a growing set of additional typed notifications under `JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications`, including:
+
+- `ThreadArchivedNotification` (`thread/archived`)
+- `ThreadUnarchivedNotification` (`thread/unarchived`)
+- `ThreadStatusChangedNotification` (`thread/status/changed`)
+- `WindowsSandboxSetupCompletedNotification` (`windowsSandbox/setupCompleted`)
 
 ## Override Hooks (Forward Compatibility)
 
@@ -117,6 +126,9 @@ await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServer
     NotificationMappers = new IAppServerNotificationMapper[] { new MyMapper() }
 });
 ```
+
+Note: `thread/archived` is mapped by default as `ThreadArchivedNotification`. Custom mappers are still useful for
+new/unknown upstream methods or for mapping into domain-specific notification types.
 
 ## Stable vs Experimental (Upstream Compatibility)
 
@@ -352,6 +364,36 @@ Built-in handlers:
 
 If no handler is configured, server requests are rejected with a JSON-RPC error to avoid deadlocks.
 
+### `ApprovalPolicy` vs `AskForApproval`
+
+Upstream app-server `approvalPolicy` supports an `AskForApproval` union:
+
+- A simple string policy (e.g. `untrusted`, `on-failure`, `on-request`, `never`)
+- An object form that can selectively reject specific approval prompt types
+
+This SDK supports both forms:
+
+- Use `ApprovalPolicy` (`CodexApprovalPolicy`) for the string form.
+- Use `AskForApproval` (`CodexAskForApproval`) for the object form. When set, it takes precedence over `ApprovalPolicy`.
+
+Example (reject sandbox escalation approvals while allowing other approvals):
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Models;
+
+await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions());
+
+var thread = await codex.StartThreadAsync(new ThreadStartOptions
+{
+    Cwd = "<repo-path>",
+    AskForApproval = CodexAskForApproval.Rejecting(
+        mcpElicitations: false,
+        rules: false,
+        sandboxApproval: true)
+});
+```
+
 ## DI Integration
 
 You can register a factory for dependency injection:
@@ -418,6 +460,6 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
-- If you hit interactive prompts unexpectedly: configure an `ApprovalHandler` or set `ApprovalPolicy = Never`.
+- If you hit interactive prompts unexpectedly: configure an `ApprovalHandler`, set `ApprovalPolicy = Never`, or use `AskForApproval` to selectively reject prompt types.
 - If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.Capabilities.ExperimentalApi = true`.
 - If the Codex subprocess dies mid-turn: the SDK now faults the global notification stream and any in-progress `CodexTurnHandle` streams/completions with `CodexAppServerDisconnectedException` (includes exit code and a best-effort stderr tail).

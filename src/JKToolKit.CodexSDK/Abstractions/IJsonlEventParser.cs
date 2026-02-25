@@ -41,6 +41,9 @@ public interface IJsonlEventParser
     /// <item><description>agent_reasoning -> <see cref="AgentReasoningEvent"/></description></item>
     /// <item><description>token_count -> <see cref="TokenCountEvent"/></description></item>
     /// <item><description>turn_context -> <see cref="TurnContextEvent"/></description></item>
+    /// <item><description>response_item -> <see cref="ResponseItemEvent"/></description></item>
+    /// <item><description>compacted -> <see cref="CompactedEvent"/></description></item>
+    /// <item><description>event_msg / event -> parsed inner event types (e.g. <see cref="TaskStartedEvent"/>, <see cref="TaskCompleteEvent"/>)</description></item>
     /// <item><description>Unknown types -> <see cref="UnknownCodexEvent"/></description></item>
     /// </list>
     ///

@@ -132,7 +132,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         Func<bool> experimentalApiEnabled = () => _core.ExperimentalApiEnabled;
         _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, experimentalApiEnabled);
         _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
-        _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled, logger);
         _mcpClient = new CodexAppServerMcpClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(

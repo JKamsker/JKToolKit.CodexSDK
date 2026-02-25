@@ -71,7 +71,7 @@ internal partial class Config
     public Sandbox_workspace_write? Sandbox_workspace_write { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("tools")]
-    public Tools? Tools { get; set; } = default!;
+    public Tools2? Tools { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("web_search")]
     public Web_search? Web_search { get; set; } = default!;

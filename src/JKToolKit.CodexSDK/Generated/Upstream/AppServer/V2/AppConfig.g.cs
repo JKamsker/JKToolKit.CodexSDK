@@ -13,11 +13,23 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class AppConfig
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("disabled_reason")]
-    public Disabled_reason? Disabled_reason { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("default_tools_approval_mode")]
+    public Default_tools_approval_mode? Default_tools_approval_mode { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("default_tools_enabled")]
+    public bool? Default_tools_enabled { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("destructive_enabled")]
+    public bool? Destructive_enabled { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool? Enabled { get; set; } = true;
+
+    [System.Text.Json.Serialization.JsonPropertyName("open_world_enabled")]
+    public bool? Open_world_enabled { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("tools")]
+    public Tools? Tools { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

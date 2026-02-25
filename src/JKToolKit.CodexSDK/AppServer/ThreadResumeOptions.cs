@@ -61,6 +61,15 @@ public sealed class ThreadResumeOptions
     public CodexApprovalPolicy? ApprovalPolicy { get; set; }
 
     /// <summary>
+    /// Gets or sets advanced approval policy configuration (object form).
+    /// </summary>
+    /// <remarks>
+    /// When set, this takes precedence over <see cref="ApprovalPolicy"/> and enables upstream features such as
+    /// selectively rejecting specific approval prompt types.
+    /// </remarks>
+    public CodexAskForApproval? AskForApproval { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional sandbox mode.
     /// </summary>
     /// <remarks>

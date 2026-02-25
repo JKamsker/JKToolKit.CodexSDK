@@ -1,6 +1,8 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -8,13 +10,16 @@ internal sealed class CodexAppServerConfigClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;
+    private readonly ILogger _logger;
 
     public CodexAppServerConfigClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
-        Func<bool> experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled,
+        ILogger logger)
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
@@ -121,6 +126,124 @@ internal sealed class CodexAppServerConfigClient
             EffectiveEnabled = CodexAppServerClientJson.GetBoolOrNull(result, "effectiveEnabled"),
             Raw = result
         };
+    }
+
+    public async Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "externalAgentConfig/detect",
+            options,
+            ct);
+
+        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items");
+        if (itemsArray is null)
+        {
+            return new ExternalAgentConfigDetectResult
+            {
+                Items = Array.Empty<ExternalAgentConfigMigrationItem>(),
+                Raw = result
+            };
+        }
+
+        var items = new List<ExternalAgentConfigMigrationItem>();
+        var i = 0;
+        foreach (var item in itemsArray.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "externalAgentConfig/detect: skipping items[{Index}] because it is not an object. valueKind={ValueKind} raw={Raw}",
+                        i,
+                        item.ValueKind,
+                        item.GetRawText());
+                }
+
+                i++;
+                continue;
+            }
+
+            var description = CodexAppServerClientJson.GetStringOrNull(item, "description");
+            var itemType = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
+            if (string.IsNullOrWhiteSpace(description) || string.IsNullOrWhiteSpace(itemType))
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "externalAgentConfig/detect: skipping items[{Index}] due to missing/invalid required fields. description={Description} itemType={ItemType} raw={Raw}",
+                        i,
+                        description,
+                        itemType,
+                        item.GetRawText());
+                }
+
+                i++;
+                continue;
+            }
+
+            items.Add(new ExternalAgentConfigMigrationItem
+            {
+                Cwd = CodexAppServerClientJson.GetStringOrNull(item, "cwd"),
+                Description = description,
+                ItemType = itemType
+            });
+
+            i++;
+        }
+
+        return new ExternalAgentConfigDetectResult
+        {
+            Items = items,
+            Raw = result
+        };
+    }
+
+    public async Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(migrationItems);
+        if (migrationItems.Count == 0)
+            throw new ArgumentException("Migration items cannot be empty.", nameof(migrationItems));
+
+        for (var i = 0; i < migrationItems.Count; i++)
+        {
+            var item = migrationItems[i];
+            if (item is null)
+                throw new ArgumentException($"Migration item at index {i} cannot be null.", nameof(migrationItems));
+
+            if (string.IsNullOrWhiteSpace(item.Description))
+                throw new ArgumentException($"Migration item at index {i} must have a non-empty Description.", nameof(migrationItems));
+
+            if (string.IsNullOrWhiteSpace(item.ItemType))
+                throw new ArgumentException($"Migration item at index {i} must have a non-empty ItemType.", nameof(migrationItems));
+        }
+
+        _ = await _sendRequestAsync(
+            "externalAgentConfig/import",
+            new ExternalAgentConfigImportParams { MigrationItems = migrationItems },
+            ct);
+    }
+
+    public async Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(mode))
+            throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(mode));
+
+        var result = await _sendRequestAsync(
+            "windowsSandbox/setupStart",
+            new { mode },
+            ct);
+
+        var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
+        if (started is null)
+        {
+            var raw = CodexDiagnosticsSanitizer.Sanitize(result.GetRawText(), maxChars: 2000);
+            throw new InvalidOperationException($"windowsSandbox/setupStart response missing boolean 'started'. result={raw}");
+        }
+
+        return started.Value;
     }
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)

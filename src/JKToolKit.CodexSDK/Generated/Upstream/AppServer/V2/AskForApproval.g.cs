@@ -10,23 +10,16 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum AskForApproval
+internal partial class AskForApproval
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"untrusted")]
-    Untrusted = 0,
+    private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
-
-    [System.Runtime.Serialization.EnumMember(Value = @"on-failure")]
-    OnFailure = 1,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"on-request")]
-    OnRequest = 2,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"never")]
-    Never = 3,
-
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+    {
+        get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+        set { _additionalProperties = value; }
+    }
 
 }

@@ -2,6 +2,7 @@ using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
@@ -58,7 +59,7 @@ internal sealed class CodexAppServerTurnsClient
             ThreadId = threadId,
             Input = options.Input.Select(i => i.Wire).ToArray(),
             Cwd = options.Cwd,
-            ApprovalPolicy = options.ApprovalPolicy?.Value,
+            ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
             SandboxPolicy = options.SandboxPolicy,
             Model = options.Model?.Value,
             Effort = options.Effort?.Value,
