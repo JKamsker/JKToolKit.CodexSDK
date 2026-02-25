@@ -72,7 +72,7 @@ public sealed class AppServerConfigReadCommand : AsyncCommand<AppServerConfigRea
             }
             else
             {
-            PrintRequirements(requirements.Requirements);
+                PrintRequirements(requirements.Requirements);
             }
 
             Console.WriteLine();
@@ -110,20 +110,8 @@ public sealed class AppServerConfigReadCommand : AsyncCommand<AppServerConfigRea
             return 0;
         });
 
-    private static int CountTopLevelKeys(JsonElement config)
-    {
-        if (config.ValueKind != JsonValueKind.Object)
-        {
-            return 0;
-        }
-
-        var count = 0;
-        foreach (var _ in config.EnumerateObject())
-        {
-            count++;
-        }
-        return count;
-    }
+    private static int CountTopLevelKeys(JsonElement config) =>
+        config.ValueKind == JsonValueKind.Object ? config.EnumerateObject().Count() : 0;
 
     private static void PrintRequirements(ConfigRequirements r)
     {

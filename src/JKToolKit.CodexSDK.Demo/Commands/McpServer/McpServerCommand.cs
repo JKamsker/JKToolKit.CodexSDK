@@ -1,4 +1,3 @@
-using System.Text.Json;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.McpServer;
 using JKToolKit.CodexSDK.Models;
@@ -59,8 +58,7 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
 
             if (settings.UseLowLevelCalls)
             {
-                var rawTools = await codex.CallAsync("tools/list", @params: null, ct);
-                Console.WriteLine($"[low-level] CallAsync(tools/list): tools={CountTools(rawTools)}");
+                Console.WriteLine($"[low-level] tools/list: tools={tools.Count}");
             }
 
             var run = await codex.StartSessionAsync(new CodexMcpStartOptions
@@ -89,7 +87,7 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
                     },
                     ct);
 
-                var text = TryExtractText(call.Raw);
+                var text = CodexMcpToolResultParsers.TryExtractText(call.Raw);
                 if (!string.IsNullOrWhiteSpace(text))
                 {
                     Console.WriteLine(text);
@@ -115,56 +113,5 @@ public sealed class McpServerCommand : AsyncCommand<McpServerSettings>
             Console.Error.WriteLine(ex);
             return 1;
         }
-    }
-
-    private static int CountTools(JsonElement raw)
-    {
-        if (raw.ValueKind != JsonValueKind.Object ||
-            !raw.TryGetProperty("tools", out var tools) ||
-            tools.ValueKind != JsonValueKind.Array)
-        {
-            return 0;
-        }
-
-        return tools.GetArrayLength();
-    }
-
-    private static string? TryExtractText(JsonElement raw)
-    {
-        if (raw.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        if (raw.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var item in content.EnumerateArray())
-            {
-                if (item.ValueKind != JsonValueKind.Object)
-                {
-                    continue;
-                }
-
-                if (item.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
-                {
-                    return textProp.GetString();
-                }
-            }
-        }
-
-        static JsonElement? TryGet(JsonElement obj, string propertyName) =>
-            obj.TryGetProperty(propertyName, out var prop)
-                ? prop
-                : null;
-
-        var structured = TryGet(raw, "structuredContent") ?? TryGet(raw, "structured_content");
-        if (structured is { ValueKind: JsonValueKind.Object } sc &&
-            sc.TryGetProperty("content", out var text) &&
-            text.ValueKind == JsonValueKind.String)
-        {
-            return text.GetString();
-        }
-
-        return null;
     }
 }

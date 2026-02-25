@@ -16,11 +16,12 @@ public sealed class ExecAttachCommand : AsyncCommand<ExecAttachSettings>
         }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
         await using var sdk = CodexSdk.Create(builder =>
@@ -62,6 +63,9 @@ public sealed class ExecAttachCommand : AsyncCommand<ExecAttachSettings>
             Console.Error.WriteLine(ex.Message);
             return 1;
         }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
     }
 }
-

@@ -79,10 +79,14 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
             "base" or "base-branch" => new ReviewTarget.BaseBranch(
                 string.IsNullOrWhiteSpace(settings.BaseBranch) ? "master" : settings.BaseBranch),
             "commit" => new ReviewTarget.Commit(
-                sha: settings.CommitSha ?? throw new InvalidOperationException("--commit-sha is required when --target=commit."),
-                title: settings.CommitTitle),
+                sha: string.IsNullOrWhiteSpace(settings.CommitSha)
+                    ? throw new InvalidOperationException("--commit-sha is required when --target=commit.")
+                    : settings.CommitSha.Trim(),
+                title: string.IsNullOrWhiteSpace(settings.CommitTitle) ? null : settings.CommitTitle.Trim()),
             "custom" => new ReviewTarget.Custom(
-                settings.Instructions ?? throw new InvalidOperationException("--instructions is required when --target=custom.")),
+                string.IsNullOrWhiteSpace(settings.Instructions)
+                    ? throw new InvalidOperationException("--instructions is required when --target=custom.")
+                    : settings.Instructions.Trim()),
             _ => throw new InvalidOperationException($"Unknown --target '{settings.Target}'. Use: uncommitted|base|commit|custom.")
         };
     }
@@ -132,4 +136,3 @@ public sealed class AppServerReviewSettings : AppServerThreadsSettingsBase
     [CommandOption("--instructions <TEXT>")]
     public string? Instructions { get; init; }
 }
-

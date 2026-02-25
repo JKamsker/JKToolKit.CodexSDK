@@ -53,6 +53,7 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
                 Model = model,
                 Cwd = workDir,
                 ApprovalPolicy = CodexApprovalPolicy.OnRequest,
+                // Demo-only: write-enabled sandbox for local testing; do not copy this mode into production (prefer read-only).
                 Sandbox = CodexSandboxMode.WorkspaceWrite
             }, ct);
 

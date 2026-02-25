@@ -33,14 +33,16 @@ public sealed class AppServerOutputSchemaCommand : AsyncCommand<AppServerOutputS
             cts.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds.Value));
         }
 
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
-        var schema = JsonDocument.Parse(SchemaJson).RootElement.Clone();
+        using var schemaDoc = JsonDocument.Parse(SchemaJson);
+        var schema = schemaDoc.RootElement.Clone();
 
         await using var sdk = CodexSdk.Create(builder =>
         {
@@ -112,6 +114,10 @@ public sealed class AppServerOutputSchemaCommand : AsyncCommand<AppServerOutputS
             Console.Error.WriteLine(ex);
             return 1;
         }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
     }
 
     private static bool TryParseJsonObject(string text, out JsonElement obj)
@@ -120,7 +126,7 @@ public sealed class AppServerOutputSchemaCommand : AsyncCommand<AppServerOutputS
 
         try
         {
-            var doc = JsonDocument.Parse(text);
+            using var doc = JsonDocument.Parse(text);
             if (doc.RootElement.ValueKind != JsonValueKind.Object)
             {
                 return false;

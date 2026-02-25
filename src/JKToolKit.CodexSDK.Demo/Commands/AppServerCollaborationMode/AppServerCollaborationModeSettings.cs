@@ -1,10 +1,11 @@
 using JKToolKit.CodexSDK.Demo.Commands.AppServerThreads;
-using Spectre.Console.Cli;
 
 namespace JKToolKit.CodexSDK.Demo.Commands.AppServerCollaborationMode;
 
-public sealed class AppServerCollaborationModeSettings : AppServerThreadsSettingsBase
+public sealed class AppServerCollaborationModeSettings : AppServerWithPromptSettingsBase
 {
-    [CommandOption("--prompt <TEXT>")]
-    public string Prompt { get; init; } = "Say 'ok' and nothing else.";
+    public AppServerCollaborationModeSettings()
+    {
+        Prompt = "Say 'ok' and nothing else.";
+    }
 }

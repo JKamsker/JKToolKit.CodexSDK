@@ -53,6 +53,7 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
                 }
             }
 
+            var exitCode = 0;
             try
             {
                 var completed = await turn.Completion;
@@ -61,12 +62,13 @@ public sealed class AppServerTurnControlCommand : AsyncCommand<AppServerTurnCont
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"\nCompletion failed: {ex.Message}");
+                exitCode = 1;
             }
 
             try { await steerTask.ConfigureAwait(false); } catch { /* ignore */ }
             try { await interruptTask.ConfigureAwait(false); } catch { /* ignore */ }
 
-            return 0;
+            return exitCode;
         });
 
     private static Task StartSteerTask(CodexTurnHandle turn, AppServerTurnControlSettings settings, CancellationToken ct)
@@ -162,4 +164,3 @@ public sealed class AppServerTurnControlSettings : AppServerThreadsSettingsBase
     [CommandOption("--interrupt-after-ms <MS>")]
     public int InterruptAfterMs { get; init; } = 3500;
 }
-

@@ -81,7 +81,19 @@ public sealed class AppServerFuzzyFileSearchCommand : AsyncCommand<AppServerFuzz
             await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(2), ct));
 
             notificationsCts.Cancel();
-            try { await notificationsTask.ConfigureAwait(false); } catch { /* ignore */ }
+            try
+            {
+                await notificationsTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (notificationsCts.IsCancellationRequested || ct.IsCancellationRequested)
+            {
+                // ignore
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
+                return 1;
+            }
 
             Console.WriteLine("Done.");
             return 0;
@@ -102,4 +114,3 @@ public sealed class AppServerFuzzyFileSearchSettings : AppServerThreadsSettingsB
     [CommandOption("--max-updates <N>")]
     public int MaxUpdates { get; init; } = 2;
 }
-

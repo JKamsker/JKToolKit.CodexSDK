@@ -118,9 +118,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         IStdioProcess process,
         IJsonRpcConnection rpc,
         ILogger logger,
+        JsonSerializerOptions serializerOptions,
         bool startExitWatcher = true)
     {
-        _serializerOptions = options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions();
+        ArgumentNullException.ThrowIfNull(serializerOptions);
+
+        _serializerOptions = serializerOptions;
         _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
 
         Func<bool> experimentalApiEnabled = () => _core.ExperimentalApiEnabled;
@@ -137,6 +140,16 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
             removeTurnHandle: _core.RemoveTurnHandle,
             readOnlyAccessOverridesSupport: _readOnlyAccessOverridesSupport,
             experimentalApiEnabled: experimentalApiEnabled);
+    }
+
+    internal CodexAppServerClient(
+        CodexAppServerClientOptions options,
+        IStdioProcess process,
+        IJsonRpcConnection rpc,
+        ILogger logger,
+        bool startExitWatcher = true)
+        : this(options, process, rpc, logger, options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions(), startExitWatcher)
+    {
     }
 
     /// <summary>
@@ -166,7 +179,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
             includeJsonRpcHeader: false,
             ct);
 
-        var client = new CodexAppServerClient(options, process, rpc, logger);
+        var client = new CodexAppServerClient(options, process, rpc, logger, serializerOptions);
 
         _ = await client.InitializeAsync(options.DefaultClientInfo, ct);
 

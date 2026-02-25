@@ -1,15 +1,7 @@
-using Spectre.Console.Cli;
+using JKToolKit.CodexSDK.Demo.Commands.Common;
 
 namespace JKToolKit.CodexSDK.Demo.Commands.McpOverrides;
 
-public sealed class McpOverridesSettings : CommandSettings
+public sealed class McpOverridesSettings : CodexRuntimeWithTimeoutSettingsBase
 {
-    [CommandOption("--codex-path <PATH>")]
-    public string? CodexExecutablePath { get; init; }
-
-    [CommandOption("--codex-home <PATH>")]
-    public string? CodexHomeDirectory { get; init; }
-
-    [CommandOption("--timeout-seconds <SECONDS>")]
-    public int? TimeoutSeconds { get; init; }
 }

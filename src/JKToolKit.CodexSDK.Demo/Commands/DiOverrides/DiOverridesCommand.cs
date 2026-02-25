@@ -21,11 +21,12 @@ public sealed class DiOverridesCommand : AsyncCommand<DiOverridesSettings>
             cts.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds.Value));
         }
 
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
         var services = new ServiceCollection();
@@ -88,6 +89,8 @@ public sealed class DiOverridesCommand : AsyncCommand<DiOverridesSettings>
         }
         finally
         {
+            Console.CancelKeyPress -= cancelHandler;
+
             if (sp is IAsyncDisposable ad)
                 await ad.DisposeAsync();
             else

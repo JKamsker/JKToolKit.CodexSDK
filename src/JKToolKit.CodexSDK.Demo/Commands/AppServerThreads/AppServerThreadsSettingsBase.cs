@@ -1,21 +1,10 @@
+using JKToolKit.CodexSDK.Demo.Commands.Common;
 using Spectre.Console.Cli;
 
 namespace JKToolKit.CodexSDK.Demo.Commands.AppServerThreads;
 
-public abstract class AppServerThreadsSettingsBase : CommandSettings
+public abstract class AppServerThreadsSettingsBase : RepoCodexRuntimeWithTimeoutSettingsBase
 {
-    [CommandOption("--repo <PATH>")]
-    public string? RepoPath { get; init; }
-
-    [CommandOption("--codex-path <PATH>")]
-    public string? CodexExecutablePath { get; init; }
-
-    [CommandOption("--codex-home <DIR>")]
-    public string? CodexHomeDirectory { get; init; }
-
-    [CommandOption("--timeout-seconds <SECONDS>")]
-    public int? TimeoutSeconds { get; init; }
-
     [CommandOption("--experimental-api")]
     public bool ExperimentalApi { get; init; }
 

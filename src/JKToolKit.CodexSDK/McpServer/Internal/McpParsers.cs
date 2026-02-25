@@ -41,27 +41,43 @@ internal static class CodexMcpResultParser
     public static (string ThreadId, string? Text, JsonElement StructuredContent, JsonElement Raw) Parse(JsonElement raw)
     {
         var structured = TryGet(raw, "structuredContent") ?? TryGet(raw, "structured_content");
-        var content = TryGet(raw, "content");
 
         var threadId =
             (structured is { } s && TryGetString(s, "threadId") is { Length: > 0 } sid) ? sid :
             (structured is { } s2 && TryGetString(s2, "conversationId") is { Length: > 0 } cid) ? cid :
             string.Empty;
 
-        var text = TryExtractText(content, structured);
+        var text = TryExtractText(raw);
 
-        var structuredElement = structured ?? JsonDocument.Parse("{}").RootElement.Clone();
+        JsonElement structuredElement;
+        if (structured is { } se)
+        {
+            structuredElement = se;
+        }
+        else
+        {
+            using var emptyDoc = JsonDocument.Parse("{}");
+            structuredElement = emptyDoc.RootElement.Clone();
+        }
 
         return (threadId, text, structuredElement, raw);
     }
 
-    private static string? TryExtractText(JsonElement? content, JsonElement? structured)
+    internal static string? TryExtractText(JsonElement raw)
     {
-        if (content is { ValueKind: JsonValueKind.Array })
+        if (raw.ValueKind != JsonValueKind.Object)
         {
-            foreach (var item in content.Value.EnumerateArray())
+            return null;
+        }
+
+        if (raw.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in content.EnumerateArray())
             {
-                if (item.ValueKind != JsonValueKind.Object) continue;
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
 
                 if (item.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
                 {
@@ -70,12 +86,12 @@ internal static class CodexMcpResultParser
             }
         }
 
-        if (structured is { } s && s.ValueKind == JsonValueKind.Object)
+        if ((raw.TryGetProperty("structuredContent", out var structured) || raw.TryGetProperty("structured_content", out structured)) &&
+            structured.ValueKind == JsonValueKind.Object &&
+            structured.TryGetProperty("content", out var structuredText) &&
+            structuredText.ValueKind == JsonValueKind.String)
         {
-            if (s.TryGetProperty("content", out var contentProp) && contentProp.ValueKind == JsonValueKind.String)
-            {
-                return contentProp.GetString();
-            }
+            return structuredText.GetString();
         }
 
         return null;

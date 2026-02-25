@@ -71,27 +71,25 @@ internal sealed class CodexAppServerConfigClient
         if (string.IsNullOrWhiteSpace(hazelnutId))
             throw new ArgumentException("HazelnutId cannot be empty or whitespace.", nameof(hazelnutId));
 
+        var writeParams = new SkillsRemoteWriteParams
+        {
+            HazelnutId = hazelnutId,
+            IsPreload = isPreload
+        };
+
         JsonElement result;
         try
         {
             result = await _sendRequestAsync(
                 "skills/remote/export",
-                new SkillsRemoteWriteParams
-                {
-                    HazelnutId = hazelnutId,
-                    IsPreload = isPreload
-                },
+                writeParams,
                 ct);
         }
         catch (JsonRpcRemoteException ex) when (IsUnknownVariant(ex, "skills/remote/export"))
         {
             result = await _sendRequestAsync(
                 "skills/remote/write",
-                new SkillsRemoteWriteParams
-                {
-                    HazelnutId = hazelnutId,
-                    IsPreload = isPreload
-                },
+                writeParams,
                 ct);
         }
 
@@ -127,14 +125,34 @@ internal sealed class CodexAppServerConfigClient
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)
     {
-        if (ex.Error.Code != -32600)
+        var error = ex.Error;
+        if (error is null)
         {
             return false;
         }
 
-        var msg = ex.Error.Message;
-        return msg is not null &&
-               msg.Contains("unknown variant", StringComparison.OrdinalIgnoreCase) &&
-               msg.Contains($"`{method}`", StringComparison.OrdinalIgnoreCase);
+        if (error.Code == -32601)
+        {
+            return true;
+        }
+
+        if (error.Code != -32600)
+        {
+            return false;
+        }
+
+        var msg = error.Message;
+        if (string.IsNullOrWhiteSpace(msg))
+        {
+            return false;
+        }
+
+        if (!msg.Contains("unknown variant", StringComparison.OrdinalIgnoreCase) &&
+            !msg.Contains("unhandled server request", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(method) || msg.Contains(method, StringComparison.OrdinalIgnoreCase);
     }
 }

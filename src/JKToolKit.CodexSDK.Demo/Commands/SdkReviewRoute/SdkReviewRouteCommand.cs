@@ -20,11 +20,12 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
             cts.CancelAfter(TimeSpan.FromSeconds(settings.TimeoutSeconds.Value));
         }
 
-        Console.CancelKeyPress += (_, e) =>
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
+        Console.CancelKeyPress += cancelHandler;
         var ct = cts.Token;
 
         var headSha = TryGetGitHeadSha(repoPath);
@@ -119,10 +120,16 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
             Console.Error.WriteLine(ex);
             return 1;
         }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
     }
 
     private static string? TryGetGitHeadSha(string repoPath)
     {
+        // NOTE: Reading StandardOutput via ReadToEnd() after WaitForExit() can deadlock for large outputs.
+        // This method is intentionally used only for small fixed-output commands (e.g., `git rev-parse HEAD`).
         try
         {
             var psi = new ProcessStartInfo

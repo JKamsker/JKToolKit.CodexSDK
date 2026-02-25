@@ -11,7 +11,10 @@ public sealed class AppServerMcpManagementCommand : AsyncCommand<AppServerMcpMan
         {
             if (!settings.NoReload)
             {
-                Console.WriteLine("Reloading MCP servers...");
+                if (!settings.Json)
+                {
+                    Console.WriteLine("Reloading MCP servers...");
+                }
                 await codex.ReloadMcpServersAsync(ct);
             }
 
@@ -36,8 +39,17 @@ public sealed class AppServerMcpManagementCommand : AsyncCommand<AppServerMcpMan
 
             if (!string.IsNullOrWhiteSpace(settings.OauthName))
             {
-                Console.WriteLine();
-                Console.WriteLine($"Starting OAuth login for: {settings.OauthName}");
+                if (settings.OauthTimeoutSeconds is { } timeout && timeout <= 0)
+                {
+                    Console.Error.WriteLine("--oauth-timeout-seconds must be > 0.");
+                    return 1;
+                }
+
+                if (!settings.Json)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine($"Starting OAuth login for: {settings.OauthName}");
+                }
 
                 var login = await codex.StartMcpServerOauthLoginAsync(new McpServerOauthLoginOptions
                 {
@@ -45,10 +57,17 @@ public sealed class AppServerMcpManagementCommand : AsyncCommand<AppServerMcpMan
                     TimeoutSeconds = settings.OauthTimeoutSeconds
                 }, ct);
 
-                Console.WriteLine($"AuthorizationUrl: {login.AuthorizationUrl}");
+                if (settings.Json)
+                {
+                    AppServerThreadCommandHelpers.PrintJson(login.Raw);
+                }
+                else
+                {
+                    Console.WriteLine($"AuthorizationUrl: {login.AuthorizationUrl}");
+                }
             }
 
-            if (!string.IsNullOrWhiteSpace(page.NextCursor))
+            if (!settings.Json && !string.IsNullOrWhiteSpace(page.NextCursor))
             {
                 Console.WriteLine($"\nNextCursor: {page.NextCursor}");
             }
@@ -74,4 +93,3 @@ public sealed class AppServerMcpManagementSettings : AppServerThreadsSettingsBas
     [CommandOption("--oauth-timeout-seconds <N>")]
     public long? OauthTimeoutSeconds { get; init; }
 }
-
