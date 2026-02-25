@@ -54,6 +54,59 @@ public class ResponseItemEventTests
         payload.CallId.Should().Be("call_123");
     }
 
+    [Fact]
+    public async Task ParsesWebSearchCallResponseItem_WithUrlAndPattern()
+    {
+        var line = """
+                   {"timestamp":"2025-11-21T10:53:38Z","type":"response_item","payload":{"type":"web_search_call","status":"completed","action":{"type":"find_in_page","url":"https://example.com","pattern":"foo"}}}
+                   """;
+
+        var evt = await ParseSingleAsync(line);
+
+        var response = Assert.IsType<ResponseItemEvent>(evt);
+        response.PayloadType.Should().Be("web_search_call");
+        var payload = response.Payload.Should().BeOfType<WebSearchCallResponseItemPayload>().Subject;
+        payload.Status.Should().Be("completed");
+        payload.Action!.Type.Should().Be("find_in_page");
+        payload.Action.Url.Should().Be("https://example.com");
+        payload.Action.Pattern.Should().Be("foo");
+    }
+
+    [Fact]
+    public async Task ParsesLocalShellCallResponseItem_WithExecAction()
+    {
+        var line = """
+                   {"timestamp":"2025-11-21T10:53:39Z","type":"response_item","payload":{"type":"local_shell_call","call_id":"call_1","status":"completed","action":{"type":"exec","command":["bash","-lc","ls"],"timeout_ms":123,"working_directory":"/tmp","env":{"A":"B"},"user":"root"}}}
+                   """;
+
+        var evt = await ParseSingleAsync(line);
+
+        var response = Assert.IsType<ResponseItemEvent>(evt);
+        response.PayloadType.Should().Be("local_shell_call");
+        var payload = response.Payload.Should().BeOfType<LocalShellCallResponseItemPayload>().Subject;
+        payload.CallId.Should().Be("call_1");
+        payload.Status.Should().Be("completed");
+        payload.ActionType.Should().Be("exec");
+        payload.Command.Should().ContainInOrder("bash", "-lc", "ls");
+        payload.TimeoutMs.Should().Be(123);
+        payload.WorkingDirectory.Should().Be("/tmp");
+        payload.Env.Should().ContainKey("A").WhoseValue.Should().Be("B");
+        payload.User.Should().Be("root");
+    }
+
+    [Fact]
+    public async Task ParsesCompactionSummaryResponseItem_AsCompactionPayload()
+    {
+        var line = """{"timestamp":"2025-11-21T10:53:40Z","type":"response_item","payload":{"type":"compaction_summary","encrypted_content":"gAAAAA..."}}""";
+
+        var evt = await ParseSingleAsync(line);
+
+        var response = Assert.IsType<ResponseItemEvent>(evt);
+        response.PayloadType.Should().Be("compaction_summary");
+        var payload = response.Payload.Should().BeOfType<CompactionResponseItemPayload>().Subject;
+        payload.EncryptedContent.Should().Be("gAAAAA...");
+    }
+
     private async Task<CodexEvent> ParseSingleAsync(string line)
     {
         var singleLine = GetSingleLineAsync(line);

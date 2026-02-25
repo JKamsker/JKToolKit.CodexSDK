@@ -237,6 +237,393 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_EventMsg_TaskStarted_ParsesTaskStartedEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""task_started"",
+                ""turn_id"": ""turn_1"",
+                ""model_context_window"": 8192
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<TaskStartedEvent>().Subject;
+        evt.Type.Should().Be("task_started");
+        evt.TurnId.Should().Be("turn_1");
+        evt.ModelContextWindow.Should().Be(8192);
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_TaskComplete_ParsesTaskCompleteEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""task_complete"",
+                ""turn_id"": ""turn_2"",
+                ""last_agent_message"": ""done""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<TaskCompleteEvent>().Subject;
+        evt.Type.Should().Be("task_complete");
+        evt.TurnId.Should().Be("turn_2");
+        evt.LastAgentMessage.Should().Be("done");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ItemCompleted_Plan_ParsesTurnItemCompletedEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""item_completed"",
+                ""thread_id"": ""thread_123"",
+                ""turn_id"": ""turn_456"",
+                ""item"": {{
+                    ""type"": ""Plan"",
+                    ""id"": ""plan_1"",
+                    ""text"": ""- step 1\\n- step 2""
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<TurnItemCompletedEvent>().Subject;
+        evt.Type.Should().Be("item_completed");
+        evt.ThreadId.Should().Be("thread_123");
+        evt.TurnId.Should().Be("turn_456");
+        evt.ItemType.Should().Be("Plan");
+        evt.ItemId.Should().Be("plan_1");
+        evt.Text.Should().Contain("step 1");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_UndoCompleted_ParsesUndoCompletedEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""undo_completed"",
+                ""success"": true,
+                ""message"": ""ok""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<UndoCompletedEvent>().Subject;
+        evt.Type.Should().Be("undo_completed");
+        evt.Success.Should().BeTrue();
+        evt.Message.Should().Be("ok");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ThreadRolledBack_ParsesThreadRolledBackEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""thread_rolled_back"",
+                ""num_turns"": 2
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ThreadRolledBackEvent>().Subject;
+        evt.Type.Should().Be("thread_rolled_back");
+        evt.NumTurns.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_AgentReasoningRawContent_ParsesAgentReasoningRawContentEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""agent_reasoning_raw_content"",
+                ""text"": ""raw""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<AgentReasoningRawContentEvent>().Subject;
+        evt.Type.Should().Be("agent_reasoning_raw_content");
+        evt.Text.Should().Be("raw");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_WebSearchEnd_ParsesWebSearchEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""web_search_end"",
+                ""call_id"": ""ws_1"",
+                ""query"": ""weather: San Francisco, CA"",
+                ""action"": {{ ""type"": ""open_page"", ""url"": ""https://example.com"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<WebSearchEndEvent>().Subject;
+        evt.Type.Should().Be("web_search_end");
+        evt.CallId.Should().Be("ws_1");
+        evt.Query.Should().Contain("weather");
+        evt.Action!.Type.Should().Be("open_page");
+        evt.Action.Url.Should().Be("https://example.com");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ExecCommandEnd_ParsesExecCommandEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""exec_command_end"",
+                ""call_id"": ""call_1"",
+                ""turn_id"": ""turn_1"",
+                ""command"": [""bash"", ""-lc"", ""echo hi""],
+                ""cwd"": ""/tmp"",
+                ""stdout"": ""hi\\n"",
+                ""stderr"": """",
+                ""aggregated_output"": ""hi\\n"",
+                ""exit_code"": 0,
+                ""duration"": ""1s"",
+                ""formatted_output"": ""hi"",
+                ""status"": ""completed"",
+                ""source"": ""agent""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ExecCommandEndEvent>().Subject;
+        evt.Type.Should().Be("exec_command_end");
+        evt.CallId.Should().Be("call_1");
+        evt.TurnId.Should().Be("turn_1");
+        evt.Command.Should().ContainInOrder("bash", "-lc", "echo hi");
+        evt.ExitCode.Should().Be(0);
+        evt.Status.Should().Be("completed");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_McpToolCallEnd_ParsesMcpToolCallEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""mcp_tool_call_end"",
+                ""call_id"": ""mcp_1"",
+                ""invocation"": {{ ""server"": ""srv"", ""tool"": ""t"", ""arguments"": {{ ""a"": 1 }} }},
+                ""duration"": ""1s"",
+                ""result"": {{ ""Ok"": {{ ""content"": [] }} }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<McpToolCallEndEvent>().Subject;
+        evt.Type.Should().Be("mcp_tool_call_end");
+        evt.CallId.Should().Be("mcp_1");
+        evt.Server.Should().Be("srv");
+        evt.Tool.Should().Be("t");
+        evt.ArgumentsJson.Should().Contain("\"a\": 1");
+        evt.ResultJson.Should().Contain("Ok");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ViewImageToolCall_ParsesViewImageToolCallEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""view_image_tool_call"",
+                ""call_id"": ""img_1"",
+                ""path"": ""C:\\\\tmp\\\\img.png""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ViewImageToolCallEvent>().Subject;
+        evt.Type.Should().Be("view_image_tool_call");
+        evt.CallId.Should().Be("img_1");
+        evt.Path.Should().EndWith("img.png");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabAgentSpawnEnd_ParsesCollabAgentSpawnEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_agent_spawn_end"",
+                ""call_id"": ""c1"",
+                ""sender_thread_id"": ""t_sender"",
+                ""new_thread_id"": ""t_new"",
+                ""new_agent_nickname"": ""nick"",
+                ""new_agent_role"": ""worker"",
+                ""prompt"": ""go"",
+                ""status"": ""running""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabAgentSpawnEndEvent>().Subject;
+        evt.Type.Should().Be("collab_agent_spawn_end");
+        evt.CallId.Should().Be("c1");
+        evt.NewThreadId.Should().Be("t_new");
+        evt.Status.Should().Be("running");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabAgentInteractionEnd_ParsesCollabAgentInteractionEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_agent_interaction_end"",
+                ""call_id"": ""c2"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""receiver_agent_nickname"": ""nick2"",
+                ""receiver_agent_role"": ""explorer"",
+                ""prompt"": ""hi"",
+                ""status"": ""completed""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabAgentInteractionEndEvent>().Subject;
+        evt.Type.Should().Be("collab_agent_interaction_end");
+        evt.CallId.Should().Be("c2");
+        evt.ReceiverThreadId.Should().Be("t_recv");
+        evt.Status.Should().Be("completed");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabWaitingEnd_ParsesCollabWaitingEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_waiting_end"",
+                ""call_id"": ""c3"",
+                ""sender_thread_id"": ""t_sender"",
+                ""statuses"": {{ ""t1"": ""completed"", ""t2"": ""running"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabWaitingEndEvent>().Subject;
+        evt.Type.Should().Be("collab_waiting_end");
+        evt.CallId.Should().Be("c3");
+        evt.Statuses!.Should().ContainKey("t1").WhoseValue.Should().Be("completed");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabCloseEnd_ParsesCollabCloseEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_close_end"",
+                ""call_id"": ""c4"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""status"": ""shutdown""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabCloseEndEvent>().Subject;
+        evt.Type.Should().Be("collab_close_end");
+        evt.CallId.Should().Be("c4");
+        evt.Status.Should().Be("shutdown");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabResumeEnd_ParsesCollabResumeEndEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_resume_end"",
+                ""call_id"": ""c5"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""status"": ""running""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabResumeEndEvent>().Subject;
+        evt.Type.Should().Be("collab_resume_end");
+        evt.CallId.Should().Be("c5");
+        evt.Status.Should().Be("running");
+    }
+
+    [Fact]
     public async Task ParseAsync_EventMsg_ExitedReviewMode_ParsesStructuredReviewOutput()
     {
         var timestamp = DateTimeOffset.UtcNow;

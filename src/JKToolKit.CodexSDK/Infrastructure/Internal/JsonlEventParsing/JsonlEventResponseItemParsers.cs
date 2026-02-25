@@ -88,6 +88,73 @@ internal static class JsonlEventResponseItemParsers
             };
         }
 
+        if (string.Equals(payloadType, "local_shell_call", StringComparison.OrdinalIgnoreCase))
+        {
+            string? actionType = null;
+            IReadOnlyList<string>? command = null;
+            long? timeoutMs = null;
+            string? workingDirectory = null;
+            IReadOnlyDictionary<string, string>? env = null;
+            string? user = null;
+
+            if (payload.TryGetProperty("action", out var actionEl) && actionEl.ValueKind == JsonValueKind.Object)
+            {
+                actionType = TryGetString(actionEl, "type");
+
+                if (string.Equals(actionType, "exec", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (actionEl.TryGetProperty("command", out var cmdEl) && cmdEl.ValueKind == JsonValueKind.Array)
+                    {
+                        command = cmdEl.EnumerateArray()
+                            .Select(s => s.ValueKind == JsonValueKind.String ? s.GetString() : null)
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Cast<string>()
+                            .ToArray();
+                    }
+
+                    if (actionEl.TryGetProperty("timeout_ms", out var timeoutEl))
+                    {
+                        timeoutMs = timeoutEl.ValueKind switch
+                        {
+                            JsonValueKind.Number => timeoutEl.TryGetInt64(out var v) ? v : null,
+                            JsonValueKind.String => long.TryParse(timeoutEl.GetString(), out var v) ? v : null,
+                            _ => null
+                        };
+                    }
+
+                    workingDirectory = TryGetString(actionEl, "working_directory");
+
+                    if (actionEl.TryGetProperty("env", out var envEl) && envEl.ValueKind == JsonValueKind.Object)
+                    {
+                        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var prop in envEl.EnumerateObject())
+                        {
+                            dict[prop.Name] = prop.Value.ValueKind == JsonValueKind.String
+                                ? (prop.Value.GetString() ?? string.Empty)
+                                : prop.Value.GetRawText();
+                        }
+
+                        env = dict;
+                    }
+
+                    user = TryGetString(actionEl, "user");
+                }
+            }
+
+            return new LocalShellCallResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Status = TryGetString(payload, "status"),
+                CallId = TryGetString(payload, "call_id"),
+                ActionType = actionType,
+                Command = command,
+                TimeoutMs = timeoutMs,
+                WorkingDirectory = workingDirectory,
+                Env = env,
+                User = user
+            };
+        }
+
         if (string.Equals(payloadType, "function_call", StringComparison.OrdinalIgnoreCase))
         {
             var name = TryGetString(payload, "name");
@@ -166,7 +233,11 @@ internal static class JsonlEventResponseItemParsers
                 action = new WebSearchAction(
                     Type: TryGetString(actionEl, "type"),
                     Query: TryGetString(actionEl, "query"),
-                    Queries: queries);
+                    Queries: queries)
+                {
+                    Url = TryGetString(actionEl, "url"),
+                    Pattern = TryGetString(actionEl, "pattern")
+                };
             }
 
             return new WebSearchCallResponseItemPayload
@@ -216,7 +287,8 @@ internal static class JsonlEventResponseItemParsers
             };
         }
 
-        if (string.Equals(payloadType, "compaction", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(payloadType, "compaction", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(payloadType, "compaction_summary", StringComparison.OrdinalIgnoreCase))
         {
             return new CompactionResponseItemPayload
             {
