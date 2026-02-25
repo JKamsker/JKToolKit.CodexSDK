@@ -10,6 +10,7 @@ JKToolKit.CodexSDK ships as **one NuGet package** with three integration modes f
 | [App Server](AppServer/README.md) | `codex app-server` — threads, turns, streaming deltas, approvals, DI, resiliency |
 | [MCP Server](McpServer/README.md) | `codex mcp-server` — tool discovery (`tools/list`, `tools/call`), sessions, follow-ups |
 | [Upstream Sync](upstreamgen.md) | How upstream JSON Schema → internal wire DTOs are generated + kept in sync |
+| [Manual Testing Runbook](Runbooks/Manual-Testing/README.md) | Step-by-step manual verification of all SDK features (via the demo app + scratch snippets) |
 
 ## At a Glance
 
