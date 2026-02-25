@@ -116,7 +116,13 @@ For each failed test case, append a block like:
 
 ### Recommended workflow
 
-1. Create the file:
+1. Create the file (recommended: helper script):
+
+```powershell
+pwsh -File scripts/new-manual-testing-run.ps1
+```
+
+Manual alternative:
 
 ```powershell
 New-Item -ItemType Directory -Force .tmp/manual_testing | Out-Null
