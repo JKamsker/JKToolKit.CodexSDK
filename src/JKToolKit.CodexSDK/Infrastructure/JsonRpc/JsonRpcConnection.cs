@@ -9,6 +9,14 @@ namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 internal sealed class JsonRpcConnection : IJsonRpcConnection
 {
+    private static readonly JsonElement EmptyObject = CreateEmptyObject();
+
+    private static JsonElement CreateEmptyObject()
+    {
+        using var doc = JsonDocument.Parse("{}");
+        return doc.RootElement.Clone();
+    }
+
     private readonly StreamWriter _writer;
     private readonly StreamReader _reader;
     private readonly ILogger _logger;
@@ -379,7 +387,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         {
             Id = id,
             Method = method,
-            Params = @params,
+            Params = @params ?? EmptyObject,
             JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
         };
     }
@@ -389,7 +397,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         return new JsonRpcNotificationWireMessage
         {
             Method = method,
-            Params = @params,
+            Params = @params ?? EmptyObject,
             JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
         };
     }
