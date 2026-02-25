@@ -108,28 +108,74 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
         }
 
         using var pipelineCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-        var lineStream = _tailer.TailAsync(Info.LogPath, effectiveOptions, pipelineCts.Token);
-        var parsedStream = _parser.ParseAsync(lineStream, pipelineCts.Token);
-
-        var pipeline = new CodexSessionHandleEventPipeline(
-            Info,
-            _process,
-            _processLauncher,
-            _processExitTimeout,
-            _logger,
-            notifyExit: NotifyExitSafe,
-            tryStartIdleTermination: TryStartIdleTermination);
-
-        var filteredStream = pipeline.ApplyTimestampFilter(parsedStream, effectiveOptions, pipelineCts.Token);
-
-        var finalStream = (_idleTimeout.HasValue && shouldFollow && _process != null && _processLauncher != null)
-            ? pipeline.ApplyIdleTimeout(filteredStream, _idleTimeout.Value, pipelineCts, cancellationToken)
-            : filteredStream;
-
-        await foreach (var evt in finalStream)
+        var stopFollowingRequested = 0;
+        IDisposable? exitSubscription = null;
+        if (shouldFollow && _process is not null)
         {
-            yield return evt;
+            // When a live Codex subprocess exits, stop following the log shortly after to avoid
+            // an infinite tail -f loop. The small delay gives the writer time to flush its final
+            // JSONL events to disk.
+            exitSubscription = OnExit(_ =>
+            {
+                try
+                {
+                    Interlocked.Exchange(ref stopFollowingRequested, 1);
+                    pipelineCts.CancelAfter(TimeSpan.FromSeconds(1));
+                }
+                catch (ObjectDisposedException)
+                {
+                    // ignore
+                }
+            });
+        }
+
+        try
+        {
+            var lineStream = _tailer.TailAsync(Info.LogPath, effectiveOptions, pipelineCts.Token);
+            var parsedStream = _parser.ParseAsync(lineStream, pipelineCts.Token);
+
+            var pipeline = new CodexSessionHandleEventPipeline(
+                Info,
+                _process,
+                _processLauncher,
+                _processExitTimeout,
+                _logger,
+                notifyExit: NotifyExitSafe,
+                tryStartIdleTermination: TryStartIdleTermination);
+
+            var filteredStream = pipeline.ApplyTimestampFilter(parsedStream, effectiveOptions, pipelineCts.Token);
+
+            var finalStream = (_idleTimeout.HasValue && shouldFollow && _process != null && _processLauncher != null)
+                ? pipeline.ApplyIdleTimeout(filteredStream, _idleTimeout.Value, pipelineCts, cancellationToken)
+                : filteredStream;
+
+            await using var enumerator = finalStream.WithCancellation(pipelineCts.Token).GetAsyncEnumerator();
+            while (true)
+            {
+                CodexEvent current;
+                try
+                {
+                    if (!await enumerator.MoveNextAsync())
+                    {
+                        yield break;
+                    }
+
+                    current = enumerator.Current;
+                }
+                catch (OperationCanceledException) when (
+                    Volatile.Read(ref stopFollowingRequested) == 1 &&
+                    !cancellationToken.IsCancellationRequested)
+                {
+                    // graceful stop after process exit
+                    yield break;
+                }
+
+                yield return current;
+            }
+        }
+        finally
+        {
+            exitSubscription?.Dispose();
         }
     }
 
