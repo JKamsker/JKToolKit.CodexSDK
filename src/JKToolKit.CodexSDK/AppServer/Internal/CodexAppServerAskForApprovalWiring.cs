@@ -5,6 +5,5 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 internal static class CodexAppServerAskForApprovalWiring
 {
     internal static object? BuildAskForApproval(CodexAskForApproval? askForApproval, CodexApprovalPolicy? policy) =>
-        askForApproval is { } a && !a.Equals(default(CodexAskForApproval)) ? a.ToWireValue() : policy?.Value;
+        askForApproval is { } a && (a.Policy is not null || a.Reject is not null) ? a.ToWireValue() : policy?.Value;
 }
-

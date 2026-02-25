@@ -291,9 +291,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static TaskStartedEvent ParseTaskStartedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        int? ctx = null;
-        if (payload.TryGetProperty("model_context_window", out var ctxEl) && ctxEl.ValueKind == JsonValueKind.Number)
-            ctx = ctxEl.GetInt32();
+        var ctx = TryGetInt(payload, "model_context_window");
 
         return new TaskStartedEvent
         {

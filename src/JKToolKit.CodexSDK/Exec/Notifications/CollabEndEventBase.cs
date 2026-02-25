@@ -31,8 +31,10 @@ public abstract record CollabEndEventBase : CodexEvent
     public string? ReceiverAgentRole { get; init; }
 
     /// <summary>
-    /// Gets the last known receiver status reported to the sender, when provided.
+    /// Gets the last known receiver status reported to the sender.
     /// </summary>
-    public string? Status { get; init; }
+    /// <remarks>
+    /// <see cref="CollabReceiverStatus.Unknown"/> indicates the status was missing or unrecognized.
+    /// </remarks>
+    public CollabReceiverStatus Status { get; init; } = CollabReceiverStatus.Unknown;
 }
-

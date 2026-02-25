@@ -595,7 +595,7 @@ public class JsonlEventParserTests
         var evt = events[0].Should().BeOfType<CollabCloseEndEvent>().Subject;
         evt.Type.Should().Be("collab_close_end");
         evt.CallId.Should().Be("c4");
-        evt.Status.Should().Be("shutdown");
+        evt.Status.Should().Be(CollabReceiverStatus.Shutdown);
     }
 
     [Fact]
@@ -620,7 +620,7 @@ public class JsonlEventParserTests
         var evt = events[0].Should().BeOfType<CollabResumeEndEvent>().Subject;
         evt.Type.Should().Be("collab_resume_end");
         evt.CallId.Should().Be("c5");
-        evt.Status.Should().Be("running");
+        evt.Status.Should().Be(CollabReceiverStatus.Running);
     }
 
     [Fact]

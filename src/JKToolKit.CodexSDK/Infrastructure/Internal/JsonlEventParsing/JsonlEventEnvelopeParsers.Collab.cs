@@ -100,7 +100,7 @@ internal static partial class JsonlEventEnvelopeParsers
             ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Status = TryGetString(payload, "status")
+            Status = CollabReceiverStatusJsonConverter.ParseOrUnknown(TryGetString(payload, "status"))
         };
     }
 
@@ -121,8 +121,7 @@ internal static partial class JsonlEventEnvelopeParsers
             ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Status = TryGetString(payload, "status")
+            Status = CollabReceiverStatusJsonConverter.ParseOrUnknown(TryGetString(payload, "status"))
         };
     }
 }
-

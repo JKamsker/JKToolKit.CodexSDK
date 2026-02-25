@@ -1,5 +1,7 @@
+using System.IO;
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -175,6 +177,21 @@ internal sealed class CodexAppServerConfigClient
     public async Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(migrationItems);
+        if (migrationItems.Count == 0)
+            throw new ArgumentException("Migration items cannot be empty.", nameof(migrationItems));
+
+        for (var i = 0; i < migrationItems.Count; i++)
+        {
+            var item = migrationItems[i];
+            if ((object?)item is null)
+                throw new ArgumentException($"Migration item at index {i} cannot be null.", nameof(migrationItems));
+
+            if (string.IsNullOrWhiteSpace(item.Description))
+                throw new ArgumentException($"Migration item at index {i} must have a non-empty Description.", nameof(migrationItems));
+
+            if (string.IsNullOrWhiteSpace(item.ItemType))
+                throw new ArgumentException($"Migration item at index {i} must have a non-empty ItemType.", nameof(migrationItems));
+        }
 
         _ = await _sendRequestAsync(
             "externalAgentConfig/import",
@@ -195,7 +212,8 @@ internal sealed class CodexAppServerConfigClient
         var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
         if (started is null)
         {
-            return false;
+            var raw = CodexDiagnosticsSanitizer.Sanitize(result.GetRawText(), maxChars: 2000);
+            throw new InvalidDataException($"windowsSandbox/setupStart response missing boolean 'started'. result={raw}");
         }
 
         return started.Value;

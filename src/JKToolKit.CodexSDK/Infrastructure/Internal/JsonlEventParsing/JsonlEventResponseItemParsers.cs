@@ -126,7 +126,7 @@ internal static class JsonlEventResponseItemParsers
 
                     if (actionEl.TryGetProperty("env", out var envEl) && envEl.ValueKind == JsonValueKind.Object)
                     {
-                        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        var dict = new Dictionary<string, string>(StringComparer.Ordinal);
                         foreach (var prop in envEl.EnumerateObject())
                         {
                             dict[prop.Name] = prop.Value.ValueKind == JsonValueKind.String
