@@ -55,7 +55,11 @@ internal static class CodexAppServerClientThreadParsers
 
         var status = TryGetObject(primary, "status");
         var statusType = status is { } st ? GetStringOrNull(st, "type") : null;
-        var activeFlags = status is { } sf ? GetOptionalStringArray(sf, "activeFlags") : null;
+        var activeFlags =
+            string.Equals(statusType, "active", StringComparison.OrdinalIgnoreCase) &&
+            status is { } sf
+                ? GetOptionalStringArray(sf, "activeFlags")
+                : null;
 
         var archived = GetBoolOrNull(primary, "archived");
         if (archived is null &&

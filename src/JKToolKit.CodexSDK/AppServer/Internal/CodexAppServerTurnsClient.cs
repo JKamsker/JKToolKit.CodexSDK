@@ -117,7 +117,7 @@ internal sealed class CodexAppServerTurnsClient
     }
 
     private static object? BuildAskForApproval(CodexAskForApproval? askForApproval, CodexApprovalPolicy? policy) =>
-        askForApproval is { } a ? a.ToWireValue() : policy?.Value;
+        askForApproval is { } a && !a.Equals(default(CodexAskForApproval)) ? a.ToWireValue() : policy?.Value;
 
     public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
     {

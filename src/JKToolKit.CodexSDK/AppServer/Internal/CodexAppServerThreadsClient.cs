@@ -125,7 +125,7 @@ internal sealed class CodexAppServerThreadsClient
     }
 
     private static object? BuildAskForApproval(CodexAskForApproval? askForApproval, CodexApprovalPolicy? policy) =>
-        askForApproval is { } a ? a.ToWireValue() : policy?.Value;
+        askForApproval is { } a && !a.Equals(default(CodexAskForApproval)) ? a.ToWireValue() : policy?.Value;
 
     public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
     {

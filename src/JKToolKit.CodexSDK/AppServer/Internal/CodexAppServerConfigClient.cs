@@ -195,8 +195,7 @@ internal sealed class CodexAppServerConfigClient
         var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
         if (started is null)
         {
-            throw new InvalidOperationException(
-                $"windowsSandbox/setupStart returned no 'started' field. Raw result: {result}");
+            return false;
         }
 
         return started.Value;
