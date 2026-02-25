@@ -53,8 +53,7 @@ Use this as a release / PR verification checklist. Commands assume PowerShell an
 - [ ] `mcpserver` lists tools and can start a session
 - [ ] `mcpserver --low-level` exercises `CallAsync("tools/list")` and `CallToolAsync("codex-reply", ...)`
 
-## DI + Overrides (scratch)
+## DI + Overrides
 
-- [ ] `AddCodexSdk(...)` works via a scratch console app
-- [ ] App-server/MCP transformers/mappers can be attached and observed (scratch)
-
+- [ ] `di-overrides` runs and prints `ok` (and shows observer/transformer markers)
+- [ ] (Optional) Scratch app scenarios in `DI-and-Overrides.md` still work

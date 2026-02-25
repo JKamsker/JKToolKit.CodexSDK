@@ -8,6 +8,7 @@ using JKToolKit.CodexSDK.Demo.Commands.AppServerReview;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerSkillsApps;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerStream;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerTurnControl;
+using JKToolKit.CodexSDK.Demo.Commands.DiOverrides;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerThreads;
 using JKToolKit.CodexSDK.Demo.Commands.Exec;
 using JKToolKit.CodexSDK.Demo.Commands.McpServer;
@@ -118,6 +119,9 @@ internal static class Program
 
             config.AddCommand<StructuredReviewCommand>("structured-review")
                 .WithDescription("Run a structured code review with typed output (issues + fix tasks).");
+
+            config.AddCommand<DiOverridesCommand>("di-overrides")
+                .WithDescription("Validate DI registration and override hooks (app-server + mcp-server).");
         });
 
         app.SetDefaultCommand<ExecCommand>();

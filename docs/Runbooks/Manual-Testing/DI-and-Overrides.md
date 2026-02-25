@@ -1,13 +1,31 @@
-# Manual Testing: DI + Override Hooks (Scratch)
+# Manual Testing: DI + Override Hooks
 
-Some features are easiest to validate by running a tiny scratch console app that:
+Validate:
 
-- uses the DI registration helpers (`AddCodexSdk`, `AddCodexAppServerClient`, etc.)
-- installs transformers/mappers/observers and confirms they run
+- Microsoft.Extensions.DependencyInjection registration helpers (`AddCodexSdk`, `AddCodexAppServerClient`, etc.)
+- Override hooks are invoked:
+  - App-server: `IAppServerMessageObserver`, `IAppServerRequestParamsTransformer`
+  - MCP-server: `IMcpServerResponseTransformer`, `IMcpToolsListMapper`
 
-This avoids committing temporary code into the repo.
+## 1) Demo command (recommended)
 
-## 0) Create a scratch console app
+```powershell
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- di-overrides --timeout-seconds 120
+```
+
+Verify:
+
+- You see `[observer] request skills/list ...` and a corresponding response line.
+- You see `[request-transformer] skills/list ...`.
+- You see `[mcp-response-transformer] tools/list`.
+- You see `[tools-list-mapper] invoked`.
+- It prints `ok` and exits successfully.
+
+## 2) Scratch console app (optional)
+
+This option is closer to a real consumer app and avoids committing temporary code into the repo.
+
+### 2.1) Create a scratch console app
 
 ```powershell
 $repo = (Get-Location).Path
@@ -23,7 +41,7 @@ dotnet add reference "$repo\\src\\JKToolKit.CodexSDK\\JKToolKit.CodexSDK.csproj"
 dotnet add package Microsoft.Extensions.DependencyInjection
 ```
 
-## 1) DI: `AddCodexSdk(...)` smoke test
+### 2.2) DI: `AddCodexSdk(...)` smoke test
 
 Replace `Program.cs`:
 
@@ -31,12 +49,20 @@ Replace `Program.cs`:
 @'
 using JKToolKit.CodexSDK;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 var services = new ServiceCollection();
+
+// Minimal logging registrations (the SDK depends on ILogger<T> via DI)
+services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+
 services.AddCodexSdk();
 
-using var sp = services.BuildServiceProvider();
-await using var sdk = sp.GetRequiredService<CodexSdk>();
+// ServiceProvider must be disposed asynchronously because CodexSdk is IAsyncDisposable.
+await using var sp = services.BuildServiceProvider();
+var sdk = sp.GetRequiredService<CodexSdk>();
 
 // Just ensure all facades can start; keep it quick.
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
@@ -52,7 +78,7 @@ dotnet run
 
 Verify it prints `ok` and exits successfully.
 
-## 2) App-server message observers + request param transformers (invocation check)
+### 2.3) App-server message observers + request param transformers (invocation check)
 
 Replace `Program.cs`:
 
@@ -60,16 +86,22 @@ Replace `Program.cs`:
 @'
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Overrides;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 var services = new ServiceCollection();
+services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+
 services.AddCodexAppServerClient(o =>
 {
-    o.MessageObservers.Add(new ConsoleObserver());
-    o.RequestParamsTransformers.Add(new NoopTransformer());
+    o.MessageObservers = new IAppServerMessageObserver[] { new ConsoleObserver() };
+    o.RequestParamsTransformers = new IAppServerRequestParamsTransformer[] { new NoopTransformer() };
 });
 
-using var sp = services.BuildServiceProvider();
+await using var sp = services.BuildServiceProvider();
 var factory = sp.GetRequiredService<ICodexAppServerClientFactory>();
 
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
@@ -87,6 +119,9 @@ file sealed class ConsoleObserver : IAppServerMessageObserver
 
     public void OnResponse(string method, System.Text.Json.JsonElement result) =>
         Console.WriteLine($"[observer] response {method} resultKind={result.ValueKind}");
+
+    public void OnNotification(string method, System.Text.Json.JsonElement @params) =>
+        Console.WriteLine($"[observer] notification {method} paramsKind={@params.ValueKind}");
 }
 
 file sealed class NoopTransformer : IAppServerRequestParamsTransformer
@@ -103,24 +138,27 @@ Verify:
 - You see `[observer] request skills/list ...` and a corresponding response line.
 - It prints `ok`.
 
-## 3) MCP override hooks: response transformer + tools list mapper
+### 2.4) MCP override hooks: response transformer + tools list mapper
 
 Replace `Program.cs`:
 
 ```powershell
 @'
 using JKToolKit.CodexSDK.McpServer;
+using JKToolKit.CodexSDK.McpServer.Overrides;
 
-var opts = new CodexMcpServerClientOptions();
-opts.ResponseTransformers.Add(new MarkerTransformer());
-opts.ToolsListMappers.Add(new PassthroughMapper());
+var opts = new CodexMcpServerClientOptions
+{
+    ResponseTransformers = new IMcpServerResponseTransformer[] { new MarkerTransformer() },
+    ToolsListMappers = new IMcpToolsListMapper[] { new PassthroughMapper() }
+};
 
 await using var client = await CodexMcpServerClient.StartAsync(opts);
 _ = await client.ListToolsAsync();
 
 Console.WriteLine("ok");
 
-file sealed class MarkerTransformer : ICodexMcpResponseTransformer
+file sealed class MarkerTransformer : IMcpServerResponseTransformer
 {
     public System.Text.Json.JsonElement Transform(string method, System.Text.Json.JsonElement result)
     {
@@ -129,7 +167,7 @@ file sealed class MarkerTransformer : ICodexMcpResponseTransformer
     }
 }
 
-file sealed class PassthroughMapper : ICodexMcpToolsListMapper
+file sealed class PassthroughMapper : IMcpToolsListMapper
 {
     public IReadOnlyList<McpToolDescriptor>? TryMap(System.Text.Json.JsonElement raw)
     {
@@ -148,9 +186,14 @@ Verify:
 - You see `[tools-list-mapper] invoked`
 - It prints `ok`
 
-## Cleanup
+### Cleanup
 
 ```powershell
 Pop-Location
+
+# Use either:
 Remove-Item -Recurse -Force $tmp
+
+# ...or (when Remove-Item is restricted):
+cmd /c rmdir /s /q "$tmp"
 ```

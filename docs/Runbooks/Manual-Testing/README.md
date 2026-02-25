@@ -86,7 +86,7 @@ Template (copy/paste):
 - [ ] [PENDING] TC18 - App-server: resilient wrapper (`demo appserver-resilient-stream --restart-between-turns`)
 - [ ] [PENDING] TC19 - MCP-server: tools + session + reply (`demo mcpserver`)
 - [ ] [PENDING] TC20 - MCP-server: low-level escape hatches (`demo mcpserver --low-level`)
-- [ ] [PENDING] TC21 - DI + override hooks (scratch app) (`DI-and-Overrides.md`)
+- [ ] [PENDING] TC21 - DI + override hooks (`demo di-overrides`) (see: `DI-and-Overrides.md`)
 
 ## Failures
 <!--
@@ -148,6 +148,9 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 
 # MCP: tool discovery + low-level calls
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcpserver --low-level --prompt "Say hi." --followup "Say bye."
+
+# DI + override hooks
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- di-overrides --timeout-seconds 120
 ```
 
 Expected outcomes:
