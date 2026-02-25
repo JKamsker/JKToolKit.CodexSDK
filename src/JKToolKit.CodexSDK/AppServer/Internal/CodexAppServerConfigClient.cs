@@ -1,8 +1,8 @@
-using System.IO;
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -10,13 +10,16 @@ internal sealed class CodexAppServerConfigClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;
+    private readonly ILogger _logger;
 
     public CodexAppServerConfigClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
-        Func<bool> experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled,
+        ILogger logger)
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
@@ -145,10 +148,21 @@ internal sealed class CodexAppServerConfigClient
         }
 
         var items = new List<ExternalAgentConfigMigrationItem>();
+        var i = 0;
         foreach (var item in itemsArray.Value.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object)
             {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "externalAgentConfig/detect: skipping items[{Index}] because it is not an object. valueKind={ValueKind} raw={Raw}",
+                        i,
+                        item.ValueKind,
+                        item.GetRawText());
+                }
+
+                i++;
                 continue;
             }
 
@@ -156,6 +170,17 @@ internal sealed class CodexAppServerConfigClient
             var itemType = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
             if (string.IsNullOrWhiteSpace(description) || string.IsNullOrWhiteSpace(itemType))
             {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "externalAgentConfig/detect: skipping items[{Index}] due to missing/invalid required fields. description={Description} itemType={ItemType} raw={Raw}",
+                        i,
+                        description,
+                        itemType,
+                        item.GetRawText());
+                }
+
+                i++;
                 continue;
             }
 
@@ -165,6 +190,8 @@ internal sealed class CodexAppServerConfigClient
                 Description = description,
                 ItemType = itemType
             });
+
+            i++;
         }
 
         return new ExternalAgentConfigDetectResult
@@ -183,7 +210,7 @@ internal sealed class CodexAppServerConfigClient
         for (var i = 0; i < migrationItems.Count; i++)
         {
             var item = migrationItems[i];
-            if ((object?)item is null)
+            if (item is null)
                 throw new ArgumentException($"Migration item at index {i} cannot be null.", nameof(migrationItems));
 
             if (string.IsNullOrWhiteSpace(item.Description))
@@ -213,7 +240,7 @@ internal sealed class CodexAppServerConfigClient
         if (started is null)
         {
             var raw = CodexDiagnosticsSanitizer.Sanitize(result.GetRawText(), maxChars: 2000);
-            throw new InvalidDataException($"windowsSandbox/setupStart response missing boolean 'started'. result={raw}");
+            throw new InvalidOperationException($"windowsSandbox/setupStart response missing boolean 'started'. result={raw}");
         }
 
         return started.Value;
