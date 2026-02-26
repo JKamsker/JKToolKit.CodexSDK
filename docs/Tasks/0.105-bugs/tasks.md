@@ -152,13 +152,13 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T080a Buffer notifications by `turnId` when no `CodexTurnHandle` exists yet (bounded + TTL).
   - [x] T080b Flush buffered notifications when `RegisterTurnHandle(...)` is called.
   - [x] T080c Add a unit/integration test with a transcript: `turn/start` response immediately followed by `turn/started` + `item/started` (per-turn stream must observe them).
-- [ ] T081 Ensure processes are cleaned up on initialization failure.
-  - [ ] T081a Wrap app-server `StartAsync` initialization in `try/catch` and dispose process+RPC on any failure.
-  - [ ] T081b Apply the same behavior to DI factories.
-  - [ ] T081c Add a test that forces `initialize` failure and asserts no orphan process remains.
-- [ ] T082 Enforce a handshake timeout using `StartupTimeout`.
-  - [ ] T082a Apply `CancelAfter(StartupTimeout)` around `initialize` + `initialized` (and dispose on timeout).
-  - [ ] T082b Add a test where the server never responds to `initialize`.
+- [x] T081 Ensure processes are cleaned up on initialization failure.
+  - [x] T081a Wrap app-server `StartAsync` initialization in `try/catch` and dispose process+RPC on any failure.
+  - [x] T081b Apply the same behavior to DI factories.
+  - [x] T081c Add a test that forces `initialize` failure and asserts no orphan process remains.
+- [x] T082 Enforce a handshake timeout using `StartupTimeout`.
+  - [x] T082a Apply `CancelAfter(StartupTimeout)` around `initialize` + `initialized` (and dispose on timeout).
+  - [x] T082b Add a test where the server never responds to `initialize`.
 - [ ] T083 Clarify notification stream semantics.
   - [ ] T083a Decide whether `Notifications()` / `Events()` are single-consumer queues or true pub-sub.
   - [ ] T083b If keeping queues, document “single consumer” prominently in docs + XML docs.

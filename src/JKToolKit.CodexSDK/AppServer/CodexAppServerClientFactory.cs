@@ -28,6 +28,7 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
         var options = _options.Value;
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
         var serializerOptions = options.SerializerOptionsOverride ?? CodexAppServerClient.CreateDefaultSerializerOptions();
+        var logger = _loggerFactory.CreateLogger<CodexAppServerClient>();
 
         var (process, rpc) = await CodexJsonRpcBootstrap.StartAsync(
             _stdioFactory,
@@ -41,16 +42,13 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
             includeJsonRpcHeader: false,
             ct);
 
-        var client = new CodexAppServerClient(
+        return await CodexAppServerClient.CreateInitializedAsync(
             options,
             process,
             rpc,
-            _loggerFactory.CreateLogger<CodexAppServerClient>(),
-            serializerOptions);
-
-        await client.InitializeAsync(options.DefaultClientInfo, ct);
-
-        return client;
+            logger,
+            serializerOptions,
+            ct).ConfigureAwait(false);
     }
 
     private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
