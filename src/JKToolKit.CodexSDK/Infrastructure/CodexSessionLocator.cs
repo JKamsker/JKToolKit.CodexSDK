@@ -71,20 +71,29 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionsRoot,
             startTime);
 
-        // Snapshot existing files before launch to avoid picking old sessions
-        var baseline = CodexSessionLocatorHelpers.CaptureSessionSnapshot(_fileSystem, _logger, sessionsRoot, SessionFilePattern);
+        var scanRoots = GetLikelySessionScanRoots(sessionsRoot, startTime, timeout);
+
+        // Snapshot existing files before launch to reduce the chance of attaching to an unrelated session.
+        var baseline = CodexUncorrelatedSessionDiscoveryHelpers.CaptureSessionSnapshot(_fileSystem, _logger, scanRoots, SessionFilePattern);
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
 
-        var startTimeUtc = startTime.UtcDateTime;
+        var startTimeUtc = startTime.ToUniversalTime();
 
         try
         {
             while (!timeoutCts.Token.IsCancellationRequested)
             {
                 // Search for .jsonl files created after startTime and not in baseline
-                var newSessionFile = CodexSessionLocatorHelpers.FindNewSessionFile(_fileSystem, _logger, sessionsRoot, startTimeUtc, baseline, SessionFilePattern);
+                var newSessionFile = await CodexUncorrelatedSessionDiscoveryHelpers.FindNewSessionFileAsync(
+                    _fileSystem,
+                    _logger,
+                    scanRoots,
+                    startTimeUtc,
+                    baseline,
+                    SessionFilePattern,
+                    timeoutCts.Token).ConfigureAwait(false);
 
                 if (newSessionFile != null)
                 {
@@ -110,6 +119,36 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         // Should not reach here, but just in case
         throw new TimeoutException(
             $"No new session file was created within the timeout period of {timeout.TotalSeconds:F1} seconds.");
+    }
+
+    private IReadOnlyList<string> GetLikelySessionScanRoots(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout)
+    {
+        var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { sessionsRoot };
+
+        // Upstream layout is typically: sessions/YYYY/MM/DD/rollout-YYYY-MM-DDThh-mm-ss-<id>.jsonl
+        // To avoid O(N) AllDirectories walks on every poll, scan only dates likely to contain the new session.
+        var utcStartDate = startTime.UtcDateTime.Date;
+        var utcEndDate = startTime.UtcDateTime.Add(timeout).Date;
+
+        // Include a one-day cushion to tolerate local/UTC differences and midnight rollovers.
+        utcStartDate = utcStartDate.AddDays(-1);
+        utcEndDate = utcEndDate.AddDays(1);
+
+        for (var date = utcStartDate; date <= utcEndDate; date = date.AddDays(1))
+        {
+            var dayDir = Path.Combine(
+                sessionsRoot,
+                date.Year.ToString("0000"),
+                date.Month.ToString("00"),
+                date.Day.ToString("00"));
+
+            if (_fileSystem.DirectoryExists(dayDir))
+            {
+                roots.Add(dayDir);
+            }
+        }
+
+        return roots.OrderBy(r => r, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     /// <inheritdoc />

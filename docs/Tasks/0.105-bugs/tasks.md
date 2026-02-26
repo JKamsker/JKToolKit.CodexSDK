@@ -11,7 +11,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 - [x] T001 Create/extend unit tests for `codex review` validation rules (targets + `--title` constraint).
 - [x] T002 Create/extend unit tests covering session-id capture regex variants (`session id:` on stderr, JSON mode, non-hex ids).
-- [ ] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
+- [x] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
 - [ ] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
 - [ ] T005 Create/extend unit tests for structured-output JSON extraction edge cases (fences + bracket noise + multiple JSON values).
 - [ ] T006 Create/extend unit tests for JSONL tailer rotation/partial-line behavior (partial line buffering, truncation + BOM, `FileShare.Delete`).
@@ -64,11 +64,11 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T033a `WaitForNewSessionFileAsync(...)` must throw `OperationCanceledException` when the caller cancels (not `TimeoutException`).
   - [x] T033b `WaitForSessionLogByIdAsync(...)` must throw `OperationCanceledException` when the caller cancels (not `TimeoutException`).
   - [x] T033c Add unit tests for cancellation behavior (cancel between polls).
-- [ ] T034 Rework uncorrelated new-file discovery to avoid baseline/creation-time pitfalls.
-  - [ ] T034a Avoid “baseline race” where files created after `startTime` are added to `baseline` and then ignored.
-  - [ ] T034b Stop relying on filesystem creation time for ordering/filtering; prefer parsing the rollout timestamp from the filename and/or verifying by reading `session_meta`.
-  - [ ] T034c Restrict scans to likely date directories (e.g., `sessions/YYYY/MM/DD`) to avoid O(N) `AllDirectories` walks.
-  - [ ] T034d Add unit tests with a mocked `IFileSystem` for: baseline race, coarse timestamps, multiple candidates, and “wrong cwd” rejection.
+- [x] T034 Rework uncorrelated new-file discovery to avoid baseline/creation-time pitfalls.
+  - [x] T034a Avoid “baseline race” where files created after `startTime` are added to `baseline` and then ignored.
+  - [x] T034b Stop relying on filesystem creation time for ordering/filtering; prefer parsing the rollout timestamp from the filename and/or verifying by reading `session_meta`.
+  - [x] T034c Restrict scans to likely date directories (e.g., `sessions/YYYY/MM/DD`) to avoid O(N) `AllDirectories` walks.
+  - [x] T034d Add unit tests with a mocked `IFileSystem` for: baseline race, coarse timestamps, multiple candidates, and “wrong cwd” rejection.
 - [ ] T035 Harden by-id lookup.
   - [ ] T035a Escape/protect `SessionId.Value` when forming glob patterns (avoid wildcard injection).
   - [ ] T035b Define deterministic selection when multiple files match (prefer exact filename structure, then most recent by parsed timestamp).
