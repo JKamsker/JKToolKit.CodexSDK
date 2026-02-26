@@ -152,43 +152,47 @@ internal static class ProcessStartInfoBuilder
         // `--cd` is a global option (before the subcommand).
         startInfo.ArgumentList.Add("-C");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
-
+ 
         startInfo.ArgumentList.Add("review");
+ 
+        var useStdinPrompt = !string.IsNullOrWhiteSpace(options.Prompt);
 
-        if (options.Uncommitted)
+        if (!useStdinPrompt && options.Uncommitted)
         {
             startInfo.ArgumentList.Add("--uncommitted");
         }
-
-        if (!string.IsNullOrWhiteSpace(options.BaseBranch))
+        else if (!useStdinPrompt && !string.IsNullOrWhiteSpace(options.BaseBranch))
         {
             startInfo.ArgumentList.Add("--base");
             startInfo.ArgumentList.Add(options.BaseBranch);
         }
-
-        if (!string.IsNullOrWhiteSpace(options.CommitSha))
+        else if (!useStdinPrompt && !string.IsNullOrWhiteSpace(options.CommitSha))
         {
             startInfo.ArgumentList.Add("--commit");
             startInfo.ArgumentList.Add(options.CommitSha);
-        }
 
-        if (!string.IsNullOrWhiteSpace(options.Title))
+            if (!string.IsNullOrWhiteSpace(options.Title))
+            {
+                startInfo.ArgumentList.Add("--title");
+                startInfo.ArgumentList.Add(options.Title);
+            }
+        }
+        else if (!useStdinPrompt)
         {
-            startInfo.ArgumentList.Add("--title");
-            startInfo.ArgumentList.Add(options.Title);
+            throw new InvalidOperationException("No review target provided. This should have been rejected by validation.");
         }
-
+ 
         foreach (var option in options.AdditionalOptions)
         {
             startInfo.ArgumentList.Add(option);
         }
 
-        if (!string.IsNullOrWhiteSpace(options.Prompt))
+        if (useStdinPrompt)
         {
-            // Use stdin for prompt to avoid escaping issues.
+            // Prompt-only reviews use stdin (`-`) for instructions.
             startInfo.ArgumentList.Add("-");
         }
-
+ 
         return startInfo;
     }
 

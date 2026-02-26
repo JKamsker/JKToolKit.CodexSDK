@@ -15,7 +15,7 @@ public sealed class CodexClientReviewStreamingTests
     public async Task ReviewAsync_MirrorsStdoutAndStderr_WhileRunning()
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var reviewOptions = new CodexReviewOptions(workingDirectory);
+        var reviewOptions = new CodexReviewOptions(workingDirectory) { Prompt = "Test prompt." };
 
         using var process = CreateEchoThenSleepProcess();
         var launcher = new ReviewProcessLauncher(process);
@@ -46,7 +46,7 @@ public sealed class CodexClientReviewStreamingTests
     public async Task ReviewAsync_ExtractsSessionId_AndResolvesLogPath()
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var reviewOptions = new CodexReviewOptions(workingDirectory);
+        var reviewOptions = new CodexReviewOptions(workingDirectory) { Prompt = "Test prompt." };
 
         var sessionId = SessionId.Parse("11111111-1111-1111-1111-111111111111");
         using var process = CreateEchoSessionIdProcess(sessionId);

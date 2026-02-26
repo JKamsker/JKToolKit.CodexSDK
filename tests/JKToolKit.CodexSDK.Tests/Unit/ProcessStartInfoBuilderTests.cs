@@ -327,7 +327,7 @@ public class ProcessStartInfoBuilderTests
     }
 
     [Fact]
-    public void CreateReviewStartInfo_BuildsExpectedArguments_WithCommitAndPrompt()
+    public void CreateReviewStartInfo_BuildsExpectedArguments_WithCommitAndTitle()
     {
         var workingDirectory = CreateTempDirectory();
         try
@@ -336,7 +336,6 @@ public class ProcessStartInfoBuilderTests
             {
                 CommitSha = "9a8ff41389e6684f222fb982f50efc04b59e0d50",
                 Title = "Optional title",
-                Prompt = "Focus on correctness and security.",
                 AdditionalOptions = new[] { "--enable", "experimental_feature" }
             };
             var clientOptions = new CodexClientOptions();
@@ -356,8 +355,7 @@ public class ProcessStartInfoBuilderTests
                 "--title",
                 "Optional title",
                 "--enable",
-                "experimental_feature",
-                "-");
+                "experimental_feature");
         }
         finally
         {
@@ -371,7 +369,7 @@ public class ProcessStartInfoBuilderTests
         var workingDirectory = CreateTempDirectory();
         try
         {
-            var options = new CodexReviewOptions(workingDirectory);
+            var options = new CodexReviewOptions(workingDirectory) { Uncommitted = true };
             var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
             var pathProvider = new RecordingPathProvider("codex-default");
             var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
@@ -379,6 +377,64 @@ public class ProcessStartInfoBuilderTests
             var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
 
             startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateReviewStartInfo_BuildsExpectedArguments_WithPromptOnly()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexReviewOptions(workingDirectory)
+            {
+                Prompt = "Focus on correctness and security.",
+                AdditionalOptions = new[] { "--enable", "experimental_feature" }
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
+
+            startInfo.ArgumentList.Should().Equal(
+                "-C",
+                workingDirectory,
+                "review",
+                "--enable",
+                "experimental_feature",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateReviewStartInfo_Throws_WhenCommitAndPromptAreCombined()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexReviewOptions(workingDirectory)
+            {
+                CommitSha = "9a8ff41389e6684f222fb982f50efc04b59e0d50",
+                Prompt = "Focus on correctness and security."
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var act = () => launcher.CreateReviewStartInfo(options, clientOptions);
+
+            act.Should()
+                .Throw<InvalidOperationException>()
+                .WithMessage("Prompt cannot be combined with CommitSha, BaseBranch, or Uncommitted.");
         }
         finally
         {
