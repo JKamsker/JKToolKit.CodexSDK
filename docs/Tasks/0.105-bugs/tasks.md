@@ -98,10 +98,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T050a Make `ExitedReviewModeEvent.ReviewOutput` nullable (or introduce a representation for “no structured output”).
   - [x] T050b Update parser to accept null and still emit the event.
   - [x] T050c Add a unit test for `review_output: null`.
-- [ ] T051 Align `plan_update` parsing with upstream `UpdatePlanArgs`.
-  - [ ] T051a Add `Explanation` to `PlanUpdateEvent` and parse it.
-  - [ ] T051b Decide what to do with `Name` (remove, repurpose, or keep as an SDK-only field).
-  - [ ] T051c Add a unit test parsing `plan_update` with `explanation`.
+- [x] T051 Align `plan_update` parsing with upstream `UpdatePlanArgs`.
+  - [x] T051a Add `Explanation` to `PlanUpdateEvent` and parse it.
+  - [x] T051b Decide what to do with `Name` (remove, repurpose, or keep as an SDK-only field).
+  - [x] T051c Add a unit test parsing `plan_update` with `explanation`.
 - [ ] T052 Decide how to handle `response_item.payload` being an array (future-proofing).
   - [ ] T052a Choose behavior: emit a batch event, emit multiple events, or map to `UnknownCodexEvent` with preserved raw JSON.
   - [ ] T052b Add unit tests for the chosen behavior.

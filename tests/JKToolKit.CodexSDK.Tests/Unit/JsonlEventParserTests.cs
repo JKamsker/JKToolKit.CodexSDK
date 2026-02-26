@@ -731,6 +731,35 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_EventMsg_PlanUpdate_ParsesExplanation()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""plan_update"",
+                ""name"": ""Build plan"",
+                ""explanation"": ""Added a new step."",
+                ""plan"": [
+                    {{ ""step"": ""Do thing"", ""status"": ""in_progress"" }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<PlanUpdateEvent>().Subject;
+        evt.Type.Should().Be("plan_update");
+        evt.Name.Should().Be("Build plan");
+        evt.Explanation.Should().Be("Added a new step.");
+        evt.Plan.Should().HaveCount(1);
+        evt.Plan[0].Step.Should().Be("Do thing");
+        evt.Plan[0].Status.Should().Be("in_progress");
+    }
+
+    [Fact]
     public async Task ParseAsync_UnknownEventType_CreatesUnknownCodexEvent()
     {
         // Arrange

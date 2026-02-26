@@ -13,6 +13,11 @@ public sealed record PlanUpdateEvent : CodexEvent
     public string? Name { get; init; }
 
     /// <summary>
+    /// Gets the optional explanation that accompanies the plan update.
+    /// </summary>
+    public string? Explanation { get; init; }
+
+    /// <summary>
     /// Gets the updated plan steps.
     /// </summary>
     public required IReadOnlyList<PlanStep> Plan { get; init; }
