@@ -14,7 +14,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
 - [x] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
 - [x] T005 Create/extend unit tests for structured-output JSON extraction edge cases (fences + bracket noise + multiple JSON values).
-- [ ] T006 Create/extend unit tests for JSONL tailer rotation/partial-line behavior (partial line buffering, truncation + BOM, `FileShare.Delete`).
+- [x] T006 Create/extend unit tests for JSONL tailer rotation/partial-line behavior (partial line buffering, truncation + BOM, `FileShare.Delete`).
 
 ## Phase 1 — Exec review (`codex review`) argv + option validation (P0)
 
@@ -76,21 +76,21 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 4 — JSONL tailer correctness (P0/P1)
 
-- [ ] T040 Prevent emitting partial (newline-less) lines.
-  - [ ] T040a Buffer the final unterminated line at EOF and only yield it once a newline arrives.
-  - [ ] T040b Add a unit test that appends a JSON object in two writes without a newline; assert the tailer doesn’t yield a fragment.
-- [ ] T041 Improve truncation/rotation handling.
-  - [ ] T041a Ensure UTF-8 BOM handling works after `Seek(0)` (recreate `StreamReader` or strip `\uFEFF` on the next line).
-  - [ ] T041b Add a unit test: truncate+rewrite BOM and verify first post-truncate line parses as JSON.
-- [ ] T042 Allow rotation/replace on Windows.
-  - [ ] T042a Open the file with `FileShare.Delete` (and document why).
-  - [ ] T042b Detect “file replaced” and reopen when necessary (identity/size heuristics).
-  - [ ] T042c Add a unit test: rename old file, create new file at same path, ensure tail continues on the new file.
-- [ ] T043 Make `FromByteOffset` safer.
-  - [ ] T043a Decide whether to resync to next newline after seeking (recommended) or document “offset must be at line boundary”.
-  - [ ] T043b Add a unit test that seeks mid-line and asserts no invalid JSON fragment is yielded.
-- [ ] T044 Fix docs/comments that claim timestamp filtering happens in the tailer/parser.
-  - [ ] T044a Update `src/JKToolKit.CodexSDK/Infrastructure/JsonlTailer.cs` comment about `AfterTimestamp`.
+- [x] T040 Prevent emitting partial (newline-less) lines.
+  - [x] T040a Buffer the final unterminated line at EOF and only yield it once a newline arrives.
+  - [x] T040b Add a unit test that appends a JSON object in two writes without a newline; assert the tailer doesn’t yield a fragment.
+- [x] T041 Improve truncation/rotation handling.
+  - [x] T041a Ensure UTF-8 BOM handling works after `Seek(0)` (recreate `StreamReader` or strip `\uFEFF` on the next line).
+  - [x] T041b Add a unit test: truncate+rewrite BOM and verify first post-truncate line parses as JSON.
+- [x] T042 Allow rotation/replace on Windows.
+  - [x] T042a Open the file with `FileShare.Delete` (and document why).
+  - [x] T042b Detect “file replaced” and reopen when necessary (identity/size heuristics).
+  - [x] T042c Add a unit test: rename old file, create new file at same path, ensure tail continues on the new file.
+- [x] T043 Make `FromByteOffset` safer.
+  - [x] T043a Decide whether to resync to next newline after seeking (recommended) or document “offset must be at line boundary”.
+  - [x] T043b Add a unit test that seeks mid-line and asserts no invalid JSON fragment is yielded.
+- [x] T044 Fix docs/comments that claim timestamp filtering happens in the tailer/parser.
+  - [x] T044a Update `src/JKToolKit.CodexSDK/Infrastructure/JsonlTailer.cs` comment about `AfterTimestamp`.
 
 ## Phase 5 — Exec JSONL event parsing/mapping drift fixes (P1/P2)
 

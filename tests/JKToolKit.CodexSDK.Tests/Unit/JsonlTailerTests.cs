@@ -55,7 +55,7 @@ public class JsonlTailerTests : IDisposable
             "Line 1",
             "Line 2",
             "Line 3"
-        });
+        }) + Environment.NewLine;
         File.WriteAllText(filePath, content);
 
         var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
@@ -77,7 +77,7 @@ public class JsonlTailerTests : IDisposable
         // Arrange
         var filePath = Path.Combine(_tempDirectory, "test-offset.jsonl");
         var lines = new[] { "First line", "Second line", "Third line" };
-        var content = string.Join(Environment.NewLine, lines);
+        var content = string.Join(Environment.NewLine, lines) + Environment.NewLine;
         File.WriteAllText(filePath, content);
 
         // Calculate offset to start at "Second line"
@@ -100,7 +100,7 @@ public class JsonlTailerTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_tempDirectory, "active-file.jsonl");
-        File.WriteAllText(filePath, "Initial line");
+        File.WriteAllText(filePath, "Initial line" + Environment.NewLine);
 
         var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
         var streamOptions = new EventStreamOptions(FromBeginning: true);
@@ -127,7 +127,9 @@ public class JsonlTailerTests : IDisposable
         lines.Should().HaveCount(1);
 
         // Append new content
-        await File.AppendAllTextAsync(filePath, Environment.NewLine + "New line 1" + Environment.NewLine + "New line 2");
+        await File.AppendAllTextAsync(
+            filePath,
+            "New line 1" + Environment.NewLine + "New line 2" + Environment.NewLine);
 
         // Wait for new lines to be processed
         await Task.Delay(200);
@@ -154,7 +156,7 @@ public class JsonlTailerTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_tempDirectory, "cancel-test.jsonl");
-        File.WriteAllText(filePath, "Line 1");
+        File.WriteAllText(filePath, "Line 1" + Environment.NewLine);
 
         var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
         var streamOptions = new EventStreamOptions(FromBeginning: true);
@@ -308,7 +310,7 @@ public class JsonlTailerTests : IDisposable
         // Arrange
         var filePath = Path.Combine(_tempDirectory, "multi-chunk.jsonl");
         var lines = Enumerable.Range(1, 100).Select(i => $"Line {i}").ToArray();
-        var content = string.Join(Environment.NewLine, lines);
+        var content = string.Join(Environment.NewLine, lines) + Environment.NewLine;
         File.WriteAllText(filePath, content);
 
         var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
@@ -321,5 +323,165 @@ public class JsonlTailerTests : IDisposable
         result.Should().HaveCount(100);
         result.First().Should().Be("Line 1");
         result.Last().Should().Be("Line 100");
+    }
+
+    [Fact]
+    public async Task TailAsync_DoesNotYieldPartialLine_WhenAppendedInTwoWrites()
+    {
+        // Arrange
+        var filePath = Path.Combine(_tempDirectory, "partial-line.jsonl");
+        File.WriteAllText(filePath, string.Empty);
+
+        var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
+        var streamOptions = new EventStreamOptions(FromBeginning: true);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var lines = new List<string>();
+
+        var readTask = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
+                {
+                    lines.Add(line);
+                    if (lines.Count >= 1)
+                    {
+                        cts.Cancel();
+                        break;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected
+            }
+        }, cts.Token);
+
+        // Act
+        await File.AppendAllTextAsync(filePath, "{\"a\":", System.Text.Encoding.UTF8, cts.Token);
+        await Task.Delay(200, cts.Token);
+
+        lines.Should().BeEmpty();
+
+        await File.AppendAllTextAsync(filePath, "1}" + Environment.NewLine, System.Text.Encoding.UTF8, cts.Token);
+        await readTask.WaitAsync(TimeSpan.FromSeconds(3), CancellationToken.None);
+
+        // Assert
+        lines.Should().Equal("{\"a\":1}");
+    }
+
+    [Fact]
+    public async Task TailAsync_TruncateAndRewriteWithBom_StripsBom()
+    {
+        // Arrange
+        var filePath = Path.Combine(_tempDirectory, "truncate-bom.jsonl");
+        var initialContent = new string('x', 1024) + Environment.NewLine;
+        File.WriteAllText(filePath, initialContent, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+        var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
+        var streamOptions = new EventStreamOptions(FromBeginning: false);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var lines = new List<string>();
+
+        var readTask = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
+                {
+                    lines.Add(line);
+                    if (lines.Count >= 1)
+                    {
+                        cts.Cancel();
+                        break;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected
+            }
+        }, cts.Token);
+
+        await Task.Delay(200, cts.Token);
+
+        var rewrittenJson = "{\"after\":1}" + Environment.NewLine;
+        var rewrittenBytes = new List<byte> { 0xEF, 0xBB, 0xBF };
+        rewrittenBytes.AddRange(System.Text.Encoding.UTF8.GetBytes(rewrittenJson));
+        File.WriteAllBytes(filePath, rewrittenBytes.ToArray());
+
+        await readTask.WaitAsync(TimeSpan.FromSeconds(3), CancellationToken.None);
+
+        // Assert
+        lines.Should().HaveCount(1);
+        lines[0].Should().Be("{\"after\":1}");
+    }
+
+    [Fact]
+    public async Task TailAsync_FileRotated_RenamesOldFile_AndContinuesOnNewFile()
+    {
+        // Arrange
+        var filePath = Path.Combine(_tempDirectory, "rotate.jsonl");
+        File.WriteAllText(filePath, "Line 1" + Environment.NewLine);
+
+        var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
+        var streamOptions = new EventStreamOptions(FromBeginning: false);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var lines = new List<string>();
+
+        var readTask = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
+                {
+                    lines.Add(line);
+                    if (lines.Count >= 1)
+                    {
+                        cts.Cancel();
+                        break;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected
+            }
+        }, cts.Token);
+
+        await Task.Delay(200, cts.Token);
+
+        var rotatedPath = filePath + ".1";
+        File.Move(filePath, rotatedPath);
+        File.WriteAllText(filePath, "New file line" + Environment.NewLine);
+
+        await readTask.WaitAsync(TimeSpan.FromSeconds(3), CancellationToken.None);
+
+        // Assert
+        lines.Should().Equal("New file line");
+    }
+
+    [Fact]
+    public async Task TailAsync_FromByteOffset_MidLine_ResyncsToNextLine()
+    {
+        // Arrange
+        var filePath = Path.Combine(_tempDirectory, "midline-offset.jsonl");
+        var content = "{\"a\":1}" + Environment.NewLine + "{\"b\":2}" + Environment.NewLine;
+        File.WriteAllText(filePath, content, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+        // Offset that lands in the middle of the first line.
+        var offset = System.Text.Encoding.UTF8.GetByteCount("{\"a\":");
+
+        var tailer = new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, _options);
+        var streamOptions = new EventStreamOptions(FromBeginning: false, FromByteOffset: offset, Follow: false);
+
+        // Act
+        var result = await tailer.TailAsync(filePath, streamOptions, CancellationToken.None).ToListAsync();
+
+        // Assert
+        result.Should().Equal("{\"b\":2}");
     }
 }
