@@ -490,6 +490,50 @@ public sealed class JsonRpcConnectionTests
     }
 
     [Fact]
+    public async Task CancelledRequest_EmitsCancelledNotification_BestEffort()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var requestIdTcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var serverTask = Task.Run(async () =>
+        {
+            var requestLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            requestLine.Should().NotBeNull();
+
+            using var reqDoc = JsonDocument.Parse(requestLine!);
+            var id = reqDoc.RootElement.GetProperty("id").GetInt64();
+            requestIdTcs.TrySetResult(id);
+
+            var cancelLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            cancelLine.Should().NotBeNull();
+
+            using var cancelDoc = JsonDocument.Parse(cancelLine!);
+            cancelDoc.RootElement.GetProperty("method").GetString().Should().Be("notifications/cancelled");
+            cancelDoc.RootElement.GetProperty("params").GetProperty("requestId").GetInt64().Should().Be(id);
+        });
+
+        using var cts = new CancellationTokenSource();
+        var sendTask = rpc.SendRequestAsync("tools/call", @params: new { name = "codex", arguments = new { } }, cts.Token);
+
+        await requestIdTcs.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        cts.Cancel();
+
+        var act = async () => await sendTask;
+        await act.Should().ThrowAsync<OperationCanceledException>();
+
+        await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task NotificationBufferDropsOldest_AndConnectionRemainsUsable()
     {
         await using var harness = await PipeHarness.CreateAsync();

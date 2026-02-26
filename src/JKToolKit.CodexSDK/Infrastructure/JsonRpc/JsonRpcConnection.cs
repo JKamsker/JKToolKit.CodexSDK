@@ -71,10 +71,31 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
             throw new InvalidOperationException($"Duplicate JSON-RPC id '{key}'.");
         }
 
+        var requestWritten = false;
         try
         {
             await WriteAsync(CreateRequestObject(id, method, @params), ct);
+            requestWritten = true;
             return await tcs.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            if (requestWritten && IncludeJsonRpcHeader)
+            {
+                try
+                {
+                    await WriteAsync(
+                        CreateNotificationObject("notifications/cancelled", new { requestId = id }),
+                        CancellationToken.None).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // best-effort
+                }
+            }
+
+            _pending.TryRemove(key, out _);
+            throw;
         }
         catch
         {

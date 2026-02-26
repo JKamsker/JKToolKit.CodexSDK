@@ -176,9 +176,9 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T091a Decide the default response shape for `elicitation/create` so upstream treats it as a correlated response (avoid JSON-RPC error-only responses if upstream doesn’t correlate them).
   - [x] T091b Update docs (`docs/McpServer/README.md`) to reflect the actual default behavior.
   - [x] T091c Add an integration test that triggers an elicitation and verifies the call completes (denied) without a handler.
-- [ ] T092 Propagate cancellation to the server (best-effort).
-  - [ ] T092a On request cancellation, send `notifications/cancelled` with the request id before dropping `_pending`.
-  - [ ] T092b Add a test: start a long `tools/call`, cancel, assert the server is interrupted (or at least receives the cancel notification).
+- [x] T092 Propagate cancellation to the server (best-effort).
+  - [x] T092a On request cancellation, send `notifications/cancelled` with the request id before dropping `_pending`.
+  - [x] T092b Add a test: start a long `tools/call`, cancel, assert the server is interrupted (or at least receives the cancel notification).
 - [ ] T093 Improve MCP parsing robustness and observability.
   - [ ] T093a Implement (or document) pagination support for `tools/list` (`nextCursor`).
   - [ ] T093b Add a “strict mode” (or logging) for unexpected result shapes so drift isn’t silently swallowed.
