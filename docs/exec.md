@@ -83,6 +83,17 @@ Run a non-interactive code review (`codex review`):
 var review = await client.ReviewAsync(new CodexReviewOptions("<repo-path>")
 {
     CommitSha = "<sha>",
+    Title = "Optional title"
+});
+
+Console.WriteLine(review.StandardOutput);
+```
+
+If you want to provide custom review instructions, use prompt-only mode (stdin):
+
+```csharp
+var review = await client.ReviewAsync(new CodexReviewOptions("<repo-path>")
+{
     Prompt = "Focus on correctness, security, and performance."
 });
 

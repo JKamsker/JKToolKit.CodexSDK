@@ -9,7 +9,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 0 — Repro + regression tests first
 
-- [ ] T001 Create/extend unit tests for `codex review` validation rules (targets + `--title` constraint).
+- [x] T001 Create/extend unit tests for `codex review` validation rules (targets + `--title` constraint).
 - [ ] T002 Create/extend unit tests covering session-id capture regex variants (`session id:` on stderr, JSON mode, non-hex ids).
 - [ ] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
 - [ ] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
@@ -18,19 +18,19 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 1 — Exec review (`codex review`) argv + option validation (P0)
 
-- [ ] T010 Align `CodexReviewOptions.Validate()` with upstream `codex review` rules.
-  - [ ] T010a Require **exactly one** target: `--uncommitted` OR `--base <branch>` OR `--commit <sha>` OR stdin prompt (`-`).
-  - [ ] T010b Forbid mixing stdin prompt with `--uncommitted/--base/--commit`.
-  - [ ] T010c Forbid “no target” (all unset) and emit a helpful exception message.
-  - [ ] T010d Enforce upstream constraint: `Title != null` ⇒ `CommitSha != null` (and update XML docs to clarify intent).
-- [ ] T011 Update `ProcessStartInfoBuilder.CreateReview(...)` to only emit valid argv combinations.
-  - [ ] T011a Remove/adjust any logic that currently allows `--commit` + stdin prompt together.
-  - [ ] T011b Ensure prompt-only reviews use stdin with `-` and that `CodexProcessLauncherIo.WriteOptionalPromptAndCloseStdinAsync(...)` is still used.
-- [ ] T012 Update tests that currently assert invalid combos (e.g., commit + prompt) are permitted.
-  - [ ] T012a Update `tests/JKToolKit.CodexSDK.Tests/Unit/ProcessStartInfoBuilderTests.cs` to reflect upstream exclusivity.
-  - [ ] T012b Add new tests: prompt-only review, title-without-commit throws, no-target throws, prompt+commit throws.
-- [ ] T013 Update docs examples for `codex review` usage to match the new rules.
-  - [ ] T013a Update `docs/exec.md` and `src/JKToolKit.CodexSDK/README.md` review examples (if needed).
+- [x] T010 Align `CodexReviewOptions.Validate()` with upstream `codex review` rules.
+  - [x] T010a Require **exactly one** target: `--uncommitted` OR `--base <branch>` OR `--commit <sha>` OR stdin prompt (`-`).
+  - [x] T010b Forbid mixing stdin prompt with `--uncommitted/--base/--commit`.
+  - [x] T010c Forbid “no target” (all unset) and emit a helpful exception message.
+  - [x] T010d Enforce upstream constraint: `Title != null` ⇒ `CommitSha != null` (and update XML docs to clarify intent).
+- [x] T011 Update `ProcessStartInfoBuilder.CreateReview(...)` to only emit valid argv combinations.
+  - [x] T011a Remove/adjust any logic that currently allows `--commit` + stdin prompt together.
+  - [x] T011b Ensure prompt-only reviews use stdin with `-` and that `CodexProcessLauncherIo.WriteOptionalPromptAndCloseStdinAsync(...)` is still used.
+- [x] T012 Update tests that currently assert invalid combos (e.g., commit + prompt) are permitted.
+  - [x] T012a Update `tests/JKToolKit.CodexSDK.Tests/Unit/ProcessStartInfoBuilderTests.cs` to reflect upstream exclusivity.
+  - [x] T012b Add new tests: prompt-only review, title-without-commit throws, no-target throws, prompt+commit throws.
+- [x] T013 Update docs examples for `codex review` usage to match the new rules.
+  - [x] T013a Update `docs/exec.md` and `src/JKToolKit.CodexSDK/README.md` review examples (if needed).
 - [ ] T014 Clarify `AdditionalOptions` tokenization for exec/review argv building.
   - [ ] T014a Decide whether `AdditionalOptions` entries are strictly “one argv token per entry” (status quo) or whether the SDK should tokenize strings with spaces/quotes.
   - [ ] T014b Document the chosen behavior in XML docs + `docs/exec.md` (add a short example).
