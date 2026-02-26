@@ -193,3 +193,4 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 - [x] T100 Run `dotnet test` and ensure all new + existing tests pass.
 - [x] T101 Run the manual testing runbook smoke sequence (`docs/Runbooks/Manual-Testing/README.md`) and ensure no hangs.
+- [x] T102 Run the full manual testing runbook (TC01–TC29) and confirm PASS (local artifact: `.tmp/manual_testing/0006.md`).
