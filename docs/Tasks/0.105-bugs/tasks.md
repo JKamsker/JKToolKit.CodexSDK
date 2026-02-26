@@ -38,16 +38,16 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 2 — `CODEX_HOME` + encoding hardening for all subprocesses (P1)
 
-- [ ] T020 Ensure `CodexClientOptions.CodexHomeDirectory` is safe to use across all modes.
-  - [ ] T020a If `CodexHomeDirectory` is set, create it (or validate+throw) before launching `codex` subprocesses (exec/resume/review/app-server/mcp-server).
-  - [ ] T020b Add tests for “non-existent CODEX_HOME” to verify we don’t fail before Codex starts (and failures are actionable).
-- [ ] T021 Pin redirected stdio encodings to UTF-8 for Codex subprocesses.
-  - [ ] T021a Set `StandardInputEncoding`, `StandardOutputEncoding`, `StandardErrorEncoding` in exec/review `ProcessStartInfo` creation.
-  - [ ] T021b Set the same encodings in `StdioProcessStartInfoBuilder` (app-server + mcp-server).
-  - [ ] T021c Add tests that assert UTF-8 is configured (Windows default codepage must not leak into JSON-RPC/JSONL).
-- [ ] T022 Clarify/guard `SessionsRootDirectory` semantics.
-  - [ ] T022a Decide whether `SessionsRootDirectory` should implicitly derive/set `CODEX_HOME` (or remain “SDK-only attach/list override”).
-  - [ ] T022b Update XML docs + `docs/exec.md` accordingly (avoid implying it changes where Codex writes).
+- [x] T020 Ensure `CodexClientOptions.CodexHomeDirectory` is safe to use across all modes.
+  - [x] T020a If `CodexHomeDirectory` is set, create it (or validate+throw) before launching `codex` subprocesses (exec/resume/review/app-server/mcp-server).
+  - [x] T020b Add tests for “non-existent CODEX_HOME” to verify we don’t fail before Codex starts (and failures are actionable).
+- [x] T021 Pin redirected stdio encodings to UTF-8 for Codex subprocesses.
+  - [x] T021a Set `StandardInputEncoding`, `StandardOutputEncoding`, `StandardErrorEncoding` in exec/review `ProcessStartInfo` creation.
+  - [x] T021b Set the same encodings in `StdioProcessStartInfoBuilder` (app-server + mcp-server).
+  - [x] T021c Add tests that assert UTF-8 is configured (Windows default codepage must not leak into JSON-RPC/JSONL).
+- [x] T022 Clarify/guard `SessionsRootDirectory` semantics.
+  - [x] T022a Decide whether `SessionsRootDirectory` should implicitly derive/set `CODEX_HOME` (or remain “SDK-only attach/list override”).
+  - [x] T022b Update XML docs + `docs/exec.md` accordingly (avoid implying it changes where Codex writes).
 
 ## Phase 3 — Session-id capture + session log discovery robustness (P0/P1)
 

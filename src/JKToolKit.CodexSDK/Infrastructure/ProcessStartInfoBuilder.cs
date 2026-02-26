@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
@@ -43,6 +44,7 @@ internal static class ProcessStartInfoBuilder
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        ConfigureUtf8RedirectedEncodings(startInfo);
 
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
@@ -95,6 +97,7 @@ internal static class ProcessStartInfoBuilder
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        ConfigureUtf8RedirectedEncodings(startInfo);
 
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
@@ -148,6 +151,7 @@ internal static class ProcessStartInfoBuilder
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        ConfigureUtf8RedirectedEncodings(startInfo);
 
         // `--cd` is a global option (before the subcommand).
         startInfo.ArgumentList.Add("-C");
@@ -213,4 +217,13 @@ internal static class ProcessStartInfoBuilder
         value.Any(char.IsWhiteSpace) || value.Contains('"')
             ? $"\"{value.Replace("\"", "\\\"")}\""
             : value;
+
+    private static void ConfigureUtf8RedirectedEncodings(ProcessStartInfo startInfo)
+    {
+        // Avoid platform-default codepages (especially on Windows) leaking into JSON-RPC/JSONL streams.
+        var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        startInfo.StandardInputEncoding = utf8NoBom;
+        startInfo.StandardOutputEncoding = utf8NoBom;
+        startInfo.StandardErrorEncoding = utf8NoBom;
+    }
 }

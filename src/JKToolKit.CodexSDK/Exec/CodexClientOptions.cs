@@ -65,8 +65,13 @@ public class CodexClientOptions
     /// Gets or sets the root directory where session data is stored.
     /// </summary>
     /// <remarks>
-    /// When null, the default Codex session directory will be used (typically ~/.codex/sessions
-    /// on Unix-like systems or %USERPROFILE%\.codex\sessions on Windows).
+    /// This setting only affects where the SDK looks for session logs when attaching/resuming and when resolving the JSONL path.
+    /// It does not change where the Codex CLI writes sessions.
+    ///
+    /// To change where Codex writes sessions, set <see cref="CodexHomeDirectory"/> (which sets <c>CODEX_HOME</c> for launched processes).
+    ///
+    /// When null, the default Codex session directory will be used (typically ~/.codex/sessions on Unix-like systems or
+    /// %USERPROFILE%\.codex\sessions on Windows).
     /// </remarks>
     public string? SessionsRootDirectory { get; set; }
 

@@ -1,5 +1,8 @@
 using System.Diagnostics;
 
+using System.Text;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
+
 namespace JKToolKit.CodexSDK.Infrastructure.Stdio;
 
 internal static class StdioProcessStartInfoBuilder
@@ -21,6 +24,11 @@ internal static class StdioProcessStartInfoBuilder
             CreateNoWindow = true
         };
 
+        var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        startInfo.StandardInputEncoding = utf8NoBom;
+        startInfo.StandardOutputEncoding = utf8NoBom;
+        startInfo.StandardErrorEncoding = utf8NoBom;
+
         if (!string.IsNullOrWhiteSpace(options.WorkingDirectory))
         {
             startInfo.WorkingDirectory = options.WorkingDirectory;
@@ -34,6 +42,11 @@ internal static class StdioProcessStartInfoBuilder
         foreach (var (key, value) in options.Environment)
         {
             startInfo.Environment[key] = value;
+        }
+
+        if (options.Environment.TryGetValue("CODEX_HOME", out var codexHomeDirectory))
+        {
+            CodexHomeDirectoryHelpers.EnsureExists(codexHomeDirectory);
         }
 
         return startInfo;

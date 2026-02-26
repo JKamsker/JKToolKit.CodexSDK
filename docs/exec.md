@@ -11,6 +11,9 @@ The **exec** integration launches `codex exec` as a child process and streams th
 
 This gives you a stable, .NET-native streaming pipeline even when Codex outputs human-readable text to stdout/stderr.
 
+If you need to override where the SDK looks for session logs (attach/resume), set `CodexClientOptions.SessionsRootDirectory`.
+To change where Codex writes sessions, set `CodexClientOptions.CodexHomeDirectory` (sets `CODEX_HOME` for launched processes).
+
 ## Quick Example
 
 ```csharp

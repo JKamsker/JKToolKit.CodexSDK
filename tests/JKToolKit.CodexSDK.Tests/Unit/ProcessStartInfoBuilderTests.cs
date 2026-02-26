@@ -7,6 +7,7 @@ using JKToolKit.CodexSDK.StructuredOutputs;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -34,6 +35,7 @@ public class ProcessStartInfoBuilderTests
 
             startInfo.FileName.Should().Be("codex-default");
             startInfo.WorkingDirectory.Should().Be(workingDirectory);
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "exec",
                 "--cd",
@@ -74,6 +76,7 @@ public class ProcessStartInfoBuilderTests
 
             var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
 
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "exec",
                 "--cd",
@@ -113,6 +116,7 @@ public class ProcessStartInfoBuilderTests
 
             startInfo.FileName.Should().Be("codex-default");
             startInfo.WorkingDirectory.Should().Be(workingDirectory);
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "exec",
                 "--cd",
@@ -153,6 +157,7 @@ public class ProcessStartInfoBuilderTests
 
             var startInfo = launcher.CreateResumeStartInfo(sessionId, options, clientOptions);
 
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "exec",
                 "--cd",
@@ -180,13 +185,15 @@ public class ProcessStartInfoBuilderTests
         try
         {
             var options = new CodexSessionOptions(workingDirectory, "prompt");
-            var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
+            var codexHome = Path.Combine(workingDirectory, "codex-home");
+            var clientOptions = new CodexClientOptions { CodexHomeDirectory = codexHome };
             var pathProvider = new RecordingPathProvider("codex-default");
             var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
 
             var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
 
-            startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
+            startInfo.Environment["CODEX_HOME"].Should().Be(codexHome);
+            Directory.Exists(codexHome).Should().BeTrue();
         }
         finally
         {
@@ -201,14 +208,16 @@ public class ProcessStartInfoBuilderTests
         try
         {
             var options = new CodexSessionOptions(workingDirectory, "follow-up");
-            var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
+            var codexHome = Path.Combine(workingDirectory, "codex-home");
+            var clientOptions = new CodexClientOptions { CodexHomeDirectory = codexHome };
             var sessionId = SessionId.Parse("session-abc");
             var pathProvider = new RecordingPathProvider("codex-default");
             var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
 
             var startInfo = launcher.CreateResumeStartInfo(sessionId, options, clientOptions);
 
-            startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
+            startInfo.Environment["CODEX_HOME"].Should().Be(codexHome);
+            Directory.Exists(codexHome).Should().BeTrue();
         }
         finally
         {
@@ -346,6 +355,7 @@ public class ProcessStartInfoBuilderTests
 
             startInfo.FileName.Should().Be("codex-default");
             startInfo.WorkingDirectory.Should().Be(workingDirectory);
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "-C",
                 workingDirectory,
@@ -370,13 +380,15 @@ public class ProcessStartInfoBuilderTests
         try
         {
             var options = new CodexReviewOptions(workingDirectory) { Uncommitted = true };
-            var clientOptions = new CodexClientOptions { CodexHomeDirectory = @"C:\codex\home" };
+            var codexHome = Path.Combine(workingDirectory, "codex-home");
+            var clientOptions = new CodexClientOptions { CodexHomeDirectory = codexHome };
             var pathProvider = new RecordingPathProvider("codex-default");
             var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
 
             var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
 
-            startInfo.Environment["CODEX_HOME"].Should().Be(clientOptions.CodexHomeDirectory);
+            startInfo.Environment["CODEX_HOME"].Should().Be(codexHome);
+            Directory.Exists(codexHome).Should().BeTrue();
         }
         finally
         {
@@ -401,6 +413,7 @@ public class ProcessStartInfoBuilderTests
 
             var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
 
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "-C",
                 workingDirectory,
@@ -458,6 +471,7 @@ public class ProcessStartInfoBuilderTests
 
             var startInfo = launcher.CreateReviewStartInfo(options, clientOptions);
 
+            AssertUtf8Encodings(startInfo);
             startInfo.ArgumentList.Should().Equal(
                 "-C",
                 workingDirectory,
@@ -475,6 +489,13 @@ public class ProcessStartInfoBuilderTests
         var path = Path.Combine(Path.GetTempPath(), $"codex-tests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private static void AssertUtf8Encodings(ProcessStartInfo startInfo)
+    {
+        startInfo.StandardInputEncoding?.WebName.Should().Be("utf-8");
+        startInfo.StandardOutputEncoding?.WebName.Should().Be("utf-8");
+        startInfo.StandardErrorEncoding?.WebName.Should().Be("utf-8");
     }
 
     private sealed class RecordingPathProvider : ICodexPathProvider
