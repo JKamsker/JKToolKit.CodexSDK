@@ -266,14 +266,29 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Subscribes to the global app-server notification stream.
     /// </summary>
+    /// <remarks>
+    /// This stream is backed by a bounded, drop-oldest queue. Each notification is delivered to at most one consumer.
+    /// If you enumerate this stream multiple times concurrently, notifications will be distributed across readers
+    /// (queue semantics), not broadcast (pub-sub).
+    /// </remarks>
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
         _core.Notifications(ct);
 
     /// <summary>
     /// Subscribes to the global raw JSON-RPC notification stream (method + params).
     /// </summary>
+    /// <remarks>
+    /// This stream is backed by a bounded, drop-oldest queue. Each notification is delivered to at most one consumer.
+    /// If you enumerate this stream multiple times concurrently, notifications will be distributed across readers
+    /// (queue semantics), not broadcast (pub-sub).
+    /// </remarks>
     public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
         _core.NotificationsRaw(ct);
+
+    /// <summary>
+    /// Gets drop counters for bounded notification buffers.
+    /// </summary>
+    public AppServerNotificationDropStats NotificationDropStats => _core.NotificationDropStats;
 
     /// <summary>
     /// Starts a new thread.

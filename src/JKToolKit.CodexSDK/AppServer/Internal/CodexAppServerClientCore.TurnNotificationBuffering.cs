@@ -22,7 +22,11 @@ internal sealed partial class CodexAppServerClientCore
             }
 
             buffer.LastUpdatedUtc = nowUtc;
-            buffer.Enqueue(mapped, raw, _turnNotificationBufferCapacity);
+            var dropped = buffer.Enqueue(mapped, raw, _turnNotificationBufferCapacity);
+            if (dropped > 0)
+            {
+                Interlocked.Add(ref _droppedBufferedTurnNotificationsCapacity, dropped);
+            }
         }
     }
 
@@ -48,7 +52,10 @@ internal sealed partial class CodexAppServerClientCore
 
         foreach (var key in staleKeys)
         {
-            _bufferedTurnNotificationsById.Remove(key);
+            if (_bufferedTurnNotificationsById.Remove(key, out var removed))
+            {
+                Interlocked.Add(ref _droppedBufferedTurnNotificationsTtl, removed.Items.Count);
+            }
         }
     }
 
@@ -56,8 +63,8 @@ internal sealed partial class CodexAppServerClientCore
     {
         foreach (var (mapped, raw) in buffered.Items)
         {
-            handle.EventsChannel.Writer.TryWrite(mapped);
-            handle.RawEventsChannel.Writer.TryWrite(raw);
+            TryWriteDroppingOldest(handle.EventsChannel, mapped, ref _droppedTurnNotifications);
+            TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
 
             if (mapped is TurnCompletedNotification completed)
             {
@@ -81,14 +88,17 @@ internal sealed partial class CodexAppServerClientCore
 
         public List<(AppServerNotification Mapped, AppServerRpcNotification Raw)> Items { get; } = new();
 
-        public void Enqueue(AppServerNotification mapped, AppServerRpcNotification raw, int capacity)
+        public int Enqueue(AppServerNotification mapped, AppServerRpcNotification raw, int capacity)
         {
+            var dropped = 0;
             if (Items.Count >= capacity)
             {
                 Items.RemoveAt(0);
+                dropped++;
             }
 
             Items.Add((mapped, raw));
+            return dropped;
         }
     }
 }

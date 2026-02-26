@@ -159,12 +159,12 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T082 Enforce a handshake timeout using `StartupTimeout`.
   - [x] T082a Apply `CancelAfter(StartupTimeout)` around `initialize` + `initialized` (and dispose on timeout).
   - [x] T082b Add a test where the server never responds to `initialize`.
-- [ ] T083 Clarify notification stream semantics.
-  - [ ] T083a Decide whether `Notifications()` / `Events()` are single-consumer queues or true pub-sub.
-  - [ ] T083b If keeping queues, document “single consumer” prominently in docs + XML docs.
-  - [ ] T083c If implementing pub-sub, add fanout and tests.
-- [ ] T084 Improve visibility into dropped notifications.
-  - [ ] T084a Add drop counters/telemetry (or switch per-turn streams to backpressure) and document tradeoffs.
+- [x] T083 Clarify notification stream semantics.
+  - [x] T083a Decide whether `Notifications()` / `Events()` are single-consumer queues or true pub-sub.
+  - [x] T083b If keeping queues, document “single consumer” prominently in docs + XML docs.
+  - [x] T083c If implementing pub-sub, add fanout and tests. (N/A: kept queue semantics)
+- [x] T084 Improve visibility into dropped notifications.
+  - [x] T084a Add drop counters/telemetry (or switch per-turn streams to backpressure) and document tradeoffs.
 
 ## Phase 9 — MCP server client protocol fixes + drift tolerance (P0/P1)
 
