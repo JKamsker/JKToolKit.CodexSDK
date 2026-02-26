@@ -172,7 +172,7 @@ internal static class CodexUncorrelatedSessionDiscoveryHelpers
         return null;
     }
 
-    private static bool TryParseRolloutTimestampUtc(string filePath, out DateTimeOffset timestampUtc)
+    internal static bool TryParseRolloutTimestampUtc(string filePath, out DateTimeOffset timestampUtc)
     {
         timestampUtc = default;
 
@@ -266,4 +266,3 @@ internal static class CodexUncorrelatedSessionDiscoveryHelpers
         }
     }
 }
-

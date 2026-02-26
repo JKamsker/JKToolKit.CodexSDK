@@ -69,10 +69,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T034b Stop relying on filesystem creation time for ordering/filtering; prefer parsing the rollout timestamp from the filename and/or verifying by reading `session_meta`.
   - [x] T034c Restrict scans to likely date directories (e.g., `sessions/YYYY/MM/DD`) to avoid O(N) `AllDirectories` walks.
   - [x] T034d Add unit tests with a mocked `IFileSystem` for: baseline race, coarse timestamps, multiple candidates, and “wrong cwd” rejection.
-- [ ] T035 Harden by-id lookup.
-  - [ ] T035a Escape/protect `SessionId.Value` when forming glob patterns (avoid wildcard injection).
-  - [ ] T035b Define deterministic selection when multiple files match (prefer exact filename structure, then most recent by parsed timestamp).
-  - [ ] T035c Add tests for wildcard chars (if allowed) and multiple matches.
+- [x] T035 Harden by-id lookup.
+  - [x] T035a Escape/protect `SessionId.Value` when forming glob patterns (avoid wildcard injection).
+  - [x] T035b Define deterministic selection when multiple files match (prefer exact filename structure, then most recent by parsed timestamp).
+  - [x] T035c Add tests for wildcard chars (if allowed) and multiple matches.
 
 ## Phase 4 — JSONL tailer correctness (P0/P1)
 

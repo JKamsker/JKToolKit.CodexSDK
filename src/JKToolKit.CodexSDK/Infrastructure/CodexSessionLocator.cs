@@ -178,29 +178,44 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionId,
             sessionsRoot);
 
-        // Search for files matching the pattern *-{sessionId}.jsonl
-        var searchPattern = $"*-{sessionId.Value}.jsonl";
-
         try
         {
-            var matchingFiles = _fileSystem.GetFiles(sessionsRoot, searchPattern).ToArray();
+            // Don't embed the session id into a glob pattern (wildcard injection).
+            // Enumerate candidate JSONL files and filter by suffix match instead.
+            var expectedSuffix = "-" + sessionId.Value + ".jsonl";
+            var expectedRolloutName = "rollout-" + sessionId.Value + ".jsonl";
+
+            var matchingFiles = _fileSystem.GetFiles(sessionsRoot, "*.jsonl")
+                .Where(path =>
+                {
+                    var name = Path.GetFileName(path);
+                    if (!SessionFilePattern.IsMatch(name))
+                    {
+                        return false;
+                    }
+
+                    return name.EndsWith(expectedSuffix, StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(name, expectedRolloutName, StringComparison.OrdinalIgnoreCase);
+                })
+                .ToArray();
 
             if (matchingFiles.Length == 0)
             {
                 throw new FileNotFoundException(
                     $"No session log file found for session ID: {sessionId}. Searched in: {sessionsRoot}",
-                    searchPattern);
+                    sessionsRoot);
             }
+
+            var logPath = SelectBestSessionLogMatch(sessionId, matchingFiles);
 
             if (matchingFiles.Length > 1)
             {
                 _logger.LogWarning(
-                    "Multiple session log files found for session ID {SessionId}. Using the first match: {Path}",
+                    "Multiple session log files found for session ID {SessionId}. Using: {Path}",
                     sessionId,
-                    matchingFiles[0]);
+                    logPath);
             }
 
-            var logPath = matchingFiles[0];
             _logger.LogDebug("Found session log file: {Path}", logPath);
 
             var validated = await ValidateLogFileAsync(logPath, cancellationToken).ConfigureAwait(false);
@@ -214,6 +229,40 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
                 sessionId);
             throw;
         }
+    }
+
+    private static string SelectBestSessionLogMatch(SessionId sessionId, IReadOnlyList<string> matchingFiles)
+    {
+        var id = sessionId.Value;
+
+        static int GetPriority(string fileName, string id, bool hasTimestamp)
+        {
+            if (hasTimestamp && fileName.StartsWith("rollout-", StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+
+            if (string.Equals(fileName, "rollout-" + id + ".jsonl", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            return 2;
+        }
+
+        return matchingFiles
+            .Select(path =>
+            {
+                var fileName = Path.GetFileName(path);
+                var hasTimestamp = CodexUncorrelatedSessionDiscoveryHelpers.TryParseRolloutTimestampUtc(path, out var ts);
+                var timestamp = hasTimestamp ? ts : (DateTimeOffset?)null;
+                return (Path: path, FileName: fileName, Priority: GetPriority(fileName, id, hasTimestamp), Timestamp: timestamp);
+            })
+            .OrderBy(x => x.Priority)
+            .ThenByDescending(x => x.Timestamp ?? DateTimeOffset.MinValue)
+            .ThenBy(x => x.Path, StringComparer.OrdinalIgnoreCase)
+            .First()
+            .Path;
     }
 
     /// <inheritdoc />
