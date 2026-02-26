@@ -70,6 +70,12 @@ public sealed class CodexMcpServerClientOptions
     public IReadOnlyList<ICodexMcpToolResultTransformer>? CodexToolResultTransformers { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the client should throw on unexpected response shapes instead of
+    /// silently returning empty results.
+    /// </summary>
+    public bool StrictParsing { get; set; }
+
+    /// <summary>
     /// Optional mappers applied to Codex MCP tool results (highest priority first).
     /// </summary>
     public IReadOnlyList<ICodexMcpToolResultMapper>? CodexToolResultMappers { get; set; }

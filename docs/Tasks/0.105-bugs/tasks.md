@@ -179,12 +179,12 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T092 Propagate cancellation to the server (best-effort).
   - [x] T092a On request cancellation, send `notifications/cancelled` with the request id before dropping `_pending`.
   - [x] T092b Add a test: start a long `tools/call`, cancel, assert the server is interrupted (or at least receives the cancel notification).
-- [ ] T093 Improve MCP parsing robustness and observability.
-  - [ ] T093a Implement (or document) pagination support for `tools/list` (`nextCursor`).
-  - [ ] T093b Add a “strict mode” (or logging) for unexpected result shapes so drift isn’t silently swallowed.
-  - [ ] T093c Concatenate all `content[*].text` blocks when extracting best-effort text (don’t take only the first).
-  - [ ] T093d Add additional thread-id fallbacks (`thread_id`, `conversation_id`, top-level) for drift tolerance.
-  - [ ] T093e Add unit tests for each parsing variant.
+- [x] T093 Improve MCP parsing robustness and observability.
+  - [x] T093a Implement (or document) pagination support for `tools/list` (`nextCursor`).
+  - [x] T093b Add a “strict mode” (or logging) for unexpected result shapes so drift isn’t silently swallowed.
+  - [x] T093c Concatenate all `content[*].text` blocks when extracting best-effort text (don’t take only the first).
+  - [x] T093d Add additional thread-id fallbacks (`thread_id`, `conversation_id`, top-level) for drift tolerance.
+  - [x] T093e Add unit tests for each parsing variant.
 - [ ] T094 Gate outgoing tool arguments against server schema to avoid unknown fields.
   - [ ] T094a Decide whether to preflight `tools/list` and filter outgoing args (e.g., `include-plan-tool`).
   - [ ] T094b Add tests that validate we don’t send args the server doesn’t declare.

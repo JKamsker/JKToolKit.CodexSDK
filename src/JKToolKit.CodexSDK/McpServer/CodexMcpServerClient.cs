@@ -145,7 +145,40 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             }
         }
 
-        return McpToolsListParser.Parse(transformed);
+        const int maxPages = 100;
+        var tools = new List<McpToolDescriptor>();
+        string? cursor = null;
+
+        for (var i = 0; i < maxPages; i++)
+        {
+            if (i != 0)
+            {
+                result = await _rpc.SendRequestAsync("tools/list", @params: new { cursor }, ct);
+                transformed = ApplyResponseTransformers("tools/list", result);
+            }
+
+            if (!McpToolsListParser.TryParse(transformed, out var pageTools, out var nextCursor))
+            {
+                if (_options.StrictParsing)
+                {
+                    throw new JsonException("Unexpected tools/list result shape.");
+                }
+
+                _logger.LogWarning("Unexpected tools/list result shape: {Result}", Truncate(transformed.GetRawText(), maxChars: 4000));
+                return tools;
+            }
+
+            tools.AddRange(pageTools);
+
+            if (string.IsNullOrWhiteSpace(nextCursor))
+            {
+                break;
+            }
+
+            cursor = nextCursor;
+        }
+
+        return tools;
     }
 
     /// <summary>
@@ -230,6 +263,16 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         var call = await CallToolAsync("codex-reply", args, ct);
         var parsed = ParseCodexToolResult("codex-reply", call.Raw);
         return new CodexMcpReplyResult(parsed.ThreadId, parsed.Text, parsed.StructuredContent, parsed.Raw);
+    }
+
+    private static string Truncate(string value, int maxChars)
+    {
+        if (value.Length <= maxChars)
+        {
+            return value;
+        }
+
+        return value[..maxChars] + "...";
     }
 
     private JsonElement ApplyResponseTransformers(string method, JsonElement result)
