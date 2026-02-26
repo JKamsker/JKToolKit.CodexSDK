@@ -16,7 +16,7 @@ namespace JKToolKit.CodexSDK.McpServer;
 /// <summary>
 /// A client for interacting with the Codex CLI "mcp-server" JSON-RPC interface.
 /// </summary>
-public sealed class CodexMcpServerClient : IAsyncDisposable
+public sealed partial class CodexMcpServerClient : IAsyncDisposable
 {
     private static readonly JsonElement DefaultElicitationDeniedResult = CreateDefaultElicitationDeniedResult();
 
@@ -191,9 +191,25 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
 
         ArgumentNullException.ThrowIfNull(arguments);
 
+        object gatedArguments = arguments;
+        if (arguments is IDictionary<string, object?> dictArgs)
+        {
+            gatedArguments = await GateArgumentsAsync(toolName, dictArgs, ct).ConfigureAwait(false);
+        }
+        else if (arguments is IDictionary<string, object> dictArgsNonNullable)
+        {
+            var converted = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var kvp in dictArgsNonNullable)
+            {
+                converted[kvp.Key] = kvp.Value;
+            }
+
+            gatedArguments = await GateArgumentsAsync(toolName, converted, ct).ConfigureAwait(false);
+        }
+
         var result = await _rpc.SendRequestAsync(
             "tools/call",
-            new { name = toolName, arguments },
+            new { name = toolName, arguments = gatedArguments },
             ct);
 
         var transformed = ApplyResponseTransformers("tools/call", result);

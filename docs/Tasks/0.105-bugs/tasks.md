@@ -185,9 +185,9 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T093c Concatenate all `content[*].text` blocks when extracting best-effort text (don’t take only the first).
   - [x] T093d Add additional thread-id fallbacks (`thread_id`, `conversation_id`, top-level) for drift tolerance.
   - [x] T093e Add unit tests for each parsing variant.
-- [ ] T094 Gate outgoing tool arguments against server schema to avoid unknown fields.
-  - [ ] T094a Decide whether to preflight `tools/list` and filter outgoing args (e.g., `include-plan-tool`).
-  - [ ] T094b Add tests that validate we don’t send args the server doesn’t declare.
+- [x] T094 Gate outgoing tool arguments against server schema to avoid unknown fields.
+  - [x] T094a Decide whether to preflight `tools/list` and filter outgoing args (e.g., `include-plan-tool`).
+  - [x] T094b Add tests that validate we don’t send args the server doesn’t declare.
 
 ## Phase 10 — Validation
 
