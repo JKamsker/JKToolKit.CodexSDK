@@ -148,10 +148,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 8 — App-server client lifecycle + event routing fixes (P0/P1)
 
-- [ ] T080 Fix the turn-handle registration race (avoid missing early turn notifications).
-  - [ ] T080a Buffer notifications by `turnId` when no `CodexTurnHandle` exists yet (bounded + TTL).
-  - [ ] T080b Flush buffered notifications when `RegisterTurnHandle(...)` is called.
-  - [ ] T080c Add a unit/integration test with a transcript: `turn/start` response immediately followed by `turn/started` + `item/started` (per-turn stream must observe them).
+- [x] T080 Fix the turn-handle registration race (avoid missing early turn notifications).
+  - [x] T080a Buffer notifications by `turnId` when no `CodexTurnHandle` exists yet (bounded + TTL).
+  - [x] T080b Flush buffered notifications when `RegisterTurnHandle(...)` is called.
+  - [x] T080c Add a unit/integration test with a transcript: `turn/start` response immediately followed by `turn/started` + `item/started` (per-turn stream must observe them).
 - [ ] T081 Ensure processes are cleaned up on initialization failure.
   - [ ] T081a Wrap app-server `StartAsync` initialization in `try/catch` and dispose process+RPC on any failure.
   - [ ] T081b Apply the same behavior to DI factories.

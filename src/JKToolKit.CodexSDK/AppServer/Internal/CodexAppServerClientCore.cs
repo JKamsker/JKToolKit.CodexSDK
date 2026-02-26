@@ -33,7 +33,10 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
     private readonly Channel<AppServerNotification> _globalNotifications;
     private readonly Channel<AppServerRpcNotification> _globalRawNotifications;
+    private readonly object _turnsLock = new();
     private readonly Dictionary<string, CodexTurnHandle> _turnsById = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, TurnNotificationBuffer> _bufferedTurnNotificationsById = new(StringComparer.Ordinal);
+    private readonly int _turnNotificationBufferCapacity;
     private int _disposed;
     private int _disconnectSignaled;
     private readonly Task _processExitWatcher;
@@ -69,6 +72,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         _rpc.OnServerRequest = OnRpcServerRequestAsync;
 
         _disposeToken = _disposeCts.Token;
+        _turnNotificationBufferCapacity = Math.Max(1, options.NotificationBufferCapacity);
         _processExitWatcher = startExitWatcher ? Task.Run(WatchProcessExitAsync) : Task.CompletedTask;
     }
 
@@ -86,7 +90,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
     internal bool TryGetTurnHandle(string turnId, out CodexTurnHandle? handle)
     {
-        lock (_turnsById)
+        lock (_turnsLock)
         {
             return _turnsById.TryGetValue(turnId, out handle);
         }
@@ -94,26 +98,39 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
     internal void RegisterTurnHandle(string turnId, CodexTurnHandle handle)
     {
-        lock (_turnsById)
+        TurnNotificationBuffer? buffered = null;
+        lock (_turnsLock)
         {
             _turnsById[turnId] = handle;
+            PruneStaleTurnBuffers(DateTimeOffset.UtcNow);
+            if (_bufferedTurnNotificationsById.TryGetValue(turnId, out buffered))
+            {
+                _bufferedTurnNotificationsById.Remove(turnId);
+            }
+        }
+
+        if (buffered is not null)
+        {
+            FlushBufferedTurnNotifications(turnId, handle, buffered);
         }
     }
 
     internal void RemoveTurnHandle(string turnId)
     {
-        lock (_turnsById)
+        lock (_turnsLock)
         {
             _turnsById.Remove(turnId);
+            _bufferedTurnNotificationsById.Remove(turnId);
         }
     }
 
     private CodexTurnHandle[] SnapshotAndClearTurns()
     {
-        lock (_turnsById)
+        lock (_turnsLock)
         {
             var handles = _turnsById.Values.ToArray();
             _turnsById.Clear();
+            _bufferedTurnNotificationsById.Clear();
             return handles;
         }
     }
@@ -302,6 +319,10 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                     handle.RawEventsChannel.Writer.TryComplete();
                     RemoveTurnHandle(turnId);
                 }
+            }
+            else
+            {
+                BufferTurnNotification(turnId, mapped, raw);
             }
         }
 
