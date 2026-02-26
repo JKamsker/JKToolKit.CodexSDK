@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Channels;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Wire;
@@ -25,6 +26,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
     private readonly Task _readLoop;
     private Exception? _fault;
     private int _faulted;
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
 
     private long _nextId;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonElement>> _pending = new();
@@ -369,8 +371,21 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         ThrowIfFaulted();
         ct.ThrowIfCancellationRequested();
         var json = JsonSerializer.Serialize(payload, _serializerOptions);
-        await _writer.WriteLineAsync(json.AsMemory(), ct);
-        await _writer.FlushAsync(ct);
+
+        // Serialize *all* outbound writes to prevent concurrent calls from interleaving/corrupting JSONL.
+        await _writeGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ThrowIfFaulted();
+
+            // Don't cancel mid-write. Callers can cancel waiting for responses, but the wire must remain well-formed.
+            await _writer.WriteLineAsync(json.AsMemory(), CancellationToken.None).ConfigureAwait(false);
+            await _writer.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
     }
 
     private void ThrowIfFaulted()

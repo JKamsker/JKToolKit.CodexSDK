@@ -12,7 +12,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T001 Create/extend unit tests for `codex review` validation rules (targets + `--title` constraint).
 - [x] T002 Create/extend unit tests covering session-id capture regex variants (`session id:` on stderr, JSON mode, non-hex ids).
 - [x] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
-- [ ] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
+- [x] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
 - [ ] T005 Create/extend unit tests for structured-output JSON extraction edge cases (fences + bracket noise + multiple JSON values).
 - [ ] T006 Create/extend unit tests for JSONL tailer rotation/partial-line behavior (partial line buffering, truncation + BOM, `FileShare.Delete`).
 
@@ -129,14 +129,15 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 ## Phase 7 — JSON-RPC core (`JsonRpcConnection`) correctness + concurrency (P0)
 
 - [ ] T070 Serialize all outbound JSON-RPC writes (prevent interleaved/corrupted JSONL).
-  - [ ] T070a Implement a single outbound writer pump (Channel/queue) or a `SemaphoreSlim` lock for *all* writes (requests, notifications, server-request responses).
-  - [ ] T070b Ensure server-request responses go through the same serialization path.
-  - [ ] T070c Add a concurrency stress test (many parallel calls + simulated server requests) asserting every emitted line is valid JSON.
+- [x] T070 Serialize all outbound JSON-RPC writes (prevent interleaved/corrupted JSONL).
+  - [x] T070a Implement a single outbound writer pump (Channel/queue) or a `SemaphoreSlim` lock for *all* writes (requests, notifications, server-request responses).
+  - [x] T070b Ensure server-request responses go through the same serialization path.
+  - [x] T070c Add a concurrency stress test (many parallel calls + simulated server requests) asserting every emitted line is valid JSON.
 - [ ] T071 Emit spec-compliant JSON-RPC responses.
   - [ ] T071a When `error` is present, omit `result` (don’t emit both).
   - [ ] T071b Add serialization “golden” tests for success vs error responses.
 - [ ] T072 Ensure cancellation cannot corrupt the wire.
-  - [ ] T072a Do not cancel mid-write; cancellation should stop waiting for the response, not interrupt message emission.
+  - [x] T072a Do not cancel mid-write; cancellation should stop waiting for the response, not interrupt message emission.
   - [ ] T072b Add a test that cancels a request during send/wait and asserts the wire remains well-formed.
 - [ ] T073 Keep the read loop responsive under slow handlers.
   - [ ] T073a Dispatch `OnNotification` and `OnServerRequest` handling so the read loop doesn’t stall message processing.

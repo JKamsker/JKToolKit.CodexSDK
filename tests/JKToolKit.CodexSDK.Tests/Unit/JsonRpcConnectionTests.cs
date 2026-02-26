@@ -426,6 +426,64 @@ public sealed class JsonRpcConnectionTests
         await serverTask;
     }
 
+    [Fact]
+    public async Task ConcurrentOutboundWrites_DoNotCorruptJsonLines()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        rpc.OnServerRequest = req =>
+        {
+            using var doc = JsonDocument.Parse("""{"ok":true}""");
+            return ValueTask.FromResult(new JsonRpcResponse(req.Id, doc.RootElement.Clone(), Error: null));
+        };
+
+        const int notificationCount = 200;
+        const int serverRequestCount = 50;
+        var expectedClientLines = notificationCount + serverRequestCount;
+
+        var readTask = Task.Run(async () =>
+        {
+            var lines = new List<string>(capacity: expectedClientLines);
+
+            while (lines.Count < expectedClientLines)
+            {
+                var line = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                line.Should().NotBeNull();
+                lines.Add(line!);
+
+                using var _ = JsonDocument.Parse(line!);
+            }
+        });
+
+        var sendServerRequestsTask = Task.Run(async () =>
+        {
+            for (var i = 0; i < serverRequestCount; i++)
+            {
+                await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new
+                {
+                    jsonrpc = "2.0",
+                    id = i,
+                    method = "srv/request",
+                    @params = new { i }
+                }));
+            }
+        });
+
+        var sendNotificationsTask = Task.WhenAll(Enumerable.Range(0, notificationCount).Select(i =>
+            rpc.SendNotificationAsync("note", new { i }, CancellationToken.None)));
+
+        await Task.WhenAll(sendNotificationsTask, sendServerRequestsTask);
+        await readTask.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
     private sealed class PipeHarness : IAsyncDisposable
     {
         private readonly NamedPipeServerStream _server;
