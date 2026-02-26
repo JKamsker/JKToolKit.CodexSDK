@@ -119,9 +119,9 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T060b Bracket scanning: try multiple `{`/`[` candidates (don’t throw on the first invalid candidate when valid JSON appears later).
   - [x] T060c Decide policy for multiple JSON values (first parseable, last parseable, or first that deserializes to `T`).
   - [x] T060d Add unit tests for: “bad first fence, good second fence”, “markdown [link] before JSON”, “{not json} then real JSON”, “unbalanced brace before JSON”, “multiple JSON values”.
-- [ ] T061 Make exec final-text capture more robust.
-  - [ ] T061a Add fallbacks to capture the last assistant message from `ResponseItemEvent` (assistant role) and/or `TurnItemCompletedEvent` when `AgentMessageEvent`/`TaskCompleteEvent.LastAgentMessage` aren’t available.
-  - [ ] T061b Add tests for sessions that lack `agent_message` and/or lack `task_complete.last_agent_message`.
+- [x] T061 Make exec final-text capture more robust.
+  - [x] T061a Add fallbacks to capture the last assistant message from `ResponseItemEvent` (assistant role) and/or `TurnItemCompletedEvent` when `AgentMessageEvent`/`TaskCompleteEvent.LastAgentMessage` aren’t available.
+  - [x] T061b Add tests for sessions that lack `agent_message` and/or lack `task_complete.last_agent_message`.
 - [ ] T062 Fix resume boundary behavior for structured-output resume.
   - [ ] T062a Prefer byte-offset-based resume (record log size and use `EventStreamOptions.FromByteOffset`) over timestamp filtering.
   - [ ] T062b Add a unit test for events whose timestamp equals the resume boundary (ensure we don’t drop the first “new” event).
