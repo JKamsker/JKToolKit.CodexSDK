@@ -133,18 +133,18 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T070a Implement a single outbound writer pump (Channel/queue) or a `SemaphoreSlim` lock for *all* writes (requests, notifications, server-request responses).
   - [x] T070b Ensure server-request responses go through the same serialization path.
   - [x] T070c Add a concurrency stress test (many parallel calls + simulated server requests) asserting every emitted line is valid JSON.
-- [ ] T071 Emit spec-compliant JSON-RPC responses.
-  - [ ] T071a When `error` is present, omit `result` (don’t emit both).
-  - [ ] T071b Add serialization “golden” tests for success vs error responses.
-- [ ] T072 Ensure cancellation cannot corrupt the wire.
+- [x] T071 Emit spec-compliant JSON-RPC responses.
+  - [x] T071a When `error` is present, omit `result` (don’t emit both).
+  - [x] T071b Add serialization “golden” tests for success vs error responses.
+- [x] T072 Ensure cancellation cannot corrupt the wire.
   - [x] T072a Do not cancel mid-write; cancellation should stop waiting for the response, not interrupt message emission.
-  - [ ] T072b Add a test that cancels a request during send/wait and asserts the wire remains well-formed.
-- [ ] T073 Keep the read loop responsive under slow handlers.
-  - [ ] T073a Dispatch `OnNotification` and `OnServerRequest` handling so the read loop doesn’t stall message processing.
-  - [ ] T073b Add a test where a handler delays and unrelated request/response still completes.
-- [ ] T074 Make null `params` behavior explicit.
-  - [ ] T074a Decide whether to omit `params` when null vs emitting `{}`; implement/document accordingly.
-  - [ ] T074b Add a test for `initialized` and other param-less notifications.
+  - [x] T072b Add a test that cancels a request during send/wait and asserts the wire remains well-formed.
+- [x] T073 Keep the read loop responsive under slow handlers.
+  - [x] T073a Dispatch `OnNotification` and `OnServerRequest` handling so the read loop doesn’t stall message processing.
+  - [x] T073b Add a test where a handler delays and unrelated request/response still completes.
+- [x] T074 Make null `params` behavior explicit.
+  - [x] T074a Decide whether to omit `params` when null vs emitting `{}`; implement/document accordingly.
+  - [x] T074b Add a test for `initialized` and other param-less notifications.
 
 ## Phase 8 — App-server client lifecycle + event routing fixes (P0/P1)
 
