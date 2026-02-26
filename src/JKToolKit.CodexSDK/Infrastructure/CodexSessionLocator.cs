@@ -51,6 +51,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionsRoot);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!_fileSystem.DirectoryExists(sessionsRoot))
         {
@@ -103,6 +104,8 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             throw new TimeoutException(
                 $"No new session file was created within the timeout period of {timeout.TotalSeconds:F1} seconds.");
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         // Should not reach here, but just in case
         throw new TimeoutException(
@@ -193,7 +196,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
 
-        while (!timeoutCts.IsCancellationRequested)
+        while (!timeoutCts.Token.IsCancellationRequested)
         {
             try
             {
@@ -213,6 +216,8 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
                 }
             }
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         throw new TimeoutException(
             $"No session log file found for session ID: {sessionId} within {timeout.TotalSeconds:F1} seconds.");

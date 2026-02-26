@@ -12,6 +12,14 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
 internal static class CodexSessionLocatorHelpers
 {
+    private static readonly Regex RolloutTimestampedFileNamePattern = new(
+        @"^rollout-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})-(.+)$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static readonly Regex TrailingUuidPattern = new(
+        @"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     internal static HashSet<string> CaptureSessionSnapshot(
         IFileSystem fileSystem,
         ILogger logger,
@@ -322,14 +330,24 @@ internal static class CodexSessionLocatorHelpers
                 return null;
             }
 
-            var lastDash = fileNameWithoutExtension.LastIndexOf('-');
-            if (lastDash < 0 || lastDash == fileNameWithoutExtension.Length - 1)
+            var timestamped = RolloutTimestampedFileNamePattern.Match(fileNameWithoutExtension);
+            if (timestamped.Success)
             {
-                return null;
+                return SessionId.Parse(timestamped.Groups[2].Value);
             }
 
-            var candidate = fileNameWithoutExtension[(lastDash + 1)..];
-            return SessionId.Parse(candidate);
+            if (fileNameWithoutExtension.StartsWith("rollout-", StringComparison.OrdinalIgnoreCase))
+            {
+                return SessionId.Parse(fileNameWithoutExtension["rollout-".Length..]);
+            }
+
+            var trailingUuid = TrailingUuidPattern.Match(fileNameWithoutExtension);
+            if (trailingUuid.Success)
+            {
+                return SessionId.Parse(trailingUuid.Groups[1].Value);
+            }
+
+            return null;
         }
         catch (Exception ex)
         {

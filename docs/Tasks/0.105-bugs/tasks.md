@@ -57,13 +57,13 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [ ] T031 Decouple stdout/stderr draining from the caller’s cancellation token (deadlock prevention).
   - [ ] T031a Ensure drains continue until process exit even if the *startup* `CancellationToken` is canceled after start returns.
   - [ ] T031b Add a stress test that writes lots of stdout/stderr to verify no pipe-buffer hang.
-- [ ] T032 Fix filename→id fallback to handle hyphenated UUIDs correctly.
-  - [ ] T032a Update `CodexSessionLocatorHelpers.TryExtractSessionIdFromFilePath(...)` to parse `rollout-<timestamp>-<id>.jsonl` and extract the full `<id>`.
-  - [ ] T032b Add a unit test with a hyphenated UUID filename (assert full UUID is returned).
-- [ ] T033 Fix cancellation semantics in session-locator wait APIs.
-  - [ ] T033a `WaitForNewSessionFileAsync(...)` must throw `OperationCanceledException` when the caller cancels (not `TimeoutException`).
-  - [ ] T033b `WaitForSessionLogByIdAsync(...)` must throw `OperationCanceledException` when the caller cancels (not `TimeoutException`).
-  - [ ] T033c Add unit tests for cancellation behavior (cancel between polls).
+- [x] T032 Fix filename→id fallback to handle hyphenated UUIDs correctly.
+  - [x] T032a Update `CodexSessionLocatorHelpers.TryExtractSessionIdFromFilePath(...)` to parse `rollout-<timestamp>-<id>.jsonl` and extract the full `<id>`.
+  - [x] T032b Add a unit test with a hyphenated UUID filename (assert full UUID is returned).
+- [x] T033 Fix cancellation semantics in session-locator wait APIs.
+  - [x] T033a `WaitForNewSessionFileAsync(...)` must throw `OperationCanceledException` when the caller cancels (not `TimeoutException`).
+  - [x] T033b `WaitForSessionLogByIdAsync(...)` must throw `OperationCanceledException` when the caller cancels (not `TimeoutException`).
+  - [x] T033c Add unit tests for cancellation behavior (cancel between polls).
 - [ ] T034 Rework uncorrelated new-file discovery to avoid baseline/creation-time pitfalls.
   - [ ] T034a Avoid “baseline race” where files created after `startTime` are added to `baseline` and then ignored.
   - [ ] T034b Stop relying on filesystem creation time for ordering/filtering; prefer parsing the rollout timestamp from the filename and/or verifying by reading `session_meta`.
