@@ -4,7 +4,7 @@ namespace JKToolKit.CodexSDK.Exec.Internal;
 
 internal static partial class CodexClientRegexes
 {
-    [GeneratedRegex(@"(?:session(?:[_\s-]?id)?|sid)\s*[:=]\s*([0-9a-fA-F\-]+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("\"?(?:session(?:[_\\s-]?id)?|sid)\"?\\s*[:=]\\s*\"?([^\\s\\\"',}]+)\"?", RegexOptions.IgnoreCase)]
     internal static partial Regex SessionIdRegex();
 
     [GeneratedRegex(@"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")]

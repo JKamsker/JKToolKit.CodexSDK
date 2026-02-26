@@ -10,7 +10,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 ## Phase 0 — Repro + regression tests first
 
 - [x] T001 Create/extend unit tests for `codex review` validation rules (targets + `--title` constraint).
-- [ ] T002 Create/extend unit tests covering session-id capture regex variants (`session id:` on stderr, JSON mode, non-hex ids).
+- [x] T002 Create/extend unit tests covering session-id capture regex variants (`session id:` on stderr, JSON mode, non-hex ids).
 - [ ] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
 - [ ] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
 - [ ] T005 Create/extend unit tests for structured-output JSON extraction edge cases (fences + bracket noise + multiple JSON values).
@@ -51,9 +51,9 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 3 — Session-id capture + session log discovery robustness (P0/P1)
 
-- [ ] T030 Broaden session-id capture to match upstream output and future formats.
-  - [ ] T030a Update `CodexClientRegexes.SessionIdRegex()` to treat the captured id as **opaque** (not `[0-9a-fA-F-]+`).
-  - [ ] T030b Add regression tests for stderr output format “session id: <id>” and other known variants.
+- [x] T030 Broaden session-id capture to match upstream output and future formats.
+  - [x] T030a Update `CodexClientRegexes.SessionIdRegex()` to treat the captured id as **opaque** (not `[0-9a-fA-F-]+`).
+  - [x] T030b Add regression tests for stderr output format “session id: <id>” and other known variants.
 - [ ] T031 Decouple stdout/stderr draining from the caller’s cancellation token (deadlock prevention).
   - [ ] T031a Ensure drains continue until process exit even if the *startup* `CancellationToken` is canceled after start returns.
   - [ ] T031b Add a stress test that writes lots of stdout/stderr to verify no pipe-buffer hang.
