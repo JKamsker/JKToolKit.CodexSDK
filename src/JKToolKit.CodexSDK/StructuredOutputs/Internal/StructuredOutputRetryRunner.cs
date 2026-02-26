@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.IO;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
@@ -83,7 +84,6 @@ internal static class StructuredOutputRetryRunner
                     throw new InvalidOperationException("Retry attempted without a captured session id.");
                 }
 
-                var resumeStart = DateTimeOffset.UtcNow;
                 var resumeOptions = effectiveBase;
                 if (!(attempt == 1 && initialSessionId is not null))
                 {
@@ -106,9 +106,11 @@ internal static class StructuredOutputRetryRunner
                 logPath = resumed.Info.LogPath;
                 progress?.SessionLocated?.Invoke(resumed.Info.Id, resumed.Info.LogPath);
 
+                var resumeOffset = TryGetLogByteOffset(resumed.Info.LogPath);
+
                 var raw2 = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
                     resumed,
-                    EventStreamOptions.FromTimestamp(resumeStart, follow: true),
+                    EventStreamOptions.FromOffset(resumeOffset, follow: true),
                     progress?.EventReceived,
                     ct).ConfigureAwait(false);
                 var (value2, json2) = StructuredOutputDeserializer.DeserializeStructured<T>(raw2, structured, serializerOptions);
@@ -147,5 +149,21 @@ internal static class StructuredOutputRetryRunner
             innerException: (Exception?)lastParse ?? new InvalidOperationException("Unknown failure."),
             sessionId: sessionId?.Value,
             logPath);
+    }
+
+    private static long TryGetLogByteOffset(string? logPath)
+    {
+        if (string.IsNullOrWhiteSpace(logPath))
+            return 0;
+
+        try
+        {
+            var info = new FileInfo(logPath);
+            return info.Exists ? info.Length : 0;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 }

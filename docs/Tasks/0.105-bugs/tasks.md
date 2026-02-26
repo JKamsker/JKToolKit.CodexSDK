@@ -122,9 +122,9 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T061 Make exec final-text capture more robust.
   - [x] T061a Add fallbacks to capture the last assistant message from `ResponseItemEvent` (assistant role) and/or `TurnItemCompletedEvent` when `AgentMessageEvent`/`TaskCompleteEvent.LastAgentMessage` aren’t available.
   - [x] T061b Add tests for sessions that lack `agent_message` and/or lack `task_complete.last_agent_message`.
-- [ ] T062 Fix resume boundary behavior for structured-output resume.
-  - [ ] T062a Prefer byte-offset-based resume (record log size and use `EventStreamOptions.FromByteOffset`) over timestamp filtering.
-  - [ ] T062b Add a unit test for events whose timestamp equals the resume boundary (ensure we don’t drop the first “new” event).
+- [x] T062 Fix resume boundary behavior for structured-output resume.
+  - [x] T062a Prefer byte-offset-based resume (record log size and use `EventStreamOptions.FromByteOffset`) over timestamp filtering.
+  - [x] T062b Add a unit test for events whose timestamp equals the resume boundary (ensure we don’t drop the first “new” event).
 
 ## Phase 7 — JSON-RPC core (`JsonRpcConnection`) correctness + concurrency (P0)
 

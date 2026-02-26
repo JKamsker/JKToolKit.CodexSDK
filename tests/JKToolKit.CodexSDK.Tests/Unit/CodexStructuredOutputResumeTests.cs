@@ -13,22 +13,35 @@ public sealed class CodexStructuredOutputResumeTests
     private sealed record MyDto(string Answer);
 
     [Fact]
-    public async Task RunStructuredAsync_Resume_UsesTimestampFiltering()
+    public async Task RunStructuredAsync_Resume_UsesByteOffsetFiltering()
     {
-        var fake = new FakeCodexClient();
+        var tempDir = Path.Combine(Path.GetTempPath(), $"structured-resume-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var logPath = Path.Combine(tempDir, "log.jsonl");
+        await File.WriteAllTextAsync(logPath, "historical\n");
+
+        var fake = new FakeCodexClient(new FakeSessionHandle(logPath));
         var sessionId = SessionId.Parse("session-1");
         var options = new CodexSessionOptions(Path.GetTempPath(), "retry prompt");
 
-        var result = await fake.RunStructuredAsync<MyDto>(sessionId, options);
+        try
+        {
+            var result = await fake.RunStructuredAsync<MyDto>(sessionId, options);
 
-        result.Value.Answer.Should().Be("ok");
+            result.Value.Answer.Should().Be("ok");
 
-        fake.ResumeCalls.Should().HaveCount(1);
-        fake.ResumeCalls[0].Options.OutputSchema.Should().NotBeNull();
+            fake.ResumeCalls.Should().HaveCount(1);
+            fake.ResumeCalls[0].Options.OutputSchema.Should().NotBeNull();
 
-        fake.Handle.LastEventStreamOptions.Should().NotBeNull();
-        fake.Handle.LastEventStreamOptions!.FromBeginning.Should().BeFalse();
-        fake.Handle.LastEventStreamOptions!.AfterTimestamp.Should().NotBeNull();
+            fake.Handle.LastEventStreamOptions.Should().NotBeNull();
+            fake.Handle.LastEventStreamOptions!.FromBeginning.Should().BeFalse();
+            fake.Handle.LastEventStreamOptions.AfterTimestamp.Should().BeNull();
+            fake.Handle.LastEventStreamOptions.FromByteOffset.Should().Be(new FileInfo(logPath).Length);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
     }
 
     private sealed class FakeCodexClient : ICodexClient
@@ -40,7 +53,12 @@ public sealed class CodexStructuredOutputResumeTests
         }
 
         public List<ResumeCall> ResumeCalls { get; } = new();
-        public FakeSessionHandle Handle { get; } = new();
+        public FakeSessionHandle Handle { get; }
+
+        public FakeCodexClient(FakeSessionHandle handle)
+        {
+            Handle = handle;
+        }
 
         public Task<ICodexSessionHandle> StartSessionAsync(CodexSessionOptions options, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
@@ -77,7 +95,12 @@ public sealed class CodexStructuredOutputResumeTests
     {
         public EventStreamOptions? LastEventStreamOptions { get; private set; }
 
-        public CodexSessionInfo Info { get; } = new(SessionId.Parse("session-1"), "log.jsonl", DateTimeOffset.UtcNow, "/tmp", null);
+        public FakeSessionHandle(string logPath)
+        {
+            Info = new CodexSessionInfo(SessionId.Parse("session-1"), logPath, DateTimeOffset.UtcNow, "/tmp", null);
+        }
+
+        public CodexSessionInfo Info { get; }
         public SessionExitReason ExitReason => SessionExitReason.Unknown;
         public bool IsLive => true;
 

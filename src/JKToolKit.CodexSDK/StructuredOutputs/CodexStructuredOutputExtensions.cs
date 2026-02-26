@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.StructuredOutputs.Internal;
+using System.IO;
 
 namespace JKToolKit.CodexSDK.StructuredOutputs;
 
@@ -72,13 +73,16 @@ public static class CodexStructuredOutputExtensions
         var effective = options.Clone();
         effective.OutputSchema = CodexOutputSchema.FromJson(schema);
 
-        // When resuming, the session log already contains historical events (including prior TaskCompleteEvent).
-        // Use timestamp filtering to ensure we only consume events from the resumed run.
-        var resumeStart = DateTimeOffset.UtcNow;
-
         await using var session = await client.ResumeSessionAsync(sessionId, effective, ct).ConfigureAwait(false);
 
-        var raw = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(session, EventStreamOptions.FromTimestamp(resumeStart, follow: true), ct).ConfigureAwait(false);
+        // When resuming, the session log already contains historical events (including prior TaskCompleteEvent).
+        // Prefer byte offsets (not timestamps) to avoid boundary issues when events share the same timestamp.
+        var resumeOffset = TryGetLogByteOffset(session.Info.LogPath);
+
+        var raw = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
+            session,
+            EventStreamOptions.FromOffset(resumeOffset, follow: true),
+            ct).ConfigureAwait(false);
         var (value, json) = StructuredOutputDeserializer.DeserializeStructured<T>(raw, structured, serializerOptions);
 
         return new CodexStructuredResult<T>
@@ -89,6 +93,22 @@ public static class CodexStructuredOutputExtensions
             SessionId = session.Info.Id.Value,
             LogPath = session.Info.LogPath
         };
+    }
+
+    private static long TryGetLogByteOffset(string? logPath)
+    {
+        if (string.IsNullOrWhiteSpace(logPath))
+            return 0;
+
+        try
+        {
+            var info = new FileInfo(logPath);
+            return info.Exists ? info.Length : 0;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     /// <summary>
