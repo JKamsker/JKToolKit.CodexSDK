@@ -128,7 +128,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 7 — JSON-RPC core (`JsonRpcConnection`) correctness + concurrency (P0)
 
-- [ ] T070 Serialize all outbound JSON-RPC writes (prevent interleaved/corrupted JSONL).
+- [x] T070 Serialize all outbound JSON-RPC writes (prevent interleaved/corrupted JSONL).
 - [x] T070 Serialize all outbound JSON-RPC writes (prevent interleaved/corrupted JSONL).
   - [x] T070a Implement a single outbound writer pump (Channel/queue) or a `SemaphoreSlim` lock for *all* writes (requests, notifications, server-request responses).
   - [x] T070b Ensure server-request responses go through the same serialization path.
