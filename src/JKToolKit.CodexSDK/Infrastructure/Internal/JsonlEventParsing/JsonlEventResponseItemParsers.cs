@@ -20,23 +20,70 @@ internal static class JsonlEventResponseItemParsers
         if (!root.TryGetProperty("payload", out var payload))
         {
             ctx.Logger.LogWarning("response_item event missing 'payload' field");
-            return null;
+            return new ResponseItemEvent
+            {
+                Timestamp = timestamp,
+                Type = type,
+                RawPayload = rawPayload,
+                PayloadType = "unknown",
+                Payload = new UnknownResponseItemPayload
+                {
+                    PayloadType = "unknown",
+                    Raw = root.Clone()
+                }
+            };
+        }
+
+        if (payload.ValueKind == JsonValueKind.Array)
+        {
+            return new ResponseItemEvent
+            {
+                Timestamp = timestamp,
+                Type = type,
+                RawPayload = rawPayload,
+                PayloadType = "batch",
+                Payload = new UnknownResponseItemPayload
+                {
+                    PayloadType = "batch",
+                    Raw = payload.Clone()
+                }
+            };
         }
 
         if (payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("response_item event has non-object 'payload' field");
-            return null;
+            return new ResponseItemEvent
+            {
+                Timestamp = timestamp,
+                Type = type,
+                RawPayload = rawPayload,
+                PayloadType = "unknown",
+                Payload = new UnknownResponseItemPayload
+                {
+                    PayloadType = "unknown",
+                    Raw = payload.Clone()
+                }
+            };
         }
 
-        var payloadType = payload.TryGetProperty("type", out var typeElement)
-            ? typeElement.GetString()
-            : null;
+        var payloadType = TryGetString(payload, "type");
 
         if (string.IsNullOrWhiteSpace(payloadType))
         {
             ctx.Logger.LogWarning("response_item event missing 'payload.type' field");
-            return null;
+            return new ResponseItemEvent
+            {
+                Timestamp = timestamp,
+                Type = type,
+                RawPayload = rawPayload,
+                PayloadType = "unknown",
+                Payload = new UnknownResponseItemPayload
+                {
+                    PayloadType = "unknown",
+                    Raw = payload.Clone()
+                }
+            };
         }
 
         var normalized = ParseResponseItemPayload(payloadType, payload);

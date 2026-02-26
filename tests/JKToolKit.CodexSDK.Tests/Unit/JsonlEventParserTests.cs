@@ -785,6 +785,63 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_NonStringType_DoesNotThrow_AndMapsUnknownEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": 123,
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{ ""message"": ""hello"" }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<UnknownCodexEvent>().Subject;
+        evt.Type.Should().Be("123");
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_PayloadArray_IsPreservedAsBatchUnknownPayload()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": [
+                {{ ""type"": ""message"", ""role"": ""assistant"", ""content"": [] }}
+            ]
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ResponseItemEvent>().Subject;
+        evt.PayloadType.Should().Be("batch");
+        evt.Payload.Should().BeOfType<UnknownResponseItemPayload>();
+        evt.Payload.As<UnknownResponseItemPayload>().Raw.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_PayloadTypeNonString_DoesNotDropEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{ ""type"": 456, ""content"": [] }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ResponseItemEvent>().Subject;
+        evt.PayloadType.Should().Be("unknown");
+        evt.Payload.Should().BeOfType<UnknownResponseItemPayload>();
+        evt.Payload.As<UnknownResponseItemPayload>().Raw.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
     public async Task ParseAsync_MalformedJson_SkipsLineAndContinues()
     {
         // Arrange

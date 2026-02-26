@@ -102,15 +102,15 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T051a Add `Explanation` to `PlanUpdateEvent` and parse it.
   - [x] T051b Decide what to do with `Name` (remove, repurpose, or keep as an SDK-only field).
   - [x] T051c Add a unit test parsing `plan_update` with `explanation`.
-- [ ] T052 Decide how to handle `response_item.payload` being an array (future-proofing).
-  - [ ] T052a Choose behavior: emit a batch event, emit multiple events, or map to `UnknownCodexEvent` with preserved raw JSON.
-  - [ ] T052b Add unit tests for the chosen behavior.
-- [ ] T053 Make parsers resilient to schema drift (avoid `GetString()` throws).
-  - [ ] T053a Introduce safe helpers (`TryGetString`, `TryGetInt32`, etc.) and update high-risk parsers.
-  - [ ] T053b Add unit tests where formerly-string fields become non-strings (ensure event is not dropped).
-- [ ] T054 Make smoke tests forward-compatible.
-  - [ ] T054a Decide whether smoke parsing should allow `UnknownCodexEvent` (recommended) or whether we must map a broader set of upstream EventMsg variants.
-  - [ ] T054b Update `tests/JKToolKit.CodexSDK.Tests/Smoke/SessionJsonlParsingSmokeTests.cs` accordingly.
+- [x] T052 Decide how to handle `response_item.payload` being an array (future-proofing).
+  - [x] T052a Choose behavior: emit a batch event, emit multiple events, or map to `UnknownCodexEvent` with preserved raw JSON.
+  - [x] T052b Add unit tests for the chosen behavior.
+- [x] T053 Make parsers resilient to schema drift (avoid `GetString()` throws).
+  - [x] T053a Introduce safe helpers (`TryGetString`, `TryGetInt32`, etc.) and update high-risk parsers.
+  - [x] T053b Add unit tests where formerly-string fields become non-strings (ensure event is not dropped).
+- [x] T054 Make smoke tests forward-compatible.
+  - [x] T054a Decide whether smoke parsing should allow `UnknownCodexEvent` (recommended) or whether we must map a broader set of upstream EventMsg variants.
+  - [x] T054b Update `tests/JKToolKit.CodexSDK.Tests/Smoke/SessionJsonlParsingSmokeTests.cs` accordingly.
 
 ## Phase 6 — Structured outputs robustness (P0/P1)
 
