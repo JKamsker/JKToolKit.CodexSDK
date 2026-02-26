@@ -13,7 +13,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T002 Create/extend unit tests covering session-id capture regex variants (`session id:` on stderr, JSON mode, non-hex ids).
 - [x] T003 Create/extend unit tests for uncorrelated session discovery (baseline race, cancellation semantics, filename timestamp parsing).
 - [x] T004 Create/extend unit tests for JSON-RPC concurrency framing (parallel writes must not corrupt JSONL messages).
-- [ ] T005 Create/extend unit tests for structured-output JSON extraction edge cases (fences + bracket noise + multiple JSON values).
+- [x] T005 Create/extend unit tests for structured-output JSON extraction edge cases (fences + bracket noise + multiple JSON values).
 - [ ] T006 Create/extend unit tests for JSONL tailer rotation/partial-line behavior (partial line buffering, truncation + BOM, `FileShare.Delete`).
 
 ## Phase 1 — Exec review (`codex review`) argv + option validation (P0)
@@ -114,11 +114,11 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 6 — Structured outputs robustness (P0/P1)
 
-- [ ] T060 Improve tolerant JSON extraction in `CodexStructuredJsonExtractor`.
-  - [ ] T060a Code fences: scan all fences and select the first/last fence body that parses as JSON (don’t commit to the first generic fence).
-  - [ ] T060b Bracket scanning: try multiple `{`/`[` candidates (don’t throw on the first invalid candidate when valid JSON appears later).
-  - [ ] T060c Decide policy for multiple JSON values (first parseable, last parseable, or first that deserializes to `T`).
-  - [ ] T060d Add unit tests for: “bad first fence, good second fence”, “markdown [link] before JSON”, “{not json} then real JSON”, “unbalanced brace before JSON”, “multiple JSON values”.
+- [x] T060 Improve tolerant JSON extraction in `CodexStructuredJsonExtractor`.
+  - [x] T060a Code fences: scan all fences and select the first/last fence body that parses as JSON (don’t commit to the first generic fence).
+  - [x] T060b Bracket scanning: try multiple `{`/`[` candidates (don’t throw on the first invalid candidate when valid JSON appears later).
+  - [x] T060c Decide policy for multiple JSON values (first parseable, last parseable, or first that deserializes to `T`).
+  - [x] T060d Add unit tests for: “bad first fence, good second fence”, “markdown [link] before JSON”, “{not json} then real JSON”, “unbalanced brace before JSON”, “multiple JSON values”.
 - [ ] T061 Make exec final-text capture more robust.
   - [ ] T061a Add fallbacks to capture the last assistant message from `ResponseItemEvent` (assistant role) and/or `TurnItemCompletedEvent` when `AgentMessageEvent`/`TaskCompleteEvent.LastAgentMessage` aren’t available.
   - [ ] T061b Add tests for sessions that lack `agent_message` and/or lack `task_complete.last_agent_message`.
