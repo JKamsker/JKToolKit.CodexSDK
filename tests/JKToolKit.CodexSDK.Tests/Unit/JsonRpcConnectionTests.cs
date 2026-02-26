@@ -475,9 +475,13 @@ public sealed class JsonRpcConnectionTests
             var id = reqDoc.RootElement.GetProperty("id").GetInt64();
             await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id, result = new { ok = true } }));
 
-            var notificationLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
-            notificationLine.Should().NotBeNull();
-            using var __ = JsonDocument.Parse(notificationLine!);
+            // Client may send a best-effort cancellation notification, and then later send an unrelated notification.
+            for (var i = 0; i < 2; i++)
+            {
+                var notificationLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+                notificationLine.Should().NotBeNull();
+                using var __ = JsonDocument.Parse(notificationLine!);
+            }
         });
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
