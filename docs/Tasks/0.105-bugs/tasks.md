@@ -168,10 +168,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 9 — MCP server client protocol fixes + drift tolerance (P0/P1)
 
-- [ ] T090 Enforce handshake timeout and cleanup on failure (same behavior as app-server).
-  - [ ] T090a Apply `CancelAfter(StartupTimeout)` around `initialize` + `notifications/initialized`.
-  - [ ] T090b Dispose process+RPC on any handshake failure.
-  - [ ] T090c Add a test for “server never responds to initialize” (timeout + cleanup).
+- [x] T090 Enforce handshake timeout and cleanup on failure (same behavior as app-server).
+  - [x] T090a Apply `CancelAfter(StartupTimeout)` around `initialize` + `notifications/initialized`.
+  - [x] T090b Dispose process+RPC on any handshake failure.
+  - [x] T090c Add a test for “server never responds to initialize” (timeout + cleanup).
 - [ ] T091 Make default elicitation behavior non-hanging and upstream-compatible.
   - [ ] T091a Decide the default response shape for `elicitation/create` so upstream treats it as a correlated response (avoid JSON-RPC error-only responses if upstream doesn’t correlate them).
   - [ ] T091b Update docs (`docs/McpServer/README.md`) to reflect the actual default behavior.

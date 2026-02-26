@@ -48,6 +48,7 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
 
         var loggerFactory = NullLoggerFactory.Instance;
+        var logger = NullLogger<CodexMcpServerClient>.Instance;
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
@@ -63,9 +64,31 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             includeJsonRpcHeader: true,
             ct);
 
-        var client = new CodexMcpServerClient(options, process, rpc, NullLogger<CodexMcpServerClient>.Instance);
-        await client.InitializeAsync(ct);
-        return client;
+        return await CreateInitializedAsync(options, process, rpc, logger, ct).ConfigureAwait(false);
+    }
+
+    internal static async Task<CodexMcpServerClient> CreateInitializedAsync(
+        CodexMcpServerClientOptions options,
+        IStdioProcess process,
+        IJsonRpcConnection rpc,
+        ILogger<CodexMcpServerClient> logger,
+        CancellationToken ct)
+    {
+        var client = new CodexMcpServerClient(options, process, rpc, logger);
+
+        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        handshakeCts.CancelAfter(options.StartupTimeout);
+
+        try
+        {
+            await client.InitializeAsync(handshakeCts.Token).ConfigureAwait(false);
+            return client;
+        }
+        catch
+        {
+            try { await client.DisposeAsync().ConfigureAwait(false); } catch { /* best-effort */ }
+            throw;
+        }
     }
 
     private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
