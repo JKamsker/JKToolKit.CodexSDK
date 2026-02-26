@@ -192,4 +192,4 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 ## Phase 10 — Validation
 
 - [x] T100 Run `dotnet test` and ensure all new + existing tests pass.
-- [ ] T101 Run the manual testing runbook smoke sequence (`docs/Runbooks/Manual-Testing/README.md`) and ensure no hangs.
+- [x] T101 Run the manual testing runbook smoke sequence (`docs/Runbooks/Manual-Testing/README.md`) and ensure no hangs.
