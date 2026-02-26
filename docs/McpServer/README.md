@@ -48,12 +48,15 @@ JKToolKit.CodexSDK.McpServer provides:
 3. Performs MCP handshake:
    - `initialize`
    - `notifications/initialized`
-4. Implements wrappers around:
+4. Handles server-initiated elicitation requests:
+   - If `CodexMcpServerClientOptions.ElicitationHandler` is not set, the client responds to `elicitation/create` with a
+     successful JSON-RPC result payload of `{"decision":"denied"}` (so upstream doesn't hang waiting for a correlated result).
+5. Implements wrappers around:
    - `tools/list`
    - `tools/call`
-5. Parses “Codex tool results” and extracts:
-   - `threadId` from `structuredContent.threadId` (or legacy `conversationId`)
-   - best-effort text from MCP `content` blocks
+6. Parses “Codex tool results” and extracts:
+    - `threadId` from `structuredContent.threadId` (or legacy `conversationId`)
+    - best-effort text from MCP `content` blocks
 
 ## Public API (Core Types)
 

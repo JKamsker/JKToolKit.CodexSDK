@@ -18,6 +18,8 @@ namespace JKToolKit.CodexSDK.McpServer;
 /// </summary>
 public sealed class CodexMcpServerClient : IAsyncDisposable
 {
+    private static readonly JsonElement DefaultElicitationDeniedResult = CreateDefaultElicitationDeniedResult();
+
     private readonly CodexMcpServerClientOptions _options;
     private readonly IJsonRpcConnection _rpc;
     private readonly IStdioProcess _process;
@@ -346,6 +348,11 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         var handler = _options.ElicitationHandler;
         if (handler is null)
         {
+            if (string.Equals(req.Method, "elicitation/create", StringComparison.OrdinalIgnoreCase))
+            {
+                return new JsonRpcResponse(req.Id, Result: DefaultElicitationDeniedResult, Error: null);
+            }
+
             return new JsonRpcResponse(
                 req.Id,
                 Result: null,
@@ -361,6 +368,12 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         {
             return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(-32000, ex.Message));
         }
+    }
+
+    private static JsonElement CreateDefaultElicitationDeniedResult()
+    {
+        using var doc = JsonDocument.Parse("{\"decision\":\"denied\"}");
+        return doc.RootElement.Clone();
     }
 
     /// <summary>

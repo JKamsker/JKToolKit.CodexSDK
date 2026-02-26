@@ -172,10 +172,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T090a Apply `CancelAfter(StartupTimeout)` around `initialize` + `notifications/initialized`.
   - [x] T090b Dispose process+RPC on any handshake failure.
   - [x] T090c Add a test for “server never responds to initialize” (timeout + cleanup).
-- [ ] T091 Make default elicitation behavior non-hanging and upstream-compatible.
-  - [ ] T091a Decide the default response shape for `elicitation/create` so upstream treats it as a correlated response (avoid JSON-RPC error-only responses if upstream doesn’t correlate them).
-  - [ ] T091b Update docs (`docs/McpServer/README.md`) to reflect the actual default behavior.
-  - [ ] T091c Add an integration test that triggers an elicitation and verifies the call completes (denied) without a handler.
+- [x] T091 Make default elicitation behavior non-hanging and upstream-compatible.
+  - [x] T091a Decide the default response shape for `elicitation/create` so upstream treats it as a correlated response (avoid JSON-RPC error-only responses if upstream doesn’t correlate them).
+  - [x] T091b Update docs (`docs/McpServer/README.md`) to reflect the actual default behavior.
+  - [x] T091c Add an integration test that triggers an elicitation and verifies the call completes (denied) without a handler.
 - [ ] T092 Propagate cancellation to the server (best-effort).
   - [ ] T092a On request cancellation, send `notifications/cancelled` with the request id before dropping `_pending`.
   - [ ] T092b Add a test: start a long `tools/call`, cancel, assert the server is interrupted (or at least receives the cancel notification).
