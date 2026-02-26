@@ -94,10 +94,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 ## Phase 5 — Exec JSONL event parsing/mapping drift fixes (P1/P2)
 
-- [ ] T050 Treat `exited_review_mode.review_output: null` as valid (upstream allows null).
-  - [ ] T050a Make `ExitedReviewModeEvent.ReviewOutput` nullable (or introduce a representation for “no structured output”).
-  - [ ] T050b Update parser to accept null and still emit the event.
-  - [ ] T050c Add a unit test for `review_output: null`.
+- [x] T050 Treat `exited_review_mode.review_output: null` as valid (upstream allows null).
+  - [x] T050a Make `ExitedReviewModeEvent.ReviewOutput` nullable (or introduce a representation for “no structured output”).
+  - [x] T050b Update parser to accept null and still emit the event.
+  - [x] T050c Add a unit test for `review_output: null`.
 - [ ] T051 Align `plan_update` parsing with upstream `UpdatePlanArgs`.
   - [ ] T051a Add `Explanation` to `PlanUpdateEvent` and parse it.
   - [ ] T051b Decide what to do with `Name` (remove, repurpose, or keep as an SDK-only field).

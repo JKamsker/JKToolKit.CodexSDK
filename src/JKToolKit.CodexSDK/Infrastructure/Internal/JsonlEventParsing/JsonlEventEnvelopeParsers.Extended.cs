@@ -192,13 +192,19 @@ internal static partial class JsonlEventEnvelopeParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        if (!payload.TryGetProperty("review_output", out var reviewOutputEl) || reviewOutputEl.ValueKind != JsonValueKind.Object)
+        ReviewOutput? reviewOutput = null;
+        if (!payload.TryGetProperty("review_output", out var reviewOutputEl))
         {
-            ctx.Logger.LogWarning("exited_review_mode event missing 'review_output' object");
-            return null;
+            ctx.Logger.LogWarning("exited_review_mode event missing 'review_output' field");
         }
-
-        var reviewOutput = ParseReviewOutput(reviewOutputEl);
+        else if (reviewOutputEl.ValueKind == JsonValueKind.Object)
+        {
+            reviewOutput = ParseReviewOutput(reviewOutputEl);
+        }
+        else if (reviewOutputEl.ValueKind != JsonValueKind.Null)
+        {
+            ctx.Logger.LogWarning("exited_review_mode event has non-object 'review_output' field");
+        }
 
         return new ExitedReviewModeEvent
         {

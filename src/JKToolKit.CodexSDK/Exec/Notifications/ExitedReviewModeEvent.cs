@@ -10,6 +10,9 @@ public sealed record ExitedReviewModeEvent : CodexEvent
     /// <summary>
     /// Gets the structured review output emitted by Codex.
     /// </summary>
-    public required ReviewOutput ReviewOutput { get; init; }
+    /// <remarks>
+    /// Upstream may emit <c>null</c> when no structured output is available.
+    /// </remarks>
+    public ReviewOutput? ReviewOutput { get; init; }
 }
 

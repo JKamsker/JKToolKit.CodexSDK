@@ -657,7 +657,8 @@ public class JsonlEventParserTests
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
         evt.Type.Should().Be("exited_review_mode");
-        evt.ReviewOutput.OverallCorrectness.Should().Be("good");
+        evt.ReviewOutput.Should().NotBeNull();
+        evt.ReviewOutput!.OverallCorrectness.Should().Be("good");
         evt.ReviewOutput.OverallConfidenceScore.Should().Be(0.9);
         evt.ReviewOutput.Findings.Should().HaveCount(1);
         evt.ReviewOutput.Findings[0].CodeLocation!.AbsoluteFilePath.Should().Be("/tmp/file.cs");
@@ -700,11 +701,33 @@ public class JsonlEventParserTests
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
         evt.Type.Should().Be("exited_review_mode");
-        evt.ReviewOutput.OverallCorrectness.Should().Be("good");
+        evt.ReviewOutput.Should().NotBeNull();
+        evt.ReviewOutput!.OverallCorrectness.Should().Be("good");
         evt.ReviewOutput.OverallConfidenceScore.Should().Be(0.9);
         evt.ReviewOutput.Findings.Should().HaveCount(1);
         evt.ReviewOutput.Findings[0].CodeLocation!.AbsoluteFilePath.Should().Be("/tmp/file.cs");
         evt.ReviewOutput.Findings[0].CodeLocation!.LineRange!.Start.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ExitedReviewMode_AllowsNullReviewOutput()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""exited_review_mode"",
+                ""review_output"": null
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
+        evt.Type.Should().Be("exited_review_mode");
+        evt.ReviewOutput.Should().BeNull();
     }
 
     [Fact]
