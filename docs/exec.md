@@ -75,6 +75,21 @@ var result = await client.RunStructuredWithRetryAsync<MyResult>(
     retry: new CodexStructuredRetryOptions { MaxAttempts = 3 });
 ```
 
+## Additional CLI flags
+
+Both exec and review expose an `AdditionalOptions` list for passing through newer/experimental Codex CLI flags.
+
+Each list entry is treated as a single argv token. The SDK does not split entries on whitespace and does not interpret shell-style quotes.
+
+Example:
+
+```csharp
+var options = new CodexSessionOptions("<repo-path>", "Prompt")
+{
+    AdditionalOptions = new[] { "--enable", "some_flag", "--config", "foo=bar" }
+};
+```
+
 ## Code Reviews
 
 Run a non-interactive code review (`codex review`):

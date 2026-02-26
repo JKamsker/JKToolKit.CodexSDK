@@ -110,6 +110,10 @@ public class CodexReviewOptions
     /// <remarks>
     /// Use this to pass <c>--config</c>, <c>--enable</c>, <c>--disable</c>, or any newer flags not
     /// represented by this type.
+    ///
+    /// Each entry is treated as a single argv token. The SDK does not split entries on
+    /// whitespace and does not interpret shell-style quotes. For example, to pass
+    /// <c>--enable foo</c>, set <see cref="AdditionalOptions"/> to <c>["--enable", "foo"]</c>.
     /// </remarks>
     public IReadOnlyList<string> AdditionalOptions
     {

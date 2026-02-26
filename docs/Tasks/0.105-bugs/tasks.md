@@ -31,10 +31,10 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
   - [x] T012b Add new tests: prompt-only review, title-without-commit throws, no-target throws, prompt+commit throws.
 - [x] T013 Update docs examples for `codex review` usage to match the new rules.
   - [x] T013a Update `docs/exec.md` and `src/JKToolKit.CodexSDK/README.md` review examples (if needed).
-- [ ] T014 Clarify `AdditionalOptions` tokenization for exec/review argv building.
-  - [ ] T014a Decide whether `AdditionalOptions` entries are strictly “one argv token per entry” (status quo) or whether the SDK should tokenize strings with spaces/quotes.
-  - [ ] T014b Document the chosen behavior in XML docs + `docs/exec.md` (add a short example).
-  - [ ] T014c If tokenization is added, add unit tests for quoted/space-delimited cases.
+- [x] T014 Clarify `AdditionalOptions` tokenization for exec/review argv building.
+  - [x] T014a Decide whether `AdditionalOptions` entries are strictly “one argv token per entry” (status quo) or whether the SDK should tokenize strings with spaces/quotes.
+  - [x] T014b Document the chosen behavior in XML docs + `docs/exec.md` (add a short example).
+  - [x] T014c If tokenization is added, add unit tests for quoted/space-delimited cases.
 
 ## Phase 2 — `CODEX_HOME` + encoding hardening for all subprocesses (P1)
 
