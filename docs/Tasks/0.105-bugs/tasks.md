@@ -54,9 +54,9 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 - [x] T030 Broaden session-id capture to match upstream output and future formats.
   - [x] T030a Update `CodexClientRegexes.SessionIdRegex()` to treat the captured id as **opaque** (not `[0-9a-fA-F-]+`).
   - [x] T030b Add regression tests for stderr output format “session id: <id>” and other known variants.
-- [ ] T031 Decouple stdout/stderr draining from the caller’s cancellation token (deadlock prevention).
-  - [ ] T031a Ensure drains continue until process exit even if the *startup* `CancellationToken` is canceled after start returns.
-  - [ ] T031b Add a stress test that writes lots of stdout/stderr to verify no pipe-buffer hang.
+- [x] T031 Decouple stdout/stderr draining from the caller’s cancellation token (deadlock prevention).
+  - [x] T031a Ensure drains continue until process exit even if the *startup* `CancellationToken` is canceled after start returns.
+  - [x] T031b Add a stress test that writes lots of stdout/stderr to verify no pipe-buffer hang.
 - [x] T032 Fix filename→id fallback to handle hyphenated UUIDs correctly.
   - [x] T032a Update `CodexSessionLocatorHelpers.TryExtractSessionIdFromFilePath(...)` to parse `rollout-<timestamp>-<id>.jsonl` and extract the full `<id>`.
   - [x] T032b Add a unit test with a hyphenated UUID filename (assert full UUID is returned).

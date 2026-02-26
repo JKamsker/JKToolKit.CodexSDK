@@ -109,7 +109,7 @@ internal sealed class CodexSessionRunner
             sw.Restart();
 
             var captureTimeout = TimeSpan.FromSeconds(Math.Max(10, _clientOptions.StartTimeout.TotalSeconds));
-            var (sessionIdCaptureTask, getStartStdoutDiag, getStartStderrDiag) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, _logger, cancellationToken);
+            var (sessionIdCaptureTask, getStartStdoutDiag, getStartStderrDiag) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, _logger);
 
             string logPath;
             SessionId? capturedId = null;
@@ -280,7 +280,7 @@ internal sealed class CodexSessionRunner
                 .ConfigureAwait(false);
 
             var captureTimeout = TimeSpan.FromMilliseconds(Math.Min(250, _clientOptions.StartTimeout.TotalMilliseconds / 4));
-            var (sessionIdCaptureTask, _, _) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, _logger, cancellationToken);
+            var (sessionIdCaptureTask, _, _) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, _logger);
             try
             {
                 var captured = await CodexSessionDiagnostics.WaitForResultOrTimeoutAsync(sessionIdCaptureTask, captureTimeout, cancellationToken).ConfigureAwait(false);
