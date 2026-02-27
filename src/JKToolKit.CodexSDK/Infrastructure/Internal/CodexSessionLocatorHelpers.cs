@@ -12,97 +12,13 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
 internal static class CodexSessionLocatorHelpers
 {
-    internal static HashSet<string> CaptureSessionSnapshot(
-        IFileSystem fileSystem,
-        ILogger logger,
-        string sessionsRoot,
-        Regex sessionFilePattern)
-    {
-        var snapshot = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    private static readonly Regex RolloutTimestampedFileNamePattern = new(
+        @"^rollout-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})-(.+)$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        try
-        {
-            var existingFiles = fileSystem.GetFiles(sessionsRoot, "*.jsonl");
-            foreach (var file in existingFiles)
-            {
-                var fileName = Path.GetFileName(file);
-                if (sessionFilePattern.IsMatch(fileName))
-                {
-                    snapshot.Add(file);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Error capturing pre-launch session snapshot in {Directory}", sessionsRoot);
-        }
-
-        return snapshot;
-    }
-
-    internal static string? FindNewSessionFile(
-        IFileSystem fileSystem,
-        ILogger logger,
-        string sessionsRoot,
-        DateTime startTimeUtc,
-        HashSet<string> baseline,
-        Regex sessionFilePattern)
-    {
-        try
-        {
-            var jsonlFiles = fileSystem.GetFiles(sessionsRoot, "*.jsonl");
-
-            var candidates = new List<(string Path, DateTime CreatedUtc)>();
-
-            foreach (var filePath in jsonlFiles)
-            {
-                try
-                {
-                    var fileName = Path.GetFileName(filePath);
-
-                    if (!sessionFilePattern.IsMatch(fileName))
-                    {
-                        continue;
-                    }
-
-                    if (baseline.Contains(filePath))
-                    {
-                        continue;
-                    }
-
-                    var creationTimeUtc = fileSystem.GetFileCreationTimeUtc(filePath);
-
-                    if (creationTimeUtc >= startTimeUtc)
-                    {
-                        candidates.Add((filePath, creationTimeUtc));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogTrace(ex, "Error checking file: {FilePath}", filePath);
-                }
-            }
-
-            var earliest = candidates
-                .OrderBy(c => c.CreatedUtc)
-                .FirstOrDefault();
-
-            if (earliest != default)
-            {
-                logger.LogTrace(
-                    "Found candidate session file: {FilePath} (created: {CreationTime})",
-                    earliest.Path,
-                    earliest.CreatedUtc);
-                return earliest.Path;
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Error searching for new session files in: {Directory}", sessionsRoot);
-        }
-
-        return null;
-    }
+    private static readonly Regex TrailingUuidPattern = new(
+        @"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     internal static async Task<CodexSessionInfo?> ParseSessionInfoAsync(
         IFileSystem fileSystem,
@@ -322,14 +238,24 @@ internal static class CodexSessionLocatorHelpers
                 return null;
             }
 
-            var lastDash = fileNameWithoutExtension.LastIndexOf('-');
-            if (lastDash < 0 || lastDash == fileNameWithoutExtension.Length - 1)
+            var timestamped = RolloutTimestampedFileNamePattern.Match(fileNameWithoutExtension);
+            if (timestamped.Success)
             {
-                return null;
+                return SessionId.Parse(timestamped.Groups[2].Value);
             }
 
-            var candidate = fileNameWithoutExtension[(lastDash + 1)..];
-            return SessionId.Parse(candidate);
+            if (fileNameWithoutExtension.StartsWith("rollout-", StringComparison.OrdinalIgnoreCase))
+            {
+                return SessionId.Parse(fileNameWithoutExtension["rollout-".Length..]);
+            }
+
+            var trailingUuid = TrailingUuidPattern.Match(fileNameWithoutExtension);
+            if (trailingUuid.Success)
+            {
+                return SessionId.Parse(trailingUuid.Groups[1].Value);
+            }
+
+            return null;
         }
         catch (Exception ex)
         {

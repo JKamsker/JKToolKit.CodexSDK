@@ -15,7 +15,7 @@ public sealed class CodexClientReviewStreamingTests
     public async Task ReviewAsync_MirrorsStdoutAndStderr_WhileRunning()
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var reviewOptions = new CodexReviewOptions(workingDirectory);
+        var reviewOptions = new CodexReviewOptions(workingDirectory) { Prompt = "Test prompt." };
 
         using var process = CreateEchoThenSleepProcess();
         var launcher = new ReviewProcessLauncher(process);
@@ -46,32 +46,78 @@ public sealed class CodexClientReviewStreamingTests
     public async Task ReviewAsync_ExtractsSessionId_AndResolvesLogPath()
     {
         var workingDirectory = Directory.GetCurrentDirectory();
-        var reviewOptions = new CodexReviewOptions(workingDirectory);
+        var reviewOptions = new CodexReviewOptions(workingDirectory) { Prompt = "Test prompt." };
 
         var sessionId = SessionId.Parse("11111111-1111-1111-1111-111111111111");
-        using var process = CreateEchoSessionIdProcess(sessionId);
+        using var process = CreateEchoSessionProcess(sessionId, sendSessionIdToStderr: false);
 
         var sessionsRoot = Path.Combine(Path.GetTempPath(), "JKToolKit.CodexSDK.Tests", Guid.NewGuid().ToString("n"));
         Directory.CreateDirectory(sessionsRoot);
-        var expectedLogPath = Path.Combine(sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
+        try
+        {
+            var expectedLogPath = Path.Combine(sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
 
-        var launcher = new ReviewProcessLauncher(process);
-        var locator = new FakeSessionLocator(expectedLogPath);
-        var pathProvider = new FakePathProvider(sessionsRoot);
+            var launcher = new ReviewProcessLauncher(process);
+            var locator = new FakeSessionLocator(expectedLogPath);
+            var pathProvider = new FakePathProvider(sessionsRoot);
 
-        var clientOptions = new CodexClientOptions { SessionsRootDirectory = sessionsRoot };
-        var client = new CodexClient(
-            Options.Create(clientOptions),
-            launcher,
-            sessionLocator: locator,
-            pathProvider: pathProvider,
-            logger: NullLogger<CodexClient>.Instance,
-            loggerFactory: NullLoggerFactory.Instance);
+            var clientOptions = new CodexClientOptions { SessionsRootDirectory = sessionsRoot };
+            var client = new CodexClient(
+                Options.Create(clientOptions),
+                launcher,
+                sessionLocator: locator,
+                pathProvider: pathProvider,
+                logger: NullLogger<CodexClient>.Instance,
+                loggerFactory: NullLoggerFactory.Instance);
 
-        var result = await client.ReviewAsync(reviewOptions, CancellationToken.None);
+            var result = await client.ReviewAsync(reviewOptions, CancellationToken.None);
 
-        result.SessionId.Should().Be(sessionId);
-        result.LogPath.Should().Be(expectedLogPath);
+            result.SessionId.Should().Be(sessionId);
+            result.LogPath.Should().Be(expectedLogPath);
+        }
+        finally
+        {
+            Directory.Delete(sessionsRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ReviewAsync_ExtractsSessionId_FromStderr_AndResolvesLogPath()
+    {
+        var workingDirectory = Directory.GetCurrentDirectory();
+        var reviewOptions = new CodexReviewOptions(workingDirectory) { Prompt = "Test prompt." };
+
+        var sessionId = SessionId.Parse("22222222-2222-2222-2222-222222222222");
+        using var process = CreateEchoSessionProcess(sessionId, sendSessionIdToStderr: true);
+
+        var sessionsRoot = Path.Combine(Path.GetTempPath(), "JKToolKit.CodexSDK.Tests", Guid.NewGuid().ToString("n"));
+        Directory.CreateDirectory(sessionsRoot);
+        try
+        {
+            var expectedLogPath = Path.Combine(sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
+
+            var launcher = new ReviewProcessLauncher(process);
+            var locator = new FakeSessionLocator(expectedLogPath);
+            var pathProvider = new FakePathProvider(sessionsRoot);
+
+            var clientOptions = new CodexClientOptions { SessionsRootDirectory = sessionsRoot };
+            var client = new CodexClient(
+                Options.Create(clientOptions),
+                launcher,
+                sessionLocator: locator,
+                pathProvider: pathProvider,
+                logger: NullLogger<CodexClient>.Instance,
+                loggerFactory: NullLoggerFactory.Instance);
+
+            var result = await client.ReviewAsync(reviewOptions, CancellationToken.None);
+
+            result.SessionId.Should().Be(sessionId);
+            result.LogPath.Should().Be(expectedLogPath);
+        }
+        finally
+        {
+            Directory.Delete(sessionsRoot, recursive: true);
+        }
     }
 
     private static Process CreateEchoThenSleepProcess()
@@ -108,16 +154,17 @@ public sealed class CodexClientReviewStreamingTests
         return Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start test process.");
     }
 
-    private static Process CreateEchoSessionIdProcess(SessionId sessionId)
+    private static Process CreateEchoSessionProcess(SessionId sessionId, bool sendSessionIdToStderr)
     {
         ProcessStartInfo startInfo;
 
         if (OperatingSystem.IsWindows())
         {
+            var redirect = sendSessionIdToStderr ? " 1>&2" : string.Empty;
             startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c echo session id: {sessionId.Value} & echo OUT & echo ERR 1>&2",
+                Arguments = $"/c echo session id: {sessionId.Value}{redirect} & echo OUT & echo ERR 1>&2",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -130,7 +177,9 @@ public sealed class CodexClientReviewStreamingTests
             startInfo = new ProcessStartInfo
             {
                 FileName = "/bin/bash",
-                Arguments = $"-c \"echo 'session id: {sessionId.Value}'; echo OUT; echo ERR 1>&2\"",
+                Arguments = sendSessionIdToStderr
+                    ? $"-c \"echo 'session id: {sessionId.Value}' 1>&2; echo OUT; echo ERR 1>&2\""
+                    : $"-c \"echo 'session id: {sessionId.Value}'; echo OUT; echo ERR 1>&2\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

@@ -220,6 +220,51 @@ public sealed class AppServerOverridePipelineTests
     }
 
     [Fact]
+    public async Task TurnHandle_FlushesBufferedNotifications_WhenRegisteredAfterEarlyEvents()
+    {
+        var rpc = new FakeJsonRpcConnection();
+
+        var options = new CodexAppServerClientOptions
+        {
+            NotificationBufferCapacity = 10
+        };
+
+        await using var core = new CodexAppServerClientCore(
+            options,
+            process: new FakeStdioProcess(),
+            rpc: rpc,
+            logger: NullLogger.Instance,
+            startExitWatcher: false);
+
+        // Notifications can arrive before the turn handle is registered (race after turn/start).
+        await rpc.EmitNotificationAsync("turn/started", Parse("""{"threadId":"th","turn":{"id":"turn1"}}"""));
+        await rpc.EmitNotificationAsync("item/started", Parse("""{"threadId":"th","turnId":"turn1","item":{"type":"agentMessage","id":"i1","text":"hello"}}"""));
+
+        await using var handle = new CodexTurnHandle(
+            threadId: "th",
+            turnId: "turn1",
+            interrupt: _ => Task.CompletedTask,
+            steer: null,
+            steerRaw: null,
+            onDispose: () => { },
+            bufferCapacity: 10);
+
+        core.RegisterTurnHandle("turn1", handle);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        var typed = await ReadNAsync(handle.Events(cts.Token), 2, cts.Token);
+        typed.Should().HaveCount(2);
+        typed[0].Method.Should().Be("turn/started");
+        typed[1].Method.Should().Be("item/started");
+
+        var raw = await ReadNAsync(handle.EventsRaw(cts.Token), 2, cts.Token);
+        raw.Should().HaveCount(2);
+        raw[0].Method.Should().Be("turn/started");
+        raw[1].Method.Should().Be("item/started");
+    }
+
+    [Fact]
     public async Task TurnHandle_Completes_When_CustomMappedTurnCompletedNotification_HasNoTurnId()
     {
         var rpc = new FakeJsonRpcConnection();
@@ -306,6 +351,18 @@ public sealed class AppServerOverridePipelineTests
         }
 
         return e.Current;
+    }
+
+    private static async Task<IReadOnlyList<T>> ReadNAsync<T>(IAsyncEnumerable<T> stream, int count, CancellationToken ct)
+    {
+        var results = new List<T>(capacity: count);
+        await using var e = stream.GetAsyncEnumerator(ct);
+        while (results.Count < count && await e.MoveNextAsync())
+        {
+            results.Add(e.Current);
+        }
+
+        return results;
     }
 
     private static JsonElement Parse(string json)

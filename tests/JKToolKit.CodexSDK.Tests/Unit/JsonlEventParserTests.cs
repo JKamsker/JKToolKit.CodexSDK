@@ -657,7 +657,8 @@ public class JsonlEventParserTests
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
         evt.Type.Should().Be("exited_review_mode");
-        evt.ReviewOutput.OverallCorrectness.Should().Be("good");
+        evt.ReviewOutput.Should().NotBeNull();
+        evt.ReviewOutput!.OverallCorrectness.Should().Be("good");
         evt.ReviewOutput.OverallConfidenceScore.Should().Be(0.9);
         evt.ReviewOutput.Findings.Should().HaveCount(1);
         evt.ReviewOutput.Findings[0].CodeLocation!.AbsoluteFilePath.Should().Be("/tmp/file.cs");
@@ -700,11 +701,62 @@ public class JsonlEventParserTests
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
         evt.Type.Should().Be("exited_review_mode");
-        evt.ReviewOutput.OverallCorrectness.Should().Be("good");
+        evt.ReviewOutput.Should().NotBeNull();
+        evt.ReviewOutput!.OverallCorrectness.Should().Be("good");
         evt.ReviewOutput.OverallConfidenceScore.Should().Be(0.9);
         evt.ReviewOutput.Findings.Should().HaveCount(1);
         evt.ReviewOutput.Findings[0].CodeLocation!.AbsoluteFilePath.Should().Be("/tmp/file.cs");
         evt.ReviewOutput.Findings[0].CodeLocation!.LineRange!.Start.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_ExitedReviewMode_AllowsNullReviewOutput()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""exited_review_mode"",
+                ""review_output"": null
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ExitedReviewModeEvent>().Subject;
+        evt.Type.Should().Be("exited_review_mode");
+        evt.ReviewOutput.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_PlanUpdate_ParsesExplanation()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""plan_update"",
+                ""name"": ""Build plan"",
+                ""explanation"": ""Added a new step."",
+                ""plan"": [
+                    {{ ""step"": ""Do thing"", ""status"": ""in_progress"" }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<PlanUpdateEvent>().Subject;
+        evt.Type.Should().Be("plan_update");
+        evt.Name.Should().Be("Build plan");
+        evt.Explanation.Should().Be("Added a new step.");
+        evt.Plan.Should().HaveCount(1);
+        evt.Plan[0].Step.Should().Be("Do thing");
+        evt.Plan[0].Status.Should().Be("in_progress");
     }
 
     [Fact]
@@ -730,6 +782,63 @@ public class JsonlEventParserTests
         evt.Type.Should().Be("unknown_future_event");
         evt.Timestamp.Should().BeCloseTo(timestamp, TimeSpan.FromSeconds(1));
         evt.RawPayload.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_NonStringType_DoesNotThrow_AndMapsUnknownEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": 123,
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{ ""message"": ""hello"" }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<UnknownCodexEvent>().Subject;
+        evt.Type.Should().Be("123");
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_PayloadArray_IsPreservedAsBatchUnknownPayload()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": [
+                {{ ""type"": ""message"", ""role"": ""assistant"", ""content"": [] }}
+            ]
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ResponseItemEvent>().Subject;
+        evt.PayloadType.Should().Be("batch");
+        evt.Payload.Should().BeOfType<UnknownResponseItemPayload>();
+        evt.Payload.As<UnknownResponseItemPayload>().Raw.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_PayloadTypeNonString_DoesNotDropEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{ ""type"": 456, ""content"": [] }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<ResponseItemEvent>().Subject;
+        evt.PayloadType.Should().Be("unknown");
+        evt.Payload.Should().BeOfType<UnknownResponseItemPayload>();
+        evt.Payload.As<UnknownResponseItemPayload>().Raw.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
     }
 
     [Fact]

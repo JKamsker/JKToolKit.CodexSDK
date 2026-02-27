@@ -54,14 +54,14 @@ public sealed class CodexTurnHandle : IAsyncDisposable
         {
             SingleReader = false,
             SingleWriter = false,
-            FullMode = BoundedChannelFullMode.DropOldest
+            FullMode = BoundedChannelFullMode.Wait
         });
 
         RawEventsChannel = System.Threading.Channels.Channel.CreateBounded<AppServerRpcNotification>(new BoundedChannelOptions(bufferCapacity)
         {
             SingleReader = false,
             SingleWriter = false,
-            FullMode = BoundedChannelFullMode.DropOldest
+            FullMode = BoundedChannelFullMode.Wait
         });
 
         CompletionTcs = new TaskCompletionSource<TurnCompletedNotification>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -70,12 +70,22 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     /// <summary>
     /// Subscribes to this turn's event stream.
     /// </summary>
+    /// <remarks>
+    /// This stream is backed by a bounded, drop-oldest queue. Each event is delivered to at most one consumer.
+    /// If you enumerate this stream multiple times concurrently, events will be distributed across readers
+    /// (queue semantics), not broadcast (pub-sub).
+    /// </remarks>
     public IAsyncEnumerable<AppServerNotification> Events(CancellationToken ct = default) =>
         EventsChannel.Reader.ReadAllAsync(ct);
 
     /// <summary>
     /// Subscribes to this turn's raw JSON-RPC notification stream (method + params).
     /// </summary>
+    /// <remarks>
+    /// This stream is backed by a bounded, drop-oldest queue. Each event is delivered to at most one consumer.
+    /// If you enumerate this stream multiple times concurrently, events will be distributed across readers
+    /// (queue semantics), not broadcast (pub-sub).
+    /// </remarks>
     public IAsyncEnumerable<AppServerRpcNotification> EventsRaw(CancellationToken ct = default) =>
         RawEventsChannel.Reader.ReadAllAsync(ct);
 

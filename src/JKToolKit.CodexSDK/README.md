@@ -141,7 +141,7 @@ var result = await client.RunStructuredWithRetryAsync<MyResult>(
 var review = await client.ReviewAsync(new CodexReviewOptions("<repo-path>")
 {
     CommitSha = "<sha>",
-    Prompt = "Focus on correctness, security, and performance."
+    Title = "Optional title"
 });
 
 Console.WriteLine(review.StandardOutput);

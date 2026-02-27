@@ -83,7 +83,6 @@ internal static class StructuredOutputRetryRunner
                     throw new InvalidOperationException("Retry attempted without a captured session id.");
                 }
 
-                var resumeStart = DateTimeOffset.UtcNow;
                 var resumeOptions = effectiveBase;
                 if (!(attempt == 1 && initialSessionId is not null))
                 {
@@ -102,13 +101,22 @@ internal static class StructuredOutputRetryRunner
                     resumeOptions.Prompt = retryPrompt;
                 }
 
+                // Capture a pre-resume boundary, otherwise a fast resume could write all new events before we sample the offset.
+                if (logPath is null)
+                {
+                    await using var existing = await client.ResumeSessionAsync(sessionId.Value, ct).ConfigureAwait(false);
+                    logPath = existing.Info.LogPath;
+                }
+
+                var resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(logPath);
+
                 await using var resumed = await client.ResumeSessionAsync(sessionId.Value, resumeOptions, ct).ConfigureAwait(false);
                 logPath = resumed.Info.LogPath;
                 progress?.SessionLocated?.Invoke(resumed.Info.Id, resumed.Info.LogPath);
 
                 var raw2 = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
                     resumed,
-                    EventStreamOptions.FromTimestamp(resumeStart, follow: true),
+                    EventStreamOptions.FromOffset(resumeOffset, follow: true),
                     progress?.EventReceived,
                     ct).ConfigureAwait(false);
                 var (value2, json2) = StructuredOutputDeserializer.DeserializeStructured<T>(raw2, structured, serializerOptions);
@@ -148,4 +156,5 @@ internal static class StructuredOutputRetryRunner
             sessionId: sessionId?.Value,
             logPath);
     }
+
 }

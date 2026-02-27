@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
@@ -43,6 +44,7 @@ internal static class ProcessStartInfoBuilder
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        ConfigureUtf8RedirectedEncodings(startInfo);
 
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
@@ -95,6 +97,7 @@ internal static class ProcessStartInfoBuilder
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        ConfigureUtf8RedirectedEncodings(startInfo);
 
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
@@ -148,47 +151,52 @@ internal static class ProcessStartInfoBuilder
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        ConfigureUtf8RedirectedEncodings(startInfo);
 
         // `--cd` is a global option (before the subcommand).
         startInfo.ArgumentList.Add("-C");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
-
+ 
         startInfo.ArgumentList.Add("review");
+ 
+        var useStdinPrompt = !string.IsNullOrWhiteSpace(options.Prompt);
 
-        if (options.Uncommitted)
+        if (!useStdinPrompt && options.Uncommitted)
         {
             startInfo.ArgumentList.Add("--uncommitted");
         }
-
-        if (!string.IsNullOrWhiteSpace(options.BaseBranch))
+        else if (!useStdinPrompt && !string.IsNullOrWhiteSpace(options.BaseBranch))
         {
             startInfo.ArgumentList.Add("--base");
             startInfo.ArgumentList.Add(options.BaseBranch);
         }
-
-        if (!string.IsNullOrWhiteSpace(options.CommitSha))
+        else if (!useStdinPrompt && !string.IsNullOrWhiteSpace(options.CommitSha))
         {
             startInfo.ArgumentList.Add("--commit");
             startInfo.ArgumentList.Add(options.CommitSha);
-        }
 
-        if (!string.IsNullOrWhiteSpace(options.Title))
+            if (!string.IsNullOrWhiteSpace(options.Title))
+            {
+                startInfo.ArgumentList.Add("--title");
+                startInfo.ArgumentList.Add(options.Title);
+            }
+        }
+        else if (!useStdinPrompt)
         {
-            startInfo.ArgumentList.Add("--title");
-            startInfo.ArgumentList.Add(options.Title);
+            throw new InvalidOperationException("No review target provided. This should have been rejected by validation.");
         }
-
+ 
         foreach (var option in options.AdditionalOptions)
         {
             startInfo.ArgumentList.Add(option);
         }
 
-        if (!string.IsNullOrWhiteSpace(options.Prompt))
+        if (useStdinPrompt)
         {
-            // Use stdin for prompt to avoid escaping issues.
+            // Prompt-only reviews use stdin (`-`) for instructions.
             startInfo.ArgumentList.Add("-");
         }
-
+ 
         return startInfo;
     }
 
@@ -209,4 +217,13 @@ internal static class ProcessStartInfoBuilder
         value.Any(char.IsWhiteSpace) || value.Contains('"')
             ? $"\"{value.Replace("\"", "\\\"")}\""
             : value;
+
+    private static void ConfigureUtf8RedirectedEncodings(ProcessStartInfo startInfo)
+    {
+        // Avoid platform-default codepages (especially on Windows) leaking into JSON-RPC/JSONL streams.
+        var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        startInfo.StandardInputEncoding = utf8NoBom;
+        startInfo.StandardOutputEncoding = utf8NoBom;
+        startInfo.StandardErrorEncoding = utf8NoBom;
+    }
 }

@@ -192,13 +192,21 @@ internal static partial class JsonlEventEnvelopeParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        if (!payload.TryGetProperty("review_output", out var reviewOutputEl) || reviewOutputEl.ValueKind != JsonValueKind.Object)
+        ReviewOutput? reviewOutput = null;
+        if (!payload.TryGetProperty("review_output", out var reviewOutputEl))
         {
-            ctx.Logger.LogWarning("exited_review_mode event missing 'review_output' object");
-            return null;
+            ctx.Logger.LogDebug("exited_review_mode event missing 'review_output' field");
         }
-
-        var reviewOutput = ParseReviewOutput(reviewOutputEl);
+        else if (reviewOutputEl.ValueKind == JsonValueKind.Object)
+        {
+            reviewOutput = ParseReviewOutput(reviewOutputEl);
+        }
+        else if (reviewOutputEl.ValueKind != JsonValueKind.Null)
+        {
+            ctx.Logger.LogWarning(
+                "exited_review_mode event has invalid 'review_output' field shape (kind={Kind})",
+                reviewOutputEl.ValueKind);
+        }
 
         return new ExitedReviewModeEvent
         {
@@ -270,6 +278,7 @@ internal static partial class JsonlEventEnvelopeParsers
     {
         var payload = GetEventBody(root);
         var name = TryGetString(payload, "name");
+        var explanation = TryGetString(payload, "explanation");
         var steps = new List<PlanStep>();
 
         if (payload.TryGetProperty("plan", out var planEl) && planEl.ValueKind == JsonValueKind.Array)
@@ -285,7 +294,15 @@ internal static partial class JsonlEventEnvelopeParsers
             }
         }
 
-        return new PlanUpdateEvent { Timestamp = timestamp, Type = type, RawPayload = rawPayload, Name = name, Plan = steps };
+        return new PlanUpdateEvent
+        {
+            Timestamp = timestamp,
+            Type = type,
+            RawPayload = rawPayload,
+            Name = name,
+            Explanation = explanation,
+            Plan = steps
+        };
     }
 
     private static TaskStartedEvent ParseTaskStartedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)

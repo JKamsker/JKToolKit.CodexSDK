@@ -54,14 +54,15 @@ internal sealed class CodexAppServerConfigClient
 
     public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
     {
+        var emptyParams = new { };
         JsonElement result;
         try
         {
-            result = await _sendRequestAsync("skills/remote/list", null, ct);
+            result = await _sendRequestAsync("skills/remote/list", emptyParams, ct);
         }
         catch (JsonRpcRemoteException ex) when (IsUnknownVariant(ex, "skills/remote/list"))
         {
-            result = await _sendRequestAsync("skills/remote/read", null, ct);
+            result = await _sendRequestAsync("skills/remote/read", emptyParams, ct);
         }
 
         return new RemoteSkillsReadResult

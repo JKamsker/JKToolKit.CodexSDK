@@ -51,6 +51,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionsRoot);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!_fileSystem.DirectoryExists(sessionsRoot))
         {
@@ -70,20 +71,29 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionsRoot,
             startTime);
 
-        // Snapshot existing files before launch to avoid picking old sessions
-        var baseline = CodexSessionLocatorHelpers.CaptureSessionSnapshot(_fileSystem, _logger, sessionsRoot, SessionFilePattern);
+        var scanRoots = GetLikelySessionScanRoots(sessionsRoot, startTime, timeout);
+
+        // Snapshot existing files before launch to reduce the chance of attaching to an unrelated session.
+        var baseline = CodexUncorrelatedSessionDiscoveryHelpers.CaptureSessionSnapshot(_fileSystem, _logger, scanRoots, SessionFilePattern);
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
 
-        var startTimeUtc = startTime.UtcDateTime;
+        var startTimeUtc = startTime.ToUniversalTime();
 
         try
         {
             while (!timeoutCts.Token.IsCancellationRequested)
             {
                 // Search for .jsonl files created after startTime and not in baseline
-                var newSessionFile = CodexSessionLocatorHelpers.FindNewSessionFile(_fileSystem, _logger, sessionsRoot, startTimeUtc, baseline, SessionFilePattern);
+                var newSessionFile = await CodexUncorrelatedSessionDiscoveryHelpers.FindNewSessionFileAsync(
+                    _fileSystem,
+                    _logger,
+                    scanRoots,
+                    startTimeUtc,
+                    baseline,
+                    SessionFilePattern,
+                    timeoutCts.Token).ConfigureAwait(false);
 
                 if (newSessionFile != null)
                 {
@@ -104,9 +114,41 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
                 $"No new session file was created within the timeout period of {timeout.TotalSeconds:F1} seconds.");
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         // Should not reach here, but just in case
         throw new TimeoutException(
             $"No new session file was created within the timeout period of {timeout.TotalSeconds:F1} seconds.");
+    }
+
+    private IReadOnlyList<string> GetLikelySessionScanRoots(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout)
+    {
+        var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { sessionsRoot };
+
+        // Upstream layout is typically: sessions/YYYY/MM/DD/rollout-YYYY-MM-DDThh-mm-ss-<id>.jsonl
+        // To avoid O(N) AllDirectories walks on every poll, scan only dates likely to contain the new session.
+        var utcStartDate = startTime.UtcDateTime.Date;
+        var utcEndDate = startTime.UtcDateTime.Add(timeout).Date;
+
+        // Include a one-day cushion to tolerate local/UTC differences and midnight rollovers.
+        utcStartDate = utcStartDate.AddDays(-1);
+        utcEndDate = utcEndDate.AddDays(1);
+
+        for (var date = utcStartDate; date <= utcEndDate; date = date.AddDays(1))
+        {
+            var dayDir = Path.Combine(
+                sessionsRoot,
+                date.Year.ToString("0000"),
+                date.Month.ToString("00"),
+                date.Day.ToString("00"));
+
+            if (_fileSystem.DirectoryExists(dayDir))
+            {
+                roots.Add(dayDir);
+            }
+        }
+
+        return roots.OrderBy(r => r, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     /// <inheritdoc />
@@ -136,35 +178,50 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionId,
             sessionsRoot);
 
-        // Search for files matching the pattern *-{sessionId}.jsonl
-        var searchPattern = $"*-{sessionId.Value}.jsonl";
-
         try
         {
-            var matchingFiles = _fileSystem.GetFiles(sessionsRoot, searchPattern).ToArray();
+            // Don't embed the session id into a glob pattern (wildcard injection).
+            // Enumerate candidate JSONL files and filter by suffix match instead.
+            var expectedSuffix = "-" + sessionId.Value + ".jsonl";
+            var expectedRolloutName = "rollout-" + sessionId.Value + ".jsonl";
+
+            var matchingFiles = _fileSystem.GetFiles(sessionsRoot, "*.jsonl")
+                .Where(path =>
+                {
+                    var name = Path.GetFileName(path);
+                    if (!SessionFilePattern.IsMatch(name))
+                    {
+                        return false;
+                    }
+
+                    return name.EndsWith(expectedSuffix, StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(name, expectedRolloutName, StringComparison.OrdinalIgnoreCase);
+                })
+                .ToArray();
 
             if (matchingFiles.Length == 0)
             {
                 throw new FileNotFoundException(
                     $"No session log file found for session ID: {sessionId}. Searched in: {sessionsRoot}",
-                    searchPattern);
+                    sessionsRoot);
             }
+
+            var logPath = SelectBestSessionLogMatch(sessionId, matchingFiles);
 
             if (matchingFiles.Length > 1)
             {
                 _logger.LogWarning(
-                    "Multiple session log files found for session ID {SessionId}. Using the first match: {Path}",
+                    "Multiple session log files found for session ID {SessionId}. Using: {Path}",
                     sessionId,
-                    matchingFiles[0]);
+                    logPath);
             }
 
-            var logPath = matchingFiles[0];
             _logger.LogDebug("Found session log file: {Path}", logPath);
 
             var validated = await ValidateLogFileAsync(logPath, cancellationToken).ConfigureAwait(false);
             return validated;
         }
-        catch (Exception ex) when (ex is not FileNotFoundException)
+        catch (Exception ex) when (ex is not FileNotFoundException and not OperationCanceledException)
         {
             _logger.LogError(
                 ex,
@@ -172,6 +229,40 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
                 sessionId);
             throw;
         }
+    }
+
+    private static string SelectBestSessionLogMatch(SessionId sessionId, IReadOnlyList<string> matchingFiles)
+    {
+        var id = sessionId.Value;
+
+        static int GetPriority(string fileName, string id, bool hasTimestamp)
+        {
+            if (hasTimestamp && fileName.StartsWith("rollout-", StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+
+            if (string.Equals(fileName, "rollout-" + id + ".jsonl", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            return 2;
+        }
+
+        return matchingFiles
+            .Select(path =>
+            {
+                var fileName = Path.GetFileName(path);
+                var hasTimestamp = CodexUncorrelatedSessionDiscoveryHelpers.TryParseRolloutTimestampUtc(path, out var ts);
+                var timestamp = hasTimestamp ? ts : (DateTimeOffset?)null;
+                return (Path: path, FileName: fileName, Priority: GetPriority(fileName, id, hasTimestamp), Timestamp: timestamp);
+            })
+            .OrderBy(x => x.Priority)
+            .ThenByDescending(x => x.Timestamp ?? DateTimeOffset.MinValue)
+            .ThenBy(x => x.Path, StringComparer.OrdinalIgnoreCase)
+            .First()
+            .Path;
     }
 
     /// <inheritdoc />
@@ -193,12 +284,19 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
 
-        while (!timeoutCts.IsCancellationRequested)
+        TimeoutException CreateTimeoutException() =>
+            new($"No session log file found for session ID: {sessionId} within {timeout.TotalSeconds:F1} seconds.");
+
+        while (!timeoutCts.Token.IsCancellationRequested)
         {
             try
             {
                 var path = await FindSessionLogAsync(sessionId, sessionsRoot, timeoutCts.Token).ConfigureAwait(false);
                 return path;
+            }
+            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw CreateTimeoutException();
             }
             catch (FileNotFoundException)
             {
@@ -214,8 +312,9 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             }
         }
 
-        throw new TimeoutException(
-            $"No session log file found for session ID: {sessionId} within {timeout.TotalSeconds:F1} seconds.");
+        cancellationToken.ThrowIfCancellationRequested();
+
+        throw CreateTimeoutException();
     }
 
     /// <inheritdoc />

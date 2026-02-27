@@ -27,5 +27,54 @@ public sealed class CodexStructuredJsonExtractorTests
         var json = CodexStructuredJsonExtractor.ExtractJson(raw, tolerant: true);
         json.Should().Be("{\"a\":1,\"b\":[2,3]}");
     }
+
+    [Fact]
+    public void ExtractJson_Tolerant_ScansAllCodeFences_AndSelectsParseableJsonFence()
+    {
+        var raw = """
+                  ```text
+                  not json
+                  ```
+
+                  ```json
+                  {"a":1}
+                  ```
+                  """;
+
+        var json = CodexStructuredJsonExtractor.ExtractJson(raw, tolerant: true);
+        json.Should().Be("{\"a\":1}");
+    }
+
+    [Fact]
+    public void ExtractJson_Tolerant_IgnoresMarkdownBracketsBeforeJson()
+    {
+        var raw = "See [link](https://example.com) then {\"a\":1}";
+        var json = CodexStructuredJsonExtractor.ExtractJson(raw, tolerant: true);
+        json.Should().Be("{\"a\":1}");
+    }
+
+    [Fact]
+    public void ExtractJson_Tolerant_IgnoresNonJsonBracesBeforeValidJson()
+    {
+        var raw = "{not json} then {\"a\":1}";
+        var json = CodexStructuredJsonExtractor.ExtractJson(raw, tolerant: true);
+        json.Should().Be("{\"a\":1}");
+    }
+
+    [Fact]
+    public void ExtractJson_Tolerant_RecoversAfterUnbalancedBrace()
+    {
+        var raw = "prefix { unbalanced {\"a\":1} suffix";
+        var json = CodexStructuredJsonExtractor.ExtractJson(raw, tolerant: true);
+        json.Should().Be("{\"a\":1}");
+    }
+
+    [Fact]
+    public void ExtractJson_Tolerant_PrefersLastParseableJsonValue_WhenMultipleArePresent()
+    {
+        var raw = "first {\"a\":1} second {\"b\":2}";
+        var json = CodexStructuredJsonExtractor.ExtractJson(raw, tolerant: true);
+        json.Should().Be("{\"b\":2}");
+    }
 }
 

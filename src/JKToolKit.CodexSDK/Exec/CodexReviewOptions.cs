@@ -37,6 +37,7 @@ public class CodexReviewOptions
     /// </summary>
     /// <remarks>
     /// When set, the SDK passes <c>-</c> as the prompt argument and writes this text to stdin.
+    /// This is mutually exclusive with <see cref="Uncommitted"/>, <see cref="BaseBranch"/>, and <see cref="CommitSha"/>.
     /// </remarks>
     public string? Prompt
     {
@@ -89,6 +90,9 @@ public class CodexReviewOptions
     /// <summary>
     /// Gets or sets an optional title to display in the review summary via <c>--title</c>.
     /// </summary>
+    /// <remarks>
+    /// This option is only valid when <see cref="CommitSha"/> is provided.
+    /// </remarks>
     public string? Title
     {
         get => _title;
@@ -106,6 +110,10 @@ public class CodexReviewOptions
     /// <remarks>
     /// Use this to pass <c>--config</c>, <c>--enable</c>, <c>--disable</c>, or any newer flags not
     /// represented by this type.
+    ///
+    /// Each entry is treated as a single argv token. The SDK does not split entries on
+    /// whitespace and does not interpret shell-style quotes. For example, to pass
+    /// <c>--enable foo</c>, set <see cref="AdditionalOptions"/> to <c>["--enable", "foo"]</c>.
     /// </remarks>
     public IReadOnlyList<string> AdditionalOptions
     {
@@ -160,13 +168,35 @@ public class CodexReviewOptions
         if (_title is not null && string.IsNullOrWhiteSpace(_title))
             throw new InvalidOperationException("Title cannot be empty or whitespace when provided.");
 
+        var hasCommit = !string.IsNullOrWhiteSpace(_commitSha);
+        var hasBase = !string.IsNullOrWhiteSpace(_baseBranch);
+        var hasUncommitted = _uncommitted;
+        var hasPrompt = !string.IsNullOrWhiteSpace(_prompt);
+
+        if (hasPrompt && (hasCommit || hasBase || hasUncommitted))
+        {
+            throw new InvalidOperationException("Prompt cannot be combined with CommitSha, BaseBranch, or Uncommitted.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(_title) && !hasCommit)
+        {
+            throw new InvalidOperationException("Title requires CommitSha to be set.");
+        }
+
         var targets = 0;
-        if (!string.IsNullOrWhiteSpace(_commitSha)) targets++;
-        if (!string.IsNullOrWhiteSpace(_baseBranch)) targets++;
-        if (_uncommitted) targets++;
+        if (hasCommit) targets++;
+        if (hasBase) targets++;
+        if (hasUncommitted) targets++;
+        if (hasPrompt) targets++;
+
+        if (targets == 0)
+        {
+            throw new InvalidOperationException("Specify Uncommitted, BaseBranch, CommitSha, or provide Prompt.");
+        }
+
         if (targets > 1)
         {
-            throw new InvalidOperationException("Only one of CommitSha, BaseBranch, or Uncommitted can be specified.");
+            throw new InvalidOperationException("Specify exactly one of Uncommitted, BaseBranch, CommitSha, or Prompt.");
         }
     }
 

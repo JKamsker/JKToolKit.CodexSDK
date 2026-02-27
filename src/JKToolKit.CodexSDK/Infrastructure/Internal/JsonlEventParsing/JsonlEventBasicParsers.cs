@@ -34,7 +34,12 @@ internal static class JsonlEventBasicParsers
             return null;
         }
 
-        var idString = idElement.GetString();
+        var idString = idElement.ValueKind switch
+        {
+            JsonValueKind.String => idElement.GetString(),
+            JsonValueKind.Null => null,
+            _ => idElement.GetRawText()
+        };
         if (string.IsNullOrWhiteSpace(idString))
         {
             ctx.Logger.LogWarning("session_meta event has empty 'payload.id' field");
@@ -47,11 +52,9 @@ internal static class JsonlEventBasicParsers
             return null;
         }
 
-        var cwd = payload.TryGetProperty("cwd", out var cwdElement)
-            ? cwdElement.GetString()
-            : null;
-        var cliVersion = payload.TryGetProperty("cli_version", out var cliVersionEl) ? cliVersionEl.GetString() : null;
-        var originator = payload.TryGetProperty("originator", out var originatorEl) ? originatorEl.GetString() : null;
+        var cwd = TryGetString(payload, "cwd");
+        var cliVersion = TryGetString(payload, "cli_version");
+        var originator = TryGetString(payload, "originator");
         string? source = null;
         string? sourceSubagent = null;
         if (payload.TryGetProperty("source", out var sourceEl))
@@ -70,7 +73,7 @@ internal static class JsonlEventBasicParsers
                 }
             }
         }
-        var modelProvider = payload.TryGetProperty("model_provider", out var modelProviderEl) ? modelProviderEl.GetString() : null;
+        var modelProvider = TryGetString(payload, "model_provider");
 
         return new SessionMetaEvent
         {
@@ -265,7 +268,12 @@ internal static class JsonlEventBasicParsers
         {
             if (payload.TryGetProperty("approval_policy", out var approvalElement))
             {
-                approvalPolicy = approvalElement.GetString();
+                approvalPolicy = approvalElement.ValueKind switch
+                {
+                    JsonValueKind.Null => null,
+                    JsonValueKind.String => approvalElement.GetString(),
+                    _ => approvalElement.GetRawText()
+                };
             }
 
             // Codex has produced both `sandbox_policy_type: string` and `sandbox_policy: { type, network_access }`.
@@ -321,7 +329,7 @@ internal static class JsonlEventBasicParsers
                 if (item.ValueKind != JsonValueKind.Object)
                     continue;
 
-                var itemType = item.TryGetProperty("type", out var itemTypeEl) ? itemTypeEl.GetString() : null;
+                var itemType = TryGetString(item, "type");
                 if (string.IsNullOrWhiteSpace(itemType))
                 {
                     replacementHistory.Add(new UnknownResponseItemPayload { PayloadType = "unknown", Raw = item.Clone() });

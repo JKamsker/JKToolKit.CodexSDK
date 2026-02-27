@@ -26,12 +26,12 @@ public static class CodexStructuredJsonExtractor
             return text;
         }
 
-        if (TryExtractFromCodeFence(text, out var fenced))
+        if (TryExtractFromAnyCodeFence(text, out var fenced))
         {
             text = fenced.Trim();
         }
 
-        if (TryExtractFirstJsonValue(text, out var extracted))
+        if (TryExtractLastJsonValue(text, out var extracted))
         {
             JsonDocument.Parse(extracted);
             return extracted;
@@ -42,52 +42,95 @@ public static class CodexStructuredJsonExtractor
         return text;
     }
 
-    private static bool TryExtractFromCodeFence(string text, out string fenced)
+    private static bool TryExtractFromAnyCodeFence(string text, out string fenced)
     {
         fenced = string.Empty;
 
-        var idx = IndexOfCodeFenceStart(text);
-        if (idx < 0)
+        string? bestJsonFence = null;
+        string? bestAnyFence = null;
+
+        var idx = 0;
+        while (true)
         {
-            return false;
+            var fenceStart = text.IndexOf("```", idx, StringComparison.Ordinal);
+            if (fenceStart < 0)
+            {
+                break;
+            }
+
+            var headerEnd = text.IndexOf('\n', fenceStart + 3);
+            if (headerEnd < 0)
+            {
+                break;
+            }
+
+            var language = text.Substring(fenceStart + 3, headerEnd - (fenceStart + 3)).Trim();
+            var isJsonLanguage = language.StartsWith("json", StringComparison.OrdinalIgnoreCase);
+
+            var fenceEnd = text.IndexOf("```", headerEnd + 1, StringComparison.Ordinal);
+            if (fenceEnd < 0)
+            {
+                break;
+            }
+
+            var body = text.Substring(headerEnd + 1, fenceEnd - (headerEnd + 1)).Trim();
+            if (body.Length > 0 && body[0] is '{' or '[' && TryParseJson(body))
+            {
+                bestAnyFence = body;
+                if (isJsonLanguage)
+                {
+                    bestJsonFence = body;
+                }
+            }
+
+            idx = fenceEnd + 3;
         }
 
-        var afterFence = text.IndexOf('\n', idx);
-        if (afterFence < 0)
-        {
-            return false;
-        }
-
-        var fenceEnd = text.IndexOf("```", afterFence + 1, StringComparison.Ordinal);
-        if (fenceEnd < 0)
-        {
-            return false;
-        }
-
-        fenced = text.Substring(afterFence + 1, fenceEnd - (afterFence + 1));
-        return true;
+        fenced = bestJsonFence ?? bestAnyFence ?? string.Empty;
+        return fenced.Length > 0;
     }
 
-    private static int IndexOfCodeFenceStart(string text)
-    {
-        var idx = text.IndexOf("```json", StringComparison.OrdinalIgnoreCase);
-        if (idx >= 0)
-        {
-            return idx;
-        }
-
-        return text.IndexOf("```", StringComparison.Ordinal);
-    }
-
-    private static bool TryExtractFirstJsonValue(string text, out string json)
+    private static bool TryExtractLastJsonValue(string text, out string json)
     {
         json = string.Empty;
 
-        var start = FindFirstJsonStart(text);
-        if (start < 0)
+        string? last = null;
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (c is not '{' and not '[')
+            {
+                continue;
+            }
+
+            if (!TryExtractJsonValueAt(text, i, out var endIndex, out var candidate))
+            {
+                continue;
+            }
+
+            if (TryParseJson(candidate))
+            {
+                last = candidate;
+
+                // Avoid selecting nested values inside a valid outer JSON object/array (e.g., arrays inside objects).
+                i = endIndex;
+            }
+        }
+
+        if (last is null)
         {
             return false;
         }
+
+        json = last;
+        return true;
+    }
+
+    private static bool TryExtractJsonValueAt(string text, int start, out int endIndex, out string json)
+    {
+        endIndex = -1;
+        json = string.Empty;
 
         var open = text[start];
         var close = open == '{' ? '}' : ']';
@@ -139,6 +182,7 @@ public static class CodexStructuredJsonExtractor
                 depth--;
                 if (depth == 0)
                 {
+                    endIndex = i;
                     json = text.Substring(start, (i - start) + 1).Trim();
                     return true;
                 }
@@ -148,17 +192,16 @@ public static class CodexStructuredJsonExtractor
         return false;
     }
 
-    private static int FindFirstJsonStart(string text)
+    private static bool TryParseJson(string candidate)
     {
-        for (var i = 0; i < text.Length; i++)
+        try
         {
-            var c = text[i];
-            if (c is '{' or '[')
-            {
-                return i;
-            }
+            JsonDocument.Parse(candidate);
+            return true;
         }
-
-        return -1;
+        catch
+        {
+            return false;
+        }
     }
 }

@@ -10,6 +10,14 @@ internal static class JsonlEventJson
             ? p.GetString()
             : null;
 
+    public static string? TryGetStringOrRaw(JsonElement el, string name)
+    {
+        if (!el.TryGetProperty(name, out var p))
+            return null;
+
+        return p.ValueKind == JsonValueKind.String ? p.GetString() : p.GetRawText();
+    }
+
     public static double? TryGetDouble(JsonElement el, string name)
     {
         if (!el.TryGetProperty(name, out var p))

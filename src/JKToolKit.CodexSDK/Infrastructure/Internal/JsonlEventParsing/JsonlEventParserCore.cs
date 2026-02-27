@@ -27,7 +27,9 @@ internal static class JsonlEventParserCore
         }
 
         var timestamp = timestampElement.GetDateTimeOffset();
-        var type = typeElement.GetString();
+        var type = typeElement.ValueKind == JsonValueKind.String
+            ? typeElement.GetString()
+            : typeElement.GetRawText();
 
         if (string.IsNullOrWhiteSpace(type))
         {

@@ -105,7 +105,9 @@ public sealed class JsonRpcConnectionTests
             responseLine.Should().NotBeNull();
 
             using var respDoc = JsonDocument.Parse(responseLine!);
+            respDoc.RootElement.GetProperty("jsonrpc").GetString().Should().Be("2.0");
             respDoc.RootElement.GetProperty("id").GetInt32().Should().Be(42);
+            respDoc.RootElement.TryGetProperty("error", out _).Should().BeFalse();
             respDoc.RootElement.GetProperty("result").GetProperty("approved").GetBoolean().Should().BeTrue();
         });
 
@@ -327,9 +329,11 @@ public sealed class JsonRpcConnectionTests
                 }
 
                 root.GetProperty("id").GetInt32().Should().Be(42);
+                root.GetProperty("jsonrpc").GetString().Should().Be("2.0");
                 var err = root.GetProperty("error");
                 err.GetProperty("code").GetInt32().Should().Be(-32000);
                 err.GetProperty("message").GetString().Should().Be("kaboom");
+                root.TryGetProperty("result", out _).Should().BeFalse();
                 break;
             }
 
@@ -348,6 +352,211 @@ public sealed class JsonRpcConnectionTests
         result.GetProperty("ok").GetBoolean().Should().BeTrue();
 
         await serverTask;
+    }
+
+    [Fact]
+    public async Task SendNotificationAsync_WhenParamsNull_OmitsParamsProperty()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var serverTask = Task.Run(async () =>
+        {
+            var line = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            line.Should().NotBeNull();
+
+            using var doc = JsonDocument.Parse(line!);
+            doc.RootElement.GetProperty("jsonrpc").GetString().Should().Be("2.0");
+            doc.RootElement.GetProperty("method").GetString().Should().Be("initialized");
+            doc.RootElement.TryGetProperty("params", out _).Should().BeFalse();
+        });
+
+        await rpc.SendNotificationAsync("initialized", @params: null, CancellationToken.None);
+        await serverTask.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task SlowServerRequestHandler_DoesNotStallResponseCorrelation()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var handlerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var serverResponseReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        rpc.OnServerRequest = async req =>
+        {
+            handlerStarted.TrySetResult();
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            using var doc = JsonDocument.Parse("""{"ok":true}""");
+            return new JsonRpcResponse(req.Id, doc.RootElement.Clone(), Error: null);
+        };
+
+        var serverTask = Task.Run(async () =>
+        {
+            // Send a server request that triggers a slow handler.
+            await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id = 1, method = "srv/slow" }));
+
+            // Read the client's ping request and respond quickly.
+            var pingLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            pingLine.Should().NotBeNull();
+            using var pingDoc = JsonDocument.Parse(pingLine!);
+            pingDoc.RootElement.GetProperty("method").GetString().Should().Be("ping");
+            var pingId = pingDoc.RootElement.GetProperty("id").GetInt64();
+
+            await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id = pingId, result = new { ok = true } }));
+
+            // Eventually, the client responds to the server request.
+            while (true)
+            {
+                var line = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                line.Should().NotBeNull();
+
+                using var doc = JsonDocument.Parse(line!);
+                if (doc.RootElement.TryGetProperty("method", out _))
+                {
+                    continue;
+                }
+
+                doc.RootElement.GetProperty("id").GetInt32().Should().Be(1);
+                doc.RootElement.GetProperty("result").GetProperty("ok").GetBoolean().Should().BeTrue();
+                serverResponseReceived.TrySetResult();
+                break;
+            }
+        });
+
+        await handlerStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var result = await rpc.SendRequestAsync("ping", @params: null, cts.Token);
+
+        result.GetProperty("ok").GetBoolean().Should().BeTrue();
+        serverResponseReceived.Task.IsCompleted.Should().BeFalse();
+
+        await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task CancelledRequest_DoesNotCorruptTheWire()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var serverTask = Task.Run(async () =>
+        {
+            var requestLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            requestLine.Should().NotBeNull();
+            using var _ = JsonDocument.Parse(requestLine!);
+
+            // Delay the response past the client's cancellation.
+            await Task.Delay(800);
+
+            using var reqDoc = JsonDocument.Parse(requestLine!);
+            var id = reqDoc.RootElement.GetProperty("id").GetInt64();
+            await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id, result = new { ok = true } }));
+
+            // Client may send a best-effort cancellation notification, and then later send an unrelated notification.
+            var sawNote = false;
+            for (var i = 0; i < 2; i++)
+            {
+                string? notificationLine;
+                try
+                {
+                    notificationLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+                }
+                catch (TimeoutException)
+                {
+                    break;
+                }
+
+                if (notificationLine is null)
+                {
+                    break;
+                }
+
+                using var notificationDoc = JsonDocument.Parse(notificationLine);
+                if (notificationDoc.RootElement.TryGetProperty("method", out var methodEl) &&
+                    methodEl.ValueKind == JsonValueKind.String &&
+                    methodEl.GetString() == "note")
+                {
+                    sawNote = true;
+                }
+            }
+
+            sawNote.Should().BeTrue();
+        });
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        var act = async () => await rpc.SendRequestAsync("ping", @params: null, cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+
+        await rpc.SendNotificationAsync("note", @params: null, CancellationToken.None);
+
+        await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task CancelledRequest_EmitsCancelledNotification_BestEffort()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        var requestIdTcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var serverTask = Task.Run(async () =>
+        {
+            var requestLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            requestLine.Should().NotBeNull();
+
+            using var reqDoc = JsonDocument.Parse(requestLine!);
+            var id = reqDoc.RootElement.GetProperty("id").GetInt64();
+            requestIdTcs.TrySetResult(id);
+
+            var cancelLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            cancelLine.Should().NotBeNull();
+
+            using var cancelDoc = JsonDocument.Parse(cancelLine!);
+            cancelDoc.RootElement.GetProperty("method").GetString().Should().Be("notifications/cancelled");
+            cancelDoc.RootElement.GetProperty("params").GetProperty("requestId").GetInt64().Should().Be(id);
+        });
+
+        using var cts = new CancellationTokenSource();
+        var sendTask = rpc.SendRequestAsync("tools/call", @params: new { name = "codex", arguments = new { } }, cts.Token);
+
+        await requestIdTcs.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        cts.Cancel();
+
+        var act = async () => await sendTask;
+        await act.Should().ThrowAsync<OperationCanceledException>();
+
+        await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -424,6 +633,64 @@ public sealed class JsonRpcConnectionTests
         await act.Should().ThrowAsync<JsonRpcConnectionClosedException>();
 
         await serverTask;
+    }
+
+    [Fact]
+    public async Task ConcurrentOutboundWrites_DoNotCorruptJsonLines()
+    {
+        await using var harness = await PipeHarness.CreateAsync();
+
+        await using var rpc = new JsonRpcConnection(
+            reader: harness.ClientReader,
+            writer: harness.ClientWriter,
+            includeJsonRpcHeader: true,
+            notificationBufferCapacity: 10,
+            serializerOptions: null,
+            logger: NullLogger.Instance);
+
+        rpc.OnServerRequest = req =>
+        {
+            using var doc = JsonDocument.Parse("""{"ok":true}""");
+            return ValueTask.FromResult(new JsonRpcResponse(req.Id, doc.RootElement.Clone(), Error: null));
+        };
+
+        const int notificationCount = 200;
+        const int serverRequestCount = 50;
+        var expectedClientLines = notificationCount + serverRequestCount;
+
+        var readTask = Task.Run(async () =>
+        {
+            var lines = new List<string>(capacity: expectedClientLines);
+
+            while (lines.Count < expectedClientLines)
+            {
+                var line = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                line.Should().NotBeNull();
+                lines.Add(line!);
+
+                using var _ = JsonDocument.Parse(line!);
+            }
+        });
+
+        var sendServerRequestsTask = Task.Run(async () =>
+        {
+            for (var i = 0; i < serverRequestCount; i++)
+            {
+                await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new
+                {
+                    jsonrpc = "2.0",
+                    id = i,
+                    method = "srv/request",
+                    @params = new { i }
+                }));
+            }
+        });
+
+        var sendNotificationsTask = Task.WhenAll(Enumerable.Range(0, notificationCount).Select(i =>
+            rpc.SendNotificationAsync("note", new { i }, CancellationToken.None)));
+
+        await Task.WhenAll(sendNotificationsTask, sendServerRequestsTask);
+        await readTask.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     private sealed class PipeHarness : IAsyncDisposable

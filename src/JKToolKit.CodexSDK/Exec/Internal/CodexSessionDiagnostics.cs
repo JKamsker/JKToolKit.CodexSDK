@@ -12,8 +12,7 @@ internal static class CodexSessionDiagnostics
 
     internal static (Task<SessionId?> SessionIdTask, Func<string> GetStdoutDiag, Func<string> GetStderrDiag) StartLiveSessionStdIoDrain(
         Process process,
-        ILogger logger,
-        CancellationToken cancellationToken)
+        ILogger logger)
     {
         var tcs = new TaskCompletionSource<SessionId?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -43,7 +42,10 @@ internal static class CodexSessionDiagnostics
                 {
                     while (true)
                     {
-                        var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+                        // Keep draining until the process exits to prevent pipe-buffer deadlocks.
+                        // The caller's cancellation token controls how long they wait for session id capture,
+                        // but must not stop the background drain loop.
+                        var read = await reader.ReadAsync(buffer.AsMemory(), CancellationToken.None).ConfigureAwait(false);
                         if (read == 0)
                         {
                             break;
@@ -76,9 +78,9 @@ internal static class CodexSessionDiagnostics
                         }
                     }
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException)
                 {
-                    // Caller cancelled; best-effort drain.
+                    // Best-effort drain; underlying streams may be closed during disposal.
                 }
                 catch (Exception ex)
                 {

@@ -16,8 +16,10 @@ namespace JKToolKit.CodexSDK.McpServer;
 /// <summary>
 /// A client for interacting with the Codex CLI "mcp-server" JSON-RPC interface.
 /// </summary>
-public sealed class CodexMcpServerClient : IAsyncDisposable
+public sealed partial class CodexMcpServerClient : IAsyncDisposable
 {
+    private static readonly JsonElement DefaultElicitationDeniedResult = CreateDefaultElicitationDeniedResult();
+
     private readonly CodexMcpServerClientOptions _options;
     private readonly IJsonRpcConnection _rpc;
     private readonly IStdioProcess _process;
@@ -48,6 +50,7 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
 
         var loggerFactory = NullLoggerFactory.Instance;
+        var logger = NullLogger<CodexMcpServerClient>.Instance;
 
         var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
@@ -63,9 +66,31 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             includeJsonRpcHeader: true,
             ct);
 
-        var client = new CodexMcpServerClient(options, process, rpc, NullLogger<CodexMcpServerClient>.Instance);
-        await client.InitializeAsync(ct);
-        return client;
+        return await CreateInitializedAsync(options, process, rpc, logger, ct).ConfigureAwait(false);
+    }
+
+    internal static async Task<CodexMcpServerClient> CreateInitializedAsync(
+        CodexMcpServerClientOptions options,
+        IStdioProcess process,
+        IJsonRpcConnection rpc,
+        ILogger<CodexMcpServerClient> logger,
+        CancellationToken ct)
+    {
+        var client = new CodexMcpServerClient(options, process, rpc, logger);
+
+        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        handshakeCts.CancelAfter(options.StartupTimeout);
+
+        try
+        {
+            await client.InitializeAsync(handshakeCts.Token).ConfigureAwait(false);
+            return client;
+        }
+        catch
+        {
+            try { await client.DisposeAsync().ConfigureAwait(false); } catch { /* best-effort */ }
+            throw;
+        }
     }
 
     private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
@@ -120,7 +145,52 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             }
         }
 
-        return McpToolsListParser.Parse(transformed);
+        const int maxPages = 100;
+        var tools = new List<McpToolDescriptor>();
+        string? cursor = null;
+
+        for (var i = 0; i < maxPages; i++)
+        {
+            if (i != 0)
+            {
+                result = await _rpc.SendRequestAsync("tools/list", @params: new { cursor }, ct);
+                transformed = ApplyResponseTransformers("tools/list", result);
+            }
+
+            if (!McpToolsListParser.TryParse(transformed, out var pageTools, out var nextCursor))
+            {
+                if (_options.StrictParsing)
+                {
+                    throw new JsonException("Unexpected tools/list result shape.");
+                }
+
+                _logger.LogWarning("Unexpected tools/list result shape: {Result}", Truncate(transformed.GetRawText(), maxChars: 4000));
+                return tools;
+            }
+
+            tools.AddRange(pageTools);
+
+            cursor = nextCursor;
+            if (string.IsNullOrWhiteSpace(cursor))
+            {
+                break;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(cursor))
+        {
+            if (_options.StrictParsing)
+            {
+                throw new JsonException("tools/list exceeded maxPages pagination cap.");
+            }
+
+            _logger.LogWarning(
+                "tools/list exceeded maxPages pagination cap (maxPages={MaxPages}, cursor={Cursor}); results truncated.",
+                maxPages,
+                cursor);
+        }
+
+        return tools;
     }
 
     /// <summary>
@@ -133,9 +203,25 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
 
         ArgumentNullException.ThrowIfNull(arguments);
 
+        object gatedArguments = arguments;
+        if (arguments is IDictionary<string, object?> dictArgs)
+        {
+            gatedArguments = await GateArgumentsAsync(toolName, dictArgs, ct).ConfigureAwait(false);
+        }
+        else if (arguments is IDictionary<string, object> dictArgsNonNullable)
+        {
+            var converted = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var kvp in dictArgsNonNullable)
+            {
+                converted[kvp.Key] = kvp.Value;
+            }
+
+            gatedArguments = await GateArgumentsAsync(toolName, converted, ct).ConfigureAwait(false);
+        }
+
         var result = await _rpc.SendRequestAsync(
             "tools/call",
-            new { name = toolName, arguments },
+            new { name = toolName, arguments = gatedArguments },
             ct);
 
         var transformed = ApplyResponseTransformers("tools/call", result);
@@ -205,6 +291,16 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         var call = await CallToolAsync("codex-reply", args, ct);
         var parsed = ParseCodexToolResult("codex-reply", call.Raw);
         return new CodexMcpReplyResult(parsed.ThreadId, parsed.Text, parsed.StructuredContent, parsed.Raw);
+    }
+
+    private static string Truncate(string value, int maxChars)
+    {
+        if (value.Length <= maxChars)
+        {
+            return value;
+        }
+
+        return value[..maxChars] + "...";
     }
 
     private JsonElement ApplyResponseTransformers(string method, JsonElement result)
@@ -309,7 +405,7 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
             "initialize",
             new
             {
-                protocolVersion = "2025-06-18",
+                protocolVersion = "2025-11-25",
                 clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version },
                 capabilities
             },
@@ -323,6 +419,11 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         var handler = _options.ElicitationHandler;
         if (handler is null)
         {
+            if (string.Equals(req.Method, "elicitation/create", StringComparison.OrdinalIgnoreCase))
+            {
+                return new JsonRpcResponse(req.Id, Result: DefaultElicitationDeniedResult, Error: null);
+            }
+
             return new JsonRpcResponse(
                 req.Id,
                 Result: null,
@@ -338,6 +439,12 @@ public sealed class CodexMcpServerClient : IAsyncDisposable
         {
             return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(-32000, ex.Message));
         }
+    }
+
+    private static JsonElement CreateDefaultElicitationDeniedResult()
+    {
+        using var doc = JsonDocument.Parse("{\"decision\":\"denied\"}");
+        return doc.RootElement.Clone();
     }
 
     /// <summary>

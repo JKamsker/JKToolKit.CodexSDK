@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Channels;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Wire;
@@ -7,16 +8,8 @@ using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
-internal sealed class JsonRpcConnection : IJsonRpcConnection
+internal sealed partial class JsonRpcConnection : IJsonRpcConnection
 {
-    private static readonly JsonElement EmptyObject = CreateEmptyObject();
-
-    private static JsonElement CreateEmptyObject()
-    {
-        using var doc = JsonDocument.Parse("{}");
-        return doc.RootElement.Clone();
-    }
-
     private readonly StreamWriter _writer;
     private readonly StreamReader _reader;
     private readonly ILogger _logger;
@@ -25,6 +18,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
     private readonly Task _readLoop;
     private Exception? _fault;
     private int _faulted;
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
 
     private long _nextId;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonElement>> _pending = new();
@@ -77,10 +71,31 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
             throw new InvalidOperationException($"Duplicate JSON-RPC id '{key}'.");
         }
 
+        var requestWritten = false;
         try
         {
             await WriteAsync(CreateRequestObject(id, method, @params), ct);
+            requestWritten = true;
             return await tcs.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            if (requestWritten && IncludeJsonRpcHeader)
+            {
+                try
+                {
+                    await WriteAsync(
+                        CreateNotificationObject("notifications/cancelled", new { requestId = id }),
+                        CancellationToken.None).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // best-effort
+                }
+            }
+
+            _pending.TryRemove(key, out _);
+            throw;
         }
         catch
         {
@@ -160,14 +175,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
 
                     if (hasId && hasMethod)
                     {
-                        try
-                        {
-                            await HandleServerRequestAsync(idProp, methodProp, root);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogBogus($"Dropping malformed JSON-RPC server request. Line: '{line}'.", ex);
-                        }
+                        HandleServerRequest(idProp, methodProp, root);
                         continue;
                     }
 
@@ -186,14 +194,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
 
                     if (hasMethod)
                     {
-                        try
-                        {
-                            await HandleNotificationAsync(methodProp, root);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogBogus($"Dropping malformed JSON-RPC notification. Line: '{line}'.", ex);
-                        }
+                        HandleNotification(methodProp, root);
                         continue;
                     }
 
@@ -275,7 +276,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         tcs.TrySetResult(resultProp.Clone());
     }
 
-    private async Task HandleNotificationAsync(JsonElement methodProp, JsonElement root)
+    private void HandleNotification(JsonElement methodProp, JsonElement root)
     {
         if (methodProp.ValueKind != JsonValueKind.String)
         {
@@ -289,79 +290,115 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
             return;
         }
 
-        JsonElement? @params = null;
-        if (root.TryGetProperty("params", out var paramsProp))
-        {
-            @params = paramsProp.Clone();
-        }
-
-        var notification = new JsonRpcNotification(method, @params);
-
+        var notification = new JsonRpcNotification(method, TryCloneParams(root));
         _notifications.Writer.TryWrite(notification);
 
         var handler = OnNotification;
         if (handler is not null)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                await handler(notification);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogTrace(ex, "JSON-RPC notification handler threw.");
-            }
+                try
+                {
+                    await handler(notification).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "JSON-RPC notification handler threw.");
+                }
+            }, CancellationToken.None);
         }
     }
 
-    private async Task HandleServerRequestAsync(JsonElement idProp, JsonElement methodProp, JsonElement root)
+    private void HandleServerRequest(JsonElement idProp, JsonElement methodProp, JsonElement root)
     {
+        var id = new JsonRpcId(idProp.Clone());
+
         if (methodProp.ValueKind != JsonValueKind.String)
         {
-            LogBogus($"Dropping JSON-RPC server request with non-string method: {methodProp.GetRawText()}.");
+            _ = Task.Run(
+                async () =>
+                {
+                    try
+                    {
+                        await WriteAsync(
+                            CreateResponseObject(new JsonRpcResponse(
+                                id,
+                                Result: null,
+                                Error: new JsonRpcError(-32600, "Invalid Request"))),
+                            CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Fault(ex);
+                    }
+                },
+                CancellationToken.None);
             return;
         }
 
         var method = methodProp.GetString();
         if (string.IsNullOrWhiteSpace(method))
         {
+            _ = Task.Run(
+                async () =>
+                {
+                    try
+                    {
+                        await WriteAsync(
+                            CreateResponseObject(new JsonRpcResponse(
+                                id,
+                                Result: null,
+                                Error: new JsonRpcError(-32600, "Invalid Request"))),
+                            CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Fault(ex);
+                    }
+                },
+                CancellationToken.None);
             return;
         }
 
-        var id = new JsonRpcId(idProp.Clone());
+        var request = new JsonRpcRequest(id, method, TryCloneParams(root));
 
-        JsonElement? @params = null;
-        if (root.TryGetProperty("params", out var paramsProp))
-        {
-            @params = paramsProp.Clone();
-        }
-
-        var request = new JsonRpcRequest(id, method, @params);
-
-        JsonRpcResponse response;
         var handler = OnServerRequest;
-        if (handler is null)
+        _ = Task.Run(async () =>
         {
-            response = new JsonRpcResponse(
-                id,
-                Result: null,
-                Error: new JsonRpcError(-32601, $"Unhandled server request '{method}'."));
-        }
-        else
-        {
-            try
-            {
-                response = await handler(request);
-            }
-            catch (Exception ex)
+            JsonRpcResponse response;
+            if (handler is null)
             {
                 response = new JsonRpcResponse(
                     id,
                     Result: null,
-                    Error: new JsonRpcError(-32000, ex.Message));
+                    Error: new JsonRpcError(-32601, $"Unhandled server request '{method}'."));
             }
-        }
+            else
+            {
+                try
+                {
+                    response = await handler(request).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    response = new JsonRpcResponse(
+                        id,
+                        Result: null,
+                        Error: new JsonRpcError(-32000, ex.Message));
+                }
+            }
 
-        await WriteAsync(CreateResponseObject(response), _disposeCts.Token);
+            try
+            {
+                await WriteAsync(CreateResponseObject(response), CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Fault(ex);
+                _logger.LogWarning(ex, "Failed to write JSON-RPC server request response.");
+            }
+        }, CancellationToken.None);
     }
 
     private async Task WriteAsync(object payload, CancellationToken ct)
@@ -369,8 +406,21 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         ThrowIfFaulted();
         ct.ThrowIfCancellationRequested();
         var json = JsonSerializer.Serialize(payload, _serializerOptions);
-        await _writer.WriteLineAsync(json.AsMemory(), ct);
-        await _writer.FlushAsync(ct);
+
+        // Serialize *all* outbound writes to prevent concurrent calls from interleaving/corrupting JSONL.
+        await _writeGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            ThrowIfFaulted();
+
+            // Don't cancel mid-write. Callers can cancel waiting for responses, but the wire must remain well-formed.
+            await _writer.WriteLineAsync(json.AsMemory(), CancellationToken.None).ConfigureAwait(false);
+            await _writer.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
     }
 
     private void ThrowIfFaulted()
@@ -387,7 +437,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         {
             Id = id,
             Method = method,
-            Params = @params ?? EmptyObject,
+            Params = @params,
             JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
         };
     }
@@ -397,7 +447,7 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         return new JsonRpcNotificationWireMessage
         {
             Method = method,
-            Params = @params ?? EmptyObject,
+            Params = @params,
             JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
         };
     }
@@ -437,12 +487,4 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         return new JsonRpcError(code, message, data);
     }
 
-    private void LogBogus(string message, Exception? ex = null)
-    {
-#if DEBUG
-        _logger.LogWarning(ex, message);
-#else
-        _logger.LogTrace(ex, message);
-#endif
-    }
 }

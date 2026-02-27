@@ -66,7 +66,6 @@ internal static class StructuredOutputExecCapture
         CancellationToken ct)
     {
         string? raw = null;
-        var isDone = false;
         await foreach (var evt in session.GetEventsAsync(streamOptions, ct).ConfigureAwait(false))
         {
             onEvent?.Invoke(evt);
@@ -75,15 +74,24 @@ internal static class StructuredOutputExecCapture
                 case AgentMessageEvent msg:
                     raw = msg.Text;
                     break;
-                case TaskCompleteEvent complete:
-                    raw = complete.LastAgentMessage ?? raw;
-                    isDone = true;
+                case ResponseItemEvent item
+                    when item.Payload is MessageResponseItemPayload message &&
+                         string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase) &&
+                          message.TextParts is { Count: > 0 } parts:
+                    raw = string.Concat(parts);
                     break;
-            }
-
-            if (isDone)
-            {
-                break;
+                case TurnItemCompletedEvent completed
+                    when !string.IsNullOrWhiteSpace(completed.Text) &&
+                         (string.Equals(completed.ItemType, "message", StringComparison.OrdinalIgnoreCase) ||
+                          LooksLikeJson(completed.Text)):
+                    raw = completed.Text;
+                    break;
+                case TaskCompleteEvent complete:
+                    if (!string.IsNullOrWhiteSpace(complete.LastAgentMessage))
+                    {
+                        raw = complete.LastAgentMessage;
+                    }
+                    break;
             }
         }
 
@@ -98,5 +106,11 @@ internal static class StructuredOutputExecCapture
         }
 
         return raw;
+    }
+
+    private static bool LooksLikeJson(string text)
+    {
+        var trimmed = text.TrimStart();
+        return trimmed.StartsWith('{') || trimmed.StartsWith('[');
     }
 }

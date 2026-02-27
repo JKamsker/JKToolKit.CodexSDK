@@ -50,6 +50,17 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
    - to a global stream (`CodexAppServerClient.Notifications()`)
    - to per-turn streams (`CodexTurnHandle.Events()`) keyed by `turnId`
 
+## Notification Stream Semantics (Important)
+
+`CodexAppServerClient.Notifications()` / `NotificationsRaw()` and `CodexTurnHandle.Events()` / `EventsRaw()` are **queues**, not pub-sub streams:
+
+- Each notification/event is delivered to **at most one** consumer.
+- If you enumerate the same stream multiple times concurrently, notifications will be **distributed** across readers (competing consumers), not broadcast.
+
+All streams are backed by **bounded, drop-oldest buffers** to avoid blocking the JSON-RPC read loop. If consumers are too slow (or never read), older notifications are discarded.
+
+To observe drops, use `CodexAppServerClient.NotificationDropStats`.
+
 ## Public API (Core Types)
 
 - `CodexAppServerClient`

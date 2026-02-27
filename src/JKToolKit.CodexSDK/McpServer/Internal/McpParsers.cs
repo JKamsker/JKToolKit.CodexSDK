@@ -6,11 +6,33 @@ internal static class McpToolsListParser
 {
     public static IReadOnlyList<McpToolDescriptor> Parse(JsonElement result)
     {
-        if (result.ValueKind != JsonValueKind.Object ||
-            !result.TryGetProperty("tools", out var toolsProp) ||
-            toolsProp.ValueKind != JsonValueKind.Array)
+        return TryParse(result, out var tools, out _)
+            ? tools
+            : Array.Empty<McpToolDescriptor>();
+    }
+
+    public static bool TryParse(JsonElement result, out IReadOnlyList<McpToolDescriptor> tools, out string? nextCursor)
+    {
+        tools = Array.Empty<McpToolDescriptor>();
+        nextCursor = null;
+
+        if (result.ValueKind != JsonValueKind.Object)
         {
-            return Array.Empty<McpToolDescriptor>();
+            return false;
+        }
+
+        if (result.TryGetProperty("nextCursor", out var cursorProp) && cursorProp.ValueKind == JsonValueKind.String)
+        {
+            nextCursor = cursorProp.GetString();
+        }
+        else if (result.TryGetProperty("next_cursor", out cursorProp) && cursorProp.ValueKind == JsonValueKind.String)
+        {
+            nextCursor = cursorProp.GetString();
+        }
+
+        if (!result.TryGetProperty("tools", out var toolsProp) || toolsProp.ValueKind != JsonValueKind.Array)
+        {
+            return false;
         }
 
         var list = new List<McpToolDescriptor>();
@@ -36,7 +58,8 @@ internal static class McpToolsListParser
             list.Add(new McpToolDescriptor(name!, description, schema));
         }
 
-        return list;
+        tools = list;
+        return true;
     }
 }
 
@@ -46,10 +69,26 @@ internal static class CodexMcpResultParser
     {
         var structured = TryGetObject(raw, "structuredContent") ?? TryGetObject(raw, "structured_content");
 
-        var threadId =
-            (structured is { } s && TryGetString(s, "threadId") is { Length: > 0 } sid) ? sid :
-            (structured is { } s2 && TryGetString(s2, "conversationId") is { Length: > 0 } cid) ? cid :
-            string.Empty;
+        var threadId = string.Empty;
+        if (structured is { } s)
+        {
+            threadId =
+                (TryGetString(s, "threadId") is { Length: > 0 } sid) ? sid :
+                (TryGetString(s, "thread_id") is { Length: > 0 } sid2) ? sid2 :
+                (TryGetString(s, "conversationId") is { Length: > 0 } cid) ? cid :
+                (TryGetString(s, "conversation_id") is { Length: > 0 } cid2) ? cid2 :
+                string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(threadId))
+        {
+            threadId =
+                (TryGetString(raw, "threadId") is { Length: > 0 } sid) ? sid :
+                (TryGetString(raw, "thread_id") is { Length: > 0 } sid2) ? sid2 :
+                (TryGetString(raw, "conversationId") is { Length: > 0 } cid) ? cid :
+                (TryGetString(raw, "conversation_id") is { Length: > 0 } cid2) ? cid2 :
+                string.Empty;
+        }
 
         var text = TryExtractText(raw);
 
@@ -76,6 +115,7 @@ internal static class CodexMcpResultParser
 
         if (raw.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
         {
+            string? combined = null;
             foreach (var item in content.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object)
@@ -85,8 +125,19 @@ internal static class CodexMcpResultParser
 
                 if (item.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
                 {
-                    return textProp.GetString();
+                    var t = textProp.GetString();
+                    if (string.IsNullOrEmpty(t))
+                    {
+                        continue;
+                    }
+
+                    combined = combined is null ? t : combined + t;
                 }
+            }
+
+            if (!string.IsNullOrWhiteSpace(combined))
+            {
+                return combined;
             }
         }
 

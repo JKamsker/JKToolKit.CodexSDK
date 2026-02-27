@@ -117,6 +117,10 @@ public class CodexSessionOptions
     /// Default is an empty list. These options are passed directly to the Codex CLI
     /// process and can be used to enable experimental features or provide additional
     /// configuration not covered by the standard properties.
+    ///
+    /// Each entry is treated as a single argv token. The SDK does not split entries on
+    /// whitespace and does not interpret shell-style quotes. For example, to pass
+    /// <c>--enable foo</c>, set <see cref="AdditionalOptions"/> to <c>["--enable", "foo"]</c>.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// Thrown when attempting to set a null value.

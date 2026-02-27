@@ -4,32 +4,32 @@ Use this checklist during implementation / PR review.
 
 ## API surface
 
-- [ ] `CodexSdk` exists in `namespace JKToolKit.CodexSDK`.
-- [ ] `CodexSdk` exposes:
-  - [ ] `Exec`
-  - [ ] `AppServer`
-  - [ ] `McpServer`
-- [ ] Existing entry points remain unchanged (`CodexClient`, `CodexAppServerClient`, `CodexMcpServerClient`).
+- [x] `CodexSdk` exists in `namespace JKToolKit.CodexSDK`.
+- [x] `CodexSdk` exposes:
+  - [x] `Exec`
+  - [x] `AppServer`
+  - [x] `McpServer`
+- [x] Existing entry points remain unchanged (`CodexClient`, `CodexAppServerClient`, `CodexMcpServerClient`).
 
 ## Non-DI path
 
-- [ ] `CodexSdk.Create(...)` works with no arguments.
-- [ ] `CodexSdkBuilder` can configure each mode.
-- [ ] Global `CodexExecutablePath` flows to all modes only when per-mode paths are null.
+- [x] `CodexSdk.Create(...)` works with no arguments.
+- [x] `CodexSdkBuilder` can configure each mode.
+- [x] Global `CodexExecutablePath` flows to all modes only when per-mode paths are null.
 
 ## DI path
 
-- [ ] `services.AddCodexSdk(...)` exists.
-- [ ] `AddCodexSdk` calls the existing registration helpers and registers `CodexSdk`.
-- [ ] DI overrides for abstractions (e.g., `ICodexPathProvider`) are respected.
+- [x] `services.AddCodexSdk(...)` exists.
+- [x] `AddCodexSdk` calls the existing registration helpers and registers `CodexSdk`.
+- [x] DI overrides for abstractions (e.g., `ICodexPathProvider`) are respected.
 
 ## Testing
 
-- [ ] Builder precedence unit tests.
-- [ ] Facade delegation unit tests.
-- [ ] DI resolution test.
+- [x] Builder precedence unit tests.
+- [x] Facade delegation unit tests.
+- [x] DI resolution test.
 
 ## Documentation
 
-- [ ] A facade example exists in `README.md` (or linked docs).
-- [ ] New public types have XML documentation.
+- [x] A facade example exists in `README.md` (or linked docs).
+- [x] New public types have XML documentation.

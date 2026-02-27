@@ -11,6 +11,9 @@ The **exec** integration launches `codex exec` as a child process and streams th
 
 This gives you a stable, .NET-native streaming pipeline even when Codex outputs human-readable text to stdout/stderr.
 
+If you need to override where the SDK looks for session logs (attach/resume), set `CodexClientOptions.SessionsRootDirectory`.
+To change where Codex writes sessions, set `CodexClientOptions.CodexHomeDirectory` (sets `CODEX_HOME` for launched processes).
+
 ## Quick Example
 
 ```csharp
@@ -75,6 +78,21 @@ var result = await client.RunStructuredWithRetryAsync<MyResult>(
     retry: new CodexStructuredRetryOptions { MaxAttempts = 3 });
 ```
 
+## Additional CLI flags
+
+Both exec and review expose an `AdditionalOptions` list for passing through newer/experimental Codex CLI flags.
+
+Each list entry is treated as a single argv token. The SDK does not split entries on whitespace and does not interpret shell-style quotes.
+
+Example:
+
+```csharp
+var options = new CodexSessionOptions("<repo-path>", "Prompt")
+{
+    AdditionalOptions = new[] { "--enable", "some_flag", "--config", "foo=bar" }
+};
+```
+
 ## Code Reviews
 
 Run a non-interactive code review (`codex review`):
@@ -83,6 +101,17 @@ Run a non-interactive code review (`codex review`):
 var review = await client.ReviewAsync(new CodexReviewOptions("<repo-path>")
 {
     CommitSha = "<sha>",
+    Title = "Optional title"
+});
+
+Console.WriteLine(review.StandardOutput);
+```
+
+If you want to provide custom review instructions, use prompt-only mode (stdin):
+
+```csharp
+var review = await client.ReviewAsync(new CodexReviewOptions("<repo-path>")
+{
     Prompt = "Focus on correctness, security, and performance."
 });
 

@@ -10,12 +10,14 @@ internal sealed record class JsonRpcResponseWireMessage
     public JsonElement Id { get; init; }
 
     [JsonPropertyName("result")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? Result { get; init; }
 
     [JsonPropertyName("error")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public JsonRpcError? Error { get; init; }
 
     [JsonPropertyName("jsonrpc")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? JsonRpc { get; init; }
 }
-

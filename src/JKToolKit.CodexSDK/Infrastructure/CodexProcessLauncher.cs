@@ -477,6 +477,7 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
             return;
         }
 
+        CodexHomeDirectoryHelpers.EnsureExists(clientOptions.CodexHomeDirectory);
         startInfo.Environment[CodexHomeEnvVar] = clientOptions.CodexHomeDirectory;
     }
 }

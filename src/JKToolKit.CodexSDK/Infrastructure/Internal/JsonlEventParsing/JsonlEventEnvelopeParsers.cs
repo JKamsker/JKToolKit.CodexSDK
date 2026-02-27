@@ -17,10 +17,10 @@ internal static partial class JsonlEventEnvelopeParsers
         if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("event_msg missing 'payload' object");
-            return null;
+            return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event_msg", rawPayload, ctx);
         }
 
-        var innerType = payload.TryGetProperty("type", out var typeEl) ? typeEl.GetString() : null;
+        var innerType = TryGetString(payload, "type");
         if (string.IsNullOrWhiteSpace(innerType))
         {
             ctx.Logger.LogDebug("event_msg missing inner 'payload.type'; returning unknown event");
@@ -77,20 +77,20 @@ internal static partial class JsonlEventEnvelopeParsers
         if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("event missing 'payload' object");
-            return null;
+            return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event", rawPayload, ctx);
         }
 
         if (!payload.TryGetProperty("msg", out var msg) || msg.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("event missing 'payload.msg' object");
-            return null;
+            return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event", rawPayload, ctx);
         }
 
-        var msgType = msg.TryGetProperty("type", out var typeEl) ? typeEl.GetString() : null;
+        var msgType = TryGetString(msg, "type");
         if (string.IsNullOrWhiteSpace(msgType))
         {
             ctx.Logger.LogWarning("event missing 'payload.msg.type'");
-            return null;
+            return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event", rawPayload, ctx);
         }
 
         return msgType switch

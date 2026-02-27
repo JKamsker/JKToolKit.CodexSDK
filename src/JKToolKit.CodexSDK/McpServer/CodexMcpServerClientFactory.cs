@@ -27,6 +27,7 @@ internal sealed class CodexMcpServerClientFactory : ICodexMcpServerClientFactory
     {
         var options = _options.Value;
         var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
+        var logger = _loggerFactory.CreateLogger<CodexMcpServerClient>();
 
         var (process, rpc) = await CodexJsonRpcBootstrap.StartAsync(
             _stdioFactory,
@@ -40,10 +41,7 @@ internal sealed class CodexMcpServerClientFactory : ICodexMcpServerClientFactory
             includeJsonRpcHeader: true,
             ct);
 
-        var client = new CodexMcpServerClient(options, process, rpc, _loggerFactory.CreateLogger<CodexMcpServerClient>());
-        await client.InitializeAsync(ct);
-
-        return client;
+        return await CodexMcpServerClient.CreateInitializedAsync(options, process, rpc, logger, ct).ConfigureAwait(false);
     }
 
     private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
