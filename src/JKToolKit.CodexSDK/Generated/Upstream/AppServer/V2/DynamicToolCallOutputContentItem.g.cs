@@ -14,8 +14,7 @@ internal partial class DynamicToolCallOutputContentItem
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("type")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<DynamicToolCallOutputContentItemType>))]
-    public DynamicToolCallOutputContentItemType Type { get; set; } = default!;
+    public string Type { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("text")]
     public string? Text { get; set; } = default!;

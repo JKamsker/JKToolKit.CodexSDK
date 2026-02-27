@@ -69,9 +69,7 @@ internal static partial class AppServerV2DtoGenerator
                 {
                     ["type"] = new JsonObject
                     {
-                        ["title"] = "DynamicToolCallOutputContentItemType",
-                        ["type"] = "string",
-                        ["enum"] = new JsonArray { "inputText", "inputImage" }
+                        ["type"] = "string"
                     },
                     ["text"] = new JsonObject { ["type"] = "string" },
                     ["imageUrl"] = new JsonObject { ["type"] = "string" }

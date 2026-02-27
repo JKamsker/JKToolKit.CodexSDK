@@ -79,6 +79,186 @@ public sealed class AppServerClientGuardrailSeamTests
         ((ThreadResumeParams)rpc.LastParams!).ThreadId.Should().BeNull();
     }
 
+    [Fact]
+    public async Task StartThreadRealtime_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StartThreadRealtimeAsync("thr_1", "hello", sessionId: "sess_1");
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AppendThreadRealtimeAudio_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var audio = new ThreadRealtimeAudioChunk
+        {
+            Data = "AA==",
+            NumChannels = 1,
+            SampleRate = 16000,
+            SamplesPerChannel = 160
+        };
+
+        var act = async () => await client.AppendThreadRealtimeAudioAsync("thr_1", audio);
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AppendThreadRealtimeText_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.AppendThreadRealtimeTextAsync("thr_1", "hello");
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task StopThreadRealtime_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StopThreadRealtimeAsync("thr_1");
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task StartThreadRealtime_WhenExperimentalEnabled_SendsThreadRealtimeStart()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StartThreadRealtimeAsync("thr_1", "hello", sessionId: "sess_1");
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/realtime/start");
+        rpc.LastParams.Should().BeOfType<ThreadRealtimeStartParams>();
+
+        var p = (ThreadRealtimeStartParams)rpc.LastParams!;
+        p.ThreadId.Should().Be("thr_1");
+        p.Prompt.Should().Be("hello");
+        p.SessionId.Should().Be("sess_1");
+    }
+
+    [Fact]
+    public async Task AppendThreadRealtimeAudio_WhenExperimentalEnabled_SendsThreadRealtimeAppendAudio()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var audio = new ThreadRealtimeAudioChunk
+        {
+            Data = "AA==",
+            NumChannels = 1,
+            SampleRate = 16000,
+            SamplesPerChannel = 160
+        };
+
+        await client.AppendThreadRealtimeAudioAsync("thr_1", audio);
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/realtime/appendAudio");
+        rpc.LastParams.Should().BeOfType<ThreadRealtimeAppendAudioParams>();
+
+        var p = (ThreadRealtimeAppendAudioParams)rpc.LastParams!;
+        p.ThreadId.Should().Be("thr_1");
+        p.Audio.Should().BeEquivalentTo(audio);
+    }
+
+    [Fact]
+    public async Task AppendThreadRealtimeText_WhenExperimentalEnabled_SendsThreadRealtimeAppendText()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.AppendThreadRealtimeTextAsync("thr_1", "hello");
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/realtime/appendText");
+        rpc.LastParams.Should().BeOfType<ThreadRealtimeAppendTextParams>();
+
+        var p = (ThreadRealtimeAppendTextParams)rpc.LastParams!;
+        p.ThreadId.Should().Be("thr_1");
+        p.Text.Should().Be("hello");
+    }
+
+    [Fact]
+    public async Task StopThreadRealtime_WhenExperimentalEnabled_SendsThreadRealtimeStop()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StopThreadRealtimeAsync("thr_1");
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/realtime/stop");
+        rpc.LastParams.Should().BeOfType<ThreadRealtimeStopParams>();
+
+        var p = (ThreadRealtimeStopParams)rpc.LastParams!;
+        p.ThreadId.Should().Be("thr_1");
+    }
+
     private sealed class FakeProcess : IStdioProcess
     {
         private readonly TaskCompletionSource _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
