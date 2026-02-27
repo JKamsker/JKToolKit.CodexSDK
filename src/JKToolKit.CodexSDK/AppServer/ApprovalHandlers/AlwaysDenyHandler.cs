@@ -10,8 +10,14 @@ public sealed class AlwaysDenyHandler : IAppServerApprovalHandler
     /// <inheritdoc />
     public ValueTask<JsonElement> HandleAsync(string method, JsonElement? @params, CancellationToken ct)
     {
-        using var doc = JsonDocument.Parse("""{"approved":false}""");
-        return ValueTask.FromResult(doc.RootElement.Clone());
+        var decision = method switch
+        {
+            "item/commandExecution/requestApproval" or "item/fileChange/requestApproval" => "decline",
+            "execCommandApproval" or "applyPatchApproval" => "denied",
+            _ => throw new InvalidOperationException($"Unknown approval request method '{method}'."),
+        };
+
+        return ValueTask.FromResult(JsonSerializer.SerializeToElement(new { decision }));
     }
 }
 

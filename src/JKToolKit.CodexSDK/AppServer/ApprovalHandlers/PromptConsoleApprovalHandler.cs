@@ -10,6 +10,13 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
     /// <inheritdoc />
     public ValueTask<JsonElement> HandleAsync(string method, JsonElement? @params, CancellationToken ct)
     {
+        var (acceptDecision, declineDecision) = method switch
+        {
+            "item/commandExecution/requestApproval" or "item/fileChange/requestApproval" => ("accept", "decline"),
+            "execCommandApproval" or "applyPatchApproval" => ("approved", "denied"),
+            _ => throw new InvalidOperationException($"Unknown approval request method '{method}'."),
+        };
+
         Console.Error.WriteLine($"Approval request: {method}");
         if (@params is { } p)
         {
@@ -21,8 +28,8 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
         var approved = string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase) ||
                        string.Equals(answer, "yes", StringComparison.OrdinalIgnoreCase);
 
-        using var doc = JsonDocument.Parse(approved ? """{"approved":true}""" : """{"approved":false}""");
-        return ValueTask.FromResult(doc.RootElement.Clone());
+        var decision = approved ? acceptDecision : declineDecision;
+        return ValueTask.FromResult(JsonSerializer.SerializeToElement(new { decision }));
     }
 }
 

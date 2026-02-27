@@ -82,6 +82,14 @@ internal static class AppServerNotificationMapper
                 Reason: GetStringOrNull(p, "reason"),
                 Params: p),
 
+            "model/rerouted" => new ModelReroutedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetString(p, "turnId") ?? string.Empty,
+                FromModel: GetString(p, "fromModel") ?? string.Empty,
+                ToModel: GetString(p, "toModel") ?? string.Empty,
+                Reason: GetString(p, "reason") ?? string.Empty,
+                Params: p),
+
             "turn/started" => new TurnStartedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Turn: GetAny(p, "turn"),

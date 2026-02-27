@@ -48,6 +48,15 @@ public sealed class AppServerNotificationMapperTests
     }
 
     [Fact]
+    public void Map_ModelRerouted_ToTypedRecord()
+    {
+        var json = JsonDocument.Parse("""{"threadId":"t","turnId":"u","fromModel":"a","toModel":"b","reason":"highRiskCyberActivity"}""").RootElement;
+        AppServerNotificationMapper.Map("model/rerouted", json)
+            .Should().BeOfType<ModelReroutedNotification>()
+            .Which.ToModel.Should().Be("b");
+    }
+
+    [Fact]
     public void Map_FixtureJsonl_MapsAllLines()
     {
         var path = Path.Combine("Fixtures", "appserver-notifications.jsonl");

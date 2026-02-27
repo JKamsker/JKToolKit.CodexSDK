@@ -201,11 +201,6 @@ internal sealed class CodexAppServerThreadsClient
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
-        if (!_experimentalApiEnabled())
-        {
-            throw new CodexExperimentalApiRequiredException("thread/unsubscribe");
-        }
-
         var result = await _sendRequestAsync(
             "thread/unsubscribe",
             new UpstreamV2.ThreadUnsubscribeParams { ThreadId = threadId },
@@ -218,6 +213,88 @@ internal sealed class CodexAppServerThreadsClient
             Status = status,
             Raw = result
         };
+    }
+
+    public async Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        if (string.IsNullOrWhiteSpace(prompt))
+            throw new ArgumentException("Prompt cannot be empty or whitespace.", nameof(prompt));
+
+        if (!_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("thread/realtime/start");
+        }
+
+        _ = await _sendRequestAsync(
+            "thread/realtime/start",
+            new ThreadRealtimeStartParams
+            {
+                ThreadId = threadId,
+                Prompt = prompt,
+                SessionId = sessionId
+            },
+            ct);
+    }
+
+    public async Task AppendThreadRealtimeAudioAsync(string threadId, ThreadRealtimeAudioChunk audio, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        ArgumentNullException.ThrowIfNull(audio);
+
+        if (!_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("thread/realtime/appendAudio");
+        }
+
+        _ = await _sendRequestAsync(
+            "thread/realtime/appendAudio",
+            new ThreadRealtimeAppendAudioParams
+            {
+                ThreadId = threadId,
+                Audio = audio
+            },
+            ct);
+    }
+
+    public async Task AppendThreadRealtimeTextAsync(string threadId, string text, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        if (string.IsNullOrWhiteSpace(text))
+            throw new ArgumentException("Text cannot be empty or whitespace.", nameof(text));
+
+        if (!_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("thread/realtime/appendText");
+        }
+
+        _ = await _sendRequestAsync(
+            "thread/realtime/appendText",
+            new ThreadRealtimeAppendTextParams
+            {
+                ThreadId = threadId,
+                Text = text
+            },
+            ct);
+    }
+
+    public async Task StopThreadRealtimeAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        if (!_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("thread/realtime/stop");
+        }
+
+        _ = await _sendRequestAsync(
+            "thread/realtime/stop",
+            new ThreadRealtimeStopParams { ThreadId = threadId },
+            ct);
     }
 
     private static ThreadUnsubscribeStatus ParseThreadUnsubscribeStatus(string? value) =>

@@ -21,6 +21,7 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "thread/realtime/outputAudio/delta",
         "thread/realtime/error",
         "thread/realtime/closed",
+        "model/rerouted",
         "turn/started",
         "turn/completed",
         "turn/diff/updated",

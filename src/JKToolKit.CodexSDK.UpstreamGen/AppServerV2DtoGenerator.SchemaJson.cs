@@ -32,6 +32,7 @@ internal static partial class AppServerV2DtoGenerator
             RewriteRefs(clone);
             RewriteBooleanSchemas(clone);
             CollapseSingleRefAllOf(clone);
+            clone = ApplyDefinitionFixups(kvp.Key, clone);
             flattened[kvp.Key] = clone;
         }
 
@@ -54,6 +55,32 @@ internal static partial class AppServerV2DtoGenerator
         };
 
         return outRoot.ToJsonString();
+    }
+
+    private static JsonNode ApplyDefinitionFixups(string definitionName, JsonNode node)
+    {
+        if (string.Equals(definitionName, "DynamicToolCallOutputContentItem", StringComparison.Ordinal))
+        {
+            return new JsonObject
+            {
+                ["title"] = "DynamicToolCallOutputContentItem",
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["type"] = new JsonObject
+                    {
+                        ["title"] = "DynamicToolCallOutputContentItemType",
+                        ["type"] = "string",
+                        ["enum"] = new JsonArray { "inputText", "inputImage" }
+                    },
+                    ["text"] = new JsonObject { ["type"] = "string" },
+                    ["imageUrl"] = new JsonObject { ["type"] = "string" }
+                },
+                ["required"] = new JsonArray { "type" }
+            };
+        }
+
+        return node;
     }
 
     private static void EnsureHasTitle(JsonNode node, string title)
@@ -248,4 +275,3 @@ internal static partial class AppServerV2DtoGenerator
     private static bool IsSchemaKeywordExpectingSchema(string keyword) =>
         keyword is "additionalProperties" or "items" or "additionalItems" or "contains" or "propertyNames" or "not" or "if" or "then" or "else";
 }
-

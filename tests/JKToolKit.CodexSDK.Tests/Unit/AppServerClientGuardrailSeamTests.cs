@@ -32,30 +32,13 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
-    public async Task UnsubscribeThread_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
-    {
-        var rpc = new FakeRpc();
-        await using var client = new CodexAppServerClient(
-            new CodexAppServerClientOptions(),
-            new FakeProcess(),
-            rpc,
-            NullLogger.Instance,
-            startExitWatcher: false);
-
-        var act = async () => await client.UnsubscribeThreadAsync("thr_1");
-
-        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
-        rpc.RequestCount.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task UnsubscribeThread_WhenExperimentalEnabled_SendsThreadUnsubscribe()
+    public async Task UnsubscribeThread_WhenExperimentalDisabled_SendsThreadUnsubscribe()
     {
         using var doc = JsonDocument.Parse("""{"status":"unsubscribed"}""");
         var rpc = new RecordingRpc { Result = doc.RootElement };
 
         await using var client = new CodexAppServerClient(
-            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new CodexAppServerClientOptions(),
             new FakeProcess(),
             rpc,
             NullLogger.Instance,

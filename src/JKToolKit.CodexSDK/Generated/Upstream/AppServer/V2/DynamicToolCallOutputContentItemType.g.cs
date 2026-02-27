@@ -17,4 +17,8 @@ internal enum DynamicToolCallOutputContentItemType
     InputText = 0,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"inputImage")]
+    InputImage = 1,
+
+
 }
