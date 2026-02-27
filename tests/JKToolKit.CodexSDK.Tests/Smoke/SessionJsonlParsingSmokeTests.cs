@@ -125,12 +125,19 @@ public sealed class SessionJsonlParsingSmokeTests
                         continue;
                     }
 
+                    var skipLine = false;
                     foreach (var item in compacted.ReplacementHistory.OfType<MessageResponseItemPayload>())
                     {
                         if (item.Content.Any(p => p is UnknownResponseMessageContentPart))
                         {
-                            continue;
+                            skipLine = true;
+                            break;
                         }
+                    }
+
+                    if (skipLine)
+                    {
+                        continue;
                     }
                 }
             }

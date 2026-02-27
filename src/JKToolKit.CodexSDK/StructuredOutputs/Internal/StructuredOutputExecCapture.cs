@@ -77,8 +77,8 @@ internal static class StructuredOutputExecCapture
                 case ResponseItemEvent item
                     when item.Payload is MessageResponseItemPayload message &&
                          string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase) &&
-                         message.TextParts is { Count: > 0 } parts:
-                    raw = string.Join("\n", parts);
+                          message.TextParts is { Count: > 0 } parts:
+                    raw = string.Concat(parts);
                     break;
                 case TurnItemCompletedEvent completed
                     when !string.IsNullOrWhiteSpace(completed.Text) &&

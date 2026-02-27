@@ -71,7 +71,7 @@ internal sealed partial class CodexAppServerClientCore
                 handle.CompletionTcs.TrySetResult(completed);
                 handle.EventsChannel.Writer.TryComplete();
                 handle.RawEventsChannel.Writer.TryComplete();
-                RemoveTurnHandle(turnId);
+                RemoveTurnHandleLocked(turnId);
                 break;
             }
         }

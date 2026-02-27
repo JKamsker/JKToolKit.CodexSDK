@@ -221,7 +221,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             var validated = await ValidateLogFileAsync(logPath, cancellationToken).ConfigureAwait(false);
             return validated;
         }
-        catch (Exception ex) when (ex is not FileNotFoundException)
+        catch (Exception ex) when (ex is not FileNotFoundException and not OperationCanceledException)
         {
             _logger.LogError(
                 ex,
@@ -284,12 +284,19 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeout);
 
+        TimeoutException CreateTimeoutException() =>
+            new($"No session log file found for session ID: {sessionId} within {timeout.TotalSeconds:F1} seconds.");
+
         while (!timeoutCts.Token.IsCancellationRequested)
         {
             try
             {
                 var path = await FindSessionLogAsync(sessionId, sessionsRoot, timeoutCts.Token).ConfigureAwait(false);
                 return path;
+            }
+            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw CreateTimeoutException();
             }
             catch (FileNotFoundException)
             {
@@ -307,8 +314,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        throw new TimeoutException(
-            $"No session log file found for session ID: {sessionId} within {timeout.TotalSeconds:F1} seconds.");
+        throw CreateTimeoutException();
     }
 
     /// <inheritdoc />

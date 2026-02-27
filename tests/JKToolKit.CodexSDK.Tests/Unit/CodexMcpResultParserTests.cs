@@ -38,10 +38,17 @@ public sealed class CodexMcpResultParserTests
         parsed.ThreadId.Should().Be("t3");
     }
 
+    [Fact]
+    public void Parse_ThreadId_PrefersStructuredContentOverTopLevel()
+    {
+        var raw = Parse("""{"structuredContent":{"thread_id":"t1"},"conversationId":"t2","conversation_id":"t3"}""");
+        var parsed = CodexMcpResultParser.Parse(raw);
+        parsed.ThreadId.Should().Be("t1");
+    }
+
     private static JsonElement Parse(string json)
     {
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.Clone();
     }
 }
-

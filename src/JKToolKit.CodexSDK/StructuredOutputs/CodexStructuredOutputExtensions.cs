@@ -77,7 +77,7 @@ public static class CodexStructuredOutputExtensions
 
         // When resuming, the session log already contains historical events (including prior TaskCompleteEvent).
         // Prefer byte offsets (not timestamps) to avoid boundary issues when events share the same timestamp.
-        var resumeOffset = TryGetLogByteOffset(session.Info.LogPath);
+        var resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(session.Info.LogPath);
 
         var raw = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
             session,
@@ -93,22 +93,6 @@ public static class CodexStructuredOutputExtensions
             SessionId = session.Info.Id.Value,
             LogPath = session.Info.LogPath
         };
-    }
-
-    private static long TryGetLogByteOffset(string? logPath)
-    {
-        if (string.IsNullOrWhiteSpace(logPath))
-            return 0;
-
-        try
-        {
-            var info = new FileInfo(logPath);
-            return info.Exists ? info.Length : 0;
-        }
-        catch
-        {
-            return 0;
-        }
     }
 
     /// <summary>

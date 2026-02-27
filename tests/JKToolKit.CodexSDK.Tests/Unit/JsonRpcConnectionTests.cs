@@ -396,10 +396,11 @@ public sealed class JsonRpcConnectionTests
             logger: NullLogger.Instance);
 
         var handlerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var serverResponseReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         rpc.OnServerRequest = async req =>
         {
             handlerStarted.TrySetResult();
-            await Task.Delay(500);
+            await Task.Delay(TimeSpan.FromSeconds(2));
             using var doc = JsonDocument.Parse("""{"ok":true}""");
             return new JsonRpcResponse(req.Id, doc.RootElement.Clone(), Error: null);
         };
@@ -432,19 +433,18 @@ public sealed class JsonRpcConnectionTests
 
                 doc.RootElement.GetProperty("id").GetInt32().Should().Be(1);
                 doc.RootElement.GetProperty("result").GetProperty("ok").GetBoolean().Should().BeTrue();
+                serverResponseReceived.TrySetResult();
                 break;
             }
         });
 
         await handlerStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var result = await rpc.SendRequestAsync("ping", @params: null, cts.Token);
-        sw.Stop();
 
         result.GetProperty("ok").GetBoolean().Should().BeTrue();
-        sw.Elapsed.Should().BeLessThan(TimeSpan.FromMilliseconds(400));
+        serverResponseReceived.Task.IsCompleted.Should().BeFalse();
 
         await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
     }
@@ -476,12 +476,34 @@ public sealed class JsonRpcConnectionTests
             await harness.ServerWriter.WriteLineAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id, result = new { ok = true } }));
 
             // Client may send a best-effort cancellation notification, and then later send an unrelated notification.
+            var sawNote = false;
             for (var i = 0; i < 2; i++)
             {
-                var notificationLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
-                notificationLine.Should().NotBeNull();
-                using var __ = JsonDocument.Parse(notificationLine!);
+                string? notificationLine;
+                try
+                {
+                    notificationLine = await harness.ServerReader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(2));
+                }
+                catch (TimeoutException)
+                {
+                    break;
+                }
+
+                if (notificationLine is null)
+                {
+                    break;
+                }
+
+                using var notificationDoc = JsonDocument.Parse(notificationLine);
+                if (notificationDoc.RootElement.TryGetProperty("method", out var methodEl) &&
+                    methodEl.ValueKind == JsonValueKind.String &&
+                    methodEl.GetString() == "note")
+                {
+                    sawNote = true;
+                }
             }
+
+            sawNote.Should().BeTrue();
         });
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));

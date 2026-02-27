@@ -106,7 +106,7 @@ internal static class StructuredOutputRetryRunner
                 logPath = resumed.Info.LogPath;
                 progress?.SessionLocated?.Invoke(resumed.Info.Id, resumed.Info.LogPath);
 
-                var resumeOffset = TryGetLogByteOffset(resumed.Info.LogPath);
+                var resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(resumed.Info.LogPath);
 
                 var raw2 = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
                     resumed,
@@ -151,19 +151,4 @@ internal static class StructuredOutputRetryRunner
             logPath);
     }
 
-    private static long TryGetLogByteOffset(string? logPath)
-    {
-        if (string.IsNullOrWhiteSpace(logPath))
-            return 0;
-
-        try
-        {
-            var info = new FileInfo(logPath);
-            return info.Exists ? info.Length : 0;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
 }

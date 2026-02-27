@@ -254,10 +254,12 @@ public sealed class AppServerOverridePipelineTests
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
 
         var typed = await ReadNAsync(handle.Events(cts.Token), 2, cts.Token);
+        typed.Should().HaveCount(2);
         typed[0].Method.Should().Be("turn/started");
         typed[1].Method.Should().Be("item/started");
 
         var raw = await ReadNAsync(handle.EventsRaw(cts.Token), 2, cts.Token);
+        raw.Should().HaveCount(2);
         raw[0].Method.Should().Be("turn/started");
         raw[1].Method.Should().Be("item/started");
     }
@@ -360,7 +362,6 @@ public sealed class AppServerOverridePipelineTests
             results.Add(e.Current);
         }
 
-        results.Should().HaveCount(count);
         return results;
     }
 

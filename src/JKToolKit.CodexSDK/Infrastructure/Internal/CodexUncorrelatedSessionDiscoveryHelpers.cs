@@ -164,6 +164,10 @@ internal static class CodexUncorrelatedSessionDiscoveryHelpers
                 return earliest.Path;
             }
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error searching for new session files (uncorrelated discovery)");
@@ -240,6 +244,10 @@ internal static class CodexUncorrelatedSessionDiscoveryHelpers
                     return timestampElement.GetDateTimeOffset();
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception)
         {

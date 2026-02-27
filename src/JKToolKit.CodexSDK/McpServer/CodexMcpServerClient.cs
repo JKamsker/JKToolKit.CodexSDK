@@ -170,12 +170,24 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
 
             tools.AddRange(pageTools);
 
-            if (string.IsNullOrWhiteSpace(nextCursor))
+            cursor = nextCursor;
+            if (string.IsNullOrWhiteSpace(cursor))
             {
                 break;
             }
+        }
 
-            cursor = nextCursor;
+        if (!string.IsNullOrWhiteSpace(cursor))
+        {
+            if (_options.StrictParsing)
+            {
+                throw new JsonException("tools/list exceeded maxPages pagination cap.");
+            }
+
+            _logger.LogWarning(
+                "tools/list exceeded maxPages pagination cap (maxPages={MaxPages}, cursor={Cursor}); results truncated.",
+                maxPages,
+                cursor);
         }
 
         return tools;

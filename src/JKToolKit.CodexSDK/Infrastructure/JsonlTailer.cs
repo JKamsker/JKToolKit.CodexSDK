@@ -20,7 +20,9 @@ public sealed class JsonlTailer : IJsonlTailer
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<JsonlTailer> _logger;
     private readonly CodexClientOptions _options;
+    private const int ReadBufferBytes = 4096;
     private const int ReadBufferChars = 4096;
+    private const int MaxLineLength = 1024 * 1024;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonlTailer"/> class.
@@ -94,7 +96,7 @@ public sealed class JsonlTailer : IJsonlTailer
                     FileMode.Open,
                     FileAccess.Read,
                     FileShare.ReadWrite | FileShare.Delete,
-                    bufferSize: ReadBufferChars,
+                    bufferSize: ReadBufferBytes,
                     useAsync: true);
 
                 reader = new StreamReader(fileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
@@ -103,9 +105,10 @@ public sealed class JsonlTailer : IJsonlTailer
                 {
                     lastKnownCreationTimeUtc = _fileSystem.GetFileCreationTimeUtc(filePath);
                 }
-                catch
+                catch (Exception ex)
                 {
                     lastKnownCreationTimeUtc = default;
+                    _logger.LogTrace(ex, "Failed to read file creation time for {FilePath} (best-effort).", filePath);
                 }
                 buffer.Clear();
 
@@ -128,6 +131,15 @@ public sealed class JsonlTailer : IJsonlTailer
                 if (read > 0)
                 {
                     buffer.Append(readChars, 0, read);
+                    if (buffer.Length > MaxLineLength)
+                    {
+                        _logger.LogError(
+                            "JSONL tail buffer exceeded MaxLineLength={MaxLineLength} for {FilePath}; aborting.",
+                            MaxLineLength,
+                            filePath);
+                        throw new InvalidDataException($"JSONL line exceeded MaxLineLength={MaxLineLength} characters.");
+                    }
+
                     while (TryDequeueLine(buffer, out var line))
                     {
                         yield return line;
@@ -151,11 +163,12 @@ public sealed class JsonlTailer : IJsonlTailer
                     currentPathLength = _fileSystem.GetFileSize(filePath);
                     currentCreationTimeUtc = _fileSystem.GetFileCreationTimeUtc(filePath);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // Best-effort: path might temporarily disappear during rotation.
                     currentPathLength = -1;
                     currentCreationTimeUtc = default;
+                    _logger.LogTrace(ex, "Failed to read file size/creation time for {FilePath} (best-effort).", filePath);
                 }
 
                 var handleLength = fileStream!.Length;
@@ -275,7 +288,7 @@ public sealed class JsonlTailer : IJsonlTailer
     private static async Task ResyncToNextNewlineAsync(FileStream fileStream, CancellationToken cancellationToken)
     {
         // Scan bytes until '\n' so subsequent line reads start at a line boundary.
-        var buffer = new byte[4096];
+        var buffer = new byte[ReadBufferBytes];
 
         while (true)
         {

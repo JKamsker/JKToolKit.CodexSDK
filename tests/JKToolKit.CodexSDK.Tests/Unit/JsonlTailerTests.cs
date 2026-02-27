@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
@@ -106,15 +107,17 @@ public class JsonlTailerTests : IDisposable
         var streamOptions = new EventStreamOptions(FromBeginning: true);
 
         using var cts = new CancellationTokenSource();
-        var lines = new List<string>();
+        var lines = new ConcurrentQueue<string>();
 
         // Act - Start tailing in background
         var tailTask = Task.Run(async () =>
         {
+            var readCount = 0;
             await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
             {
-                lines.Add(line);
-                if (lines.Count >= 3) // Stop after getting 3 lines
+                lines.Enqueue(line);
+                readCount++;
+                if (readCount >= 3) // Stop after getting 3 lines
                 {
                     cts.Cancel();
                     break;
@@ -124,7 +127,7 @@ public class JsonlTailerTests : IDisposable
 
         // Wait for initial line to be read
         await Task.Delay(100);
-        lines.Should().HaveCount(1);
+        lines.Count.Should().Be(1);
 
         // Append new content
         await File.AppendAllTextAsync(
@@ -147,8 +150,9 @@ public class JsonlTailerTests : IDisposable
         }
 
         // Assert
-        lines.Should().HaveCountGreaterThanOrEqualTo(1);
-        lines[0].Should().Be("Initial line");
+        lines.Count.Should().BeGreaterThanOrEqualTo(1);
+        lines.TryPeek(out var first).Should().BeTrue();
+        first.Should().Be("Initial line");
     }
 
     [Fact]
@@ -162,14 +166,14 @@ public class JsonlTailerTests : IDisposable
         var streamOptions = new EventStreamOptions(FromBeginning: true);
 
         using var cts = new CancellationTokenSource();
-        var lines = new List<string>();
+        var lines = new ConcurrentQueue<string>();
 
         // Act - Start tailing
         var tailTask = Task.Run(async () =>
         {
             await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
             {
-                lines.Add(line);
+                lines.Enqueue(line);
             }
         });
 
@@ -190,8 +194,9 @@ public class JsonlTailerTests : IDisposable
         }
 
         // Assert
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("Line 1");
+        lines.Count.Should().Be(1);
+        lines.TryPeek(out var first).Should().BeTrue();
+        first.Should().Be("Line 1");
     }
 
     [Fact]
@@ -336,16 +341,18 @@ public class JsonlTailerTests : IDisposable
         var streamOptions = new EventStreamOptions(FromBeginning: true);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var lines = new List<string>();
+        var lines = new ConcurrentQueue<string>();
 
         var readTask = Task.Run(async () =>
         {
             try
             {
+                var readCount = 0;
                 await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
                 {
-                    lines.Add(line);
-                    if (lines.Count >= 1)
+                    lines.Enqueue(line);
+                    readCount++;
+                    if (readCount >= 1)
                     {
                         cts.Cancel();
                         break;
@@ -362,13 +369,13 @@ public class JsonlTailerTests : IDisposable
         await File.AppendAllTextAsync(filePath, "{\"a\":", System.Text.Encoding.UTF8, cts.Token);
         await Task.Delay(200, cts.Token);
 
-        lines.Should().BeEmpty();
+        lines.IsEmpty.Should().BeTrue();
 
         await File.AppendAllTextAsync(filePath, "1}" + Environment.NewLine, System.Text.Encoding.UTF8, cts.Token);
         await readTask.WaitAsync(TimeSpan.FromSeconds(3), CancellationToken.None);
 
         // Assert
-        lines.Should().Equal("{\"a\":1}");
+        lines.ToArray().Should().Equal("{\"a\":1}");
     }
 
     [Fact]
@@ -383,16 +390,18 @@ public class JsonlTailerTests : IDisposable
         var streamOptions = new EventStreamOptions(FromBeginning: false);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var lines = new List<string>();
+        var lines = new ConcurrentQueue<string>();
 
         var readTask = Task.Run(async () =>
         {
             try
             {
+                var readCount = 0;
                 await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
                 {
-                    lines.Add(line);
-                    if (lines.Count >= 1)
+                    lines.Enqueue(line);
+                    readCount++;
+                    if (readCount >= 1)
                     {
                         cts.Cancel();
                         break;
@@ -415,8 +424,9 @@ public class JsonlTailerTests : IDisposable
         await readTask.WaitAsync(TimeSpan.FromSeconds(3), CancellationToken.None);
 
         // Assert
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("{\"after\":1}");
+        lines.Count.Should().Be(1);
+        lines.TryPeek(out var first).Should().BeTrue();
+        first.Should().Be("{\"after\":1}");
     }
 
     [Fact]
@@ -430,16 +440,18 @@ public class JsonlTailerTests : IDisposable
         var streamOptions = new EventStreamOptions(FromBeginning: false);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var lines = new List<string>();
+        var lines = new ConcurrentQueue<string>();
 
         var readTask = Task.Run(async () =>
         {
             try
             {
+                var readCount = 0;
                 await foreach (var line in tailer.TailAsync(filePath, streamOptions, cts.Token))
                 {
-                    lines.Add(line);
-                    if (lines.Count >= 1)
+                    lines.Enqueue(line);
+                    readCount++;
+                    if (readCount >= 1)
                     {
                         cts.Cancel();
                         break;
@@ -461,7 +473,7 @@ public class JsonlTailerTests : IDisposable
         await readTask.WaitAsync(TimeSpan.FromSeconds(3), CancellationToken.None);
 
         // Assert
-        lines.Should().Equal("New file line");
+        lines.ToArray().Should().Equal("New file line");
     }
 
     [Fact]

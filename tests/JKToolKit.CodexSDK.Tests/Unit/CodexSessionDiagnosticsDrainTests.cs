@@ -27,7 +27,7 @@ public sealed class CodexSessionDiagnosticsDrainTests
 
         using var exitCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         await process.WaitForExitAsync(exitCts.Token);
-        process.ExitCode.Should().Be(0);
+        process.ExitCode.Should().Be(0); // If draining stopped, the child can hang on full stdout/stderr pipes or fail with broken-pipe; exit code 0 verifies the drain kept consuming output.
     }
 
     private static Process CreateLargeOutputProcess()
@@ -66,4 +66,3 @@ public sealed class CodexSessionDiagnosticsDrainTests
         return Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start test process.");
     }
 }
-

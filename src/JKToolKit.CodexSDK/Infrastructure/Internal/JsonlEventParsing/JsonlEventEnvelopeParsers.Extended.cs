@@ -195,7 +195,7 @@ internal static partial class JsonlEventEnvelopeParsers
         ReviewOutput? reviewOutput = null;
         if (!payload.TryGetProperty("review_output", out var reviewOutputEl))
         {
-            ctx.Logger.LogWarning("exited_review_mode event missing 'review_output' field");
+            ctx.Logger.LogDebug("exited_review_mode event missing 'review_output' field");
         }
         else if (reviewOutputEl.ValueKind == JsonValueKind.Object)
         {
@@ -203,7 +203,9 @@ internal static partial class JsonlEventEnvelopeParsers
         }
         else if (reviewOutputEl.ValueKind != JsonValueKind.Null)
         {
-            ctx.Logger.LogWarning("exited_review_mode event has non-object 'review_output' field");
+            ctx.Logger.LogWarning(
+                "exited_review_mode event has invalid 'review_output' field shape (kind={Kind})",
+                reviewOutputEl.ValueKind);
         }
 
         return new ExitedReviewModeEvent

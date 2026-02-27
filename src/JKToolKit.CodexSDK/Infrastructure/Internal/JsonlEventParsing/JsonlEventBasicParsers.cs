@@ -263,9 +263,12 @@ internal static class JsonlEventBasicParsers
         {
             if (payload.TryGetProperty("approval_policy", out var approvalElement))
             {
-                approvalPolicy = approvalElement.ValueKind == JsonValueKind.String
-                    ? approvalElement.GetString()
-                    : approvalElement.GetRawText();
+                approvalPolicy = approvalElement.ValueKind switch
+                {
+                    JsonValueKind.Null => null,
+                    JsonValueKind.String => approvalElement.GetString(),
+                    _ => approvalElement.GetRawText()
+                };
             }
 
             // Codex has produced both `sandbox_policy_type: string` and `sandbox_policy: { type, network_access }`.

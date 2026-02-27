@@ -112,20 +112,16 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
     internal void RegisterTurnHandle(string turnId, CodexTurnHandle handle)
     {
-        TurnNotificationBuffer? buffered = null;
         lock (_turnsLock)
         {
             _turnsById[turnId] = handle;
             PruneStaleTurnBuffers(DateTimeOffset.UtcNow);
-            if (_bufferedTurnNotificationsById.TryGetValue(turnId, out buffered))
+
+            if (_bufferedTurnNotificationsById.TryGetValue(turnId, out var buffered))
             {
                 _bufferedTurnNotificationsById.Remove(turnId);
+                FlushBufferedTurnNotifications(turnId, handle, buffered);
             }
-        }
-
-        if (buffered is not null)
-        {
-            FlushBufferedTurnNotifications(turnId, handle, buffered);
         }
     }
 
@@ -133,9 +129,14 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
     {
         lock (_turnsLock)
         {
-            _turnsById.Remove(turnId);
-            _bufferedTurnNotificationsById.Remove(turnId);
+            RemoveTurnHandleLocked(turnId);
         }
+    }
+
+    private void RemoveTurnHandleLocked(string turnId)
+    {
+        _turnsById.Remove(turnId);
+        _bufferedTurnNotificationsById.Remove(turnId);
     }
 
     private CodexTurnHandle[] SnapshotAndClearTurns()
@@ -349,7 +350,13 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         {
             if (!channel.Reader.TryRead(out _))
             {
-                return;
+                if (channel.Reader.Completion.IsCompleted)
+                {
+                    return;
+                }
+
+                Thread.Yield();
+                continue;
             }
 
             Interlocked.Increment(ref droppedCounter);

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
-internal sealed class JsonRpcConnection : IJsonRpcConnection
+internal sealed partial class JsonRpcConnection : IJsonRpcConnection
 {
     private readonly StreamWriter _writer;
     private readonly StreamReader _reader;
@@ -317,12 +317,22 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         if (methodProp.ValueKind != JsonValueKind.String)
         {
             _ = Task.Run(
-                () => WriteAsync(
-                    CreateResponseObject(new JsonRpcResponse(
-                        id,
-                        Result: null,
-                        Error: new JsonRpcError(-32600, "Invalid Request"))),
-                    CancellationToken.None),
+                async () =>
+                {
+                    try
+                    {
+                        await WriteAsync(
+                            CreateResponseObject(new JsonRpcResponse(
+                                id,
+                                Result: null,
+                                Error: new JsonRpcError(-32600, "Invalid Request"))),
+                            CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Fault(ex);
+                    }
+                },
                 CancellationToken.None);
             return;
         }
@@ -331,12 +341,22 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         if (string.IsNullOrWhiteSpace(method))
         {
             _ = Task.Run(
-                () => WriteAsync(
-                    CreateResponseObject(new JsonRpcResponse(
-                        id,
-                        Result: null,
-                        Error: new JsonRpcError(-32600, "Invalid Request"))),
-                    CancellationToken.None),
+                async () =>
+                {
+                    try
+                    {
+                        await WriteAsync(
+                            CreateResponseObject(new JsonRpcResponse(
+                                id,
+                                Result: null,
+                                Error: new JsonRpcError(-32600, "Invalid Request"))),
+                            CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Fault(ex);
+                    }
+                },
                 CancellationToken.None);
             return;
         }
@@ -467,22 +487,4 @@ internal sealed class JsonRpcConnection : IJsonRpcConnection
         return new JsonRpcError(code, message, data);
     }
 
-    private void LogBogus(string message, Exception? ex = null)
-    {
-#if DEBUG
-        _logger.LogWarning(ex, message);
-#else
-        _logger.LogTrace(ex, message);
-#endif
-    }
-
-    private static JsonElement? TryCloneParams(JsonElement root)
-    {
-        if (!root.TryGetProperty("params", out var paramsProp) || paramsProp.ValueKind == JsonValueKind.Undefined || paramsProp.ValueKind == JsonValueKind.Null)
-        {
-            return null;
-        }
-
-        return paramsProp.Clone();
-    }
 }

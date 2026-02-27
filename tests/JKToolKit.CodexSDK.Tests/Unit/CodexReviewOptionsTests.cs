@@ -9,119 +9,105 @@ public sealed class CodexReviewOptionsTests
     [Fact]
     public void Validate_Throws_WhenNoTargetProvided()
     {
-        var workingDirectory = CreateTempDirectory();
-        try
-        {
-            var options = new CodexReviewOptions(workingDirectory);
+        using var tmp = TempDirectory.Create();
+        var options = new CodexReviewOptions(tmp.Path);
 
-            var act = () => options.Validate();
+        var act = () => options.Validate();
 
-            act.Should()
-                .Throw<InvalidOperationException>()
-                .WithMessage("Specify Uncommitted, BaseBranch, CommitSha, or provide Prompt.");
-        }
-        finally
-        {
-            Directory.Delete(workingDirectory, recursive: true);
-        }
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("Specify Uncommitted, BaseBranch, CommitSha, or provide Prompt.");
     }
 
     [Fact]
     public void Validate_AllowsPromptOnly()
     {
-        var workingDirectory = CreateTempDirectory();
-        try
+        using var tmp = TempDirectory.Create();
+        var options = new CodexReviewOptions(tmp.Path)
         {
-            var options = new CodexReviewOptions(workingDirectory)
-            {
-                Prompt = "Focus on correctness and security."
-            };
+            Prompt = "Focus on correctness and security."
+        };
 
-            options.Validate();
-        }
-        finally
-        {
-            Directory.Delete(workingDirectory, recursive: true);
-        }
+        options.Validate();
     }
 
     [Fact]
     public void Validate_Throws_WhenPromptIsCombinedWithCommit()
     {
-        var workingDirectory = CreateTempDirectory();
-        try
+        using var tmp = TempDirectory.Create();
+        var options = new CodexReviewOptions(tmp.Path)
         {
-            var options = new CodexReviewOptions(workingDirectory)
-            {
-                CommitSha = "123456789",
-                Prompt = "Focus on correctness and security."
-            };
+            CommitSha = "123456789",
+            Prompt = "Focus on correctness and security."
+        };
 
-            var act = () => options.Validate();
+        var act = () => options.Validate();
 
-            act.Should()
-                .Throw<InvalidOperationException>()
-                .WithMessage("Prompt cannot be combined with CommitSha, BaseBranch, or Uncommitted.");
-        }
-        finally
-        {
-            Directory.Delete(workingDirectory, recursive: true);
-        }
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("Prompt cannot be combined with CommitSha, BaseBranch, or Uncommitted.");
     }
 
     [Fact]
     public void Validate_Throws_WhenTitleIsUsedWithoutCommit()
     {
-        var workingDirectory = CreateTempDirectory();
-        try
+        using var tmp = TempDirectory.Create();
+        var options = new CodexReviewOptions(tmp.Path)
         {
-            var options = new CodexReviewOptions(workingDirectory)
-            {
-                BaseBranch = "main",
-                Title = "Optional title"
-            };
+            BaseBranch = "main",
+            Title = "Optional title"
+        };
 
-            var act = () => options.Validate();
+        var act = () => options.Validate();
 
-            act.Should()
-                .Throw<InvalidOperationException>()
-                .WithMessage("Title requires CommitSha to be set.");
-        }
-        finally
-        {
-            Directory.Delete(workingDirectory, recursive: true);
-        }
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("Title requires CommitSha to be set.");
     }
 
     [Fact]
     public void Validate_Throws_WhenMultipleTargetsAreProvided()
     {
-        var workingDirectory = CreateTempDirectory();
-        try
+        using var tmp = TempDirectory.Create();
+        var options = new CodexReviewOptions(tmp.Path)
         {
-            var options = new CodexReviewOptions(workingDirectory)
-            {
-                BaseBranch = "main",
-                Uncommitted = true
-            };
+            BaseBranch = "main",
+            Uncommitted = true
+        };
 
-            var act = () => options.Validate();
+        var act = () => options.Validate();
 
-            act.Should()
-                .Throw<InvalidOperationException>()
-                .WithMessage("Specify exactly one of Uncommitted, BaseBranch, CommitSha, or Prompt.");
-        }
-        finally
-        {
-            Directory.Delete(workingDirectory, recursive: true);
-        }
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("Specify exactly one of Uncommitted, BaseBranch, CommitSha, or Prompt.");
     }
 
-    private static string CreateTempDirectory()
+    private sealed class TempDirectory : IDisposable
     {
-        var path = Path.Combine(Path.GetTempPath(), $"codex-review-options-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
+        private TempDirectory(string path)
+        {
+            Path = path;
+        }
+
+        public string Path { get; }
+
+        public static TempDirectory Create()
+        {
+            var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"codex-review-options-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(path);
+            return new TempDirectory(path);
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
     }
 }
-
