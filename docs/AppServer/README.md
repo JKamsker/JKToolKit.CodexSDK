@@ -166,6 +166,22 @@ before sending the request:
 - `thread/resume.path`
 - `turn/start.collaborationMode`
 - `thread/start.experimentalRawEvents` (when `true`)
+- `thread/start.dynamicTools` (when non-empty)
+- `thread/start.persistExtendedHistory` (when `true`)
+- `thread/resume.persistExtendedHistory` (when `true`)
+- `thread/fork.path`
+- `thread/fork.persistExtendedHistory` (when `true`)
+
+### Known experimental-gated methods (blocked by default)
+
+- `thread/backgroundTerminals/clean`
+- `thread/realtime/start`
+- `thread/realtime/appendAudio`
+- `thread/realtime/appendText`
+- `thread/realtime/stop`
+- `fuzzyFileSearch/sessionStart`
+- `fuzzyFileSearch/sessionUpdate`
+- `fuzzyFileSearch/sessionStop`
 
 ### Enabling experimental API opt-in (advanced)
 
@@ -472,5 +488,5 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
 - If you hit interactive prompts unexpectedly: configure an `ApprovalHandler`, set `ApprovalPolicy = Never`, or use `AskForApproval` to selectively reject prompt types.
-- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.Capabilities.ExperimentalApi = true`.
+- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.ExperimentalApi = true` (or configure `CodexAppServerClientOptions.Capabilities`).
 - If the Codex subprocess dies mid-turn: the SDK now faults the global notification stream and any in-progress `CodexTurnHandle` streams/completions with `CodexAppServerDisconnectedException` (includes exit code and a best-effort stderr tail).

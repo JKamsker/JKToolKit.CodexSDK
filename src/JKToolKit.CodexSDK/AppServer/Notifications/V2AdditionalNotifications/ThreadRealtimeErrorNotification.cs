@@ -27,4 +27,3 @@ public sealed record class ThreadRealtimeErrorNotification : AppServerNotificati
         this.Message = Message;
     }
 }
-

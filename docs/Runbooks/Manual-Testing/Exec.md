@@ -65,7 +65,8 @@ Verify:
 
 ### Current Codex CLI prompt/scope behavior
 
-With Codex CLI v0.104.0, supplying both a scope flag (`--commit`, `--base`, `--uncommitted`) **and** a prompt argument may be rejected by the CLI (even though the help text shows `[PROMPT]`).
+Some Codex CLI versions (observed in v0.104.0) reject supplying both a scope flag (`--commit`, `--base`, `--uncommitted`) **and**
+a prompt argument (even though the help text shows `[PROMPT]`).
 
 This runbook splits the tests into:
 

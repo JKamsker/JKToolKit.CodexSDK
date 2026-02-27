@@ -21,4 +21,3 @@ public sealed record class ThreadClosedNotification : AppServerNotification
         this.ThreadId = ThreadId;
     }
 }
-

@@ -4,14 +4,22 @@ internal static class ExperimentalApiGuards
 {
     internal static void ValidateThreadStart(ThreadStartOptions options, bool experimentalApiEnabled)
     {
-        if (!options.ExperimentalRawEvents)
-        {
-            return;
-        }
-
         if (!experimentalApiEnabled)
         {
-            throw new CodexExperimentalApiRequiredException("thread/start.experimentalRawEvents");
+            if (options.ExperimentalRawEvents)
+            {
+                throw new CodexExperimentalApiRequiredException("thread/start.experimentalRawEvents");
+            }
+
+            if (options.DynamicTools is { Count: > 0 })
+            {
+                throw new CodexExperimentalApiRequiredException("thread/start.dynamicTools");
+            }
+
+            if (options.PersistExtendedHistory)
+            {
+                throw new CodexExperimentalApiRequiredException("thread/start.persistFullHistory");
+            }
         }
     }
 
@@ -27,6 +35,11 @@ internal static class ExperimentalApiGuards
             if (!string.IsNullOrWhiteSpace(options.Path))
             {
                 throw new CodexExperimentalApiRequiredException("thread/resume.path");
+            }
+
+            if (options.PersistExtendedHistory)
+            {
+                throw new CodexExperimentalApiRequiredException("thread/resume.persistFullHistory");
             }
         }
     }
@@ -49,6 +62,11 @@ internal static class ExperimentalApiGuards
         if (!experimentalApiEnabled && hasPath)
         {
             throw new CodexExperimentalApiRequiredException("thread/fork.path");
+        }
+
+        if (!experimentalApiEnabled && options.PersistExtendedHistory)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/fork.persistFullHistory");
         }
     }
 

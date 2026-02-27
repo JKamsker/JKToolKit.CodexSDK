@@ -27,4 +27,3 @@ public sealed record class ThreadRealtimeStartedNotification : AppServerNotifica
         this.SessionId = SessionId;
     }
 }
-

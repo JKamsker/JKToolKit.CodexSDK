@@ -12,6 +12,95 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AppServerClientGuardrailSeamTests
 {
     [Fact]
+    public async Task StartThread_WithDynamicTools_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var tool = new DynamicToolSpec
+        {
+            Name = "echo",
+            Description = "Echoes the input.",
+            InputSchema = JsonSerializer.SerializeToElement(new { type = "object" })
+        };
+
+        var act = async () => await client.StartThreadAsync(new ThreadStartOptions
+        {
+            DynamicTools = new[] { tool }
+        });
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task StartThread_WithPersistExtendedHistory_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StartThreadAsync(new ThreadStartOptions
+        {
+            PersistExtendedHistory = true
+        });
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ResumeThread_WithPersistExtendedHistory_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.ResumeThreadAsync(new ThreadResumeOptions
+        {
+            ThreadId = "thr_1",
+            PersistExtendedHistory = true
+        });
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ForkThread_WithPersistExtendedHistory_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_1",
+            PersistExtendedHistory = true
+        });
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task ResumeThread_WithExperimentalPath_ThrowsBeforeSendingRequest()
     {
         var rpc = new FakeRpc();
@@ -77,6 +166,42 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.LastMethod.Should().Be("thread/resume");
         rpc.LastParams.Should().BeOfType<ThreadResumeParams>();
         ((ThreadResumeParams)rpc.LastParams!).ThreadId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task StartThread_WithDynamicTools_WhenExperimentalEnabled_SendsThreadStart()
+    {
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var tool = new DynamicToolSpec
+        {
+            Name = "echo",
+            Description = "Echoes the input.",
+            InputSchema = JsonSerializer.SerializeToElement(new { type = "object" })
+        };
+
+        var thread = await client.StartThreadAsync(new ThreadStartOptions
+        {
+            DynamicTools = new[] { tool },
+            PersistExtendedHistory = true
+        });
+
+        thread.Id.Should().Be("thr_1");
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/start");
+        rpc.LastParams.Should().BeOfType<ThreadStartParams>();
+
+        var p = (ThreadStartParams)rpc.LastParams!;
+        p.DynamicTools.Should().BeEquivalentTo(new[] { tool });
+        p.PersistExtendedHistory.Should().BeTrue();
     }
 
     [Fact]

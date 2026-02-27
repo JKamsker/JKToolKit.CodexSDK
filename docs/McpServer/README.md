@@ -149,7 +149,12 @@ This add-on exposes:
 
 - `CodexMcpServerClientOptions.ElicitationHandler` (`IMcpElicitationHandler`)
 
-If not configured, server requests are rejected with a JSON-RPC error (safe default; avoids hanging).
+If not configured, the SDK denies `elicitation/create` with a successful JSON-RPC result and rejects other server
+requests with a JSON-RPC error (safe default; avoids hanging).
+
+Note: `elicitation/create` is treated specially: when no handler is configured, the SDK responds with a successful
+JSON-RPC result payload of `{"decision":"denied"}` so the upstream server does not hang waiting for a correlated
+result. Other server-initiated request methods are rejected with a JSON-RPC error.
 
 ## DI Integration
 

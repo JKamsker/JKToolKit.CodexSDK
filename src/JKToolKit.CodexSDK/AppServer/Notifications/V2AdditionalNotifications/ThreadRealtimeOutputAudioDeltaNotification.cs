@@ -103,4 +103,3 @@ public sealed record class ThreadRealtimeOutputAudioDeltaNotification : AppServe
         return null;
     }
 }
-

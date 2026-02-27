@@ -37,4 +37,3 @@ public sealed record class ThreadRealtimeItemAddedNotification : AppServerNotifi
             ? t.GetString()
             : null;
 }
-

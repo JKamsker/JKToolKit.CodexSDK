@@ -39,7 +39,9 @@ internal sealed class CodexAppServerThreadsClient
                 DeveloperInstructions = options.DeveloperInstructions,
                 Personality = options.Personality,
                 Ephemeral = options.Ephemeral,
-                ExperimentalRawEvents = options.ExperimentalRawEvents
+                ExperimentalRawEvents = options.ExperimentalRawEvents,
+                DynamicTools = options.DynamicTools,
+                PersistExtendedHistory = options.PersistExtendedHistory
             },
             ct);
 
@@ -95,7 +97,8 @@ internal sealed class CodexAppServerThreadsClient
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
                 DeveloperInstructions = options.DeveloperInstructions,
-                Personality = options.Personality
+                Personality = options.Personality,
+                PersistExtendedHistory = options.PersistExtendedHistory
             },
             ct);
 
@@ -364,7 +367,8 @@ internal sealed class CodexAppServerThreadsClient
             new ThreadForkParams
             {
                 ThreadId = options.ThreadId,
-                Path = options.Path
+                Path = options.Path,
+                PersistExtendedHistory = options.PersistExtendedHistory
             },
             ct);
 

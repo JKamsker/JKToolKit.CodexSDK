@@ -27,4 +27,3 @@ public sealed record class ThreadRealtimeClosedNotification : AppServerNotificat
         this.Reason = Reason;
     }
 }
-
