@@ -9,24 +9,12 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// EXPERIMENTAL - collaboration mode preset metadata for clients.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class CollaborationModeMask
+internal partial class ThreadClosedNotification
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("mode")]
-    public Mode? Mode { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("model")]
-    public string? Model { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("reasoning_effort")]
-    public Reasoning_effort? Reasoning_effort { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
