@@ -45,4 +45,3 @@ public sealed record class ToolRequestUserInputQuestion
     [JsonPropertyName("options")]
     public IReadOnlyList<ToolRequestUserInputOption>? Options { get; init; }
 }
-

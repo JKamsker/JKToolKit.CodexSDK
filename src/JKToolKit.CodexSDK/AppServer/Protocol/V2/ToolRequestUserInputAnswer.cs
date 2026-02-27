@@ -13,4 +13,3 @@ public sealed record class ToolRequestUserInputAnswer
     [JsonPropertyName("answers")]
     public required IReadOnlyList<string> Answers { get; init; }
 }
-

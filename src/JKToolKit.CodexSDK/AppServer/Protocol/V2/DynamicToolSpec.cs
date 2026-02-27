@@ -32,4 +32,3 @@ public sealed record class DynamicToolSpec
     [JsonPropertyName("inputSchema")]
     public required JsonElement InputSchema { get; init; }
 }
-

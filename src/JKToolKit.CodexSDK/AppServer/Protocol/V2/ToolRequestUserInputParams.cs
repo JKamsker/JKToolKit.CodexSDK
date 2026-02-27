@@ -31,4 +31,3 @@ public sealed record class ToolRequestUserInputParams
     [JsonPropertyName("questions")]
     public required IReadOnlyList<ToolRequestUserInputQuestion> Questions { get; init; }
 }
-

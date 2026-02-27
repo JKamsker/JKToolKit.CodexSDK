@@ -19,4 +19,3 @@ public sealed record class ToolRequestUserInputOption
     [JsonPropertyName("description")]
     public required string Description { get; init; }
 }
-
