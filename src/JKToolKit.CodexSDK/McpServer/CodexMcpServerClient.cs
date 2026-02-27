@@ -405,7 +405,7 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
             "initialize",
             new
             {
-                protocolVersion = "2025-06-18",
+                protocolVersion = "2025-11-25",
                 clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version },
                 capabilities
             },

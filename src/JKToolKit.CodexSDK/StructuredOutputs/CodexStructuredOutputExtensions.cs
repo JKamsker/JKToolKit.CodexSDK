@@ -73,11 +73,16 @@ public static class CodexStructuredOutputExtensions
         var effective = options.Clone();
         effective.OutputSchema = CodexOutputSchema.FromJson(schema);
 
-        await using var session = await client.ResumeSessionAsync(sessionId, effective, ct).ConfigureAwait(false);
-
+        // Capture a pre-resume boundary, otherwise a fast resume could write all new events before we sample the offset.
         // When resuming, the session log already contains historical events (including prior TaskCompleteEvent).
         // Prefer byte offsets (not timestamps) to avoid boundary issues when events share the same timestamp.
-        var resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(session.Info.LogPath);
+        long resumeOffset;
+        await using (var existing = await client.ResumeSessionAsync(sessionId, ct).ConfigureAwait(false))
+        {
+            resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(existing.Info.LogPath);
+        }
+
+        await using var session = await client.ResumeSessionAsync(sessionId, effective, ct).ConfigureAwait(false);
 
         var raw = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
             session,

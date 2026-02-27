@@ -70,7 +70,7 @@ public sealed class CodexStructuredOutputResumeTests
         }
 
         public Task<ICodexSessionHandle> ResumeSessionAsync(SessionId sessionId, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+            Task.FromResult<ICodexSessionHandle>(Handle);
 
         public Task<ICodexSessionHandle> AttachToLogAsync(string logFilePath, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

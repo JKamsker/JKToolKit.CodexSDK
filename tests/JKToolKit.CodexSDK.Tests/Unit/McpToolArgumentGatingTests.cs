@@ -27,7 +27,7 @@ public sealed class McpToolArgumentGatingTests
                           "tools": [
                             {
                               "name": "codex",
-                              "inputSchema": { "type": "object", "properties": { "prompt": {}, "cwd": {} } }
+                              "inputSchema": { "type": "object", "additionalProperties": false, "properties": { "prompt": {}, "cwd": {} } }
                             }
                           ]
                         }
@@ -62,6 +62,60 @@ public sealed class McpToolArgumentGatingTests
         args.TryGetProperty("prompt", out _).Should().BeTrue();
         args.TryGetProperty("cwd", out _).Should().BeTrue();
         args.TryGetProperty("include-plan-tool", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task StartSessionAsync_DoesNotFilterUnknownArguments_WhenSchemaAllowsAdditionalProperties()
+    {
+        JsonElement? capturedCallParams = null;
+
+        var rpc = new FakeJsonRpcConnection
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                if (method == "tools/list")
+                {
+                    return Task.FromResult(Parse(
+                        """
+                        {
+                          "tools": [
+                            {
+                              "name": "codex",
+                              "inputSchema": { "type": "object", "properties": { "prompt": {}, "cwd": {} } }
+                            }
+                          ]
+                        }
+                        """));
+                }
+
+                if (method == "tools/call")
+                {
+                    capturedCallParams = Parse(JsonSerializer.Serialize(@params));
+                    return Task.FromResult(Parse("""{"structuredContent":{"threadId":"t1"},"content":[{"text":"ok"}]}"""));
+                }
+
+                return Task.FromResult(Parse("{}"));
+            }
+        };
+
+        await using var client = new CodexMcpServerClient(
+            new CodexMcpServerClientOptions(),
+            process: new FakeProcess(),
+            rpc: rpc,
+            logger: NullLogger<CodexMcpServerClient>.Instance);
+
+        await client.StartSessionAsync(new CodexMcpStartOptions
+        {
+            Prompt = "hello",
+            Cwd = "c:\\repo",
+            IncludePlanTool = true
+        });
+
+        capturedCallParams.Should().NotBeNull();
+        var args = capturedCallParams!.Value.GetProperty("arguments");
+        args.TryGetProperty("prompt", out _).Should().BeTrue();
+        args.TryGetProperty("cwd", out _).Should().BeTrue();
+        args.TryGetProperty("include-plan-tool", out _).Should().BeTrue();
     }
 
     [Fact]
@@ -153,4 +207,3 @@ public sealed class McpToolArgumentGatingTests
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }
-

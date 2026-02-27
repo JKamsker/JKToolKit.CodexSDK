@@ -152,6 +152,14 @@ public sealed class JsonlTailer : IJsonlTailer
                 if (!options.Follow)
                 {
                     _logger.LogTrace("Follow disabled; stopping tail for {FilePath}", filePath);
+                    if (buffer.Length > 0)
+                    {
+                        var raw = buffer.ToString();
+                        buffer.Clear();
+
+                        var line = raw.EndsWith('\r') ? raw[..^1] : raw;
+                        yield return line;
+                    }
                     yield break;
                 }
 

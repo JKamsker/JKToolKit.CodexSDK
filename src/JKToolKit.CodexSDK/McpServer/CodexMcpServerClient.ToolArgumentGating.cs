@@ -122,16 +122,25 @@ public sealed partial class CodexMcpServerClient
     {
         propertyNames = new HashSet<string>(StringComparer.Ordinal);
 
-        if (schema.ValueKind != JsonValueKind.Object ||
-            !schema.TryGetProperty("properties", out var props) ||
-            props.ValueKind != JsonValueKind.Object)
+        if (schema.ValueKind != JsonValueKind.Object)
         {
             return false;
         }
 
-        foreach (var p in props.EnumerateObject())
+        // Only gate arguments when the schema is explicitly closed. In JSON Schema,
+        // additionalProperties defaults to allowed (true), so treat an absent field as open.
+        if (!schema.TryGetProperty("additionalProperties", out var additionalProperties) ||
+            additionalProperties.ValueKind != JsonValueKind.False)
         {
-            propertyNames.Add(p.Name);
+            return false;
+        }
+
+        if (schema.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var p in props.EnumerateObject())
+            {
+                propertyNames.Add(p.Name);
+            }
         }
 
         return true;

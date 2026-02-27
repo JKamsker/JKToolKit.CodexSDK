@@ -34,7 +34,12 @@ internal static class JsonlEventBasicParsers
             return null;
         }
 
-        var idString = idElement.ValueKind == JsonValueKind.String ? idElement.GetString() : idElement.GetRawText();
+        var idString = idElement.ValueKind switch
+        {
+            JsonValueKind.String => idElement.GetString(),
+            JsonValueKind.Null => null,
+            _ => idElement.GetRawText()
+        };
         if (string.IsNullOrWhiteSpace(idString))
         {
             ctx.Logger.LogWarning("session_meta event has empty 'payload.id' field");

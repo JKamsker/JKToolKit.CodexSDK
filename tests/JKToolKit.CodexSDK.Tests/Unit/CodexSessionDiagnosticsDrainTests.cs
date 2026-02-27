@@ -26,7 +26,27 @@ public sealed class CodexSessionDiagnosticsDrainTests
         await wait.Should().ThrowAsync<OperationCanceledException>();
 
         using var exitCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        await process.WaitForExitAsync(exitCts.Token);
+        try
+        {
+            await process.WaitForExitAsync(exitCts.Token);
+        }
+        catch (OperationCanceledException) when (exitCts.IsCancellationRequested)
+        {
+            if (!process.HasExited)
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(2000);
+                }
+                catch
+                {
+                    // Best-effort: this is only to avoid orphaning a hung child process in CI.
+                }
+            }
+
+            throw;
+        }
         process.ExitCode.Should().Be(0); // If draining stopped, the child can hang on full stdout/stderr pipes or fail with broken-pipe; exit code 0 verifies the drain kept consuming output.
     }
 

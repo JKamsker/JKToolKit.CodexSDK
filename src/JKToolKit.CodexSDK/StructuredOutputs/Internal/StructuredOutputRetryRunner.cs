@@ -102,11 +102,18 @@ internal static class StructuredOutputRetryRunner
                     resumeOptions.Prompt = retryPrompt;
                 }
 
+                // Capture a pre-resume boundary, otherwise a fast resume could write all new events before we sample the offset.
+                if (logPath is null)
+                {
+                    await using var existing = await client.ResumeSessionAsync(sessionId.Value, ct).ConfigureAwait(false);
+                    logPath = existing.Info.LogPath;
+                }
+
+                var resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(logPath);
+
                 await using var resumed = await client.ResumeSessionAsync(sessionId.Value, resumeOptions, ct).ConfigureAwait(false);
                 logPath = resumed.Info.LogPath;
                 progress?.SessionLocated?.Invoke(resumed.Info.Id, resumed.Info.LogPath);
-
-                var resumeOffset = StructuredOutputFileUtilities.TryGetLogByteOffset(resumed.Info.LogPath);
 
                 var raw2 = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
                     resumed,

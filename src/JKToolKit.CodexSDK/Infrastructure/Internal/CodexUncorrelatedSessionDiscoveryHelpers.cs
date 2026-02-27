@@ -268,7 +268,7 @@ internal static class CodexUncorrelatedSessionDiscoveryHelpers
             var fileFull = Path.GetFullPath(filePath);
             return fileFull.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
