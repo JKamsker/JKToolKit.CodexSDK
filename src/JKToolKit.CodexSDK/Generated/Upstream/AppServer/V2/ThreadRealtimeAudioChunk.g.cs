@@ -10,23 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// EXPERIMENTAL - collaboration mode preset metadata for clients.
+/// EXPERIMENTAL - thread realtime audio chunk.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class CollaborationModeMask
+internal partial class ThreadRealtimeAudioChunk
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("mode")]
-    public Mode? Mode { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("data")]
+    public string Data { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("model")]
-    public string? Model { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("numChannels")]
+    public int NumChannels { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("sampleRate")]
+    public int SampleRate { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("reasoning_effort")]
-    public Reasoning_effort? Reasoning_effort { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("samplesPerChannel")]
+    public int? SamplesPerChannel { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
