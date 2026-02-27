@@ -327,6 +327,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.ListLoadedThreadsAsync(options, ct);
 
     /// <summary>
+    /// Unsubscribes from a thread and unloads it from memory without archiving it (experimental).
+    /// </summary>
+    public Task<ThreadUnsubscribeResult> UnsubscribeThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.UnsubscribeThreadAsync(threadId, ct);
+
+    /// <summary>
     /// Starts thread compaction.
     /// </summary>
     public Task CompactThreadAsync(string threadId, CancellationToken ct = default) =>

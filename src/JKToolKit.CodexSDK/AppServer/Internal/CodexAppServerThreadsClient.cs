@@ -196,6 +196,39 @@ internal sealed class CodexAppServerThreadsClient
         };
     }
 
+    public async Task<ThreadUnsubscribeResult> UnsubscribeThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        if (!_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("thread/unsubscribe");
+        }
+
+        var result = await _sendRequestAsync(
+            "thread/unsubscribe",
+            new UpstreamV2.ThreadUnsubscribeParams { ThreadId = threadId },
+            ct);
+
+        var status = ParseThreadUnsubscribeStatus(CodexAppServerClientJson.GetStringOrNull(result, "status"));
+
+        return new ThreadUnsubscribeResult
+        {
+            Status = status,
+            Raw = result
+        };
+    }
+
+    private static ThreadUnsubscribeStatus ParseThreadUnsubscribeStatus(string? value) =>
+        value switch
+        {
+            "notLoaded" => ThreadUnsubscribeStatus.NotLoaded,
+            "notSubscribed" => ThreadUnsubscribeStatus.NotSubscribed,
+            "unsubscribed" => ThreadUnsubscribeStatus.Unsubscribed,
+            _ => ThreadUnsubscribeStatus.Unknown
+        };
+
     public async Task CompactThreadAsync(string threadId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
