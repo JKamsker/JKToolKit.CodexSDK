@@ -65,7 +65,6 @@ public sealed class CodexSessionDiagnosticsDrainTests
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                RedirectStandardInput = true,
                 CreateNoWindow = true
             };
         }
@@ -78,7 +77,6 @@ public sealed class CodexSessionDiagnosticsDrainTests
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                RedirectStandardInput = true,
                 CreateNoWindow = true
             };
         }

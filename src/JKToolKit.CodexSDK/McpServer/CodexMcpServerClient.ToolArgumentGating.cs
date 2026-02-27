@@ -96,6 +96,24 @@ public sealed partial class CodexMcpServerClient
                 break;
             }
 
+            if (i == maxPages - 1)
+            {
+                _logger.LogWarning(
+                    "tools/list pagination cap exhausted (maxPages={MaxPages}, cursor={Cursor}, nextCursor={NextCursor}, strictParsing={StrictParsing}); last transformed result: {Result}",
+                    maxPages,
+                    cursor,
+                    nextCursor,
+                    _options.StrictParsing,
+                    Truncate(transformed.GetRawText(), maxChars: 4000));
+
+                if (_options.StrictParsing)
+                {
+                    throw new JsonException("tools/list pagination cap exhausted.");
+                }
+
+                break;
+            }
+
             cursor = nextCursor;
         }
 

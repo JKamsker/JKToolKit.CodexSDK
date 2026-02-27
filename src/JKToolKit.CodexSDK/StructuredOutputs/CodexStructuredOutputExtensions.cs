@@ -4,7 +4,6 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.StructuredOutputs.Internal;
-using System.IO;
 
 namespace JKToolKit.CodexSDK.StructuredOutputs;
 
