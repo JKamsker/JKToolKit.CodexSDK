@@ -11,7 +11,7 @@ internal static class ExperimentalApiGuards
                 throw new CodexExperimentalApiRequiredException("thread/start.experimentalRawEvents");
             }
 
-            if (options.DynamicTools is { Count: > 0 })
+            if (options.DynamicTools is not null)
             {
                 throw new CodexExperimentalApiRequiredException("thread/start.dynamicTools");
             }
