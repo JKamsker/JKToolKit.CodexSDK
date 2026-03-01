@@ -182,6 +182,7 @@ before sending the request:
 - `fuzzyFileSearch/sessionStart`
 - `fuzzyFileSearch/sessionUpdate`
 - `fuzzyFileSearch/sessionStop`
+- `collaborationMode/list`
 
 ### Enabling experimental API opt-in (advanced)
 
@@ -387,15 +388,15 @@ Built-in handlers:
 
 - `AlwaysApproveHandler`
 - `AlwaysDenyHandler`
-- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console)
+- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console; supports tool requests and token refresh prompts)
 
 If no handler is configured, server requests are rejected with a JSON-RPC error to avoid deadlocks.
 
 Notes:
 
-- Built-in handlers only cover the approval request methods (plus `item/tool/requestUserInput` for `PromptConsoleApprovalHandler`).
-- If you enable experimental dynamic tools (`ThreadStartOptions.DynamicTools`), you must handle `item/tool/call` in a custom handler.
-- Some server requests (for example `account/chatgptAuthTokens/refresh`) require application-specific integration and are not handled by built-ins.
+- `AlwaysApproveHandler` / `AlwaysDenyHandler` cover only approval request methods.
+- `PromptConsoleApprovalHandler` additionally supports `item/tool/requestUserInput`, `item/tool/call`, and `account/chatgptAuthTokens/refresh` by prompting on the console.
+- For production usage (especially `item/tool/call` and token refresh), implement a custom handler to avoid interactive prompts and to integrate with your app's auth/tooling.
 
 Experimental helpers:
 

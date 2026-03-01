@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -21,6 +22,11 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
         if (method == "item/tool/call")
         {
             return ValueTask.FromResult(HandleDynamicToolCall(@params));
+        }
+
+        if (method == "account/chatgptAuthTokens/refresh")
+        {
+            return ValueTask.FromResult(HandleChatgptAuthTokensRefresh(@params));
         }
 
         var (acceptDecision, declineDecision) = method switch
@@ -81,6 +87,76 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
                 ContentItems = contentItems
             },
             SerializerOptions);
+    }
+
+    private static JsonElement HandleChatgptAuthTokensRefresh(JsonElement? @params)
+    {
+        if (@params is not { } raw)
+        {
+            throw new InvalidOperationException("account/chatgptAuthTokens/refresh missing params.");
+        }
+
+        var request = raw.Deserialize<ChatgptAuthTokensRefreshParams>(SerializerOptions) ??
+                      throw new InvalidOperationException("Failed to deserialize account/chatgptAuthTokens/refresh params.");
+
+        Console.Error.WriteLine("Server request: account/chatgptAuthTokens/refresh");
+        Console.Error.WriteLine($"reason={request.Reason} previousAccountId={request.PreviousAccountId ?? "n/a"}");
+        Console.Error.WriteLine("Provide refreshed tokens for Codex to continue.");
+
+        Console.Error.Write("ChatGPT account id: ");
+        var accountId = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            throw new InvalidOperationException("ChatGPT account id is required.");
+        }
+
+        Console.Error.Write("ChatGPT plan type (optional): ");
+        var planType = Console.ReadLine();
+
+        Console.Error.Write("Access token (input hidden): ");
+        var accessToken = ReadSecretLine();
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            throw new InvalidOperationException("Access token is required.");
+        }
+
+        return JsonSerializer.SerializeToElement(
+            new ChatgptAuthTokensRefreshResponse
+            {
+                AccessToken = accessToken,
+                ChatgptAccountId = accountId,
+                ChatgptPlanType = string.IsNullOrWhiteSpace(planType) ? null : planType
+            },
+            SerializerOptions);
+    }
+
+    private static string ReadSecretLine()
+    {
+        var sb = new StringBuilder();
+
+        while (true)
+        {
+            var key = Console.ReadKey(intercept: true);
+            if (key.Key == ConsoleKey.Enter)
+            {
+                Console.Error.WriteLine();
+                return sb.ToString();
+            }
+
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Length--;
+                }
+                continue;
+            }
+
+            if (!char.IsControl(key.KeyChar))
+            {
+                sb.Append(key.KeyChar);
+            }
+        }
     }
 
     private static JsonElement HandleRequestUserInput(JsonElement? @params)
