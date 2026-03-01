@@ -38,4 +38,3 @@ public sealed record class DynamicToolCallParams
     [JsonPropertyName("arguments")]
     public required JsonElement Arguments { get; init; }
 }
-

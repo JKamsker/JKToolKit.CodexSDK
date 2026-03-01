@@ -17,4 +17,3 @@ public sealed record class CollaborationModeListResult
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-

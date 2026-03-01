@@ -23,4 +23,3 @@ public sealed partial class CodexAppServerClient
         return result.Deserialize<TResult>(serializerOptions ?? _serializerOptions);
     }
 }
-

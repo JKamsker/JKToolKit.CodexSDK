@@ -19,4 +19,3 @@ public sealed record class DynamicToolCallResponse
     [JsonPropertyName("success")]
     public required bool Success { get; init; }
 }
-

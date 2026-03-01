@@ -8,4 +8,3 @@ public sealed partial class CodexAppServerClient
     public Task<CollaborationModeListResult> ListCollaborationModesAsync(CancellationToken ct = default) =>
         _collaborationModesClient.ListCollaborationModesAsync(ct);
 }
-

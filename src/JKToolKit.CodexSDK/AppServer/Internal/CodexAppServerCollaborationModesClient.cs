@@ -76,4 +76,3 @@ internal sealed class CodexAppServerCollaborationModesClient
         return prop.GetString();
     }
 }
-

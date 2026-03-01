@@ -32,4 +32,3 @@ public sealed record class CollaborationModeMask
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-
