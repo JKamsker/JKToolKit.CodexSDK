@@ -19,4 +19,3 @@ public sealed record class ChatgptAuthTokensRefreshParams
     [JsonPropertyName("previousAccountId")]
     public string? PreviousAccountId { get; init; }
 }
-

@@ -25,4 +25,3 @@ public sealed record class ChatgptAuthTokensRefreshResponse
     [JsonPropertyName("chatgptPlanType")]
     public string? ChatgptPlanType { get; init; }
 }
-
