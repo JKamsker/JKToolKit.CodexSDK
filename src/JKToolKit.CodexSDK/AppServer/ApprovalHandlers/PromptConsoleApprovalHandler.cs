@@ -18,6 +18,11 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
             return ValueTask.FromResult(HandleRequestUserInput(@params));
         }
 
+        if (method == "item/tool/call")
+        {
+            return ValueTask.FromResult(HandleDynamicToolCall(@params));
+        }
+
         var (acceptDecision, declineDecision) = method switch
         {
             "item/commandExecution/requestApproval" or "item/fileChange/requestApproval" => ("accept", "decline"),
@@ -38,6 +43,44 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
 
         var decision = approved ? acceptDecision : declineDecision;
         return ValueTask.FromResult(JsonSerializer.SerializeToElement(new { decision }, SerializerOptions));
+    }
+
+    private static JsonElement HandleDynamicToolCall(JsonElement? @params)
+    {
+        if (@params is not { } raw)
+        {
+            throw new InvalidOperationException("item/tool/call missing params.");
+        }
+
+        var request = raw.Deserialize<DynamicToolCallParams>(SerializerOptions) ??
+                      throw new InvalidOperationException("Failed to deserialize item/tool/call params.");
+
+        Console.Error.WriteLine("Server request: item/tool/call");
+        Console.Error.WriteLine($"threadId={request.ThreadId} turnId={request.TurnId} callId={request.CallId} tool={request.Tool}");
+        Console.Error.WriteLine(request.Arguments.ValueKind == JsonValueKind.Undefined ? "(no arguments)" : request.Arguments.ToString());
+
+        Console.Error.Write("Success? [Y/n]: ");
+        var answer = Console.ReadLine();
+        var success = string.IsNullOrWhiteSpace(answer) ||
+                      string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase) ||
+                      string.Equals(answer, "yes", StringComparison.OrdinalIgnoreCase);
+
+        Console.Error.Write("Output text (optional): ");
+        var text = Console.ReadLine();
+
+        var contentItems = new List<DynamicToolCallOutputContentItem>();
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            contentItems.Add(DynamicToolCallOutputContentItem.InputText(text));
+        }
+
+        return JsonSerializer.SerializeToElement(
+            new DynamicToolCallResponse
+            {
+                Success = success,
+                ContentItems = contentItems
+            },
+            SerializerOptions);
     }
 
     private static JsonElement HandleRequestUserInput(JsonElement? @params)

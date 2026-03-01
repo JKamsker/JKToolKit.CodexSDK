@@ -306,6 +306,48 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task ListCollaborationModes_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.ListCollaborationModesAsync();
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ListCollaborationModes_WhenExperimentalEnabled_SendsCollaborationModeList()
+    {
+        using var doc = JsonDocument.Parse("""{"data":[{"name":"default","mode":"plan","model":"gpt","reasoning_effort":"low"}]}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var result = await client.ListCollaborationModesAsync();
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("collaborationMode/list");
+
+        result.Data.Should().ContainSingle();
+        result.Data[0].Name.Should().Be("default");
+        result.Data[0].Mode.Should().Be("plan");
+        result.Data[0].Model.Should().Be("gpt");
+        result.Data[0].ReasoningEffort.Should().Be("low");
+    }
+
+    [Fact]
     public async Task AppendThreadRealtimeAudio_WhenExperimentalEnabled_SendsThreadRealtimeAppendAudio()
     {
         using var doc = JsonDocument.Parse("""{}""");

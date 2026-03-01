@@ -397,6 +397,10 @@ Notes:
 - If you enable experimental dynamic tools (`ThreadStartOptions.DynamicTools`), you must handle `item/tool/call` in a custom handler.
 - Some server requests (for example `account/chatgptAuthTokens/refresh`) require application-specific integration and are not handled by built-ins.
 
+Experimental helpers:
+
+- The SDK exposes wire DTOs under `JKToolKit.CodexSDK.AppServer.Protocol.V2` for server request payloads such as `item/tool/requestUserInput` and `item/tool/call`.
+
 ### `ApprovalPolicy` vs `AskForApproval`
 
 Upstream app-server `approvalPolicy` supports an `AskForApproval` union:

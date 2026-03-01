@@ -28,6 +28,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerMcpClient _mcpClient;
     private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
     private readonly CodexAppServerTurnsClient _turnsClient;
+    private readonly CodexAppServerCollaborationModesClient _collaborationModesClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
 
     private bool ExperimentalApiEnabled => _core.ExperimentalApiEnabled;
@@ -135,6 +136,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled, logger);
         _mcpClient = new CodexAppServerMcpClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _collaborationModesClient = new CodexAppServerCollaborationModesClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
             options,
             _core.SendRequestAsync,
@@ -238,25 +240,6 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// Gets the initialize result payload, if <see cref="InitializeAsync"/> has completed successfully.
     /// </summary>
     public AppServerInitializeResult? InitializeResult => _core.InitializeResult;
-
-    /// <summary>
-    /// Sends an arbitrary JSON-RPC request to the app server.
-    /// </summary>
-    public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct = default) =>
-        _core.SendRequestAsync(method, @params, ct);
-
-    /// <summary>
-    /// Sends an arbitrary JSON-RPC request to the app server and deserializes the <c>result</c> payload.
-    /// </summary>
-    public async Task<TResult?> CallAsync<TResult>(
-        string method,
-        object? @params,
-        JsonSerializerOptions? serializerOptions = null,
-        CancellationToken ct = default)
-    {
-        var result = await _core.SendRequestAsync(method, @params, ct);
-        return result.Deserialize<TResult>(serializerOptions ?? _serializerOptions);
-    }
 
     /// <summary>
     /// A task that completes when the underlying Codex app-server subprocess exits.
