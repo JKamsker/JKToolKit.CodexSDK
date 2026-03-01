@@ -194,8 +194,8 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
                 }
             }
 
-            Console.Error.Write("Answer (comma-separated): ");
-            var line = Console.ReadLine() ?? string.Empty;
+            Console.Error.Write(q.IsSecret ? "Answer (input hidden, comma-separated): " : "Answer (comma-separated): ");
+            var line = q.IsSecret ? ReadSecretLine() : (Console.ReadLine() ?? string.Empty);
             var tokens = line
                 .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
