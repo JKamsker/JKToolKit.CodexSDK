@@ -53,16 +53,77 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateThreadStart_Throws_WhenDynamicToolsSet_AndExperimentalDisabled()
+    {
+        using var schema = JsonDocument.Parse("""{"type":"object"}""");
+
+        var options = new ThreadStartOptions
+        {
+            DynamicTools =
+            [
+                new JKToolKit.CodexSDK.AppServer.Protocol.V2.DynamicToolSpec
+                {
+                    Name = "echo",
+                    Description = "Echo",
+                    InputSchema = schema.RootElement.Clone()
+                }
+            ]
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/start.dynamicTools");
+    }
+
+    [Fact]
+    public void ValidateThreadStart_Throws_WhenPersistExtendedHistoryTrue_AndExperimentalDisabled()
+    {
+        var options = new ThreadStartOptions { PersistExtendedHistory = true };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/start.persistFullHistory");
+    }
+
+    [Fact]
     public void ValidateAll_DoesNotThrow_WhenExperimentalEnabled()
     {
         using var history = JsonDocument.Parse("""{"items":[]}""");
         using var collab = JsonDocument.Parse("""{"type":"test"}""");
+        using var schema = JsonDocument.Parse("""{"type":"object"}""");
 
         Action act = () =>
         {
-            ExperimentalApiGuards.ValidateThreadStart(new ThreadStartOptions { ExperimentalRawEvents = true }, experimentalApiEnabled: true);
-            ExperimentalApiGuards.ValidateThreadResume(new ThreadResumeOptions { ThreadId = "t", History = history.RootElement, Path = "C:\\rollout" }, experimentalApiEnabled: true);
-            ExperimentalApiGuards.ValidateThreadFork(new ThreadForkOptions { Path = "C:\\rollout" }, experimentalApiEnabled: true);
+            ExperimentalApiGuards.ValidateThreadStart(new ThreadStartOptions
+            {
+                ExperimentalRawEvents = true,
+                PersistExtendedHistory = true,
+                DynamicTools =
+                [
+                    new JKToolKit.CodexSDK.AppServer.Protocol.V2.DynamicToolSpec
+                    {
+                        Name = "echo",
+                        Description = "Echo",
+                        InputSchema = schema.RootElement.Clone()
+                    }
+                ]
+            }, experimentalApiEnabled: true);
+
+            ExperimentalApiGuards.ValidateThreadResume(new ThreadResumeOptions
+            {
+                ThreadId = "t",
+                History = history.RootElement,
+                Path = "C:\\rollout",
+                PersistExtendedHistory = true
+            }, experimentalApiEnabled: true);
+
+            ExperimentalApiGuards.ValidateThreadFork(new ThreadForkOptions
+            {
+                Path = "C:\\rollout",
+                PersistExtendedHistory = true
+            }, experimentalApiEnabled: true);
             ExperimentalApiGuards.ValidateTurnStart(new TurnStartOptions { CollaborationMode = collab.RootElement }, experimentalApiEnabled: true);
         };
 
@@ -78,6 +139,28 @@ public sealed class ExperimentalApiGuardsTests
 
         act.Should().Throw<CodexExperimentalApiRequiredException>()
             .Which.Descriptor.Should().Be("thread/fork.path");
+    }
+
+    [Fact]
+    public void ValidateThreadFork_Throws_WhenPersistExtendedHistoryTrue_AndExperimentalDisabled()
+    {
+        var options = new ThreadForkOptions { ThreadId = "thr_1", PersistExtendedHistory = true };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/fork.persistFullHistory");
+    }
+
+    [Fact]
+    public void ValidateThreadResume_Throws_WhenPersistExtendedHistoryTrue_AndExperimentalDisabled()
+    {
+        var options = new ThreadResumeOptions { ThreadId = "t", PersistExtendedHistory = true };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/resume.persistFullHistory");
     }
 
     [Fact]

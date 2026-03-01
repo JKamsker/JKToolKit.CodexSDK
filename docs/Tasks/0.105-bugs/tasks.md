@@ -4,7 +4,7 @@ description: "Fix 0.105.0 upstream drift/bugs found by multi-agent audit"
 
 # Tasks: 0.105.0 Bug Fixes (Upstream `external/codex`)
 
-**Upstream pin**: `UPSTREAM_CODEX_VERSION.txt` = `0.105.0`  
+**Upstream pin (at the time)**: `UPSTREAM_CODEX_VERSION.txt` = `0.105.0`
 **Goal**: Fix correctness + robustness gaps identified by a read-only, multi-agent audit against `external/codex` (0.105.0), and add regression tests.
 
 ## Phase 0 — Repro + regression tests first

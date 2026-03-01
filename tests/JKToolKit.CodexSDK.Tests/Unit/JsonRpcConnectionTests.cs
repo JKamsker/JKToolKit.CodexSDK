@@ -92,7 +92,7 @@ public sealed class JsonRpcConnectionTests
 
         rpc.OnServerRequest = req =>
         {
-            using var doc = JsonDocument.Parse("""{"approved":true}""");
+            using var doc = JsonDocument.Parse("""{"decision":"accept"}""");
             return ValueTask.FromResult(new JsonRpcResponse(req.Id, doc.RootElement.Clone(), Error: null));
         };
 
@@ -108,7 +108,7 @@ public sealed class JsonRpcConnectionTests
             respDoc.RootElement.GetProperty("jsonrpc").GetString().Should().Be("2.0");
             respDoc.RootElement.GetProperty("id").GetInt32().Should().Be(42);
             respDoc.RootElement.TryGetProperty("error", out _).Should().BeFalse();
-            respDoc.RootElement.GetProperty("result").GetProperty("approved").GetBoolean().Should().BeTrue();
+            respDoc.RootElement.GetProperty("result").GetProperty("decision").GetString().Should().Be("accept");
         });
 
         await serverTask.WaitAsync(TimeSpan.FromSeconds(2));

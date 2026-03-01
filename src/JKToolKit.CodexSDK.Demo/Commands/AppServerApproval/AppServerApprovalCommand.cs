@@ -127,8 +127,14 @@ public sealed class AppServerApprovalCommand : AsyncCommand<AppServerApprovalSet
 
             Console.Error.WriteLine($"[approval] method={method} approve={approve}");
 
-            using var doc = JsonDocument.Parse(approve ? """{"approved":true}""" : """{"approved":false}""");
-            return ValueTask.FromResult(doc.RootElement.Clone());
+            var decision = method switch
+            {
+                "item/commandExecution/requestApproval" or "item/fileChange/requestApproval" => approve ? "accept" : "decline",
+                "execCommandApproval" or "applyPatchApproval" => approve ? "approved" : "denied",
+                _ => throw new InvalidOperationException($"Unknown approval request method '{method}'."),
+            };
+
+            return ValueTask.FromResult(JsonSerializer.SerializeToElement(new { decision }));
         }
     }
 }

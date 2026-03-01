@@ -18,6 +18,45 @@ public sealed class AppServerNotificationMapperTests
     }
 
     [Fact]
+    public void Map_ThreadRealtimeNotifications_ToTypedRecords()
+    {
+        var started = JsonDocument.Parse("""{"threadId":"t","sessionId":"s"}""").RootElement;
+        AppServerNotificationMapper.Map("thread/realtime/started", started)
+            .Should().BeOfType<ThreadRealtimeStartedNotification>()
+            .Which.SessionId.Should().Be("s");
+
+        var itemAdded = JsonDocument.Parse("""{"threadId":"t","item":{"type":"x"}}""").RootElement;
+        AppServerNotificationMapper.Map("thread/realtime/itemAdded", itemAdded)
+            .Should().BeOfType<ThreadRealtimeItemAddedNotification>()
+            .Which.ItemType.Should().Be("x");
+
+        var audioDelta = JsonDocument.Parse("""{"threadId":"t","audio":{"data":"abc","numChannels":2,"sampleRate":24000,"samplesPerChannel":480}}""").RootElement;
+        var mapped = AppServerNotificationMapper.Map("thread/realtime/outputAudio/delta", audioDelta);
+
+        mapped.Should().BeOfType<ThreadRealtimeOutputAudioDeltaNotification>()
+            .Which.Data.Should().Be("abc");
+
+        var closed = JsonDocument.Parse("""{"threadId":"t","reason":"bye"}""").RootElement;
+        AppServerNotificationMapper.Map("thread/realtime/closed", closed)
+            .Should().BeOfType<ThreadRealtimeClosedNotification>()
+            .Which.Reason.Should().Be("bye");
+
+        var error = JsonDocument.Parse("""{"threadId":"t","message":"oops"}""").RootElement;
+        AppServerNotificationMapper.Map("thread/realtime/error", error)
+            .Should().BeOfType<ThreadRealtimeErrorNotification>()
+            .Which.Message.Should().Be("oops");
+    }
+
+    [Fact]
+    public void Map_ModelRerouted_ToTypedRecord()
+    {
+        var json = JsonDocument.Parse("""{"threadId":"t","turnId":"u","fromModel":"a","toModel":"b","reason":"highRiskCyberActivity"}""").RootElement;
+        AppServerNotificationMapper.Map("model/rerouted", json)
+            .Should().BeOfType<ModelReroutedNotification>()
+            .Which.ToModel.Should().Be("b");
+    }
+
+    [Fact]
     public void Map_FixtureJsonl_MapsAllLines()
     {
         var path = Path.Combine("Fixtures", "appserver-notifications.jsonl");

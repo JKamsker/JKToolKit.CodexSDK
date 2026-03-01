@@ -166,6 +166,23 @@ before sending the request:
 - `thread/resume.path`
 - `turn/start.collaborationMode`
 - `thread/start.experimentalRawEvents` (when `true`)
+- `thread/start.dynamicTools` (when non-empty)
+- `thread/fork.path`
+- `thread/start.persistExtendedHistory` (when `true`; descriptor: `thread/start.persistFullHistory`)
+- `thread/resume.persistExtendedHistory` (when `true`; descriptor: `thread/resume.persistFullHistory`)
+- `thread/fork.persistExtendedHistory` (when `true`; descriptor: `thread/fork.persistFullHistory`)
+
+### Known experimental-gated methods (blocked by default)
+
+- `thread/backgroundTerminals/clean`
+- `thread/realtime/start`
+- `thread/realtime/appendAudio`
+- `thread/realtime/appendText`
+- `thread/realtime/stop`
+- `fuzzyFileSearch/sessionStart`
+- `fuzzyFileSearch/sessionUpdate`
+- `fuzzyFileSearch/sessionStop`
+- `collaborationMode/list`
 
 ### Enabling experimental API opt-in (advanced)
 
@@ -371,9 +388,19 @@ Built-in handlers:
 
 - `AlwaysApproveHandler`
 - `AlwaysDenyHandler`
-- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console)
+- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console; supports tool requests and token refresh prompts)
 
 If no handler is configured, server requests are rejected with a JSON-RPC error to avoid deadlocks.
+
+Notes:
+
+- `AlwaysApproveHandler` / `AlwaysDenyHandler` cover only approval request methods.
+- `PromptConsoleApprovalHandler` additionally supports `item/tool/requestUserInput`, `item/tool/call`, and `account/chatgptAuthTokens/refresh` by prompting on the console.
+- For production usage (especially `item/tool/call` and token refresh), implement a custom handler to avoid interactive prompts and to integrate with your app's auth/tooling.
+
+Experimental helpers:
+
+- The SDK exposes wire DTOs under `JKToolKit.CodexSDK.AppServer.Protocol.V2` for server request payloads such as `item/tool/requestUserInput` and `item/tool/call`.
 
 ### `ApprovalPolicy` vs `AskForApproval`
 
@@ -472,5 +499,5 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout
 - If you see no events: confirm you called `initialize` + `initialized` (handled by `StartAsync`).
 - If Codex exits immediately: check stderr output (the SDK drains stderr to logs; consider raising log level).
 - If you hit interactive prompts unexpectedly: configure an `ApprovalHandler`, set `ApprovalPolicy = Never`, or use `AskForApproval` to selectively reject prompt types.
-- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.Capabilities.ExperimentalApi = true`.
+- If you see `"<descriptor> requires experimentalApi capability"`: the upstream app-server rejected an experimental-gated field/method. Remove the experimental field/method or enable experimental API opt-in via `CodexAppServerClientOptions.ExperimentalApi = true` (or configure `CodexAppServerClientOptions.Capabilities`).
 - If the Codex subprocess dies mid-turn: the SDK now faults the global notification stream and any in-progress `CodexTurnHandle` streams/completions with `CodexAppServerDisconnectedException` (includes exit code and a best-effort stderr tail).

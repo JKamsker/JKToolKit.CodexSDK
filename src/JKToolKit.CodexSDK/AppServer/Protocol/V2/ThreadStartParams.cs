@@ -86,8 +86,31 @@ public sealed record class ThreadStartParams
     /// </summary>
     /// <remarks>
     /// This is intended for internal use (e.g. Codex Cloud).
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     [JsonPropertyName("experimentalRawEvents")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ExperimentalRawEvents { get; init; }
+
+    /// <summary>
+    /// Gets optional dynamic tool specifications for the thread (experimental).
+    /// </summary>
+    /// <remarks>
+    /// When set, Codex may emit server requests such as <c>item/tool/call</c> that the client must handle via
+    /// <c>CodexAppServerClientOptions.ApprovalHandler</c>.
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    [JsonPropertyName("dynamicTools")]
+    public IReadOnlyList<DynamicToolSpec>? DynamicTools { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether to persist additional rollout event variants required to reconstruct a richer
+    /// thread history on subsequent resume/fork/read (experimental).
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    [JsonPropertyName("persistExtendedHistory")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool PersistExtendedHistory { get; init; }
 }

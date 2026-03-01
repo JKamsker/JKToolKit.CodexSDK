@@ -13,6 +13,15 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class DynamicToolCallOutputContentItem
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("type")]
+    public string Type { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("text")]
+    public string? Text { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("imageUrl")]
+    public string? ImageUrl { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

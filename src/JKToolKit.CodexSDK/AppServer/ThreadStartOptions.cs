@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -86,5 +87,24 @@ public sealed class ThreadStartOptions
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
     public bool ExperimentalRawEvents { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional dynamic tool specifications for the thread (experimental).
+    /// </summary>
+    /// <remarks>
+    /// When set, Codex may emit server requests such as <c>item/tool/call</c> that the client must handle via
+    /// <see cref="CodexAppServerClientOptions.ApprovalHandler"/>.
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public IReadOnlyList<DynamicToolSpec>? DynamicTools { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to persist additional rollout event variants required to reconstruct
+    /// a richer thread history on subsequent resume/fork/read (experimental).
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public bool PersistExtendedHistory { get; set; }
 }
 

@@ -54,7 +54,7 @@ public sealed class CodexAppServerClientOptions
     public int NotificationBufferCapacity { get; set; } = 5000;
 
     /// <summary>
-    /// Gets or sets an optional handler for approval requests coming from the app server.
+    /// Gets or sets an optional handler for server requests coming from the app server.
     /// </summary>
     public IAppServerApprovalHandler? ApprovalHandler { get; set; }
 

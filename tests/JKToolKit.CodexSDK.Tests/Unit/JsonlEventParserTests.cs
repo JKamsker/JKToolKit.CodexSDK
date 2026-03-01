@@ -134,7 +134,7 @@ public class JsonlEventParserTests
     public async Task ParseAsync_TurnContextEvent_ParsesCorrectly()
     {
         // Arrange
-        var approvalPolicy = "auto";
+        var approvalPolicy = "on-request";
         var sandboxPolicyType = "none";
         var timestamp = DateTimeOffset.UtcNow;
         var jsonLine = TestJsonlGenerator.GenerateTurnContext(approvalPolicy, sandboxPolicyType, timestamp);

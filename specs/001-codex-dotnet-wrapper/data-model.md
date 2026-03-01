@@ -435,7 +435,7 @@ Turn initialization with execution environment settings.
   "timestamp": "2025-11-20T20:02:29.789Z",
   "type": "turn_context",
   "payload": {
-    "approval_policy": "auto",
+    "approval_policy": "on-request",
     "sandbox_policy_type": "isolated"
   }
 }

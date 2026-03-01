@@ -53,6 +53,43 @@ internal static class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
+            "thread/closed" => new ThreadClosedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
+            "thread/realtime/started" => new ThreadRealtimeStartedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                SessionId: GetStringOrNull(p, "sessionId"),
+                Params: p),
+
+            "thread/realtime/itemAdded" => new ThreadRealtimeItemAddedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Item: GetAny(p, "item"),
+                Params: p),
+
+            "thread/realtime/outputAudio/delta" => new ThreadRealtimeOutputAudioDeltaNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Audio: GetAny(p, "audio"),
+                Params: p),
+
+            "thread/realtime/error" => new ThreadRealtimeErrorNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Message: GetString(p, "message") ?? string.Empty,
+                Params: p),
+
+            "thread/realtime/closed" => new ThreadRealtimeClosedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Reason: GetStringOrNull(p, "reason"),
+                Params: p),
+
+            "model/rerouted" => new ModelReroutedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetString(p, "turnId") ?? string.Empty,
+                FromModel: GetString(p, "fromModel") ?? string.Empty,
+                ToModel: GetString(p, "toModel") ?? string.Empty,
+                Reason: GetString(p, "reason") ?? string.Empty,
+                Params: p),
+
             "turn/started" => new TurnStartedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Turn: GetAny(p, "turn"),
