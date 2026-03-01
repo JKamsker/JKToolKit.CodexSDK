@@ -167,10 +167,10 @@ before sending the request:
 - `turn/start.collaborationMode`
 - `thread/start.experimentalRawEvents` (when `true`)
 - `thread/start.dynamicTools` (when non-empty)
-- `thread/start.persistExtendedHistory` (when `true`)
-- `thread/resume.persistExtendedHistory` (when `true`)
 - `thread/fork.path`
-- `thread/fork.persistExtendedHistory` (when `true`)
+- `thread/start.persistExtendedHistory` (when `true`; descriptor: `thread/start.persistFullHistory`)
+- `thread/resume.persistExtendedHistory` (when `true`; descriptor: `thread/resume.persistFullHistory`)
+- `thread/fork.persistExtendedHistory` (when `true`; descriptor: `thread/fork.persistFullHistory`)
 
 ### Known experimental-gated methods (blocked by default)
 
@@ -390,6 +390,12 @@ Built-in handlers:
 - `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console)
 
 If no handler is configured, server requests are rejected with a JSON-RPC error to avoid deadlocks.
+
+Notes:
+
+- Built-in handlers only cover the approval request methods (plus `item/tool/requestUserInput` for `PromptConsoleApprovalHandler`).
+- If you enable experimental dynamic tools (`ThreadStartOptions.DynamicTools`), you must handle `item/tool/call` in a custom handler.
+- Some server requests (for example `account/chatgptAuthTokens/refresh`) require application-specific integration and are not handled by built-ins.
 
 ### `ApprovalPolicy` vs `AskForApproval`
 
