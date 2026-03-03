@@ -3,7 +3,8 @@ name: Upstream Sync (@openai/codex)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * *"
+    # GitHub Actions cron uses UTC. 09:00/21:00 UTC == 10:00/22:00 Europe/Vienna (CET).
+    - cron: "0 9,21 * * *"
 
 permissions:
   contents: write
