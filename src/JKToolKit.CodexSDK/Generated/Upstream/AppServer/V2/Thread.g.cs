@@ -44,6 +44,12 @@ internal partial class Thread
     public string Cwd { get; set; } = default!;
 
     /// <summary>
+    /// Whether the thread is ephemeral and should not be materialized on disk.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("ephemeral")]
+    public bool Ephemeral { get; set; } = default!;
+
+    /// <summary>
     /// Optional Git metadata captured when the thread was created.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("gitInfo")]
