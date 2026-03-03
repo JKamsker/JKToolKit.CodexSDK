@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class Model
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("availabilityNux")]
+    public AvailabilityNux? AvailabilityNux { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("defaultReasoningEffort")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ReasoningEffort>))]
     public ReasoningEffort DefaultReasoningEffort { get; set; } = default!;
@@ -46,6 +49,9 @@ internal partial class Model
 
     [System.Text.Json.Serialization.JsonPropertyName("upgrade")]
     public string? Upgrade { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("upgradeInfo")]
+    public UpgradeInfo? UpgradeInfo { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
