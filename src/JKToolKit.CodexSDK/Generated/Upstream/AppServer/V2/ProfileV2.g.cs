@@ -34,6 +34,9 @@ internal partial class ProfileV2
     [System.Text.Json.Serialization.JsonPropertyName("model_verbosity")]
     public Model_verbosity2? Model_verbosity { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("service_tier")]
+    public Service_tier2? Service_tier { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("web_search")]
     public Web_search2? Web_search { get; set; } = default!;
 

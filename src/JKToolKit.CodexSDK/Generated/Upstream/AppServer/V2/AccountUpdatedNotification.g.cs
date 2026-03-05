@@ -16,6 +16,9 @@ internal partial class AccountUpdatedNotification
     [System.Text.Json.Serialization.JsonPropertyName("authMode")]
     public AuthMode2? AuthMode { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("planType")]
+    public PlanType2? PlanType { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

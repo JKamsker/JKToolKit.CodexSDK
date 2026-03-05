@@ -70,6 +70,9 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("sandbox_workspace_write")]
     public Sandbox_workspace_write? Sandbox_workspace_write { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("service_tier")]
+    public Service_tier? Service_tier { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("tools")]
     public Tools2? Tools { get; set; } = default!;
 
