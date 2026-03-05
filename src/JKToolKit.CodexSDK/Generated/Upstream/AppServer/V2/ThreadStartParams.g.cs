@@ -46,6 +46,9 @@ internal partial class ThreadStartParams
     [System.Text.Json.Serialization.JsonPropertyName("serviceName")]
     public string? ServiceName { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
+    public ServiceTier6? ServiceTier { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

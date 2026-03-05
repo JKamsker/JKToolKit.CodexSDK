@@ -9,16 +9,14 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Notification emitted when watched local skill files change.
+/// <br/>
+/// <br/>Treat this as an invalidation signal and re-run `skills/list` with the client's current parameters when refreshed skill metadata is needed.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class WindowsSandboxSetupStartParams
+internal partial class SkillsChangedNotification
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
-    public string? Cwd { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("mode")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<WindowsSandboxSetupMode>))]
-    public WindowsSandboxSetupMode Mode { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

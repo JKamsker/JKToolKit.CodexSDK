@@ -10,26 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RateLimitSnapshot
+internal partial class ThreadMetadataUpdateResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("credits")]
-    public Credits? Credits { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("limitId")]
-    public string? LimitId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("limitName")]
-    public string? LimitName { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("planType")]
-    public PlanType3? PlanType { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("primary")]
-    public Primary? Primary { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("secondary")]
-    public Secondary? Secondary { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("thread")]
+    public Thread Thread { get; set; } = new Thread();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

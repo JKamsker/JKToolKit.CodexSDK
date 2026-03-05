@@ -32,6 +32,9 @@ internal partial class ThreadResumeResponse
     [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
     public Sandbox2 Sandbox { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
+    public ServiceTier5? ServiceTier { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("thread")]
     public Thread Thread { get; set; } = new Thread();
 
