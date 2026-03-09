@@ -55,6 +55,9 @@ internal partial class AppInfo
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("pluginDisplayNames")]
+    public System.Collections.Generic.ICollection<string>? PluginDisplayNames { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
