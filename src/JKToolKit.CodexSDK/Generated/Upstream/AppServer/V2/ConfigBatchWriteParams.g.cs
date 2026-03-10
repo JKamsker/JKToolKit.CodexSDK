@@ -25,6 +25,12 @@ internal partial class ConfigBatchWriteParams
     [System.Text.Json.Serialization.JsonPropertyName("filePath")]
     public string? FilePath { get; set; } = default!;
 
+    /// <summary>
+    /// When true, hot-reload the updated user config into all loaded threads after writing.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("reloadUserConfig")]
+    public bool? ReloadUserConfig { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
