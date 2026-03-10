@@ -28,9 +28,6 @@ internal partial class NetworkRequirements
     [System.Text.Json.Serialization.JsonPropertyName("dangerouslyAllowAllUnixSockets")]
     public bool? DangerouslyAllowAllUnixSockets { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("dangerouslyAllowNonLoopbackAdmin")]
-    public bool? DangerouslyAllowNonLoopbackAdmin { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("dangerouslyAllowNonLoopbackProxy")]
     public bool? DangerouslyAllowNonLoopbackProxy { get; set; } = default!;
 

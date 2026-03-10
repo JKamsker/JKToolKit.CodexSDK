@@ -14,7 +14,7 @@ internal partial class WindowsSandboxSetupStartParams
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
-    public string? Cwd { get; set; } = default!;
+    public Cwd? Cwd { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("mode")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<WindowsSandboxSetupMode>))]

@@ -9,15 +9,18 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Terminate a running `command/exec` session.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallParams
+internal partial class CommandExecTerminateParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
-    public string MarketplacePath { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("pluginName")]
-    public string PluginName { get; set; } = default!;
+    /// <summary>
+    /// Client-supplied, connection-scoped `processId` from the original `command/exec` request.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("processId")]
+    public string ProcessId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

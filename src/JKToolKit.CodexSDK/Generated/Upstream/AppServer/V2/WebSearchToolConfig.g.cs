@@ -10,14 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallParams
+internal partial class WebSearchToolConfig
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
-    public string MarketplacePath { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("allowed_domains")]
+    public System.Collections.Generic.ICollection<string>? Allowed_domains { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("pluginName")]
-    public string PluginName { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("context_size")]
+    public Context_size? Context_size { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("location")]
+    public Location? Location { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

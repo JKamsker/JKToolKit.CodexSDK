@@ -83,8 +83,8 @@ internal partial class Thread
     public string Preview { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("source")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Source>))]
-    public Source Source { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Source2>))]
+    public Source2 Source { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     public Status Status { get; set; } = default!;

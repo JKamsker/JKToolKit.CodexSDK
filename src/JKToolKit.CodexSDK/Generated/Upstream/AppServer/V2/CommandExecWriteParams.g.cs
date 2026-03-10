@@ -10,33 +10,29 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Final buffered result for `command/exec`.
+/// Write stdin bytes to a running `command/exec` session, close stdin, or both.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class CommandExecResponse
+internal partial class CommandExecWriteParams
 {
 
     /// <summary>
-    /// Process exit code.
+    /// Close stdin after writing `deltaBase64`, if present.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("exitCode")]
-    public int ExitCode { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("closeStdin")]
+    public bool? CloseStdin { get; set; } = default!;
 
     /// <summary>
-    /// Buffered stderr capture.
-    /// <br/>
-    /// <br/>Empty when stderr was streamed via `command/exec/outputDelta`.
+    /// Optional base64-encoded stdin bytes to write.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("stderr")]
-    public string Stderr { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("deltaBase64")]
+    public string? DeltaBase64 { get; set; } = default!;
 
     /// <summary>
-    /// Buffered stdout capture.
-    /// <br/>
-    /// <br/>Empty when stdout was streamed via `command/exec/outputDelta`.
+    /// Client-supplied, connection-scoped `processId` from the original `command/exec` request.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("stdout")]
-    public string Stdout { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("processId")]
+    public string ProcessId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

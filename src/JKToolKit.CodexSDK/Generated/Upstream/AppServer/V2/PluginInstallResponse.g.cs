@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginInstallResponse
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("appsNeedingAuth")]
+    public System.Collections.Generic.ICollection<AppSummary> AppsNeedingAuth { get; set; } = new System.Collections.ObjectModel.Collection<AppSummary>();
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
