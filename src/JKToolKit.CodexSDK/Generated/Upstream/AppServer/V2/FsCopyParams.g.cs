@@ -9,16 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Copy a file or directory tree on the host filesystem.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallResponse
+internal partial class FsCopyParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("appsNeedingAuth")]
-    public System.Collections.Generic.ICollection<AppSummary> AppsNeedingAuth { get; set; } = new System.Collections.ObjectModel.Collection<AppSummary>();
+    [System.Text.Json.Serialization.JsonPropertyName("destinationPath")]
+    public string DestinationPath { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("authPolicy")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginAuthPolicy>))]
-    public PluginAuthPolicy AuthPolicy { get; set; } = default!;
+    /// <summary>
+    /// Required for directory copies; ignored for file copies.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("recursive")]
+    public bool? Recursive { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("sourcePath")]
+    public string SourcePath { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

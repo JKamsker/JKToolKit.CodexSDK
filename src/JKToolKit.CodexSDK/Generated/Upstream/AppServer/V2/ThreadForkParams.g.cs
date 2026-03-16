@@ -23,6 +23,12 @@ internal partial class ThreadForkParams
     [System.Text.Json.Serialization.JsonPropertyName("approvalPolicy")]
     public ApprovalPolicy? ApprovalPolicy { get; set; } = default!;
 
+    /// <summary>
+    /// Override where approval requests are routed for review on this thread and subsequent turns.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
+    public ApprovalsReviewer2? ApprovalsReviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("baseInstructions")]
     public string? BaseInstructions { get; set; } = default!;
 
@@ -34,6 +40,9 @@ internal partial class ThreadForkParams
 
     [System.Text.Json.Serialization.JsonPropertyName("developerInstructions")]
     public string? DeveloperInstructions { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("ephemeral")]
+    public bool? Ephemeral { get; set; } = default!;
 
     /// <summary>
     /// Configuration overrides for the forked thread, if any.

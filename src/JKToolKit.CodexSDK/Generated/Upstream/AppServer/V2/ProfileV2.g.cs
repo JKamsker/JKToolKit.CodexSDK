@@ -16,6 +16,12 @@ internal partial class ProfileV2
     [System.Text.Json.Serialization.JsonPropertyName("approval_policy")]
     public Approval_policy2? Approval_policy { get; set; } = default!;
 
+    /// <summary>
+    /// [UNSTABLE] Optional profile-level override for where approval requests are routed for review. If omitted, the enclosing config default is used.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
+    public Approvals_reviewer2? Approvals_reviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("chatgpt_base_url")]
     public string? Chatgpt_base_url { get; set; } = default!;
 

@@ -17,6 +17,10 @@ internal partial class ThreadResumeResponse
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AllowedApprovalPolicies>))]
     public AllowedApprovalPolicies ApprovalPolicy { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ApprovalsReviewer>))]
+    public ApprovalsReviewer ApprovalsReviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;
 

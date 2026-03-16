@@ -25,8 +25,11 @@ internal partial class PluginInterface
     [System.Text.Json.Serialization.JsonPropertyName("composerIcon")]
     public ComposerIcon? ComposerIcon { get; set; } = default!;
 
+    /// <summary>
+    /// Starter prompts for the plugin. Capped at 3 entries with a maximum of 128 characters per entry.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("defaultPrompt")]
-    public string? DefaultPrompt { get; set; } = default!;
+    public System.Collections.Generic.ICollection<string>? DefaultPrompt { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("developerName")]
     public string? DeveloperName { get; set; } = default!;

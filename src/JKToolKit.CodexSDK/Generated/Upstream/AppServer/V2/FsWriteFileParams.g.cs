@@ -9,16 +9,21 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Write a file on the host filesystem.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallResponse
+internal partial class FsWriteFileParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("appsNeedingAuth")]
-    public System.Collections.Generic.ICollection<AppSummary> AppsNeedingAuth { get; set; } = new System.Collections.ObjectModel.Collection<AppSummary>();
+    /// <summary>
+    /// File contents encoded as base64.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("dataBase64")]
+    public string DataBase64 { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("authPolicy")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginAuthPolicy>))]
-    public PluginAuthPolicy AuthPolicy { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("path")]
+    public string Path { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

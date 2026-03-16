@@ -13,11 +13,19 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginSummary
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("authPolicy")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginAuthPolicy>))]
+    public PluginAuthPolicy AuthPolicy { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("installPolicy")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginInstallPolicy>))]
+    public PluginInstallPolicy InstallPolicy { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("installed")]
     public bool Installed { get; set; } = default!;

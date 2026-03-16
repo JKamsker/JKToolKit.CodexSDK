@@ -19,6 +19,12 @@ internal partial class PluginListParams
     [System.Text.Json.Serialization.JsonPropertyName("cwds")]
     public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
 
+    /// <summary>
+    /// When true, reconcile the official curated marketplace against the remote plugin state before listing marketplaces.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("forceRemoteSync")]
+    public bool? ForceRemoteSync { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

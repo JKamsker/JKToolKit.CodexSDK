@@ -9,16 +9,12 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Successful response for `fs/copy`.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallResponse
+internal partial class FsCopyResponse
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("appsNeedingAuth")]
-    public System.Collections.Generic.ICollection<AppSummary> AppsNeedingAuth { get; set; } = new System.Collections.ObjectModel.Collection<AppSummary>();
-
-    [System.Text.Json.Serialization.JsonPropertyName("authPolicy")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginAuthPolicy>))]
-    public PluginAuthPolicy AuthPolicy { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -21,20 +21,24 @@ internal enum CollabAgentStatus
     Running = 1,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"interrupted")]
+    Interrupted = 2,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"completed")]
-    Completed = 2,
+    Completed = 3,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"errored")]
-    Errored = 3,
+    Errored = 4,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"shutdown")]
-    Shutdown = 4,
+    Shutdown = 5,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"notFound")]
-    NotFound = 5,
+    NotFound = 6,
 
 
 }
