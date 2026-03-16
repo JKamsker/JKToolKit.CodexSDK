@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class DynamicToolSpec
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("deferLoading")]
+    public bool? DeferLoading { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string Description { get; set; } = default!;
 

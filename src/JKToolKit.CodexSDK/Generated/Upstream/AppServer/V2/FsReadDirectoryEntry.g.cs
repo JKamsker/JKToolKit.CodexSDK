@@ -9,16 +9,30 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// A directory entry returned by `fs/readDirectory`.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallResponse
+internal partial class FsReadDirectoryEntry
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("appsNeedingAuth")]
-    public System.Collections.Generic.ICollection<AppSummary> AppsNeedingAuth { get; set; } = new System.Collections.ObjectModel.Collection<AppSummary>();
+    /// <summary>
+    /// Direct child entry name only, not an absolute or relative path.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("fileName")]
+    public string FileName { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("authPolicy")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginAuthPolicy>))]
-    public PluginAuthPolicy AuthPolicy { get; set; } = default!;
+    /// <summary>
+    /// Whether this entry resolves to a directory.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("isDirectory")]
+    public bool IsDirectory { get; set; } = default!;
+
+    /// <summary>
+    /// Whether this entry resolves to a regular file.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("isFile")]
+    public bool IsFile { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

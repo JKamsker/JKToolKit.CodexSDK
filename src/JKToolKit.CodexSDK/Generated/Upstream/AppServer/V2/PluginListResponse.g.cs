@@ -16,6 +16,9 @@ internal partial class PluginListResponse
     [System.Text.Json.Serialization.JsonPropertyName("marketplaces")]
     public System.Collections.Generic.ICollection<PluginMarketplaceEntry> Marketplaces { get; set; } = new System.Collections.ObjectModel.Collection<PluginMarketplaceEntry>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("remoteSyncError")]
+    public string? RemoteSyncError { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
