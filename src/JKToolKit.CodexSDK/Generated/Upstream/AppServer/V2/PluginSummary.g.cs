@@ -31,7 +31,7 @@ internal partial class PluginSummary
     public bool Installed { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("interface")]
-    public Interface? Interface { get; set; } = default!;
+    public Interface2? Interface { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;

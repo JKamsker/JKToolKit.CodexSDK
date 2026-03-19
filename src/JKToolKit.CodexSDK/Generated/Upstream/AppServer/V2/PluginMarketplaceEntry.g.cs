@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginMarketplaceEntry
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("interface")]
+    public Interface? Interface { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 
