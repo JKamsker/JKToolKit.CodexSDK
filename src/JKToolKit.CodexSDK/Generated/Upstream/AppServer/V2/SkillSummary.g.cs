@@ -17,7 +17,7 @@ internal partial class SkillSummary
     public string Description { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("interface")]
-    public Interface3? Interface { get; set; } = default!;
+    public Interface4? Interface { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;

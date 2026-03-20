@@ -10,19 +10,15 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum HookEventName
+internal enum RealtimeConversationVersion
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"sessionStart")]
-    SessionStart = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"v1")]
+    V1 = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"userPromptSubmit")]
-    UserPromptSubmit = 1,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"stop")]
-    Stop = 2,
+    [System.Runtime.Serialization.EnumMember(Value = @"v2")]
+    V2 = 1,
 
 
 }

@@ -29,28 +29,32 @@ internal enum ThreadSourceKind
     AppServer = 3,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"custom")]
+    Custom = 4,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"subAgent")]
-    SubAgent = 4,
+    SubAgent = 5,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"subAgentReview")]
-    SubAgentReview = 5,
+    SubAgentReview = 6,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"subAgentCompact")]
-    SubAgentCompact = 6,
+    SubAgentCompact = 7,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"subAgentThreadSpawn")]
-    SubAgentThreadSpawn = 7,
+    SubAgentThreadSpawn = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"subAgentOther")]
-    SubAgentOther = 8,
+    SubAgentOther = 9,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 9,
+    Unknown = 10,
 
 
 }

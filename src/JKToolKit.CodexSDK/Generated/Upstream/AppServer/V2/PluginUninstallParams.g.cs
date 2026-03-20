@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginUninstallParams
 {
 
+    /// <summary>
+    /// When true, apply the remote plugin change before the local uninstall flow.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("forceRemoteSync")]
+    public bool? ForceRemoteSync { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("pluginId")]
     public string PluginId { get; set; } = default!;
 
