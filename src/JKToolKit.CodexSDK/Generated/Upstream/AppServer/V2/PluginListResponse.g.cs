@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginListResponse
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("featuredPluginIds")]
+    public System.Collections.Generic.ICollection<string>? FeaturedPluginIds { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaceLoadErrors")]
+    public System.Collections.Generic.ICollection<MarketplaceLoadErrorInfo>? MarketplaceLoadErrors { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("marketplaces")]
     public System.Collections.Generic.ICollection<PluginMarketplaceEntry> Marketplaces { get; set; } = new System.Collections.ObjectModel.Collection<PluginMarketplaceEntry>();
 

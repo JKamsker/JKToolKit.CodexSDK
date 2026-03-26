@@ -10,26 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// EXPERIMENTAL - app metadata summary for plugin responses.
+/// Created watch handle returned by `fs/watch`.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AppSummary
+internal partial class FsWatchResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string? Description { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("path")]
+    public string Path { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("installUrl")]
-    public string? InstallUrl { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("needsAuth")]
-    public bool NeedsAuth { get; set; } = default!;
+    /// <summary>
+    /// Connection-scoped watch identifier used for `fs/unwatch` and `fs/changed`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("watchId")]
+    public string WatchId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

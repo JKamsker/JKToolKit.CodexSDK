@@ -13,16 +13,24 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal enum HookEventName
 {
 
+    [System.Runtime.Serialization.EnumMember(Value = @"preToolUse")]
+    PreToolUse = 0,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"postToolUse")]
+    PostToolUse = 1,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"sessionStart")]
-    SessionStart = 0,
+    SessionStart = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"userPromptSubmit")]
-    UserPromptSubmit = 1,
+    UserPromptSubmit = 3,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"stop")]
-    Stop = 2,
+    Stop = 4,
 
 
 }

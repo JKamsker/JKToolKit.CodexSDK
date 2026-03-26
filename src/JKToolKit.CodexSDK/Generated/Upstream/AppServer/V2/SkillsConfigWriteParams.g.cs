@@ -16,8 +16,17 @@ internal partial class SkillsConfigWriteParams
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = default!;
 
+    /// <summary>
+    /// Name-based selector.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string? Name { get; set; } = default!;
+
+    /// <summary>
+    /// Path-based selector.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("path")]
-    public string Path { get; set; } = default!;
+    public Path? Path { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
