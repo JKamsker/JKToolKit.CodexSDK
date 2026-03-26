@@ -10,26 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// EXPERIMENTAL - app metadata summary for plugin responses.
+/// Successful response for `fs/unwatch`.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AppSummary
+internal partial class FsUnwatchResponse
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string? Description { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("installUrl")]
-    public string? InstallUrl { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("needsAuth")]
-    public bool NeedsAuth { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -10,26 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// EXPERIMENTAL - app metadata summary for plugin responses.
+/// Filesystem watch notification emitted for `fs/watch` subscribers.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AppSummary
+internal partial class FsChangedNotification
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string? Description { get; set; } = default!;
+    /// <summary>
+    /// File or directory paths associated with this event.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("changedPaths")]
+    public System.Collections.Generic.ICollection<string> ChangedPaths { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("installUrl")]
-    public string? InstallUrl { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("needsAuth")]
-    public bool NeedsAuth { get; set; } = default!;
+    /// <summary>
+    /// Watch identifier returned by `fs/watch`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("watchId")]
+    public string WatchId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
