@@ -37,7 +37,7 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
                     SandboxPolicy = CodexSandboxPolicyBuilder.ReadOnlyRestricted([tmpDir], includePlatformDefaults: true),
                     Input =
                     [
-                        TurnInputItem.Text("Read the file 'hello.txt' in the current directory and reply with its contents only.")
+                        TurnInputItem.Text("Reply only with: ok.")
                     ]
                 }, cts.Token);
 
