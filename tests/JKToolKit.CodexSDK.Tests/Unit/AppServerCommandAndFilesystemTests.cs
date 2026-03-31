@@ -24,14 +24,21 @@ public sealed class AppServerCommandAndFilesystemTests
             Command = ["git", "status"],
             Cwd = "C:\\repo",
             ProcessId = "proc-1",
-            StreamStdoutStderr = true
+            StreamStdoutStderr = true,
+            Tty = true,
+            Size = new CommandExecTerminalSize
+            {
+                Columns = 101,
+                Rows = 31
+            }
         });
 
         result.ExitCode.Should().Be(0);
         result.Stdout.Should().Be("ok");
         rpc.LastMethod.Should().Be("command/exec");
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
-            .Should().Contain("\"processId\":\"proc-1\"");
+            .Should().Contain("\"processId\":\"proc-1\"")
+            .And.Contain("\"size\":{\"cols\":101,\"rows\":31}");
     }
 
     [Fact]
@@ -93,6 +100,60 @@ public sealed class AppServerCommandAndFilesystemTests
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*ProcessId*required*");
+    }
+
+    [Fact]
+    public async Task CommandExecAsync_RejectsZeroSizedTerminal()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.CommandExecAsync(new CommandExecOptions
+        {
+            Command = ["cmd"],
+            ProcessId = "proc-1",
+            Tty = true,
+            Size = new CommandExecTerminalSize
+            {
+                Columns = 0,
+                Rows = 24
+            }
+        });
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>()
+            .WithMessage("*rows and cols must be greater than 0*");
+    }
+
+    [Fact]
+    public async Task CommandExecWriteAsync_RequiresPayloadOrCloseStdin()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.CommandExecWriteAsync(new CommandExecWriteOptions
+        {
+            ProcessId = "proc-1"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*deltaBase64 or closeStdin*");
+    }
+
+    [Fact]
+    public async Task CommandExecResizeAsync_RejectsZeroSizedTerminal()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.CommandExecResizeAsync(new CommandExecResizeOptions
+        {
+            ProcessId = "proc-1",
+            Size = new CommandExecTerminalSize
+            {
+                Columns = 80,
+                Rows = 0
+            }
+        });
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>()
+            .WithMessage("*rows and cols must be greater than 0*");
     }
 
     [Fact]

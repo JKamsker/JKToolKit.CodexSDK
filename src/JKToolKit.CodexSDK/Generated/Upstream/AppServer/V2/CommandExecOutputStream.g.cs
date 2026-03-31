@@ -13,16 +13,17 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 /// Stream label for `command/exec/outputDelta` notifications.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class CommandExecOutputStream
+internal enum CommandExecOutputStream
 {
+    /// <summary>
+    /// stdout stream. PTY mode multiplexes terminal output here.
+    /// </summary>
+    [System.Runtime.Serialization.EnumMember(Value = @"stdout")]
+    Stdout = 0,
 
-    private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-    [System.Text.Json.Serialization.JsonExtensionData]
-    public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    /// <summary>
+    /// stderr stream.
+    /// </summary>
+    [System.Runtime.Serialization.EnumMember(Value = @"stderr")]
+    Stderr = 1,
 }

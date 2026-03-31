@@ -60,9 +60,13 @@ public sealed class AppServerNotificationMapperTests
     public void Map_NewlyTypedNotificationMethods_ToTypedRecords()
     {
         var commandExecDelta = JsonDocument.Parse("""{"processId":"p1","stream":"stdout","deltaBase64":"aGVsbG8=","capReached":false}""").RootElement;
-        AppServerNotificationMapper.Map("command/exec/outputDelta", commandExecDelta)
+        var commandExecNotification = AppServerNotificationMapper.Map("command/exec/outputDelta", commandExecDelta)
             .Should().BeOfType<CommandExecOutputDeltaNotification>()
-            .Which.ProcessId.Should().Be("p1");
+            .Which;
+
+        commandExecNotification.ProcessId.Should().Be("p1");
+        commandExecNotification.Stream.Should().Be("stdout");
+        commandExecNotification.StreamKind.Should().Be(CommandExecOutputStreamKind.Stdout);
 
         var fsChanged = JsonDocument.Parse("""{"watchId":"w1","changedPaths":["C:\\repo\\a.txt","C:\\repo\\b.txt"]}""").RootElement;
         AppServerNotificationMapper.Map("fs/changed", fsChanged)

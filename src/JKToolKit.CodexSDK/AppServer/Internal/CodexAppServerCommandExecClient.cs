@@ -39,13 +39,10 @@ internal sealed class CodexAppServerCommandExecClient
                 Tty = options.Tty,
                 Size = options.Size is null
                     ? null
-                    : new UpstreamV2.Size
+                    : new UpstreamV2.CommandExecTerminalSize
                     {
-                        AdditionalProperties = new Dictionary<string, object>
-                        {
-                            ["cols"] = options.Size.Columns,
-                            ["rows"] = options.Size.Rows
-                        }
+                        Cols = options.Size.Columns,
+                        Rows = options.Size.Rows
                     }
             },
             ct).ConfigureAwait(false);
@@ -64,6 +61,8 @@ internal sealed class CodexAppServerCommandExecClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.ProcessId))
             throw new ArgumentException("ProcessId cannot be empty or whitespace.", nameof(options));
+        if (options.DeltaBase64 is null && options.CloseStdin != true)
+            throw new ArgumentException("command/exec/write requires deltaBase64 or closeStdin.", nameof(options));
 
         var result = await _sendRequestAsync(
             "command/exec/write",
@@ -71,7 +70,7 @@ internal sealed class CodexAppServerCommandExecClient
             {
                 ProcessId = options.ProcessId,
                 DeltaBase64 = options.DeltaBase64,
-                CloseStdin = options.CloseStdin
+                CloseStdin = options.CloseStdin == true
             },
             ct).ConfigureAwait(false);
 
@@ -84,6 +83,7 @@ internal sealed class CodexAppServerCommandExecClient
         if (string.IsNullOrWhiteSpace(options.ProcessId))
             throw new ArgumentException("ProcessId cannot be empty or whitespace.", nameof(options));
         ArgumentNullException.ThrowIfNull(options.Size);
+        ValidateTerminalSize(options.Size);
 
         var result = await _sendRequestAsync(
             "command/exec/resize",
@@ -134,6 +134,10 @@ internal sealed class CodexAppServerCommandExecClient
         {
             throw new ArgumentException("Size requires tty to be enabled.", nameof(options));
         }
+        if (options.Size is not null)
+        {
+            ValidateTerminalSize(options.Size);
+        }
         if (options.TimeoutMs.HasValue && options.TimeoutMs.Value < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options.TimeoutMs), "TimeoutMs cannot be negative.");
@@ -142,6 +146,14 @@ internal sealed class CodexAppServerCommandExecClient
         if (options.OutputBytesCap.HasValue && options.OutputBytesCap.Value < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options.OutputBytesCap), "OutputBytesCap cannot be negative.");
+        }
+    }
+
+    private static void ValidateTerminalSize(CommandExecTerminalSize size)
+    {
+        if (size.Rows == 0 || size.Columns == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(size), "command/exec size rows and cols must be greater than 0.");
         }
     }
 

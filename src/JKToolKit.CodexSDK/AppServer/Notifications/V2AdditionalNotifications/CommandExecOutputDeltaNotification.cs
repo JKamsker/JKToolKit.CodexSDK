@@ -18,6 +18,11 @@ public sealed record class CommandExecOutputDeltaNotification : AppServerNotific
     public string Stream { get; }
 
     /// <summary>
+    /// Gets the normalized output stream classification.
+    /// </summary>
+    public CommandExecOutputStreamKind StreamKind { get; }
+
+    /// <summary>
     /// Gets the base64-encoded output bytes.
     /// </summary>
     public string DeltaBase64 { get; }
@@ -40,7 +45,16 @@ public sealed record class CommandExecOutputDeltaNotification : AppServerNotific
     {
         this.ProcessId = ProcessId;
         this.Stream = Stream;
+        StreamKind = ParseStreamKind(Stream);
         this.DeltaBase64 = DeltaBase64;
         this.CapReached = CapReached;
     }
+
+    private static CommandExecOutputStreamKind ParseStreamKind(string? stream) =>
+        stream?.Trim() switch
+        {
+            "stdout" => CommandExecOutputStreamKind.Stdout,
+            "stderr" => CommandExecOutputStreamKind.Stderr,
+            _ => CommandExecOutputStreamKind.Unknown
+        };
 }

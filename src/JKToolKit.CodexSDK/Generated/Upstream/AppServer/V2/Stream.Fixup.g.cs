@@ -12,6 +12,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 [System.CodeDom.Compiler.GeneratedCode("JKToolKit.CodexSDK.UpstreamGen", "0.0.0")]
 internal enum Stream
 {
-    [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"stdout")]
+    Stdout = 0,
+
+    [System.Runtime.Serialization.EnumMember(Value = @"stderr")]
+    Stderr = 1,
 }
