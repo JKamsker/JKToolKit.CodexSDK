@@ -17,6 +17,10 @@ internal partial class ThreadForkResponse
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AllowedApprovalPolicies>))]
     public AllowedApprovalPolicies ApprovalPolicy { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ApprovalsReviewer>))]
+    public ApprovalsReviewer ApprovalsReviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;
 
@@ -31,6 +35,9 @@ internal partial class ThreadForkResponse
 
     [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
     public Sandbox2 Sandbox { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
+    public ServiceTier3? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("thread")]
     public Thread Thread { get; set; } = new Thread();

@@ -23,7 +23,7 @@ internal partial class RateLimitSnapshot
     public string? LimitName { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("planType")]
-    public PlanType2? PlanType { get; set; } = default!;
+    public PlanType3? PlanType { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("primary")]
     public Primary? Primary { get; set; } = default!;

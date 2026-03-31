@@ -20,6 +20,12 @@ internal partial class TurnStartParams
     public ApprovalPolicy4? ApprovalPolicy { get; set; } = default!;
 
     /// <summary>
+    /// Override where approval requests are routed for review on this turn and subsequent turns.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
+    public ApprovalsReviewer5? ApprovalsReviewer { get; set; } = default!;
+
+    /// <summary>
     /// Override the working directory for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
@@ -57,6 +63,12 @@ internal partial class TurnStartParams
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("sandboxPolicy")]
     public SandboxPolicy3? SandboxPolicy { get; set; } = default!;
+
+    /// <summary>
+    /// Override the service tier for this turn and subsequent turns.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
+    public ServiceTier8? ServiceTier { get; set; } = default!;
 
     /// <summary>
     /// Override the reasoning summary for this turn and subsequent turns.

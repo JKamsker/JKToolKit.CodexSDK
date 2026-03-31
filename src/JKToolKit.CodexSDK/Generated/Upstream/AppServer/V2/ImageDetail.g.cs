@@ -10,23 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ProductSurface
+internal enum ImageDetail
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"chatgpt")]
-    Chatgpt = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"auto")]
+    Auto = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"codex")]
-    Codex = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"low")]
+    Low = 1,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"api")]
-    Api = 2,
+    [System.Runtime.Serialization.EnumMember(Value = @"high")]
+    High = 2,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"atlas")]
-    Atlas = 3,
+    [System.Runtime.Serialization.EnumMember(Value = @"original")]
+    Original = 3,
 
 
 }

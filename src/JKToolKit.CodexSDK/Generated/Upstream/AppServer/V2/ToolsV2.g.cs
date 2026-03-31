@@ -17,7 +17,7 @@ internal partial class ToolsV2
     public bool? View_image { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("web_search")]
-    public bool? Web_search { get; set; } = default!;
+    public Web_search3? Web_search { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

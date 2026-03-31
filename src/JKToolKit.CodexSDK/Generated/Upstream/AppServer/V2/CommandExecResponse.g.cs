@@ -9,16 +9,32 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Final buffered result for `command/exec`.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class CommandExecResponse
 {
 
+    /// <summary>
+    /// Process exit code.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("exitCode")]
     public int ExitCode { get; set; } = default!;
 
+    /// <summary>
+    /// Buffered stderr capture.
+    /// <br/>
+    /// <br/>Empty when stderr was streamed via `command/exec/outputDelta`.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("stderr")]
     public string Stderr { get; set; } = default!;
 
+    /// <summary>
+    /// Buffered stdout capture.
+    /// <br/>
+    /// <br/>Empty when stdout was streamed via `command/exec/outputDelta`.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("stdout")]
     public string Stdout { get; set; } = default!;
 

@@ -23,6 +23,12 @@ internal partial class ThreadResumeParams
     [System.Text.Json.Serialization.JsonPropertyName("approvalPolicy")]
     public ApprovalPolicy2? ApprovalPolicy { get; set; } = default!;
 
+    /// <summary>
+    /// Override where approval requests are routed for review on this thread and subsequent turns.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
+    public ApprovalsReviewer3? ApprovalsReviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("baseInstructions")]
     public string? BaseInstructions { get; set; } = default!;
 
@@ -49,6 +55,9 @@ internal partial class ThreadResumeParams
 
     [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
     public Sandbox3? Sandbox { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
+    public ServiceTier4? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

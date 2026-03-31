@@ -22,6 +22,10 @@ internal partial class ThreadRealtimeStartedNotification
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("version")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<RealtimeConversationVersion>))]
+    public RealtimeConversationVersion Version { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

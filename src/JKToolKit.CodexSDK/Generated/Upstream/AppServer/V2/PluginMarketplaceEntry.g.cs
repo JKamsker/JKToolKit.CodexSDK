@@ -10,19 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class SkillsRemoteReadParams
+internal partial class PluginMarketplaceEntry
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("enabled")]
-    public bool? Enabled { get; set; } = false;
+    [System.Text.Json.Serialization.JsonPropertyName("interface")]
+    public Interface? Interface { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("hazelnutScope")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HazelnutScope>))]
-    public HazelnutScope? HazelnutScope { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("productSurface")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ProductSurface>))]
-    public ProductSurface? ProductSurface { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("path")]
+    public string Path { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("plugins")]
+    public System.Collections.Generic.ICollection<PluginSummary> Plugins { get; set; } = new System.Collections.ObjectModel.Collection<PluginSummary>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

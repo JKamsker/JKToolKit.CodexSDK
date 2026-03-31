@@ -16,6 +16,12 @@ internal partial class ThreadStartParams
     [System.Text.Json.Serialization.JsonPropertyName("approvalPolicy")]
     public ApprovalPolicy3? ApprovalPolicy { get; set; } = default!;
 
+    /// <summary>
+    /// Override where approval requests are routed for review on this thread and subsequent turns.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
+    public ApprovalsReviewer4? ApprovalsReviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("baseInstructions")]
     public string? BaseInstructions { get; set; } = default!;
 
@@ -45,6 +51,9 @@ internal partial class ThreadStartParams
 
     [System.Text.Json.Serialization.JsonPropertyName("serviceName")]
     public string? ServiceName { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
+    public ServiceTier6? ServiceTier { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -19,6 +19,9 @@ internal partial class ThreadRealtimeAudioChunk
     [System.Text.Json.Serialization.JsonPropertyName("data")]
     public string Data { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("itemId")]
+    public string? ItemId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("numChannels")]
     public int NumChannels { get; set; } = default!;
 

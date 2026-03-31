@@ -10,11 +10,16 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class SkillsRemoteWriteParams
+internal partial class ExperimentalFeatureEnablementSetParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("hazelnutId")]
-    public string HazelnutId { get; set; } = default!;
+    /// <summary>
+    /// Process-wide runtime feature enablement keyed by canonical feature name.
+    /// <br/>
+    /// <br/>Only named features are updated. Omitted features are left unchanged. Send an empty map for a no-op.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("enablement")]
+    public System.Collections.Generic.IDictionary<string, bool> Enablement { get; set; } = new System.Collections.Generic.Dictionary<string, bool>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

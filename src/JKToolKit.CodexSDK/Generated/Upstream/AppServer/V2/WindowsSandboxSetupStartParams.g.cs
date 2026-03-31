@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class WindowsSandboxSetupStartParams
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
+    public Cwd? Cwd { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("mode")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<WindowsSandboxSetupMode>))]
     public WindowsSandboxSetupMode Mode { get; set; } = default!;

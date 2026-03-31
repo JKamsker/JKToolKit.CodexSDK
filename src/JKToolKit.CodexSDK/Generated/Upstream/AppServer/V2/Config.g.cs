@@ -19,6 +19,12 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("approval_policy")]
     public Approval_policy? Approval_policy { get; set; } = default!;
 
+    /// <summary>
+    /// [UNSTABLE] Optional default for where approval requests are routed for review.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
+    public Approvals_reviewer? Approvals_reviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("compact_prompt")]
     public string? Compact_prompt { get; set; } = default!;
 
@@ -69,6 +75,9 @@ internal partial class Config
 
     [System.Text.Json.Serialization.JsonPropertyName("sandbox_workspace_write")]
     public Sandbox_workspace_write? Sandbox_workspace_write { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("service_tier")]
+    public Service_tier? Service_tier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("tools")]
     public Tools2? Tools { get; set; } = default!;

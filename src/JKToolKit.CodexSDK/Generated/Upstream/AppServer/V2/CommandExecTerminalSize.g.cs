@@ -9,18 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// PTY size in character cells for `command/exec` PTY sessions.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RemoteSkillSummary
+internal partial class CommandExecTerminalSize
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string Description { get; set; } = default!;
+    /// <summary>
+    /// Terminal width in character cells.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cols")]
+    public int Cols { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
+    /// <summary>
+    /// Terminal height in character cells.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("rows")]
+    public int Rows { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
