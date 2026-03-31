@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
@@ -27,9 +28,7 @@ internal sealed class CodexAppServerFilesystemClient
 
         return new FsReadFileResult
         {
-            DataBase64 = CodexAppServerClientJson.GetStringOrNull(result, "dataBase64")
-                ?? CodexAppServerClientJson.GetStringOrNull(result, "data")
-                ?? string.Empty,
+            DataBase64 = CodexAppServerClientJson.GetRequiredString(result, "dataBase64", "fs/readFile response"),
             Raw = result
         };
     }
@@ -85,10 +84,10 @@ internal sealed class CodexAppServerFilesystemClient
 
         return new FsGetMetadataResult
         {
-            IsDirectory = GetBooleanLike(result, "isDirectory"),
-            IsFile = GetBooleanLike(result, "isFile"),
-            CreatedAtMs = GetInt64OrDefault(result, "createdAtMs"),
-            ModifiedAtMs = GetInt64OrDefault(result, "modifiedAtMs"),
+            IsDirectory = CodexAppServerClientJson.GetRequiredBool(result, "isDirectory", "fs/getMetadata response"),
+            IsFile = CodexAppServerClientJson.GetRequiredBool(result, "isFile", "fs/getMetadata response"),
+            CreatedAtMs = CodexAppServerClientJson.GetRequiredInt64(result, "createdAtMs", "fs/getMetadata response"),
+            ModifiedAtMs = CodexAppServerClientJson.GetRequiredInt64(result, "modifiedAtMs", "fs/getMetadata response"),
             Raw = result
         };
     }
@@ -165,9 +164,8 @@ internal sealed class CodexAppServerFilesystemClient
 
         return new FsWatchResult
         {
-            Path = CodexAppServerClientJson.GetStringOrNull(result, "path") ?? options.Path,
-            WatchId = CodexAppServerClientJson.GetStringOrNull(result, "watchId")
-                ?? throw new InvalidOperationException("fs/watch returned no watchId."),
+            Path = GetRequiredResponsePath(result, "fs/watch response"),
+            WatchId = CodexAppServerClientJson.GetRequiredString(result, "watchId", "fs/watch response"),
             Raw = result
         };
     }
@@ -195,48 +193,27 @@ internal sealed class CodexAppServerFilesystemClient
         {
             throw new ArgumentException("Path cannot be empty or whitespace.", paramName);
         }
+
+        if (!Path.IsPathFullyQualified(path))
+        {
+            throw new ArgumentException("Path must be absolute.", paramName);
+        }
     }
 
-    private static bool GetBooleanLike(JsonElement obj, string propertyName)
+    private static string GetRequiredResponsePath(JsonElement obj, string context)
     {
-        var value = CodexAppServerClientJson.GetBoolOrNull(obj, propertyName);
-        if (value.HasValue)
+        var path = CodexAppServerClientJson.GetRequiredString(obj, "path", context);
+        if (!Path.IsPathFullyQualified(path))
         {
-            return value.Value;
+            throw new InvalidOperationException($"Path returned from {context} must be absolute.");
         }
 
-        var stringValue = CodexAppServerClientJson.GetStringOrNull(obj, propertyName);
-        return bool.TryParse(stringValue, out var parsed) && parsed;
-    }
-
-    private static long GetInt64OrDefault(JsonElement obj, string propertyName)
-    {
-        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var property))
-        {
-            return default;
-        }
-
-        if (property.ValueKind == JsonValueKind.Number && property.TryGetInt64(out var number))
-        {
-            return number;
-        }
-
-        if (property.ValueKind == JsonValueKind.String && long.TryParse(property.GetString(), out number))
-        {
-            return number;
-        }
-
-        return default;
+        return path;
     }
 
     private static IReadOnlyList<FsDirectoryEntry> ParseDirectoryEntries(JsonElement result)
     {
-        if (result.ValueKind != JsonValueKind.Object ||
-            !result.TryGetProperty("entries", out var entries) ||
-            entries.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<FsDirectoryEntry>();
-        }
+        var entries = GetRequiredArray(result, "entries", "fs/readDirectory response");
 
         var parsed = new List<FsDirectoryEntry>();
         foreach (var entry in entries.EnumerateArray())
@@ -248,15 +225,23 @@ internal sealed class CodexAppServerFilesystemClient
 
             parsed.Add(new FsDirectoryEntry
             {
-                FileName = CodexAppServerClientJson.GetStringOrNull(entry, "fileName")
-                    ?? CodexAppServerClientJson.GetStringOrNull(entry, "file_name")
-                    ?? string.Empty,
-                IsDirectory = GetBooleanLike(entry, "isDirectory"),
-                IsFile = GetBooleanLike(entry, "isFile"),
+                FileName = CodexAppServerClientJson.GetRequiredString(entry, "fileName", "fs/readDirectory entry"),
+                IsDirectory = CodexAppServerClientJson.GetRequiredBool(entry, "isDirectory", "fs/readDirectory entry"),
+                IsFile = CodexAppServerClientJson.GetRequiredBool(entry, "isFile", "fs/readDirectory entry"),
                 Raw = entry.Clone()
             });
         }
 
         return parsed;
+    }
+
+    private static JsonElement GetRequiredArray(JsonElement obj, string propertyName, string context)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var array) || array.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"Missing required array '{propertyName}' on {context}.");
+        }
+
+        return array;
     }
 }

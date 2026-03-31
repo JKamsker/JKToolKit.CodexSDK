@@ -81,10 +81,10 @@ public sealed record class CommandExecTerminalSize
     /// <summary>
     /// Gets or sets the terminal width in character cells.
     /// </summary>
-    public required int Columns { get; init; }
+    public required ushort Columns { get; init; }
 
     /// <summary>
     /// Gets or sets the terminal height in character cells.
     /// </summary>
-    public required int Rows { get; init; }
+    public required ushort Rows { get; init; }
 }

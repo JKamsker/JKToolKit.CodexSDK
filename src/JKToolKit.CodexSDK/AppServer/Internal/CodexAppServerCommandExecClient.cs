@@ -50,14 +50,14 @@ internal sealed class CodexAppServerCommandExecClient
             },
             ct).ConfigureAwait(false);
 
-        return new CommandExecResult
-        {
-            ExitCode = CodexAppServerClientJson.GetInt32OrNull(result, "exitCode") ?? 0,
-            Stdout = CodexAppServerClientJson.GetStringOrNull(result, "stdout") ?? string.Empty,
-            Stderr = CodexAppServerClientJson.GetStringOrNull(result, "stderr") ?? string.Empty,
-            Raw = result
-        };
-    }
+            return new CommandExecResult
+            {
+                ExitCode = CodexAppServerClientJson.GetRequiredInt32(result, "exitCode", "command/exec response"),
+                Stdout = CodexAppServerClientJson.GetRequiredString(result, "stdout", "command/exec response"),
+                Stderr = CodexAppServerClientJson.GetRequiredString(result, "stderr", "command/exec response"),
+                Raw = result
+            };
+        }
 
     public async Task<CommandExecWriteResult> CommandExecWriteAsync(CommandExecWriteOptions options, CancellationToken ct = default)
     {
@@ -133,6 +133,15 @@ internal sealed class CodexAppServerCommandExecClient
         if (options.Size is not null && options.Tty != true)
         {
             throw new ArgumentException("Size requires tty to be enabled.", nameof(options));
+        }
+        if (options.TimeoutMs.HasValue && options.TimeoutMs.Value < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.TimeoutMs), "TimeoutMs cannot be negative.");
+        }
+
+        if (options.OutputBytesCap.HasValue && options.OutputBytesCap.Value < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.OutputBytesCap), "OutputBytesCap cannot be negative.");
         }
     }
 

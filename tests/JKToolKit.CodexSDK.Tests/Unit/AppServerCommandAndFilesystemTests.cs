@@ -51,6 +51,36 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task CommandExecAsync_RejectsNegativeTimeoutMs()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.CommandExecAsync(new CommandExecOptions
+        {
+            Command = ["cmd"],
+            TimeoutMs = -1
+        });
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>()
+            .WithMessage("*TimeoutMs*cannot be negative*");
+    }
+
+    [Fact]
+    public async Task CommandExecAsync_RejectsNegativeOutputBytesCap()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.CommandExecAsync(new CommandExecOptions
+        {
+            Command = ["cmd"],
+            OutputBytesCap = -1
+        });
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>()
+            .WithMessage("*OutputBytesCap*cannot be negative*");
+    }
+
+    [Fact]
     public async Task CommandExecAsync_RequiresProcessId_WhenStreaming()
     {
         await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
@@ -146,6 +176,28 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task FsReadFileAsync_RequiresAbsolutePath()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{"dataBase64":"aGVsbG8="}""").RootElement });
+
+        var act = async () => await client.FsReadFileAsync(new FsReadFileOptions { Path = "relative\\file.txt" });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*absolute*");
+    }
+
+    [Fact]
+    public async Task FsReadFileAsync_RequiresDataBase64()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.FsReadFileAsync(new FsReadFileOptions { Path = "C:\\repo\\a.txt" });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*fs/readFile response*");
+    }
+
+    [Fact]
     public async Task FsReadWriteMetadataDirectoryCopyAndRemoveAsync_ParseExpectedResults()
     {
         await using var client = CreateClient(new SequencedRecordingRpc(
@@ -153,8 +205,8 @@ public sealed class AppServerCommandAndFilesystemTests
             JsonDocument.Parse("""{"dataBase64":"aGVsbG8="}""").RootElement,
             JsonDocument.Parse("""{}""").RootElement,
             JsonDocument.Parse("""{}""").RootElement,
-            JsonDocument.Parse("""{"isFile":"true","isDirectory":false,"createdAtMs":"123","modifiedAtMs":456}""").RootElement,
-            JsonDocument.Parse("""{"entries":[{"file_name":"a.txt","isFile":"true","isDirectory":false}]}""").RootElement,
+            JsonDocument.Parse("""{"isFile":true,"isDirectory":false,"createdAtMs":123,"modifiedAtMs":456}""").RootElement,
+            JsonDocument.Parse("""{"entries":[{"fileName":"a.txt","isFile":true,"isDirectory":false}]}""").RootElement,
             JsonDocument.Parse("""{}""").RootElement,
             JsonDocument.Parse("""{}""").RootElement
         ]));
