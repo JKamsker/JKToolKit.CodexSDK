@@ -25,7 +25,7 @@ internal static partial class JsonlEventEnvelopeParsers
             NewAgentNickname = TryGetString(payload, "new_agent_nickname"),
             NewAgentRole = TryGetString(payload, "new_agent_role"),
             Prompt = TryGetString(payload, "prompt"),
-            Status = TryGetString(payload, "status")
+            Status = ParseCollabAgentStatusUnionAsString(payload, "status")
         };
     }
 
@@ -47,7 +47,7 @@ internal static partial class JsonlEventEnvelopeParsers
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
             Prompt = TryGetString(payload, "prompt"),
-            Status = TryGetString(payload, "status")
+            Status = ParseCollabAgentStatusUnionAsString(payload, "status")
         };
     }
 
@@ -100,7 +100,7 @@ internal static partial class JsonlEventEnvelopeParsers
             ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Status = CollabReceiverStatusJsonConverter.ParseOrUnknown(TryGetString(payload, "status"))
+            Status = ParseCollabReceiverStatusUnion(payload, "status")
         };
     }
 
@@ -121,7 +121,48 @@ internal static partial class JsonlEventEnvelopeParsers
             ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Status = CollabReceiverStatusJsonConverter.ParseOrUnknown(TryGetString(payload, "status"))
+            Status = ParseCollabReceiverStatusUnion(payload, "status")
         };
+    }
+
+    private static string? ParseCollabAgentStatusUnionAsString(JsonElement payload, string propertyName)
+    {
+        if (!payload.TryGetProperty(propertyName, out var statusEl))
+            return null;
+
+        return statusEl.ValueKind == JsonValueKind.String
+            ? statusEl.GetString()
+            : statusEl.GetRawText();
+    }
+
+    private static CollabReceiverStatus ParseCollabReceiverStatusUnion(JsonElement payload, string propertyName)
+    {
+        if (!payload.TryGetProperty(propertyName, out var statusEl))
+            return CollabReceiverStatus.Unknown;
+
+        if (statusEl.ValueKind == JsonValueKind.String)
+            return CollabReceiverStatusJsonConverter.ParseOrUnknown(statusEl.GetString());
+
+        if (statusEl.ValueKind == JsonValueKind.Object)
+        {
+            var discriminator = TryGetCollabStatusObjectDiscriminator(statusEl);
+            return CollabReceiverStatusJsonConverter.ParseOrUnknown(discriminator);
+        }
+
+        return CollabReceiverStatus.Unknown;
+    }
+
+    private static string? TryGetCollabStatusObjectDiscriminator(JsonElement statusObject)
+    {
+        foreach (var prop in statusObject.EnumerateObject())
+        {
+            if (prop.NameEquals("completed"))
+                return "completed";
+
+            if (prop.NameEquals("errored"))
+                return "errored";
+        }
+
+        return null;
     }
 }

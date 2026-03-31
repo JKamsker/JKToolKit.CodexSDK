@@ -231,6 +231,16 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         }
     }
 
+    /// <summary>
+    /// Resolves a single resume target from multiple file-name matches.
+    /// </summary>
+    /// <remarks>
+    /// Current resolver behavior is intentionally simple and deterministic (not a full upstream parity resolver):
+    /// 1. Prefer timestamped <c>rollout-YYYY-MM-DDThh-mm-ss-{id}.jsonl</c> names.
+    /// 2. Then prefer legacy <c>rollout-{id}.jsonl</c> names.
+    /// 3. Then fall back to any <c>*-{id}.jsonl</c> suffix match.
+    /// Within timestamped matches, newest timestamp wins.
+    /// </remarks>
     private static string SelectBestSessionLogMatch(SessionId sessionId, IReadOnlyList<string> matchingFiles)
     {
         var id = sessionId.Value;

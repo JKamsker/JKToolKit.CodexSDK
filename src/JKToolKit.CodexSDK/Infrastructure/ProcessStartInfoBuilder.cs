@@ -49,10 +49,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
-        startInfo.ArgumentList.Add("--model");
-        startInfo.ArgumentList.Add(options.Model.Value);
-        startInfo.ArgumentList.Add("--config");
-        startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        AddOptionalModelAndReasoningOverrides(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -102,10 +99,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
-        startInfo.ArgumentList.Add("--model");
-        startInfo.ArgumentList.Add(options.Model.Value);
-        startInfo.ArgumentList.Add("--config");
-        startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        AddOptionalModelAndReasoningOverrides(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -225,5 +219,20 @@ internal static class ProcessStartInfoBuilder
         startInfo.StandardInputEncoding = utf8NoBom;
         startInfo.StandardOutputEncoding = utf8NoBom;
         startInfo.StandardErrorEncoding = utf8NoBom;
+    }
+
+    private static void AddOptionalModelAndReasoningOverrides(ProcessStartInfo startInfo, CodexSessionOptions options)
+    {
+        if (options.HasExplicitModelOverride)
+        {
+            startInfo.ArgumentList.Add("--model");
+            startInfo.ArgumentList.Add(options.Model.Value);
+        }
+
+        if (options.HasExplicitReasoningEffortOverride)
+        {
+            startInfo.ArgumentList.Add("--config");
+            startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        }
     }
 }

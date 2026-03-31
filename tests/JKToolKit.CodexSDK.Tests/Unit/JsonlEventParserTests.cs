@@ -43,6 +43,37 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_SessionMetaEvent_WithSubagentThreadSpawnSource_ParsesSourceAndSubagentKind()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""session_meta"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""id"": ""019d45db-8fab-7781-8fc6-9415a9169898"",
+                ""cwd"": ""C:\\\\repo"",
+                ""source"": {{
+                    ""subagent"": {{
+                        ""thread_spawn"": {{
+                            ""parent_thread_id"": ""019d459c-2019-7b62-b455-c6b4328c9a76"",
+                            ""depth"": 1,
+                            ""agent_nickname"": ""Halley"",
+                            ""agent_role"": ""worker""
+                        }}
+                    }}
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<SessionMetaEvent>().Subject;
+        evt.Source.Should().Be("subagent");
+        evt.SourceSubagent.Should().Be("thread_spawn");
+    }
+
+    [Fact]
     public async Task ParseAsync_UserMessageEvent_ParsesCorrectly()
     {
         // Arrange
@@ -566,6 +597,36 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_EventMsg_CollabAgentSpawnEnd_WithCompletedUnionObject_ParsesStatusUnion()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_agent_spawn_end"",
+                ""call_id"": ""c1"",
+                ""sender_thread_id"": ""t_sender"",
+                ""new_thread_id"": ""t_new"",
+                ""new_agent_nickname"": ""nick"",
+                ""new_agent_role"": ""worker"",
+                ""prompt"": ""go"",
+                ""status"": {{ ""completed"": null }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabAgentSpawnEndEvent>().Subject;
+        evt.Status.Should().NotBeNull();
+        using var statusDoc = System.Text.Json.JsonDocument.Parse(evt.Status!);
+        statusDoc.RootElement.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+        statusDoc.RootElement.TryGetProperty("completed", out var completedEl).Should().BeTrue();
+        completedEl.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+    }
+
+    [Fact]
     public async Task ParseAsync_EventMsg_CollabAgentInteractionEnd_ParsesCollabAgentInteractionEndEvent()
     {
         var timestamp = DateTimeOffset.UtcNow;
@@ -592,6 +653,35 @@ public class JsonlEventParserTests
         evt.CallId.Should().Be("c2");
         evt.ReceiverThreadId.Should().Be("t_recv");
         evt.Status.Should().Be("completed");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabAgentInteractionEnd_WithCompletedUnionObject_ParsesStatusUnion()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_agent_interaction_end"",
+                ""call_id"": ""c2"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""receiver_agent_nickname"": ""nick2"",
+                ""receiver_agent_role"": ""explorer"",
+                ""prompt"": ""hi"",
+                ""status"": {{ ""completed"": ""done"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabAgentInteractionEndEvent>().Subject;
+        evt.Status.Should().NotBeNull();
+        using var statusDoc = System.Text.Json.JsonDocument.Parse(evt.Status!);
+        statusDoc.RootElement.TryGetProperty("completed", out var completedEl).Should().BeTrue();
+        completedEl.GetString().Should().Be("done");
     }
 
     [Fact]
@@ -644,6 +734,29 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_EventMsg_CollabCloseEnd_WithCompletedUnionObject_ParsesCollabReceiverStatus()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_close_end"",
+                ""call_id"": ""c4"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""status"": {{ ""completed"": ""done"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabCloseEndEvent>().Subject;
+        evt.Status.Should().Be(CollabReceiverStatus.Completed);
+    }
+
+    [Fact]
     public async Task ParseAsync_EventMsg_CollabResumeEnd_ParsesCollabResumeEndEvent()
     {
         var timestamp = DateTimeOffset.UtcNow;
@@ -666,6 +779,29 @@ public class JsonlEventParserTests
         evt.Type.Should().Be("collab_resume_end");
         evt.CallId.Should().Be("c5");
         evt.Status.Should().Be(CollabReceiverStatus.Running);
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabResumeEnd_WithErroredUnionObject_ParsesCollabReceiverStatus()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_resume_end"",
+                ""call_id"": ""c5"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""status"": {{ ""errored"": ""boom"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabResumeEndEvent>().Subject;
+        evt.Status.Should().Be(CollabReceiverStatus.Errored);
     }
 
     [Fact]
@@ -884,6 +1020,242 @@ public class JsonlEventParserTests
         evt.PayloadType.Should().Be("unknown");
         evt.Payload.Should().BeOfType<UnknownResponseItemPayload>();
         evt.Payload.As<UnknownResponseItemPayload>().Raw.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_Message_PreservesPhaseAndEndTurn()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""message"",
+                ""role"": ""assistant"",
+                ""phase"": ""final_answer"",
+                ""end_turn"": true,
+                ""content"": [{{ ""type"": ""output_text"", ""text"": ""Final answer."" }}]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<MessageResponseItemPayload>().Subject;
+
+        payload.Phase.Should().Be("final_answer");
+        payload.EndTurn.Should().BeTrue();
+        payload.TextParts.Should().ContainSingle("Final answer.");
+    }
+
+    [Fact]
+    public async Task ParseAsync_Compacted_ReplacementHistory_PreservesMessagePhaseAndEndTurn()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""compacted"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""message"": ""compacted"",
+                ""replacement_history"": [
+                    {{
+                        ""type"": ""message"",
+                        ""role"": ""assistant"",
+                        ""phase"": ""commentary"",
+                        ""end_turn"": false,
+                        ""content"": [{{ ""type"": ""output_text"", ""text"": ""working..."" }}]
+                    }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var compacted = events[0].Should().BeOfType<CompactedEvent>().Subject;
+        compacted.ReplacementHistory.Should().HaveCount(1);
+
+        var message = compacted.ReplacementHistory[0].Should().BeOfType<MessageResponseItemPayload>().Subject;
+        message.Phase.Should().Be("commentary");
+        message.EndTurn.Should().BeFalse();
+        message.TextParts.Should().ContainSingle("working...");
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_FunctionCall_PreservesNamespace()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""function_call"",
+                ""name"": ""fetch_issues"",
+                ""namespace"": ""github"",
+                ""arguments"": {{ ""repo"": ""octo/test"" }},
+                ""call_id"": ""call_123""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<FunctionCallResponseItemPayload>().Subject;
+
+        payload.Name.Should().Be("fetch_issues");
+        payload.Namespace.Should().Be("github");
+        payload.CallId.Should().Be("call_123");
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_FunctionCallOutput_PreservesStructuredOutputBody()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""function_call_output"",
+                ""call_id"": ""call_abc"",
+                ""output"": [
+                    {{ ""type"": ""input_text"", ""text"": ""done"" }},
+                    {{ ""type"": ""input_image"", ""image_url"": ""https://example.com/img.png"" }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<FunctionCallOutputResponseItemPayload>().Subject;
+
+        payload.CallId.Should().Be("call_abc");
+        payload.Output.Should().Contain("input_text");
+        payload.OutputJson.HasValue.Should().BeTrue();
+        payload.OutputJson!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_CustomToolCallOutput_PreservesNameAndStructuredOutputBody()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""custom_tool_call_output"",
+                ""call_id"": ""call_custom"",
+                ""name"": ""my_tool"",
+                ""output"": {{
+                    ""ok"": true,
+                    ""count"": 2
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<CustomToolCallOutputResponseItemPayload>().Subject;
+
+        payload.CallId.Should().Be("call_custom");
+        payload.Name.Should().Be("my_tool");
+        payload.Output.Should().Contain("\"ok\": true");
+        payload.OutputJson.HasValue.Should().BeTrue();
+        payload.OutputJson!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_ToolSearchCall_ParsesTypedPayload()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""tool_search_call"",
+                ""call_id"": ""search_1"",
+                ""status"": ""in_progress"",
+                ""execution"": ""scan_tools"",
+                ""arguments"": {{ ""query"": ""git"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<ToolSearchCallResponseItemPayload>().Subject;
+
+        payload.CallId.Should().Be("search_1");
+        payload.Status.Should().Be("in_progress");
+        payload.Execution.Should().Be("scan_tools");
+        payload.Arguments.HasValue.Should().BeTrue();
+        payload.Arguments!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_ToolSearchOutput_ParsesTypedPayload()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""tool_search_output"",
+                ""call_id"": ""search_1"",
+                ""status"": ""completed"",
+                ""execution"": ""scan_tools"",
+                ""tools"": [
+                    {{ ""name"": ""grep"" }},
+                    {{ ""name"": ""sed"" }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<ToolSearchOutputResponseItemPayload>().Subject;
+
+        payload.CallId.Should().Be("search_1");
+        payload.Status.Should().Be("completed");
+        payload.Execution.Should().Be("scan_tools");
+        payload.Tools.Should().HaveCount(2);
+        payload.Tools[0].ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_ImageGenerationCall_ParsesTypedPayload()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""image_generation_call"",
+                ""id"": ""img_1"",
+                ""status"": ""completed"",
+                ""revised_prompt"": ""a cat with a hat"",
+                ""result"": ""https://example.com/cat.png""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<ImageGenerationCallResponseItemPayload>().Subject;
+
+        payload.Id.Should().Be("img_1");
+        payload.Status.Should().Be("completed");
+        payload.RevisedPrompt.Should().Be("a cat with a hat");
+        payload.Result.Should().Be("https://example.com/cat.png");
     }
 
     [Fact]

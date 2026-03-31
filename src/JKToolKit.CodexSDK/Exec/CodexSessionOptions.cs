@@ -20,7 +20,9 @@ public class CodexSessionOptions
     private string? _prompt;
     private string? _promptArgument;
     private CodexModel _model = CodexModel.Default;
+    private bool _modelOverrideExplicitlySet;
     private CodexReasoningEffort _reasoningEffort = CodexReasoningEffort.Medium;
+    private bool _reasoningEffortOverrideExplicitlySet;
     private IReadOnlyList<string> _additionalOptions = Array.Empty<string>();
     private TimeSpan? _idleTimeout;
     private CodexOutputSchema? _outputSchema;
@@ -120,7 +122,9 @@ public class CodexSessionOptions
     /// </summary>
     /// <remarks>
     /// This is only valid when <see cref="PromptArgument"/> is set.
-    /// The SDK writes this payload verbatim without appending a trailing newline.
+    /// For new-session start, the SDK writes this payload verbatim without appending a trailing newline.
+    /// For resume with <see cref="PromptArgument"/>, upstream currently ignores separate stdin payload,
+    /// so the SDK suppresses it for parity.
     /// </remarks>
     public string? StdinPayload { get; set; }
 
@@ -128,27 +132,35 @@ public class CodexSessionOptions
     /// Gets or sets the Codex model to use for this session.
     /// </summary>
     /// <remarks>
-    /// Default is CodexModel.Default. This determines which model version
-    /// will process the session requests.
+    /// Value defaults to <see cref="CodexModel.Default"/>, but the SDK only forwards a <c>--model</c>
+    /// CLI override when this property is explicitly assigned by the caller.
     /// </remarks>
     public CodexModel Model
     {
         get => _model;
-        set => _model = value;
+        set
+        {
+            _model = value;
+            _modelOverrideExplicitlySet = true;
+        }
     }
 
     /// <summary>
     /// Gets or sets the reasoning effort level for this session.
     /// </summary>
     /// <remarks>
-    /// Default is CodexReasoningEffort.Medium. This controls the depth and
-    /// thoroughness of the model's reasoning process. Higher effort levels
-    /// may provide more comprehensive responses but take longer to process.
+    /// Value defaults to <see cref="CodexReasoningEffort.Medium"/>, but the SDK only forwards a
+    /// <c>--config model_reasoning_effort=…</c> CLI override when this property is explicitly assigned
+    /// by the caller.
     /// </remarks>
     public CodexReasoningEffort ReasoningEffort
     {
         get => _reasoningEffort;
-        set => _reasoningEffort = value;
+        set
+        {
+            _reasoningEffort = value;
+            _reasoningEffortOverrideExplicitlySet = true;
+        }
     }
 
     /// <summary>
@@ -282,6 +294,27 @@ public class CodexSessionOptions
             throw new InvalidOperationException("StdinPayload can only be used when PromptArgument is set.");
         }
 
+        static bool IsEphemeralArg(string? arg)
+        {
+            if (string.IsNullOrWhiteSpace(arg))
+            {
+                return false;
+            }
+
+            if (arg.Equals("--ephemeral", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return arg.StartsWith("--ephemeral=", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (_additionalOptions.Any(IsEphemeralArg))
+        {
+            throw new InvalidOperationException(
+                "AdditionalOptions contains '--ephemeral', but file-backed exec sessions are not ephemeral. Remove '--ephemeral' for exec/start-resume-list flows.");
+        }
+
         if (string.IsNullOrWhiteSpace(Model.Value))
             throw new InvalidOperationException("Model is required and cannot be empty.");
 
@@ -380,28 +413,33 @@ public class CodexSessionOptions
 
         var clone = new CodexSessionOptions
         {
-            WorkingDirectory = WorkingDirectory,
-            Model = Model,
-            ReasoningEffort = ReasoningEffort,
             AdditionalOptions = new List<string>(AdditionalOptions),
             CodexBinaryPath = CodexBinaryPath,
             IdleTimeout = IdleTimeout,
             OutputSchema = OutputSchema,
-            PromptArgument = PromptArgument,
             StdinPayload = StdinPayload
         };
 
-        if (!UsesPromptArgumentMode)
-        {
-            clone.Prompt = Prompt;
-        }
+        clone._workingDirectory = _workingDirectory;
+        clone._prompt = _prompt;
+        clone._promptArgument = _promptArgument;
+        clone._model = _model;
+        clone._reasoningEffort = _reasoningEffort;
+        clone._modelOverrideExplicitlySet = _modelOverrideExplicitlySet;
+        clone._reasoningEffortOverrideExplicitlySet = _reasoningEffortOverrideExplicitlySet;
 
         return clone;
     }
 
     internal bool UsesPromptArgumentMode => !string.IsNullOrWhiteSpace(_promptArgument);
 
+    internal bool HasExplicitModelOverride => _modelOverrideExplicitlySet;
+
+    internal bool HasExplicitReasoningEffortOverride => _reasoningEffortOverrideExplicitlySet;
+
     internal string CommandPromptToken => UsesPromptArgumentMode ? _promptArgument! : "-";
 
     internal string? StandardInputPayload => UsesPromptArgumentMode ? StdinPayload : _prompt;
+
+    internal string? ResumeStandardInputPayload => UsesPromptArgumentMode ? null : _prompt;
 }

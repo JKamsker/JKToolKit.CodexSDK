@@ -71,7 +71,7 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
 
             if (options.UsesPromptArgumentMode)
             {
-                await CodexProcessLauncherIo.WriteOptionalStdinPayloadAndCloseStdinAsync(process, options.StdinPayload, _logger, cancellationToken);
+                await CodexProcessLauncherIo.WriteOptionalStdinPayloadAndCloseStdinAsync(process, options.StandardInputPayload, _logger, cancellationToken);
             }
             else
             {
@@ -283,7 +283,12 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
 
             if (options.UsesPromptArgumentMode)
             {
-                await CodexProcessLauncherIo.WriteOptionalStdinPayloadAndCloseStdinAsync(process, options.StdinPayload, _logger, cancellationToken);
+                if (options.StdinPayload is not null)
+                {
+                    _logger.LogDebug("Ignoring resume StdinPayload because resume prompt-argument mode does not consume separate stdin payload upstream.");
+                }
+
+                await CodexProcessLauncherIo.WriteOptionalStdinPayloadAndCloseStdinAsync(process, options.ResumeStandardInputPayload, _logger, cancellationToken);
             }
             else
             {

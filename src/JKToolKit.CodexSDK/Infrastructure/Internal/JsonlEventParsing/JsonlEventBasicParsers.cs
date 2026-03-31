@@ -55,24 +55,7 @@ internal static class JsonlEventBasicParsers
         var cwd = TryGetString(payload, "cwd");
         var cliVersion = TryGetString(payload, "cli_version");
         var originator = TryGetString(payload, "originator");
-        string? source = null;
-        string? sourceSubagent = null;
-        if (payload.TryGetProperty("source", out var sourceEl))
-        {
-            if (sourceEl.ValueKind == JsonValueKind.String)
-            {
-                source = sourceEl.GetString();
-            }
-            else if (sourceEl.ValueKind == JsonValueKind.Object)
-            {
-                var subagent = TryGetString(sourceEl, "subagent");
-                if (!string.IsNullOrWhiteSpace(subagent))
-                {
-                    source = "subagent";
-                    sourceSubagent = subagent;
-                }
-            }
-        }
+        var (source, sourceSubagent) = ParseSessionSource(payload);
         var modelProvider = TryGetString(payload, "model_provider");
 
         return new SessionMetaEvent
@@ -493,5 +476,45 @@ internal static class JsonlEventBasicParsers
 
         value = null;
         return false;
+    }
+
+    private static (string? Source, string? SourceSubagent) ParseSessionSource(JsonElement payload)
+    {
+        if (!payload.TryGetProperty("source", out var sourceEl))
+            return (null, null);
+
+        if (sourceEl.ValueKind == JsonValueKind.String)
+            return (sourceEl.GetString(), null);
+
+        if (sourceEl.ValueKind != JsonValueKind.Object)
+            return (null, null);
+
+        if (!sourceEl.TryGetProperty("subagent", out var subagentEl))
+            return (sourceEl.GetRawText(), null);
+
+        var subagent = ParseSubagentSource(subagentEl);
+        return ("subagent", subagent);
+    }
+
+    private static string? ParseSubagentSource(JsonElement subagentEl)
+    {
+        if (subagentEl.ValueKind == JsonValueKind.String)
+            return subagentEl.GetString();
+
+        if (subagentEl.ValueKind != JsonValueKind.Object)
+            return null;
+
+        if (subagentEl.TryGetProperty("thread_spawn", out _))
+            return "thread_spawn";
+
+        if (subagentEl.TryGetProperty("other", out var otherEl) && otherEl.ValueKind == JsonValueKind.String)
+            return otherEl.GetString();
+
+        foreach (var prop in subagentEl.EnumerateObject())
+        {
+            return prop.Name;
+        }
+
+        return null;
     }
 }
