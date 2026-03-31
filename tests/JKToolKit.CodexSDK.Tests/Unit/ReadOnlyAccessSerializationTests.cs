@@ -34,6 +34,18 @@ public sealed class ReadOnlyAccessSerializationTests
     }
 
     [Fact]
+    public void ReadOnlyAccess_Restricted_WithRelativeRoot_Throws()
+    {
+        var act = () => new ReadOnlyAccess.Restricted
+        {
+            ReadableRoots = ["relative\\repo"]
+        };
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*absolute path*");
+    }
+
+    [Fact]
     public void SandboxPolicy_ReadOnly_OmitsAccess_WhenNull()
     {
         var json = JsonSerializer.Serialize(
@@ -85,6 +97,18 @@ public sealed class ReadOnlyAccessSerializationTests
 
         json.Should().Contain("\"readOnlyAccess\":");
         json.Should().Contain("\"type\":\"restricted\"");
+    }
+
+    [Fact]
+    public void SandboxPolicy_WorkspaceWrite_WithRelativeWritableRoot_Throws()
+    {
+        var act = () => new SandboxPolicy.WorkspaceWrite
+        {
+            WritableRoots = ["relative\\repo"]
+        };
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*absolute path*");
     }
 
     [Fact]

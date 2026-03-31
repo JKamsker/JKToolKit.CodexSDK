@@ -350,22 +350,7 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
     internal ProcessStartInfo CreateProcessStartInfo(
         CodexSessionOptions options,
         CodexClientOptions clientOptions)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(clientOptions);
-
-        options.Validate();
-        clientOptions.Validate();
-
-        var codexPath = _pathProvider.GetCodexExecutablePath(
-            options.CodexBinaryPath ?? clientOptions.CodexExecutablePath);
-
-        _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
-
-        var startInfo = ProcessStartInfoBuilder.Create(codexPath, options);
-        ApplyCodexHome(startInfo, clientOptions);
-        return startInfo;
-    }
+        => CodexProcessStartInfoFactory.CreateSessionStartInfo(_pathProvider, _logger, options, clientOptions);
 
     internal ProcessStartInfo CreateResumeStartInfo(
         SessionId sessionId,
@@ -373,20 +358,15 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
         CodexClientOptions clientOptions)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(clientOptions);
-
-        options.Validate();
-        clientOptions.Validate();
-
-        var codexPath = _pathProvider.GetCodexExecutablePath(
-            options.CodexBinaryPath ?? clientOptions.CodexExecutablePath);
-
-        _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
-
-        var startInfo = ProcessStartInfoBuilder.CreateResume(codexPath, sessionId, options);
-        ApplyCodexHome(startInfo, clientOptions);
-        return startInfo;
+        var target = options.ResumeTargetOverride ?? CodexResumeTarget.BySelector(sessionId.Value);
+        return CreateResumeStartInfo(target, options, clientOptions);
     }
+
+    internal ProcessStartInfo CreateResumeStartInfo(
+        CodexResumeTarget target,
+        CodexSessionOptions options,
+        CodexClientOptions clientOptions)
+        => CodexProcessStartInfoFactory.CreateResumeStartInfo(_pathProvider, _logger, target, options, clientOptions);
 
     /// <inheritdoc />
     public async Task<Process> StartReviewAsync(
@@ -471,31 +451,5 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
     internal ProcessStartInfo CreateReviewStartInfo(
         CodexReviewOptions options,
         CodexClientOptions clientOptions)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(clientOptions);
-
-        options.Validate();
-        clientOptions.Validate();
-
-        var codexPath = _pathProvider.GetCodexExecutablePath(
-            options.CodexBinaryPath ?? clientOptions.CodexExecutablePath);
-
-        _logger.LogDebug("Using Codex executable at: {Path}", codexPath);
-
-        var startInfo = ProcessStartInfoBuilder.CreateReview(codexPath, options);
-        ApplyCodexHome(startInfo, clientOptions);
-        return startInfo;
-    }
-
-    private static void ApplyCodexHome(ProcessStartInfo startInfo, CodexClientOptions clientOptions)
-    {
-        if (string.IsNullOrWhiteSpace(clientOptions.CodexHomeDirectory))
-        {
-            return;
-        }
-
-        CodexHomeDirectoryHelpers.EnsureExists(clientOptions.CodexHomeDirectory);
-        startInfo.Environment[CodexHomeEnvVar] = clientOptions.CodexHomeDirectory;
-    }
+        => CodexProcessStartInfoFactory.CreateReviewStartInfo(_pathProvider, _logger, options, clientOptions);
 }

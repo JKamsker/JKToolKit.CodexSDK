@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.IO;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -272,6 +273,8 @@ public readonly record struct WindowsSandboxSetupMode
 /// </summary>
 public sealed class WindowsSandboxSetupStartOptions
 {
+    private string? _cwd;
+
     /// <summary>
     /// Initializes a new instance of <see cref="WindowsSandboxSetupStartOptions"/>.
     /// </summary>
@@ -288,6 +291,22 @@ public sealed class WindowsSandboxSetupStartOptions
     /// <summary>
     /// Gets or sets an optional working directory for setup.
     /// </summary>
-    public string? Cwd { get; set; }
+    public string? Cwd
+    {
+        get => _cwd;
+        set
+        {
+            if (value is not null)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Cwd cannot be empty or whitespace when provided.", nameof(value));
+
+                if (!Path.IsPathFullyQualified(value))
+                    throw new ArgumentException("Cwd must be an absolute path when provided.", nameof(value));
+            }
+
+            _cwd = value;
+        }
+    }
 }
 

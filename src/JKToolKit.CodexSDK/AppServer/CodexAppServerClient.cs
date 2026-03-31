@@ -405,8 +405,20 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Writes skills configuration.
     /// </summary>
+    public Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(SkillsConfigWriteOptions options, CancellationToken ct = default) =>
+        _configClient.WriteSkillsConfigAsync(options, ct);
+
+    /// <summary>
+    /// Writes skills configuration using a path-based selector.
+    /// </summary>
     public Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default) =>
-        _configClient.WriteSkillsConfigAsync(enabled, path, ct);
+        _configClient.WriteSkillsConfigAsync(
+            new SkillsConfigWriteOptions
+            {
+                Enabled = enabled,
+                Path = path
+            },
+            ct);
 
     /// <summary>
     /// Starts a fuzzy file search session (experimental).
@@ -466,27 +478,6 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// </remarks>
     public Task<ReviewStartResult> ReviewAsync(ReviewStartOptions options, CancellationToken ct = default) =>
         _turnsClient.StartReviewAsync(options, ct);
-
-    internal static TurnSteerParams BuildTurnSteerParams(TurnSteerOptions options) =>
-        new()
-        {
-            ThreadId = options.ThreadId,
-            ExpectedTurnId = options.ExpectedTurnId,
-            Input = options.Input.Select(i => i.Wire).ToArray()
-        };
-
-    internal static ReviewStartParams BuildReviewStartParams(ReviewStartOptions options) =>
-        new()
-        {
-            ThreadId = options.ThreadId,
-            Target = options.Target.ToWire(),
-            Delivery = options.Delivery switch
-            {
-                ReviewDelivery.Inline => "inline",
-                ReviewDelivery.Detached => "detached",
-                _ => null
-            }
-        };
 
     /// <summary>
     /// Disposes the underlying app-server connection and terminates the process.

@@ -6,11 +6,17 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 /// <summary>
 /// Wire parameters for the <c>thread/fork</c> request (v2 protocol).
 /// </summary>
+/// <remarks>
+/// When <c>path</c> is set, the server forks from that rollout path and ignores <c>threadId</c>.
+/// </remarks>
 public sealed record class ThreadForkParams
 {
     /// <summary>
     /// Gets the thread identifier to fork from (stable).
     /// </summary>
+    /// <remarks>
+    /// Ignored when <see cref="Path"/> is set.
+    /// </remarks>
     [JsonPropertyName("threadId")]
     public required string ThreadId { get; init; }
 
@@ -51,10 +57,10 @@ public sealed record class ThreadForkParams
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
-    /// Gets an optional approval reviewer routing override (raw JSON object).
+    /// Gets an optional approval reviewer routing override.
     /// </summary>
     [JsonPropertyName("approvalsReviewer")]
-    public JsonElement? ApprovalsReviewer { get; init; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the forked thread (wire value).

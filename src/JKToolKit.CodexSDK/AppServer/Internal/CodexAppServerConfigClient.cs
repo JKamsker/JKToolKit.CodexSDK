@@ -166,17 +166,24 @@ internal sealed class CodexAppServerConfigClient
         };
     }
 
-    public async Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default)
+    public async Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(SkillsConfigWriteOptions options, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            throw new ArgumentException("Path cannot be empty or whitespace.", nameof(path));
+        ArgumentNullException.ThrowIfNull(options);
+
+        var hasPath = !string.IsNullOrWhiteSpace(options.Path);
+        var hasName = !string.IsNullOrWhiteSpace(options.Name);
+        if (hasPath == hasName)
+        {
+            throw new ArgumentException("Exactly one of Path or Name must be provided.", nameof(options));
+        }
 
         var result = await _sendRequestAsync(
             "skills/config/write",
             new SkillsConfigWriteParams
             {
-                Enabled = enabled,
-                Path = path
+                Enabled = options.Enabled,
+                Path = hasPath ? options.Path : null,
+                Name = hasName ? options.Name : null
             },
             ct);
 
@@ -327,9 +334,6 @@ internal sealed class CodexAppServerConfigClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.Mode.Value))
             throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(options));
-
-        if (options.Cwd is not null && string.IsNullOrWhiteSpace(options.Cwd))
-            throw new ArgumentException("Cwd cannot be empty or whitespace when provided.", nameof(options));
 
         var result = await _sendRequestAsync(
             "windowsSandbox/setupStart",

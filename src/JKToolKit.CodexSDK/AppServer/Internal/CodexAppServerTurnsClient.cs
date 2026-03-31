@@ -188,22 +188,23 @@ internal sealed class CodexAppServerTurnsClient
                 innerException: ex);
         }
 
-        var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId");
+        var turnObj = CodexAppServerClientJson.TryGetObject(result, "turn") ?? result;
+        var turnThreadId = CodexAppServerClientJson.ExtractThreadId(turnObj) ??
+                           CodexAppServerClientJson.ExtractThreadId(result) ??
+                           options.ThreadId;
+        var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId") ?? turnThreadId;
         if (string.IsNullOrWhiteSpace(reviewThreadId))
         {
             throw new InvalidOperationException(
-                $"review/start returned no reviewThreadId. Raw result: {result}");
+                $"review/start returned no review thread id. Raw result: {result}");
         }
 
-        var turnObj = CodexAppServerClientJson.TryGetObject(result, "turn") ?? result;
         var turnId = CodexAppServerClientJson.ExtractTurnId(turnObj);
         if (string.IsNullOrWhiteSpace(turnId))
         {
             throw new InvalidOperationException(
                 $"review/start returned no turn id. Raw result: {result}");
         }
-
-        var turnThreadId = CodexAppServerClientJson.ExtractThreadId(turnObj) ?? reviewThreadId;
 
         return new ReviewStartResult
         {

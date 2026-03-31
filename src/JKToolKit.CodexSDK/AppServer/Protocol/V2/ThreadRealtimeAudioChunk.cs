@@ -8,6 +8,13 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 public sealed record class ThreadRealtimeAudioChunk
 {
     /// <summary>
+    /// Gets the optional realtime item identifier associated with this chunk.
+    /// </summary>
+    [JsonPropertyName("itemId")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ItemId { get; init; }
+
+    /// <summary>
     /// Gets the audio data chunk (typically base64-encoded).
     /// </summary>
     [JsonPropertyName("data")]

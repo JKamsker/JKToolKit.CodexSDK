@@ -31,6 +31,7 @@ internal static class CodexSessionLocatorHelpers
         DateTimeOffset? createdAt = null;
         string? workingDirectory = null;
         CodexModel? model = null;
+        string? humanLabel = null;
 
         using var stream = fileSystem.OpenRead(filePath);
         using var reader = new StreamReader(stream);
@@ -84,6 +85,11 @@ internal static class CodexSessionLocatorHelpers
                                 model = parsedModel;
                             }
                         }
+
+                        humanLabel =
+                            TryGetOptionalString(payload, "thread_name") ??
+                            TryGetOptionalString(payload, "name") ??
+                            TryGetOptionalString(payload, "label");
                     }
 
                     break;
@@ -115,7 +121,8 @@ internal static class CodexSessionLocatorHelpers
             LogPath: filePath,
             CreatedAt: effectiveCreatedAt,
             WorkingDirectory: workingDirectory,
-            Model: model);
+            Model: model,
+            HumanLabel: humanLabel);
     }
 
     internal static bool MatchesFilter(CodexSessionInfo sessionInfo, SessionFilter filter)
@@ -263,4 +270,9 @@ internal static class CodexSessionLocatorHelpers
             return null;
         }
     }
+
+    private static string? TryGetOptionalString(JsonElement payload, string propertyName) =>
+        payload.TryGetProperty(propertyName, out var element) && element.ValueKind == JsonValueKind.String
+            ? element.GetString()
+            : null;
 }

@@ -56,6 +56,11 @@ public sealed class CollabReceiverStatusJsonConverter : JsonConverter<CollabRece
             return CollabReceiverStatus.Running;
         }
 
+        if (value.Equals("interrupted", StringComparison.OrdinalIgnoreCase))
+        {
+            return CollabReceiverStatus.Interrupted;
+        }
+
         if (value.Equals("completed", StringComparison.OrdinalIgnoreCase))
         {
             return CollabReceiverStatus.Completed;
@@ -90,6 +95,7 @@ public sealed class CollabReceiverStatusJsonConverter : JsonConverter<CollabRece
         {
             CollabReceiverStatus.PendingInit => "pendingInit",
             CollabReceiverStatus.Running => "running",
+            CollabReceiverStatus.Interrupted => "interrupted",
             CollabReceiverStatus.Completed => "completed",
             CollabReceiverStatus.Errored => "errored",
             CollabReceiverStatus.Shutdown => "shutdown",

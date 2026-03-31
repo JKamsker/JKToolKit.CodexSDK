@@ -37,4 +37,9 @@ public abstract record CollabEndEventBase : CodexEvent
     /// <see cref="CollabReceiverStatus.Unknown"/> indicates the status was missing or unrecognized.
     /// </remarks>
     public CollabReceiverStatus Status { get; init; } = CollabReceiverStatus.Unknown;
+
+    /// <summary>
+    /// Gets parsed status details, including any payload text/metadata carried by the union.
+    /// </summary>
+    public CollabAgentStatusInfo? StatusInfo { get; init; }
 }

@@ -74,6 +74,56 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_SessionMetaEvent_PreservesStructuredSourceAndAdditionalFields()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""session_meta"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""id"": ""019d45db-8fab-7781-8fc6-9415a9169898"",
+                ""forked_from_id"": ""019d45db-8fab-7781-8fc6-9415a9169800"",
+                ""cwd"": ""C:\\\\repo"",
+                ""originator"": ""codex_cli_rs"",
+                ""cli_version"": ""0.117.0"",
+                ""source"": {{
+                    ""subagent"": {{
+                        ""thread_spawn"": {{
+                            ""parent_thread_id"": ""019d459c-2019-7b62-b455-c6b4328c9a76"",
+                            ""depth"": 1
+                        }}
+                    }}
+                }},
+                ""agent_nickname"": ""Maxwell"",
+                ""agent_role"": ""explorer"",
+                ""agent_path"": ""agents/explorer"",
+                ""model_provider"": ""codex-lb"",
+                ""base_instructions"": {{ ""text"": ""base"" }},
+                ""dynamic_tools"": [{{ ""name"": ""tool_a"" }}],
+                ""memory_mode"": ""project"",
+                ""git"": {{ ""branch"": ""main"" }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<SessionMetaEvent>().Subject;
+        evt.ForkedFromSessionId.Should().Be(SessionId.Parse("019d45db-8fab-7781-8fc6-9415a9169800"));
+        evt.Source.Should().Be("subagent");
+        evt.SourceSubagent.Should().Be("thread_spawn");
+        evt.SourceJson.HasValue.Should().BeTrue();
+        evt.SourceJson!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+        evt.AgentNickname.Should().Be("Maxwell");
+        evt.AgentRole.Should().Be("explorer");
+        evt.AgentPath.Should().Be("agents/explorer");
+        evt.BaseInstructions.HasValue.Should().BeTrue();
+        evt.DynamicTools.HasValue.Should().BeTrue();
+        evt.Git.HasValue.Should().BeTrue();
+        evt.MemoryMode.Should().Be("project");
+    }
+
+    [Fact]
     public async Task ParseAsync_UserMessageEvent_ParsesCorrectly()
     {
         // Arrange
@@ -209,6 +259,34 @@ public class JsonlEventParserTests
         evt.SandboxPolicyType.Should().Be("workspace-write");
         evt.NetworkAccess.Should().BeFalse();
         evt.Type.Should().Be("turn_context");
+    }
+
+    [Fact]
+    public async Task ParseAsync_TurnContextEvent_WithExternalSandboxNetworkAccess_ParsesNormalizedMode()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""turn_context"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""approval_policy"": ""never"",
+                ""sandbox_policy"": {{
+                    ""type"": ""external-sandbox"",
+                    ""external_sandbox"": {{
+                        ""network_access"": ""enabled""
+                    }}
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<TurnContextEvent>().Subject;
+        evt.SandboxPolicyType.Should().Be("external-sandbox");
+        evt.NetworkAccess.Should().BeTrue();
+        evt.NetworkAccessMode.Should().Be("enabled");
+        evt.SandboxPolicyJson.HasValue.Should().BeTrue();
     }
 
     [Fact]
@@ -594,6 +672,7 @@ public class JsonlEventParserTests
         evt.CallId.Should().Be("c1");
         evt.NewThreadId.Should().Be("t_new");
         evt.Status.Should().Be("running");
+        evt.StatusInfo!.Status.Should().Be(CollabAgentStatus.Running);
     }
 
     [Fact]
@@ -619,11 +698,37 @@ public class JsonlEventParserTests
 
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<CollabAgentSpawnEndEvent>().Subject;
-        evt.Status.Should().NotBeNull();
-        using var statusDoc = System.Text.Json.JsonDocument.Parse(evt.Status!);
-        statusDoc.RootElement.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
-        statusDoc.RootElement.TryGetProperty("completed", out var completedEl).Should().BeTrue();
-        completedEl.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+        evt.Status.Should().Be("completed");
+        evt.StatusInfo.Should().NotBeNull();
+        evt.StatusInfo!.Status.Should().Be(CollabAgentStatus.Completed);
+        evt.StatusInfo.PayloadText.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabAgentSpawnBegin_ParsesSpawnBeginEvent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_agent_spawn_begin"",
+                ""call_id"": ""c1"",
+                ""sender_thread_id"": ""t_sender"",
+                ""prompt"": ""go"",
+                ""model"": ""gpt-5.4"",
+                ""reasoning_effort"": ""high""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabAgentSpawnBeginEvent>().Subject;
+        evt.CallId.Should().Be("c1");
+        evt.SenderThreadId.Should().Be("t_sender");
+        evt.Model.Should().Be("gpt-5.4");
+        evt.ReasoningEffort.Should().Be("high");
     }
 
     [Fact]
@@ -678,10 +783,10 @@ public class JsonlEventParserTests
 
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<CollabAgentInteractionEndEvent>().Subject;
-        evt.Status.Should().NotBeNull();
-        using var statusDoc = System.Text.Json.JsonDocument.Parse(evt.Status!);
-        statusDoc.RootElement.TryGetProperty("completed", out var completedEl).Should().BeTrue();
-        completedEl.GetString().Should().Be("done");
+        evt.Status.Should().Be("completed");
+        evt.StatusInfo.Should().NotBeNull();
+        evt.StatusInfo!.Status.Should().Be(CollabAgentStatus.Completed);
+        evt.StatusInfo.PayloadText.Should().Be("done");
     }
 
     [Fact]
@@ -706,6 +811,71 @@ public class JsonlEventParserTests
         evt.Type.Should().Be("collab_waiting_end");
         evt.CallId.Should().Be("c3");
         evt.Statuses!.Should().ContainKey("t1").WhoseValue.Should().Be("completed");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabWaitingBegin_ParsesReceiverMetadata()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_waiting_begin"",
+                ""call_id"": ""c3"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_ids"": [""t1"", ""t2""],
+                ""receiver_agents"": [
+                    {{ ""thread_id"": ""t1"", ""agent_nickname"": ""Ada"", ""agent_role"": ""reviewer"" }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabWaitingBeginEvent>().Subject;
+        evt.ReceiverThreadIds.Should().ContainInOrder("t1", "t2");
+        evt.ReceiverAgents.Should().ContainSingle();
+        evt.ReceiverAgents![0].AgentNickname.Should().Be("Ada");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabWaitingEnd_PreservesAgentStatusMetadataAndInterruptedPayloadText()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_waiting_end"",
+                ""call_id"": ""c3"",
+                ""sender_thread_id"": ""t_sender"",
+                ""statuses"": {{
+                    ""t1"": {{ ""interrupted"": {{ ""text"": ""paused"", ""reason"": ""user"" }} }},
+                    ""t2"": ""running""
+                }},
+                ""agent_statuses"": [
+                    {{
+                        ""thread_id"": ""t1"",
+                        ""agent_nickname"": ""Ada"",
+                        ""agent_role"": ""reviewer"",
+                        ""status"": {{ ""interrupted"": {{ ""text"": ""paused"", ""reason"": ""user"" }} }}
+                    }}
+                ]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabWaitingEndEvent>().Subject;
+        evt.Statuses!["t1"].Should().Be("interrupted");
+        evt.StatusInfos!["t1"].Status.Should().Be(CollabAgentStatus.Interrupted);
+        evt.StatusInfos["t1"].PayloadText.Should().Be("paused");
+        evt.AgentStatuses.Should().ContainSingle();
+        evt.AgentStatuses![0].AgentNickname.Should().Be("Ada");
+        evt.AgentStatuses[0].StatusInfo.PayloadText.Should().Be("paused");
     }
 
     [Fact]
@@ -754,6 +924,7 @@ public class JsonlEventParserTests
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<CollabCloseEndEvent>().Subject;
         evt.Status.Should().Be(CollabReceiverStatus.Completed);
+        evt.StatusInfo!.PayloadText.Should().Be("done");
     }
 
     [Fact]
@@ -802,6 +973,31 @@ public class JsonlEventParserTests
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<CollabResumeEndEvent>().Subject;
         evt.Status.Should().Be(CollabReceiverStatus.Errored);
+        evt.StatusInfo!.PayloadText.Should().Be("boom");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabResumeEnd_WithInterruptedUnionObject_ParsesInterruptedStatusAndPayloadText()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_resume_end"",
+                ""call_id"": ""c5"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_id"": ""t_recv"",
+                ""status"": {{ ""interrupted"": {{ ""text"": ""stopped"" }} }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabResumeEndEvent>().Subject;
+        evt.Status.Should().Be(CollabReceiverStatus.Interrupted);
+        evt.StatusInfo!.PayloadText.Should().Be("stopped");
     }
 
     [Fact]
@@ -1107,6 +1303,8 @@ public class JsonlEventParserTests
         payload.Name.Should().Be("fetch_issues");
         payload.Namespace.Should().Be("github");
         payload.CallId.Should().Be("call_123");
+        payload.Arguments.HasValue.Should().BeTrue();
+        payload.Arguments!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
     }
 
     [Fact]
@@ -1136,6 +1334,8 @@ public class JsonlEventParserTests
         payload.Output.Should().Contain("input_text");
         payload.OutputJson.HasValue.Should().BeTrue();
         payload.OutputJson!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+        payload.OutputContent.Should().HaveCount(2);
+        payload.OutputContent![0].Should().BeOfType<FunctionToolOutputInputTextPart>();
     }
 
     [Fact]
@@ -1167,6 +1367,98 @@ public class JsonlEventParserTests
         payload.Output.Should().Contain("\"ok\": true");
         payload.OutputJson.HasValue.Should().BeTrue();
         payload.OutputJson!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_CustomToolCall_PreservesStructuredInputBody()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""custom_tool_call"",
+                ""status"": ""completed"",
+                ""call_id"": ""call_custom"",
+                ""name"": ""my_tool"",
+                ""input"": {{
+                    ""ok"": true,
+                    ""count"": 2
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<CustomToolCallResponseItemPayload>().Subject;
+
+        payload.Input.Should().Contain("\"ok\": true");
+        payload.InputJson.HasValue.Should().BeTrue();
+        payload.InputJson!.Value.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_Reasoning_PreservesStructuredContent()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""reasoning"",
+                ""summary"": [{{ ""type"": ""summary_text"", ""text"": ""summary"" }}],
+                ""content"": [
+                    {{ ""type"": ""reasoning_text"", ""text"": ""step 1"" }},
+                    {{ ""type"": ""text"", ""text"": ""step 2"" }}
+                ],
+                ""encrypted_content"": null
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<ReasoningResponseItemPayload>().Subject;
+
+        payload.SummaryTexts.Should().ContainSingle("summary");
+        payload.Content.Should().HaveCount(2);
+        payload.Content[0].Should().BeOfType<ReasoningTextContentPart>()
+            .Which.Text.Should().Be("step 1");
+    }
+
+    [Fact]
+    public async Task ParseAsync_ResponseItem_LocalShellCall_PreservesExactArgvIncludingEmptyEntries()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""response_item"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""local_shell_call"",
+                ""call_id"": ""call_1"",
+                ""status"": ""completed"",
+                ""action"": {{
+                    ""type"": ""exec"",
+                    ""command"": [""bash"", """", ""  "", ""-lc"", ""echo hi""],
+                    ""timeout_ms"": 123,
+                    ""working_directory"": ""/tmp"",
+                    ""env"": {{ ""A"": ""B"" }},
+                    ""user"": ""root""
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var payload = events[0].Should().BeOfType<ResponseItemEvent>().Subject.Payload
+            .Should().BeOfType<LocalShellCallResponseItemPayload>().Subject;
+
+        payload.Command.Should().ContainInOrder("bash", string.Empty, "  ", "-lc", "echo hi");
+        payload.ActionJson.HasValue.Should().BeTrue();
     }
 
     [Fact]

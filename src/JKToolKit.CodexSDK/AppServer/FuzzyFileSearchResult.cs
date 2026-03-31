@@ -1,6 +1,27 @@
 namespace JKToolKit.CodexSDK.AppServer;
 
 /// <summary>
+/// Known fuzzy file search match classifications.
+/// </summary>
+public enum FuzzyFileSearchMatchType
+{
+    /// <summary>
+    /// The upstream match type was absent or unrecognized.
+    /// </summary>
+    Unknown = 0,
+
+    /// <summary>
+    /// The match was driven by the file path.
+    /// </summary>
+    Path = 1,
+
+    /// <summary>
+    /// The match was driven by the file name.
+    /// </summary>
+    FileName = 2
+}
+
+/// <summary>
 /// Represents a fuzzy file search match returned by the app-server.
 /// </summary>
 public sealed record class FuzzyFileSearchResult
@@ -29,6 +50,11 @@ public sealed record class FuzzyFileSearchResult
     /// Gets the upstream match type when present.
     /// </summary>
     public string? MatchType { get; init; }
+
+    /// <summary>
+    /// Gets the parsed match classification.
+    /// </summary>
+    public FuzzyFileSearchMatchType MatchKind { get; init; }
 
     /// <summary>
     /// Gets the match indices when present.

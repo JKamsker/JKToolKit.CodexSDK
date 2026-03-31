@@ -29,14 +29,14 @@ public sealed record class PluginListResult
     public required IReadOnlyList<PluginMarketplace> Marketplaces { get; init; }
 
     /// <summary>
-    /// Gets the featured plugin identifiers when provided by the server.
+    /// Gets the featured plugin identifiers.
     /// </summary>
-    public IReadOnlyList<string>? FeaturedPluginIds { get; init; }
+    public required IReadOnlyList<string> FeaturedPluginIds { get; init; }
 
     /// <summary>
     /// Gets marketplace load errors returned by the server.
     /// </summary>
-    public IReadOnlyList<MarketplaceLoadError>? MarketplaceLoadErrors { get; init; }
+    public required IReadOnlyList<MarketplaceLoadError> MarketplaceLoadErrors { get; init; }
 
     /// <summary>
     /// Gets the remote sync error when the server reports one.
@@ -116,6 +116,11 @@ public sealed record class PluginInstallResult
     /// Gets the auth policy returned by the install request.
     /// </summary>
     public string? AuthPolicy { get; init; }
+
+    /// <summary>
+    /// Gets the typed auth policy returned by the install request.
+    /// </summary>
+    public PluginAuthPolicy? AuthPolicyValue { get; init; }
 
     /// <summary>
     /// Gets the raw plugin install payload.

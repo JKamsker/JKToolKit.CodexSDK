@@ -13,7 +13,7 @@ public sealed record class ReviewStartResult
     public required CodexTurnHandle Turn { get; init; }
 
     /// <summary>
-    /// Gets the detached review thread id returned by the server.
+    /// Gets the review thread id returned by the server.
     /// </summary>
     public required string ReviewThreadId { get; init; }
 

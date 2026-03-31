@@ -56,7 +56,8 @@ internal sealed class CodexAppServerThreadsClient
             throw new InvalidOperationException(
                 $"thread/start returned no thread id. Raw result: {result}");
         }
-        return new CodexThread(threadId, result);
+
+        return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, threadId);
     }
 
     public async Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct = default)
@@ -70,7 +71,7 @@ internal sealed class CodexAppServerThreadsClient
             ct);
 
         var id = CodexAppServerClientJson.ExtractThreadId(result) ?? threadId;
-        return new CodexThread(id, result);
+        return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, id);
     }
 
     public async Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct = default)
@@ -118,7 +119,8 @@ internal sealed class CodexAppServerThreadsClient
             throw new InvalidOperationException(
                 $"thread/resume returned no thread id. Raw result: {result}");
         }
-        return new CodexThread(id, result);
+
+        return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, id);
     }
 
     private static bool HasNonEmptyHistory(JsonElement? history)
@@ -178,18 +180,7 @@ internal sealed class CodexAppServerThreadsClient
             new ThreadReadParams { ThreadId = threadId, IncludeTurns = options.IncludeTurns },
             ct);
 
-        var threadObject = CodexAppServerClientJson.TryGetObject(result, "thread") ?? result;
-        var summary = CodexAppServerClientThreadParsers.ParseThreadSummary(threadObject) ?? new CodexThreadSummary
-        {
-            ThreadId = threadId,
-            Raw = threadObject
-        };
-
-        return new CodexThreadReadResult
-        {
-            Thread = summary,
-            Raw = result
-        };
+        return CodexAppServerClientThreadResponseParsers.ParseReadResult(result, threadId);
     }
 
     public async Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default)
@@ -352,7 +343,7 @@ internal sealed class CodexAppServerThreadsClient
 
         var threadObj = CodexAppServerClientJson.TryGetObject(result, "thread") ?? result;
         var id = CodexAppServerClientJson.ExtractThreadId(threadObj) ?? threadId;
-        return new CodexThread(id, result);
+        return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, id);
     }
 
     public async Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default)
@@ -380,7 +371,9 @@ internal sealed class CodexAppServerThreadsClient
             "thread/fork",
             new ThreadForkParams
             {
-                ThreadId = CodexAppServerWireBuilders.BuildThreadIdOrPlaceholder(options.ThreadId),
+                ThreadId = string.IsNullOrWhiteSpace(options.Path)
+                    ? CodexAppServerWireBuilders.BuildThreadIdOrPlaceholder(options.ThreadId)
+                    : string.Empty,
                 Path = options.Path,
                 ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
                     options.ServiceTier,
@@ -407,7 +400,7 @@ internal sealed class CodexAppServerThreadsClient
                 $"thread/fork returned no thread id. Raw result: {result}");
         }
 
-        return new CodexThread(threadId, result);
+        return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, threadId);
     }
 
     public async Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default)
@@ -437,7 +430,7 @@ internal sealed class CodexAppServerThreadsClient
             ct);
 
         var id = CodexAppServerClientJson.ExtractThreadId(result) ?? threadId;
-        return new CodexThread(id, result);
+        return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, id);
     }
 
     public async Task SetThreadNameAsync(string threadId, string name, CancellationToken ct = default)

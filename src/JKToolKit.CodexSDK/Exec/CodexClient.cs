@@ -57,6 +57,17 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         return await _sessionRunner.ResumeSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Attaches to an existing session selected by resume-target semantics such as thread name or <c>--last</c>.
+    /// </summary>
+    /// <param name="target">Resume target selection to resolve against recorded sessions.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A read-only session handle for the resolved session log.</returns>
+    public async Task<ICodexSessionHandle> ResumeSessionAsync(CodexResumeTarget target, CancellationToken cancellationToken = default)
+    {
+        return await _sessionRunner.ResumeSessionAsync(target, workingDirectory: null, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public async Task<ICodexSessionHandle> AttachToLogAsync(string logFilePath, CancellationToken cancellationToken = default)
     {
@@ -174,6 +185,21 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     )
     {
         return await _sessionRunner.ResumeSessionAsync(sessionId, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Launches <c>codex exec resume</c> using a selector token or <c>--last</c>.
+    /// </summary>
+    /// <param name="target">Resume target selection to pass to the CLI.</param>
+    /// <param name="options">Session options controlling working directory, prompt, model, and flags.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A live session handle connected to the resumed Codex process.</returns>
+    public async Task<ICodexSessionHandle> ResumeSessionAsync(
+        CodexResumeTarget target,
+        CodexSessionOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        return await _sessionRunner.ResumeSessionAsync(target, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

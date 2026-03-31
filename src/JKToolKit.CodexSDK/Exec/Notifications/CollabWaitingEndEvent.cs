@@ -19,4 +19,14 @@ public sealed record CollabWaitingEndEvent : CodexEvent
     /// Gets the last known statuses for receiver agents, when provided.
     /// </summary>
     public IReadOnlyDictionary<string, string>? Statuses { get; init; }
+
+    /// <summary>
+    /// Gets structured receiver status details keyed by thread id, when provided.
+    /// </summary>
+    public IReadOnlyDictionary<string, CollabAgentStatusInfo>? StatusInfos { get; init; }
+
+    /// <summary>
+    /// Gets receiver metadata paired with final statuses, when provided.
+    /// </summary>
+    public IReadOnlyList<CollabAgentStatusEntry>? AgentStatuses { get; init; }
 }

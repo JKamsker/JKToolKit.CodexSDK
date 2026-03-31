@@ -90,7 +90,7 @@ public sealed class CodexExecParityDriftTests
     }
 
     [Fact]
-    public void CreateProcessStartInfo_RejectsEphemeralOption_ForFileBackedExec()
+    public void CreateProcessStartInfo_AllowsEphemeralOption_ForCliParity()
     {
         var workingDirectory = CreateTempDirectory();
         try
@@ -101,10 +101,9 @@ public sealed class CodexExecParityDriftTests
             };
             var launcher = CreateLauncher();
 
-            var act = () => launcher.CreateProcessStartInfo(options, new CodexClientOptions());
+            var startInfo = launcher.CreateProcessStartInfo(options, new CodexClientOptions());
 
-            act.Should().Throw<InvalidOperationException>()
-                .WithMessage("*--ephemeral*file-backed exec sessions are not ephemeral*");
+            startInfo.ArgumentList.Should().Contain("--ephemeral");
         }
         finally
         {
@@ -113,7 +112,7 @@ public sealed class CodexExecParityDriftTests
     }
 
     [Fact]
-    public void CreateResumeStartInfo_RejectsEphemeralOption_ForFileBackedExec()
+    public void CreateResumeStartInfo_AllowsEphemeralOption_ForCliParity()
     {
         var workingDirectory = CreateTempDirectory();
         try
@@ -124,10 +123,9 @@ public sealed class CodexExecParityDriftTests
             };
             var launcher = CreateLauncher();
 
-            var act = () => launcher.CreateResumeStartInfo(SessionId.Parse("session-abc"), options, new CodexClientOptions());
+            var startInfo = launcher.CreateResumeStartInfo(SessionId.Parse("session-abc"), options, new CodexClientOptions());
 
-            act.Should().Throw<InvalidOperationException>()
-                .WithMessage("*--ephemeral*file-backed exec sessions are not ephemeral*");
+            startInfo.ArgumentList.Should().Contain("--ephemeral=true");
         }
         finally
         {

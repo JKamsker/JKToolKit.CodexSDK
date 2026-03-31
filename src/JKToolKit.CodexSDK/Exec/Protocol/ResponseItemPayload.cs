@@ -24,6 +24,11 @@ public sealed record ReasoningResponseItemPayload : ResponseItemPayload
     public required IReadOnlyList<string> SummaryTexts { get; init; }
 
     /// <summary>
+    /// Gets the structured reasoning content parts, when provided.
+    /// </summary>
+    public required IReadOnlyList<ReasoningContentPart> Content { get; init; }
+
+    /// <summary>
     /// Gets the encrypted reasoning content, when provided.
     /// </summary>
     public string? EncryptedContent { get; init; }
@@ -108,6 +113,11 @@ public sealed record LocalShellCallResponseItemPayload : ResponseItemPayload
     /// Gets the optional user for <c>action.type=exec</c>, when provided.
     /// </summary>
     public string? User { get; init; }
+
+    /// <summary>
+    /// Gets the raw structured action payload, when provided.
+    /// </summary>
+    public JsonElement? ActionJson { get; init; }
 }
 
 /// <summary>
@@ -129,6 +139,11 @@ public sealed record FunctionCallResponseItemPayload : ResponseItemPayload
     /// Gets the function arguments JSON string, when provided.
     /// </summary>
     public string? ArgumentsJson { get; init; }
+
+    /// <summary>
+    /// Gets the structured function arguments when the upstream payload is non-string.
+    /// </summary>
+    public JsonElement? Arguments { get; init; }
 
     /// <summary>
     /// Gets the call id associated with this function call, when provided.
@@ -155,6 +170,11 @@ public sealed record FunctionCallOutputResponseItemPayload : ResponseItemPayload
     /// Gets the structured output body when the upstream payload is non-string.
     /// </summary>
     public JsonElement? OutputJson { get; init; }
+
+    /// <summary>
+    /// Gets typed structured content items when the upstream output is a content-item array.
+    /// </summary>
+    public IReadOnlyList<FunctionToolOutputContentPart>? OutputContent { get; init; }
 }
 
 /// <summary>
@@ -181,6 +201,11 @@ public sealed record CustomToolCallResponseItemPayload : ResponseItemPayload
     /// Gets the tool input payload, when provided.
     /// </summary>
     public string? Input { get; init; }
+
+    /// <summary>
+    /// Gets the structured tool input payload when the upstream value is non-string.
+    /// </summary>
+    public JsonElement? InputJson { get; init; }
 }
 
 /// <summary>
@@ -207,6 +232,11 @@ public sealed record CustomToolCallOutputResponseItemPayload : ResponseItemPaylo
     /// Gets the structured output body when the upstream payload is non-string.
     /// </summary>
     public JsonElement? OutputJson { get; init; }
+
+    /// <summary>
+    /// Gets typed structured content items when the upstream output is a content-item array.
+    /// </summary>
+    public IReadOnlyList<FunctionToolOutputContentPart>? OutputContent { get; init; }
 }
 
 /// <summary>

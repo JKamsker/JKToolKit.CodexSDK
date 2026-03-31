@@ -36,7 +36,22 @@ public sealed record CollabAgentSpawnEndEvent : CodexEvent
     public string? Prompt { get; init; }
 
     /// <summary>
+    /// Gets the effective model used by the spawned agent, when provided.
+    /// </summary>
+    public string? Model { get; init; }
+
+    /// <summary>
+    /// Gets the effective reasoning effort used by the spawned agent, when provided.
+    /// </summary>
+    public string? ReasoningEffort { get; init; }
+
+    /// <summary>
     /// Gets the last known new-agent status reported to the sender, when provided.
     /// </summary>
     public string? Status { get; init; }
+
+    /// <summary>
+    /// Gets parsed status details, including any payload text/metadata carried by the union.
+    /// </summary>
+    public CollabAgentStatusInfo? StatusInfo { get; init; }
 }

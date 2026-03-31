@@ -1,16 +1,22 @@
-using JKToolKit.CodexSDK.Models;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
 /// <summary>
 /// Options for forking an existing thread via the app-server.
 /// </summary>
+/// <remarks>
+/// When <see cref="Path"/> is set, the server forks from that rollout path and ignores <see cref="ThreadId"/>.
+/// </remarks>
 public sealed class ThreadForkOptions
 {
     /// <summary>
     /// Gets or sets the thread identifier to fork.
     /// </summary>
+    /// <remarks>
+    /// Ignored when <see cref="Path"/> is set.
+    /// </remarks>
     public string? ThreadId { get; set; }
 
     /// <summary>
@@ -58,9 +64,9 @@ public sealed class ThreadForkOptions
     public CodexAskForApproval? AskForApproval { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional approval reviewer routing override (raw JSON object).
+    /// Gets or sets an optional approval reviewer routing override.
     /// </summary>
-    public JsonElement? ApprovalsReviewer { get; set; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; set; }
 
     /// <summary>
     /// Gets or sets an optional sandbox mode override for the forked thread.

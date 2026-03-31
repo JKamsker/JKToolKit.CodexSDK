@@ -39,4 +39,9 @@ public sealed record CollabAgentInteractionEndEvent : CodexEvent
     /// Gets the last known receiver status reported to the sender, when provided.
     /// </summary>
     public string? Status { get; init; }
+
+    /// <summary>
+    /// Gets parsed status details, including any payload text/metadata carried by the union.
+    /// </summary>
+    public CollabAgentStatusInfo? StatusInfo { get; init; }
 }

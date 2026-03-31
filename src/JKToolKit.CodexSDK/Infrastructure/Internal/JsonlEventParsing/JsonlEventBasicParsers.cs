@@ -7,71 +7,8 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 
 using static JsonlEventJson;
 
-internal static class JsonlEventBasicParsers
+internal static partial class JsonlEventBasicParsers
 {
-    public static SessionMetaEvent? ParseSessionMetaEvent(
-        JsonElement root,
-        DateTimeOffset timestamp,
-        string type,
-        JsonElement rawPayload,
-        in JsonlEventParserContext ctx)
-    {
-        if (!root.TryGetProperty("payload", out var payload))
-        {
-            ctx.Logger.LogWarning("session_meta event missing 'payload' field");
-            return null;
-        }
-
-        if (payload.ValueKind != JsonValueKind.Object)
-        {
-            ctx.Logger.LogWarning("session_meta event has non-object 'payload' field");
-            return null;
-        }
-
-        if (!payload.TryGetProperty("id", out var idElement))
-        {
-            ctx.Logger.LogWarning("session_meta event missing 'payload.id' field");
-            return null;
-        }
-
-        var idString = idElement.ValueKind switch
-        {
-            JsonValueKind.String => idElement.GetString(),
-            JsonValueKind.Null => null,
-            _ => idElement.GetRawText()
-        };
-        if (string.IsNullOrWhiteSpace(idString))
-        {
-            ctx.Logger.LogWarning("session_meta event has empty 'payload.id' field");
-            return null;
-        }
-
-        if (!SessionId.TryParse(idString, out var sessionId))
-        {
-            ctx.Logger.LogWarning("session_meta event has invalid 'payload.id' field");
-            return null;
-        }
-
-        var cwd = TryGetString(payload, "cwd");
-        var cliVersion = TryGetString(payload, "cli_version");
-        var originator = TryGetString(payload, "originator");
-        var (source, sourceSubagent) = ParseSessionSource(payload);
-        var modelProvider = TryGetString(payload, "model_provider");
-
-        return new SessionMetaEvent
-        {
-            Timestamp = timestamp,
-            Type = type,
-            RawPayload = rawPayload,
-            SessionId = sessionId,
-            Cwd = cwd,
-            CliVersion = cliVersion,
-            Originator = originator,
-            Source = source,
-            SourceSubagent = sourceSubagent,
-            ModelProvider = modelProvider
-        };
-    }
 
     public static UserMessageEvent? ParseUserMessageEvent(
         JsonElement root,
@@ -241,6 +178,8 @@ internal static class JsonlEventBasicParsers
         string? approvalPolicy = null;
         string? sandboxPolicyType = null;
         bool? networkAccess = null;
+        string? networkAccessMode = null;
+        JsonElement? sandboxPolicyJson = null;
 
         if (root.TryGetProperty("payload", out var payload))
         {
@@ -260,14 +199,12 @@ internal static class JsonlEventBasicParsers
 
             if (payload.TryGetProperty("sandbox_policy", out var sandboxPolicy) && sandboxPolicy.ValueKind == JsonValueKind.Object)
             {
+                sandboxPolicyJson = sandboxPolicy.Clone();
+
                 if (sandboxPolicy.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
                     sandboxPolicyType = typeEl.GetString();
 
-                if (sandboxPolicy.TryGetProperty("network_access", out var netEl) &&
-                    (netEl.ValueKind == JsonValueKind.True || netEl.ValueKind == JsonValueKind.False))
-                {
-                    networkAccess = netEl.GetBoolean();
-                }
+                ParseNetworkAccess(sandboxPolicy, ref networkAccess, ref networkAccessMode);
             }
         }
 
@@ -278,7 +215,9 @@ internal static class JsonlEventBasicParsers
             RawPayload = rawPayload,
             ApprovalPolicy = approvalPolicy,
             SandboxPolicyType = sandboxPolicyType,
-            NetworkAccess = networkAccess
+            NetworkAccess = networkAccess,
+            NetworkAccessMode = networkAccessMode,
+            SandboxPolicyJson = sandboxPolicyJson
         };
     }
 
@@ -478,43 +417,4 @@ internal static class JsonlEventBasicParsers
         return false;
     }
 
-    private static (string? Source, string? SourceSubagent) ParseSessionSource(JsonElement payload)
-    {
-        if (!payload.TryGetProperty("source", out var sourceEl))
-            return (null, null);
-
-        if (sourceEl.ValueKind == JsonValueKind.String)
-            return (sourceEl.GetString(), null);
-
-        if (sourceEl.ValueKind != JsonValueKind.Object)
-            return (null, null);
-
-        if (!sourceEl.TryGetProperty("subagent", out var subagentEl))
-            return (sourceEl.GetRawText(), null);
-
-        var subagent = ParseSubagentSource(subagentEl);
-        return ("subagent", subagent);
-    }
-
-    private static string? ParseSubagentSource(JsonElement subagentEl)
-    {
-        if (subagentEl.ValueKind == JsonValueKind.String)
-            return subagentEl.GetString();
-
-        if (subagentEl.ValueKind != JsonValueKind.Object)
-            return null;
-
-        if (subagentEl.TryGetProperty("thread_spawn", out _))
-            return "thread_spawn";
-
-        if (subagentEl.TryGetProperty("other", out var otherEl) && otherEl.ValueKind == JsonValueKind.String)
-            return otherEl.GetString();
-
-        foreach (var prop in subagentEl.EnumerateObject())
-        {
-            return prop.Name;
-        }
-
-        return null;
-    }
 }

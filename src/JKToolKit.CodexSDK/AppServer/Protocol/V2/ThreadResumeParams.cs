@@ -79,10 +79,10 @@ public sealed record class ThreadResumeParams
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
-    /// Gets an optional approval reviewer routing override (raw JSON object).
+    /// Gets an optional approval reviewer routing override.
     /// </summary>
     [JsonPropertyName("approvalsReviewer")]
-    public JsonElement? ApprovalsReviewer { get; init; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the resumed thread (wire value).

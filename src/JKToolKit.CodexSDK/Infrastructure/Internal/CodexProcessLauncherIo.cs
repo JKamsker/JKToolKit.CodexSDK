@@ -13,11 +13,7 @@ internal static class CodexProcessLauncherIo
     {
         try
         {
-            await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
-            await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
-            process.StandardInput.Close();
-
-            logger.LogDebug("Wrote prompt to process {ProcessId} and closed stdin", process.Id);
+            await WriteExactTextAndCloseStdinAsync(process, prompt, logger, "prompt", cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -38,14 +34,7 @@ internal static class CodexProcessLauncherIo
     {
         try
         {
-            if (!string.IsNullOrWhiteSpace(prompt))
-            {
-                await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            process.StandardInput.Close();
-            logger.LogTrace("Closed stdin for process {ProcessId}", process.Id);
+            await WriteExactTextAndCloseStdinAsync(process, prompt, logger, "optional prompt", cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -66,14 +55,7 @@ internal static class CodexProcessLauncherIo
     {
         try
         {
-            if (payload is not null)
-            {
-                await process.StandardInput.WriteAsync(payload.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            process.StandardInput.Close();
-            logger.LogTrace("Closed stdin for process {ProcessId}", process.Id);
+            await WriteExactTextAndCloseStdinAsync(process, payload, logger, "stdin payload", cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -108,6 +90,23 @@ internal static class CodexProcessLauncherIo
         }
 
         return null;
+    }
+
+    private static async Task WriteExactTextAndCloseStdinAsync(
+        Process process,
+        string? text,
+        ILogger logger,
+        string contentDescription,
+        CancellationToken cancellationToken)
+    {
+        if (text is not null)
+        {
+            await process.StandardInput.WriteAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        process.StandardInput.Close();
+        logger.LogTrace("Wrote {ContentDescription} to process {ProcessId} and closed stdin", contentDescription, process.Id);
     }
 }
 

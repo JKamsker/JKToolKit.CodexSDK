@@ -61,4 +61,42 @@ public sealed class ThreadForkParamsSerializationTests
         captured!.ThreadId.Should().Be("thr_source");
         captured.Sandbox.Should().Be("workspace-write");
     }
+
+    [Fact]
+    public async Task ForkThreadAsync_PathTakesPrecedence_AndIgnoresThreadId()
+    {
+        ThreadForkParams? captured = null;
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr_new"}}""");
+        var response = doc.RootElement.Clone();
+
+        var client = new CodexAppServerThreadsClient(
+            sendRequestAsync: (method, @params, _) =>
+            {
+                method.Should().Be("thread/fork");
+                captured = @params.Should().BeOfType<ThreadForkParams>().Subject;
+                return Task.FromResult(response);
+            },
+            experimentalApiEnabled: () => true);
+
+        var thread = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            Path = "C:\\rollout.jsonl"
+        });
+
+        thread.Id.Should().Be("thr_new");
+        captured.Should().NotBeNull();
+        captured!.ThreadId.Should().BeEmpty();
+        captured.Path.Should().Be("C:\\rollout.jsonl");
+    }
+
+    [Fact]
+    public void Serialize_WritesApprovalsReviewer_AsClosedEnum()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadForkParams { ThreadId = "thr_123", ApprovalsReviewer = CodexApprovalsReviewer.User },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"approvalsReviewer\":\"user\"");
+    }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FluentAssertions;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -82,6 +83,14 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("mcpServer/startupStatus/updated", startupStatus)
             .Should().BeOfType<McpServerStartupStatusUpdatedNotification>()
             .Which.Status.Should().Be("ready");
+
+        AppServerNotificationMapper.Map("skills/changed", JsonDocument.Parse("""{}""").RootElement)
+            .Should().BeOfType<SkillsChangedNotification>();
+
+        var requestResolved = JsonDocument.Parse("""{"threadId":"t1","requestId":123}""").RootElement;
+        AppServerNotificationMapper.Map("serverRequest/resolved", requestResolved)
+            .Should().BeOfType<ServerRequestResolvedNotification>()
+            .Which.RequestIdValue.Should().Be("123");
     }
 
     [Fact]
@@ -94,6 +103,7 @@ public sealed class AppServerNotificationMapperTests
 
         notification.Files.Should().ContainSingle();
         notification.Files[0].MatchType.Should().Be("path");
+        notification.Files[0].MatchKind.Should().Be(FuzzyFileSearchMatchType.Path);
     }
 
     [Fact]
@@ -123,6 +133,39 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("model/rerouted", json)
             .Should().BeOfType<ModelReroutedNotification>()
             .Which.ToModel.Should().Be("b");
+    }
+
+    [Fact]
+    public void Map_AutoApprovalReviewNotifications_ToTypedRecords()
+    {
+        var started = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"inProgress","rationale":"checking","riskScore":4}}""").RootElement;
+        var startedNotification = AppServerNotificationMapper.Map("item/autoApprovalReview/started", started)
+            .Should().BeOfType<ItemAutoApprovalReviewStartedNotification>()
+            .Which;
+
+        startedNotification.TargetItemId.Should().Be("item-1");
+        startedNotification.Review.Status.Should().Be(GuardianApprovalReviewStatus.InProgress);
+        startedNotification.Review.Rationale.Should().Be("checking");
+
+        var completed = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"approved","riskScore":"5"}}""").RootElement;
+        var completedNotification = AppServerNotificationMapper.Map("item/autoApprovalReview/completed", completed)
+            .Should().BeOfType<ItemAutoApprovalReviewCompletedNotification>()
+            .Which;
+
+        completedNotification.Review.Status.Should().Be(GuardianApprovalReviewStatus.Approved);
+        completedNotification.Review.RiskScore.Should().Be(5);
+    }
+
+    [Fact]
+    public void Map_ThreadRealtimeOutputAudioDelta_SurfacesAudioItemId()
+    {
+        var audioDelta = JsonDocument.Parse("""{"threadId":"t","audio":{"itemId":"item-42","data":"abc","numChannels":2,"sampleRate":24000,"samplesPerChannel":480}}""").RootElement;
+        var mapped = AppServerNotificationMapper.Map("thread/realtime/outputAudio/delta", audioDelta)
+            .Should().BeOfType<ThreadRealtimeOutputAudioDeltaNotification>()
+            .Which;
+
+        mapped.ItemId.Should().Be("item-42");
+        mapped.Data.Should().Be("abc");
     }
 
     [Fact]

@@ -41,14 +41,29 @@ public sealed record class CodexThreadSummary
     public IReadOnlyList<string>? ActiveFlags { get; init; }
 
     /// <summary>
+    /// Gets the optional thread preview text, when present.
+    /// </summary>
+    public string? Preview { get; init; }
+
+    /// <summary>
     /// Gets the thread creation timestamp, when present.
     /// </summary>
     public DateTimeOffset? CreatedAt { get; init; }
 
     /// <summary>
+    /// Gets the thread last-updated timestamp, when present.
+    /// </summary>
+    public DateTimeOffset? UpdatedAt { get; init; }
+
+    /// <summary>
     /// Gets the working directory associated with the thread, when present.
     /// </summary>
     public string? Cwd { get; init; }
+
+    /// <summary>
+    /// Gets the rollout path associated with the thread, when present.
+    /// </summary>
+    public string? Path { get; init; }
 
     /// <summary>
     /// Gets the model associated with the thread, when present.
@@ -64,6 +79,36 @@ public sealed record class CodexThreadSummary
     /// Gets the service tier associated with the thread, when present.
     /// </summary>
     public CodexServiceTier? ServiceTier { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the thread is ephemeral, when present.
+    /// </summary>
+    public bool? Ephemeral { get; init; }
+
+    /// <summary>
+    /// Gets the thread source kind, when present.
+    /// </summary>
+    public string? SourceKind { get; init; }
+
+    /// <summary>
+    /// Gets the CLI version that created the thread, when present.
+    /// </summary>
+    public string? CliVersion { get; init; }
+
+    /// <summary>
+    /// Gets the optional agent nickname for sub-agent threads, when present.
+    /// </summary>
+    public string? AgentNickname { get; init; }
+
+    /// <summary>
+    /// Gets the optional agent role for sub-agent threads, when present.
+    /// </summary>
+    public string? AgentRole { get; init; }
+
+    /// <summary>
+    /// Gets the number of turns materialized on the thread payload, when present.
+    /// </summary>
+    public int? TurnCount { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the thread summary.

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -36,6 +37,26 @@ public sealed class CodexSessionLocatorHelpersTests
 
         extracted.Should().NotBeNull();
         extracted!.Value.Value.Should().Be("22222222-2222-2222-2222-222222222222");
+    }
+
+    [Fact]
+    public async Task ParseSessionInfoAsync_CapturesHumanLabel_FromSessionMetaName()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = Path.Combine(Path.GetTempPath(), "sessions", "named.jsonl");
+        var sessionJson =
+            """{"type":"session_meta","timestamp":"2026-04-01T10:00:00Z","payload":{"id":"named-session","cwd":"C:\\repo","name":"Friendly Thread"}}""";
+        fileSystem.AddFile(filePath, sessionJson);
+
+        var session = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(
+            fileSystem,
+            NullLogger.Instance,
+            filePath,
+            creationTimeUtc: null,
+            CancellationToken.None);
+
+        session.Should().NotBeNull();
+        session!.HumanLabel.Should().Be("Friendly Thread");
     }
 }
 

@@ -1,0 +1,22 @@
+{
+  "approvalPolicy": "never",
+  "approvalsReviewer": "guardian_subagent",
+  "cwd": "C:\\repo",
+  "model": "gpt-5-codex",
+  "modelProvider": "openai",
+  "sandbox": "danger-full-access",
+  "serviceTier": "flex",
+  "thread": {
+    "id": "t_resumed",
+    "name": "Resumed",
+    "preview": "Resume preview",
+    "updatedAt": "2026-02-06T03:04:05Z",
+    "turns": [
+      { "id": "turn_1" },
+      { "id": "turn_2" }
+    ]
+  },
+  "futureField": {
+    "x": 1
+  }
+}

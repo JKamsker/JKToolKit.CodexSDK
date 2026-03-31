@@ -16,5 +16,10 @@ public sealed record class CodexThreadReadResult
     /// Gets the raw JSON payload for the response.
     /// </summary>
     public required JsonElement Raw { get; init; }
+
+    /// <summary>
+    /// Gets the optional history summary object returned alongside the thread.
+    /// </summary>
+    public JsonElement? HistorySummary { get; init; }
 }
 

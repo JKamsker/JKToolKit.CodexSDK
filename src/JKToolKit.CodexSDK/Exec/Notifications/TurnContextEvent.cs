@@ -1,6 +1,7 @@
 namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 using JKToolKit.CodexSDK.Models;
+using System.Text.Json;
 
 /// <summary>
 /// Represents a turn context event containing execution context information.
@@ -45,4 +46,14 @@ public record TurnContextEvent : CodexEvent
     /// Gets whether network access is enabled for the current turn's sandbox policy (when provided by Codex).
     /// </summary>
     public bool? NetworkAccess { get; init; }
+
+    /// <summary>
+    /// Gets the normalized network-access mode when provided (for example <c>enabled</c> or <c>restricted</c>).
+    /// </summary>
+    public string? NetworkAccessMode { get; init; }
+
+    /// <summary>
+    /// Gets the raw sandbox policy payload when provided.
+    /// </summary>
+    public JsonElement? SandboxPolicyJson { get; init; }
 }

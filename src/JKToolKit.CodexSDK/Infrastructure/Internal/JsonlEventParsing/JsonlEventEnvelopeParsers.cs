@@ -59,10 +59,15 @@ internal static partial class JsonlEventEnvelopeParsers
             "turn_diff" => ParseTurnDiffEvent(innerRoot, timestamp, innerType, rawPayload),
             "entered_review_mode" => ParseEnteredReviewModeEvent(innerRoot, timestamp, innerType, rawPayload),
             "exited_review_mode" => ParseExitedReviewModeEvent(innerRoot, timestamp, innerType, rawPayload, ctx),
+            "collab_agent_spawn_begin" => ParseCollabAgentSpawnBeginEvent(innerRoot, timestamp, innerType, rawPayload),
             "collab_agent_spawn_end" => ParseCollabAgentSpawnEndEvent(innerRoot, timestamp, innerType, rawPayload),
+            "collab_agent_interaction_begin" => ParseCollabAgentInteractionBeginEvent(innerRoot, timestamp, innerType, rawPayload),
             "collab_agent_interaction_end" => ParseCollabAgentInteractionEndEvent(innerRoot, timestamp, innerType, rawPayload),
+            "collab_waiting_begin" => ParseCollabWaitingBeginEvent(innerRoot, timestamp, innerType, rawPayload),
             "collab_waiting_end" => ParseCollabWaitingEndEvent(innerRoot, timestamp, innerType, rawPayload),
+            "collab_close_begin" => ParseCollabCloseBeginEvent(innerRoot, timestamp, innerType, rawPayload),
             "collab_close_end" => ParseCollabCloseEndEvent(innerRoot, timestamp, innerType, rawPayload),
+            "collab_resume_begin" => ParseCollabResumeBeginEvent(innerRoot, timestamp, innerType, rawPayload),
             "collab_resume_end" => ParseCollabResumeEndEvent(innerRoot, timestamp, innerType, rawPayload),
             _ => JsonlEventBasicParsers.ParseUnknownEvent(timestamp, innerType, rawPayload, ctx)
         };
@@ -121,10 +126,15 @@ internal static partial class JsonlEventEnvelopeParsers
             "token_count" => JsonlEventBasicParsers.ParseTokenCountEvent(msg, timestamp, msgType, rawPayload, ctx),
             "turn_aborted" => ParseTurnAbortedEvent(msg, timestamp, msgType, rawPayload),
             "turn_diff" => ParseTurnDiffEvent(msg, timestamp, msgType, rawPayload),
+            "collab_agent_spawn_begin" => ParseCollabAgentSpawnBeginEvent(msg, timestamp, msgType, rawPayload),
             "collab_agent_spawn_end" => ParseCollabAgentSpawnEndEvent(msg, timestamp, msgType, rawPayload),
+            "collab_agent_interaction_begin" => ParseCollabAgentInteractionBeginEvent(msg, timestamp, msgType, rawPayload),
             "collab_agent_interaction_end" => ParseCollabAgentInteractionEndEvent(msg, timestamp, msgType, rawPayload),
+            "collab_waiting_begin" => ParseCollabWaitingBeginEvent(msg, timestamp, msgType, rawPayload),
             "collab_waiting_end" => ParseCollabWaitingEndEvent(msg, timestamp, msgType, rawPayload),
+            "collab_close_begin" => ParseCollabCloseBeginEvent(msg, timestamp, msgType, rawPayload),
             "collab_close_end" => ParseCollabCloseEndEvent(msg, timestamp, msgType, rawPayload),
+            "collab_resume_begin" => ParseCollabResumeBeginEvent(msg, timestamp, msgType, rawPayload),
             "collab_resume_end" => ParseCollabResumeEndEvent(msg, timestamp, msgType, rawPayload),
             _ => JsonlEventBasicParsers.ParseUnknownEvent(timestamp, msgType, rawPayload, ctx)
         };

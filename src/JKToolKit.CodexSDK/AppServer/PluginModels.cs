@@ -29,7 +29,7 @@ public sealed record class PluginSummaryDescriptor
     public required string Id { get; init; }
 
     /// <summary>
-    /// Gets the display name reported by the marketplace.
+    /// Gets the name reported by the marketplace.
     /// </summary>
     public required string Name { get; init; }
 
@@ -49,14 +49,34 @@ public sealed record class PluginSummaryDescriptor
     public string? AuthPolicy { get; init; }
 
     /// <summary>
+    /// Gets the typed plugin auth policy when the marketplace provides one.
+    /// </summary>
+    public PluginAuthPolicy? AuthPolicyValue { get; init; }
+
+    /// <summary>
     /// Gets the plugin install policy when the marketplace provides one.
     /// </summary>
     public string? InstallPolicy { get; init; }
 
     /// <summary>
+    /// Gets the typed plugin install policy when the marketplace provides one.
+    /// </summary>
+    public PluginInstallPolicy? InstallPolicyValue { get; init; }
+
+    /// <summary>
+    /// Gets typed plugin interface metadata when the marketplace provides it.
+    /// </summary>
+    public PluginInterfaceMetadata? Interface { get; init; }
+
+    /// <summary>
     /// Gets the raw source payload when the marketplace provides one.
     /// </summary>
     public JsonElement? Source { get; init; }
+
+    /// <summary>
+    /// Gets typed source metadata when the marketplace provides it.
+    /// </summary>
+    public PluginSourceDescriptor? SourceInfo { get; init; }
 
     /// <summary>
     /// Gets the raw plugin summary payload.
@@ -78,6 +98,11 @@ public sealed record class PluginMarketplace
     /// Gets the marketplace file-system path.
     /// </summary>
     public required string Path { get; init; }
+
+    /// <summary>
+    /// Gets typed marketplace interface metadata when the payload provides it.
+    /// </summary>
+    public PluginMarketplaceInterfaceMetadata? Interface { get; init; }
 
     /// <summary>
     /// Gets the plugins exposed by the marketplace.
@@ -155,6 +180,11 @@ public sealed record class PluginSkillDescriptor
     /// Gets the optional short skill description.
     /// </summary>
     public string? ShortDescription { get; init; }
+
+    /// <summary>
+    /// Gets typed skill interface metadata when the payload provides it.
+    /// </summary>
+    public PluginSkillInterfaceMetadata? Interface { get; init; }
 
     /// <summary>
     /// Gets the raw skill payload.

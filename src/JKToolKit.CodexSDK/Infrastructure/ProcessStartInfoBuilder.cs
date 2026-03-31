@@ -76,13 +76,22 @@ internal static class ProcessStartInfoBuilder
     /// <returns>Populated <see cref="ProcessStartInfo"/> ready for launch.</returns>
     public static ProcessStartInfo CreateResume(string executablePath, SessionId sessionId, CodexSessionOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        var target = options.ResumeTargetOverride ?? CodexResumeTarget.BySelector(sessionId.Value);
+        return CreateResume(executablePath, target, options);
+    }
+
+    public static ProcessStartInfo CreateResume(string executablePath, CodexResumeTarget target, CodexSessionOptions options)
+    {
         if (string.IsNullOrWhiteSpace(executablePath))
         {
             throw new ArgumentException("Executable path cannot be null or whitespace.", nameof(executablePath));
         }
 
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
+        target.Validate();
 
         var startInfo = new ProcessStartInfo
         {
@@ -112,8 +121,21 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add(option);
         }
 
+        if (target.IncludeAllSessions)
+        {
+            startInfo.ArgumentList.Add("--all");
+        }
+
         startInfo.ArgumentList.Add("resume");
-        startInfo.ArgumentList.Add(sessionId.Value);
+        if (target.UseMostRecent)
+        {
+            startInfo.ArgumentList.Add("--last");
+        }
+        else
+        {
+            startInfo.ArgumentList.Add(target.Selector!);
+        }
+
         startInfo.ArgumentList.Add(options.CommandPromptToken);
 
         return startInfo;

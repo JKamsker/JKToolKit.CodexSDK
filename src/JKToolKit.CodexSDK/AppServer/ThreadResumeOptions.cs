@@ -84,9 +84,9 @@ public sealed class ThreadResumeOptions
     public CodexAskForApproval? AskForApproval { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional approval reviewer routing override (raw JSON object).
+    /// Gets or sets an optional approval reviewer routing override.
     /// </summary>
-    public JsonElement? ApprovalsReviewer { get; set; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; set; }
 
     /// <summary>
     /// Gets or sets an optional sandbox mode.

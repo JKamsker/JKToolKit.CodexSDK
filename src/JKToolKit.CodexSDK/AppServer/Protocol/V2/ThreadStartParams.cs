@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -49,10 +49,10 @@ public sealed record class ThreadStartParams
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
-    /// Gets an optional approval reviewer routing override (raw JSON object).
+    /// Gets an optional approval reviewer routing override.
     /// </summary>
     [JsonPropertyName("approvalsReviewer")]
-    public JsonElement? ApprovalsReviewer { get; init; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the thread (wire value).

@@ -1,7 +1,9 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -19,8 +21,15 @@ public sealed class ThreadApiParsingTests
         threads.Select(t => t.ThreadId).Should().Equal("t_1", "t_2");
         cursor.Should().Be("cursor_2");
         threads[0].ModelProvider.Should().Be("openai");
+        threads[0].Preview.Should().Be("Preview One");
+        threads[0].SourceKind.Should().Be("cli");
+        threads[0].TurnCount.Should().Be(1);
         threads[0].ServiceTier.Should().BeNull();
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
+        threads[1].ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Flex);
+        threads[1].Path.Should().Contain("archived_sessions");
+        threads[1].SourceKind.Should().Be("subagent");
+        threads[1].AgentNickname.Should().Be("beta");
         threads[1].Raw.TryGetProperty("wrapperUnknown", out _).Should().BeTrue();
     }
 
@@ -32,10 +41,14 @@ public sealed class ThreadApiParsingTests
 
         CodexAppServerClient.ExtractThreadId(threadObj).Should().Be("t_read");
 
-        var summary = CodexAppServerClient.ParseThreadSummary(threadObj);
+        var summary = CodexAppServerClient.ParseThreadSummary(threadObj, raw);
         summary.Should().NotBeNull();
         summary!.Name.Should().Be("Read Me");
         summary.ModelProvider.Should().Be("openai");
+        summary.Path.Should().Contain("rollout-t_read");
+        summary.SourceKind.Should().Be("cli");
+        summary.ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Fast);
+        summary.TurnCount.Should().Be(3);
     }
 
     [Fact]
@@ -58,6 +71,38 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
+    public void ParseLifecycleThread_ProjectsTypedEnvelopeFields()
+    {
+        var raw = JsonFixtures.Load("thread-fork-response.json");
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(raw);
+
+        result.Id.Should().Be("t_forked");
+        result.Thread.Name.Should().Be("Forked");
+        result.Thread.Model.Should().Be("gpt-5");
+        result.Thread.Cwd.Should().Be("C:\\repo");
+        result.ApprovalPolicy.Should().Be(JKToolKit.CodexSDK.Models.CodexApprovalPolicy.Never);
+        result.ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
+        result.Sandbox.Should().Be(JKToolKit.CodexSDK.Models.CodexSandboxMode.WorkspaceWrite);
+        result.ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Flex);
+    }
+
+    [Fact]
+    public void ParseReadResult_ProjectsHistorySummary()
+    {
+        var raw = JsonFixtures.Load("thread-read-response.json");
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseReadResult(raw, "fallback");
+
+        result.Thread.ThreadId.Should().Be("t_read");
+        result.HistorySummary.Should().NotBeNull();
+        result.HistorySummary!.Value.GetProperty("turns").GetInt32().Should().Be(3);
+
+        var response = JsonSerializer.Deserialize<ThreadReadResponse>(JsonFixtures.LoadText("thread-read-response.json"));
+        response!.HistorySummary.Should().NotBeNull();
+    }
+
+    [Fact]
     public void ThreadRollbackResponse_ExtractsThreadId_FromThreadObject()
     {
         var raw = JsonFixtures.Load("thread-rollback-response.json");
@@ -76,6 +121,26 @@ public sealed class ThreadApiParsingTests
         response!.Thread.Should().NotBeNull();
         response.ExtensionData.Should().NotBeNull();
         response.ExtensionData!.Should().ContainKey("futureField");
+    }
+
+    [Fact]
+    public void ThreadLifecycleResponses_DeserializeTypedReviewer()
+    {
+        var start = JsonSerializer.Deserialize<ThreadStartResponse>(JsonFixtures.LoadText("thread-start-response.json"));
+        var resume = JsonSerializer.Deserialize<ThreadResumeResponse>(JsonFixtures.LoadText("thread-resume-response.json"));
+        var fork = JsonSerializer.Deserialize<ThreadForkResponse>(JsonFixtures.LoadText("thread-fork-response.json"));
+
+        start!.ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.User);
+        start.ServiceTier.Should().Be("fast");
+        start.ExtensionData.Should().ContainKey("futureField");
+
+        resume!.ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
+        resume.Sandbox.Should().Be("danger-full-access");
+        resume.ExtensionData.Should().ContainKey("futureField");
+
+        fork!.ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
+        fork.Sandbox.Should().Be("workspace-write");
+        fork.ExtensionData.Should().ContainKey("unknown");
     }
 }
 

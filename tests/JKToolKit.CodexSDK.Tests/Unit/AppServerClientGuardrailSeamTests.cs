@@ -169,6 +169,32 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task ForkThread_WithPathAndThreadId_IgnoresThreadId_WhenExperimentalEnabled()
+    {
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr_1"}}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var thread = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            Path = "/tmp/rollout"
+        });
+
+        thread.Id.Should().Be("thr_1");
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/fork");
+        rpc.LastParams.Should().BeOfType<ThreadForkParams>();
+        ((ThreadForkParams)rpc.LastParams!).ThreadId.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task StartThread_WithDynamicTools_WhenExperimentalEnabled_SendsThreadStart()
     {
         using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
@@ -202,6 +228,31 @@ public sealed class AppServerClientGuardrailSeamTests
         var p = (ThreadStartParams)rpc.LastParams!;
         p.DynamicTools.Should().BeEquivalentTo(new[] { tool });
         p.PersistExtendedHistory.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task StartTurn_WithApprovalsReviewer_SendsTypedReviewerValue()
+    {
+        using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var turn = await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            ApprovalsReviewer = CodexApprovalsReviewer.GuardianSubagent
+        });
+
+        turn.TurnId.Should().Be("turn_1");
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("turn/start");
+        rpc.LastParams.Should().BeOfType<TurnStartParams>();
+        ((TurnStartParams)rpc.LastParams!).ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
     }
 
     [Fact]
@@ -363,6 +414,7 @@ public sealed class AppServerClientGuardrailSeamTests
         var audio = new ThreadRealtimeAudioChunk
         {
             Data = "AA==",
+            ItemId = "item_1",
             NumChannels = 1,
             SampleRate = 16000,
             SamplesPerChannel = 160

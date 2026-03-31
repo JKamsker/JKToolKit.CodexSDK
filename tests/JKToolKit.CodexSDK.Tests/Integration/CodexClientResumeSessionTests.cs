@@ -141,15 +141,59 @@ public class CodexClientResumeSessionTests
         await Assert.ThrowsAsync<FileNotFoundException>(() => client.ResumeSessionAsync(sessionId));
     }
 
+    [Fact]
+    public async Task ResumeSessionAsync_WithMostRecentTarget_ReplaysNewestSession()
+    {
+        var firstId = SessionId.Parse("session-first");
+        var secondId = SessionId.Parse("session-second");
+        var baseTime = DateTimeOffset.Parse("2025-11-21T00:00:00Z");
+        var newestPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime.AddMinutes(1), secondId);
+
+        var logs = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            [newestPath] = new[]
+            {
+                TestJsonlGenerator.GenerateSessionMeta(secondId, "C:\\repos\\demo", baseTime.AddMinutes(1)),
+                TestJsonlGenerator.GenerateAgentMessage("newest", baseTime.AddMinutes(1).AddSeconds(1))
+            }
+        };
+
+        var locator = new StubSessionLocator(
+            newestPath,
+            listedSessions:
+            [
+                new CodexSessionInfo(firstId, "C:\\sessions\\older.jsonl", baseTime, "C:\\repos\\demo", null, "older"),
+                new CodexSessionInfo(secondId, newestPath, baseTime.AddMinutes(1), "C:\\repos\\demo", null, "newest")
+            ]);
+
+        var client = new CodexClient(
+            Options.Create(new CodexClientOptions()),
+            processLauncher: null,
+            locator,
+            new PathAwareTailer(logs),
+            new JsonlEventParser(LoggerFactory.CreateLogger<JsonlEventParser>()),
+            new FakePathProvider("C:\\sessions"),
+            LoggerFactory.CreateLogger<CodexClient>(),
+            LoggerFactory);
+
+        await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent());
+        var events = await handle.GetEventsAsync(EventStreamOptions.Default, CancellationToken.None).ToListAsync();
+
+        Assert.Equal(secondId, handle.Info.Id);
+        Assert.Contains(events, evt => evt is AgentMessageEvent { Text: "newest" });
+    }
+
     private sealed class StubSessionLocator : ICodexSessionLocator
     {
         private readonly string _path;
         private readonly bool _throwOnFind;
+        private readonly IReadOnlyList<CodexSessionInfo> _listedSessions;
 
-        public StubSessionLocator(string path, bool throwOnFind = false)
+        public StubSessionLocator(string path, bool throwOnFind = false, IReadOnlyList<CodexSessionInfo>? listedSessions = null)
         {
             _path = path;
             _throwOnFind = throwOnFind;
+            _listedSessions = listedSessions ?? Array.Empty<CodexSessionInfo>();
         }
 
         public Task<string> WaitForNewSessionFileAsync(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout, CancellationToken cancellationToken)
@@ -188,7 +232,25 @@ public class CodexClientResumeSessionTests
 
         public IAsyncEnumerable<CodexSessionInfo> ListSessionsAsync(string sessionsRoot, SessionFilter? filter, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return EnumerateAsync(filter, cancellationToken);
+        }
+
+        private async IAsyncEnumerable<CodexSessionInfo> EnumerateAsync(SessionFilter? filter, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            foreach (var session in _listedSessions.OrderByDescending(session => session.CreatedAt))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (filter is not null &&
+                    !string.IsNullOrWhiteSpace(filter.WorkingDirectory) &&
+                    !string.Equals(filter.WorkingDirectory, session.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                yield return session;
+                await Task.Yield();
+            }
         }
     }
 
@@ -232,5 +294,23 @@ public class CodexClientResumeSessionTests
                 sessionsRoot ?? _sessionsRoot,
                 DateTimeOffset.Parse("2025-11-20T22:00:00Z"),
                 sessionId);
+    }
+
+    private sealed class PathAwareTailer(IReadOnlyDictionary<string, IReadOnlyList<string>> linesByPath) : IJsonlTailer
+    {
+        public async IAsyncEnumerable<string> TailAsync(string filePath, EventStreamOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            if (!linesByPath.TryGetValue(filePath, out var lines))
+            {
+                yield break;
+            }
+
+            foreach (var line in lines)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return line;
+                await Task.Yield();
+            }
+        }
     }
 }

@@ -23,7 +23,7 @@ internal static class CodexAppServerClientThreadParsers
         var threads = new List<CodexThreadSummary>();
         foreach (var item in array.Value.EnumerateArray())
         {
-            var summary = ParseThreadSummary(item);
+            var summary = ParseThreadSummary(item, item);
             if (summary is not null)
             {
                 threads.Add(summary);
@@ -33,7 +33,7 @@ internal static class CodexAppServerClientThreadParsers
         return threads;
     }
 
-    public static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject)
+    public static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject, JsonElement? envelope = null)
     {
         if (threadObject.ValueKind != JsonValueKind.Object)
         {
@@ -41,6 +41,7 @@ internal static class CodexAppServerClientThreadParsers
         }
 
         var primary = TryGetObject(threadObject, "thread") ?? threadObject;
+        var secondary = envelope is { ValueKind: JsonValueKind.Object } other ? other : threadObject;
 
         var threadId = ExtractThreadId(threadObject);
         if (string.IsNullOrWhiteSpace(threadId))
@@ -48,13 +49,10 @@ internal static class CodexAppServerClientThreadParsers
             return null;
         }
 
-        var name =
-            GetStringOrNull(primary, "name") ??
-            GetStringOrNull(primary, "threadName") ??
-            GetStringOrNull(primary, "title") ??
-            GetStringOrNull(primary, "preview");
+        var name = GetString(primary, secondary, "name", "threadName", "title", "preview");
+        var preview = GetString(primary, secondary, "preview");
 
-        var status = TryGetObject(primary, "status");
+        var status = TryGetObject(primary, "status") ?? TryGetObject(secondary, "status");
         var statusType = status is { } st ? GetStringOrNull(st, "type") : null;
         var activeFlags =
             string.Equals(statusType, "active", StringComparison.OrdinalIgnoreCase) &&
@@ -62,20 +60,28 @@ internal static class CodexAppServerClientThreadParsers
                 ? GetOptionalStringArray(sf, "activeFlags")
                 : null;
 
-        var archived = GetBoolOrNull(primary, "archived");
+        var archived = GetBool(primary, secondary, "archived");
         if (archived is null &&
-            GetStringOrNull(primary, "path") is { Length: > 0 } path &&
+            GetString(primary, secondary, "path") is { Length: > 0 } path &&
             path.Contains("archived_sessions", StringComparison.OrdinalIgnoreCase))
         {
             archived = true;
         }
-        var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
-        var cwd = GetStringOrNull(primary, "cwd");
-        var model = GetStringOrNull(primary, "model");
-        var modelProvider = GetStringOrNull(primary, "modelProvider");
-        var serviceTier = CodexServiceTier.TryParse(GetStringOrNull(threadObject, "serviceTier"), out var parsedServiceTier)
+        var createdAt = GetDateTimeOffset(primary, secondary, "createdAt");
+        var updatedAt = GetDateTimeOffset(primary, secondary, "updatedAt");
+        var cwd = GetString(primary, secondary, "cwd");
+        var pathValue = GetString(primary, secondary, "path");
+        var model = GetString(primary, secondary, "model");
+        var modelProvider = GetString(primary, secondary, "modelProvider");
+        var serviceTier = CodexServiceTier.TryParse(GetString(primary, secondary, "serviceTier"), out var parsedServiceTier)
             ? parsedServiceTier
             : (CodexServiceTier?)null;
+        var ephemeral = GetBool(primary, secondary, "ephemeral");
+        var sourceKind = GetSourceKind(primary, secondary);
+        var cliVersion = GetString(primary, secondary, "cliVersion");
+        var agentNickname = GetString(primary, secondary, "agentNickname");
+        var agentRole = GetString(primary, secondary, "agentRole");
+        var turnCount = GetArrayCount(primary, secondary, "turns");
 
         return new CodexThreadSummary
         {
@@ -84,11 +90,20 @@ internal static class CodexAppServerClientThreadParsers
             Archived = archived,
             StatusType = statusType,
             ActiveFlags = activeFlags,
+            Preview = preview,
             CreatedAt = createdAt,
+            UpdatedAt = updatedAt,
             Cwd = cwd,
+            Path = pathValue,
             Model = model,
             ModelProvider = modelProvider,
             ServiceTier = serviceTier,
+            Ephemeral = ephemeral,
+            SourceKind = sourceKind,
+            CliVersion = cliVersion,
+            AgentNickname = agentNickname,
+            AgentRole = agentRole,
+            TurnCount = turnCount,
             Raw = threadObject
         };
     }
@@ -118,10 +133,66 @@ internal static class CodexAppServerClientThreadParsers
                 {
                     ids.Add(id);
                 }
+
+                continue;
+            }
+
+            var threadId = ExtractThreadId(item);
+            if (!string.IsNullOrWhiteSpace(threadId))
+            {
+                ids.Add(threadId);
             }
         }
 
         return ids;
+    }
+
+    private static string? GetString(JsonElement primary, JsonElement secondary, params string[] propertyNames)
+    {
+        foreach (var propertyName in propertyNames)
+        {
+            var value = GetStringOrNull(primary, propertyName) ?? GetStringOrNull(secondary, propertyName);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool? GetBool(JsonElement primary, JsonElement secondary, string propertyName) =>
+        GetBoolOrNull(primary, propertyName) ?? GetBoolOrNull(secondary, propertyName);
+
+    private static DateTimeOffset? GetDateTimeOffset(JsonElement primary, JsonElement secondary, string propertyName) =>
+        GetDateTimeOffsetOrNull(primary, propertyName) ?? GetDateTimeOffsetOrNull(secondary, propertyName);
+
+    private static int? GetArrayCount(JsonElement primary, JsonElement secondary, string propertyName)
+    {
+        var array = TryGetArray(primary, propertyName) ?? TryGetArray(secondary, propertyName);
+        if (array is null || array.Value.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        return array.Value.GetArrayLength();
+    }
+
+    private static string? GetSourceKind(JsonElement primary, JsonElement secondary)
+    {
+        var source = GetStringOrNull(primary, "source") ?? GetStringOrNull(secondary, "source");
+        if (!string.IsNullOrWhiteSpace(source))
+        {
+            return source;
+        }
+
+        var sourceObject = TryGetObject(primary, "source") ?? TryGetObject(secondary, "source");
+        if (sourceObject is not { } so)
+        {
+            return null;
+        }
+
+        return GetStringOrNull(so, "kind") ?? GetStringOrNull(so, "type");
     }
 }
 

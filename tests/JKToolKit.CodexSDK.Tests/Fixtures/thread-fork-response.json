@@ -1,8 +1,18 @@
 {
+  "approvalPolicy": "never",
+  "approvalsReviewer": "guardian_subagent",
+  "cwd": "C:\\repo",
+  "model": "gpt-5",
+  "modelProvider": "openai",
+  "sandbox": "workspace-write",
+  "serviceTier": "flex",
   "thread": {
     "id": "t_forked",
-    "name": "Forked"
+    "name": "Forked",
+    "preview": "Fork preview",
+    "createdAt": "2026-02-04T00:00:00Z",
+    "updatedAt": "2026-02-04T01:00:00Z",
+    "source": "cli"
   },
   "unknown": 123
 }
-

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -17,27 +18,37 @@ internal sealed class CodexAppServerCommandExecClient
         if (options.Command.Count == 0)
             throw new ArgumentException("Command cannot be empty.", nameof(options));
 
+        ValidateExecutionOptions(options);
         ValidateStreamingProcessId(options.ProcessId, options.StreamStdin, options.StreamStdoutStderr, options.Tty);
 
         var result = await _sendRequestAsync(
             "command/exec",
-            new
+            new UpstreamV2.CommandExecParams
             {
-                command = options.Command,
-                cwd = options.Cwd,
-                disableOutputCap = options.DisableOutputCap,
-                disableTimeout = options.DisableTimeout,
-                env = options.Env,
-                outputBytesCap = options.OutputBytesCap,
-                processId = options.ProcessId,
-                sandboxPolicy = options.SandboxPolicy,
-                size = options.Size is null ? null : new { cols = options.Size.Columns, rows = options.Size.Rows },
-                streamStdin = options.StreamStdin,
-                streamStdoutStderr = options.StreamStdoutStderr,
-                timeoutMs = options.TimeoutMs,
-                tty = options.Tty
+                Command = options.Command.ToArray(),
+                Cwd = options.Cwd,
+                DisableOutputCap = options.DisableOutputCap,
+                DisableTimeout = options.DisableTimeout,
+                Env = options.Env is null ? null : new Dictionary<string, string?>(options.Env, StringComparer.Ordinal),
+                OutputBytesCap = options.OutputBytesCap,
+                ProcessId = options.ProcessId,
+                SandboxPolicy = BuildSandboxPolicy(options.SandboxPolicy),
+                StreamStdin = options.StreamStdin,
+                StreamStdoutStderr = options.StreamStdoutStderr,
+                TimeoutMs = options.TimeoutMs,
+                Tty = options.Tty,
+                Size = options.Size is null
+                    ? null
+                    : new UpstreamV2.Size
+                    {
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["cols"] = options.Size.Columns,
+                            ["rows"] = options.Size.Rows
+                        }
+                    }
             },
-            ct);
+            ct).ConfigureAwait(false);
 
         return new CommandExecResult
         {
@@ -56,13 +67,13 @@ internal sealed class CodexAppServerCommandExecClient
 
         var result = await _sendRequestAsync(
             "command/exec/write",
-            new
+            new UpstreamV2.CommandExecWriteParams
             {
-                processId = options.ProcessId,
-                deltaBase64 = options.DeltaBase64,
-                closeStdin = options.CloseStdin
+                ProcessId = options.ProcessId,
+                DeltaBase64 = options.DeltaBase64,
+                CloseStdin = options.CloseStdin
             },
-            ct);
+            ct).ConfigureAwait(false);
 
         return new CommandExecWriteResult { Raw = result };
     }
@@ -76,12 +87,16 @@ internal sealed class CodexAppServerCommandExecClient
 
         var result = await _sendRequestAsync(
             "command/exec/resize",
-            new
+            new UpstreamV2.CommandExecResizeParams
             {
-                processId = options.ProcessId,
-                size = new { cols = options.Size.Columns, rows = options.Size.Rows }
+                ProcessId = options.ProcessId,
+                Size = new UpstreamV2.CommandExecTerminalSize
+                {
+                    Cols = options.Size.Columns,
+                    Rows = options.Size.Rows
+                }
             },
-            ct);
+            ct).ConfigureAwait(false);
 
         return new CommandExecResizeResult { Raw = result };
     }
@@ -94,13 +109,31 @@ internal sealed class CodexAppServerCommandExecClient
 
         var result = await _sendRequestAsync(
             "command/exec/terminate",
-            new
+            new UpstreamV2.CommandExecTerminateParams
             {
-                processId = options.ProcessId
+                ProcessId = options.ProcessId
             },
-            ct);
+            ct).ConfigureAwait(false);
 
         return new CommandExecTerminateResult { Raw = result };
+    }
+
+    private static void ValidateExecutionOptions(CommandExecOptions options)
+    {
+        if (options.DisableOutputCap == true && options.OutputBytesCap.HasValue)
+        {
+            throw new ArgumentException("DisableOutputCap cannot be combined with OutputBytesCap.", nameof(options));
+        }
+
+        if (options.DisableTimeout == true && options.TimeoutMs.HasValue)
+        {
+            throw new ArgumentException("DisableTimeout cannot be combined with TimeoutMs.", nameof(options));
+        }
+
+        if (options.Size is not null && options.Tty != true)
+        {
+            throw new ArgumentException("Size requires tty to be enabled.", nameof(options));
+        }
     }
 
     private static void ValidateStreamingProcessId(
@@ -116,5 +149,17 @@ internal sealed class CodexAppServerCommandExecClient
                 "ProcessId is required when streamStdin, streamStdoutStderr, or tty is enabled.",
                 nameof(processId));
         }
+    }
+
+    private static UpstreamV2.SandboxPolicy2? BuildSandboxPolicy(Protocol.SandboxPolicy.SandboxPolicy? sandboxPolicy)
+    {
+        if (sandboxPolicy is null)
+        {
+            return null;
+        }
+
+        var serializerOptions = CodexAppServerClient.CreateDefaultSerializerOptions();
+        var payload = JsonSerializer.SerializeToElement(sandboxPolicy, serializerOptions);
+        return payload.Deserialize<UpstreamV2.SandboxPolicy2>(serializerOptions);
     }
 }

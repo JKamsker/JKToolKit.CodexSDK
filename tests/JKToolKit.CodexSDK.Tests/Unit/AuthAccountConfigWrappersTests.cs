@@ -126,6 +126,76 @@ public sealed class AuthAccountConfigWrappersTests
     }
 
     [Fact]
+    public async Task StartWindowsSandboxSetupAsync_RelativeCwd_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc
+        {
+            Result = JsonSerializer.SerializeToElement(new { started = true })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.StartWindowsSandboxSetupAsync(
+            new WindowsSandboxSetupStartOptions(WindowsSandboxSetupMode.Elevated)
+            {
+                Cwd = "relative\\repo"
+            });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*absolute path*");
+        rpc.SendRequestCallCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task WriteSkillsConfigAsync_NameSelector_CallsExpectedMethod()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "skills/config/write",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("enabled").GetBoolean().Should().BeTrue();
+                json.GetProperty("name").GetString().Should().Be("my-skill");
+                json.TryGetProperty("path", out _).Should().BeFalse();
+            },
+            Result = JsonSerializer.SerializeToElement(new { effectiveEnabled = true })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.WriteSkillsConfigAsync(new SkillsConfigWriteOptions
+        {
+            Enabled = true,
+            Name = "my-skill"
+        });
+
+        result.EffectiveEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task WriteSkillsConfigAsync_WhenBothSelectorsProvided_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc
+        {
+            Result = JsonSerializer.SerializeToElement(new { effectiveEnabled = true })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.WriteSkillsConfigAsync(new SkillsConfigWriteOptions
+        {
+            Enabled = true,
+            Name = "my-skill",
+            Path = "skills/my-skill"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Exactly one of Path or Name*");
+        rpc.SendRequestCallCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task StartAccountLoginAsync_ChatGptAuthTokens_ThrowsWhenExperimentalApiDisabled()
     {
         var rpc = new FakeRpc

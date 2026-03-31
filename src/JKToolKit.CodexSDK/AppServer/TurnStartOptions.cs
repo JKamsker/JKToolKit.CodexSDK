@@ -42,13 +42,13 @@ public sealed class TurnStartOptions
     public CodexAskForApproval? AskForApproval { get; set; }
 
     /// <summary>
-    /// Optional approval reviewer routing override (raw JSON object).
+    /// Optional approval reviewer routing override.
     /// </summary>
     /// <remarks>
     /// In the v2 app-server protocol, this override applies to this turn and subsequent turns.
-    /// This can be used to route approval requests to a specific review destination.
+    /// Known values currently include <c>user</c> and <c>guardian_subagent</c>.
     /// </remarks>
-    public JsonElement? ApprovalsReviewer { get; set; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; set; }
 
     /// <summary>
     /// Optional sandbox policy override for this turn and subsequent turns.

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.StructuredOutputs;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 
 namespace JKToolKit.CodexSDK.Exec;
 
@@ -127,6 +128,8 @@ public class CodexSessionOptions
     /// so the SDK suppresses it for parity.
     /// </remarks>
     public string? StdinPayload { get; set; }
+
+    internal CodexResumeTarget? ResumeTargetOverride { get; set; }
 
     /// <summary>
     /// Gets or sets the Codex model to use for this session.
@@ -294,44 +297,18 @@ public class CodexSessionOptions
             throw new InvalidOperationException("StdinPayload can only be used when PromptArgument is set.");
         }
 
-        static bool IsEphemeralArg(string? arg)
-        {
-            if (string.IsNullOrWhiteSpace(arg))
-            {
-                return false;
-            }
-
-            if (arg.Equals("--ephemeral", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return arg.StartsWith("--ephemeral=", StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (_additionalOptions.Any(IsEphemeralArg))
-        {
-            throw new InvalidOperationException(
-                "AdditionalOptions contains '--ephemeral', but file-backed exec sessions are not ephemeral. Remove '--ephemeral' for exec/start-resume-list flows.");
-        }
-
         if (string.IsNullOrWhiteSpace(Model.Value))
             throw new InvalidOperationException("Model is required and cannot be empty.");
 
         if (string.IsNullOrWhiteSpace(ReasoningEffort.Value))
             throw new InvalidOperationException("ReasoningEffort is required and cannot be empty.");
 
-        if (string.Equals(ReasoningEffort.Value, CodexReasoningEffort.XHigh.Value, StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(Model.Value, CodexModel.Gpt51CodexMax.Value, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                "ReasoningEffort 'xhigh' is only supported with model 'gpt-5.1-codex-max'.");
-        }
-
         if (IdleTimeout.HasValue && IdleTimeout.Value <= TimeSpan.Zero)
         {
             throw new InvalidOperationException("IdleTimeout, when set, must be greater than zero.");
         }
+
+        ResumeTargetOverride?.Validate();
 
         if (_outputSchema is { } schema)
         {
@@ -417,7 +394,8 @@ public class CodexSessionOptions
             CodexBinaryPath = CodexBinaryPath,
             IdleTimeout = IdleTimeout,
             OutputSchema = OutputSchema,
-            StdinPayload = StdinPayload
+            StdinPayload = StdinPayload,
+            ResumeTargetOverride = ResumeTargetOverride
         };
 
         clone._workingDirectory = _workingDirectory;
@@ -442,4 +420,6 @@ public class CodexSessionOptions
     internal string? StandardInputPayload => UsesPromptArgumentMode ? StdinPayload : _prompt;
 
     internal string? ResumeStandardInputPayload => UsesPromptArgumentMode ? null : _prompt;
+
+    internal bool RequestsEphemeralSession => CodexExecOptionHelpers.RequestsEphemeralSession(_additionalOptions);
 }

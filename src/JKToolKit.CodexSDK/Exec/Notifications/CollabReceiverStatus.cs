@@ -24,22 +24,27 @@ public enum CollabReceiverStatus
     Running = 2,
 
     /// <summary>
+    /// The receiver was interrupted and may later continue.
+    /// </summary>
+    Interrupted = 3,
+
+    /// <summary>
     /// The receiver completed successfully.
     /// </summary>
-    Completed = 3,
+    Completed = 4,
 
     /// <summary>
     /// The receiver errored.
     /// </summary>
-    Errored = 4,
+    Errored = 5,
 
     /// <summary>
     /// The receiver was shut down.
     /// </summary>
-    Shutdown = 5,
+    Shutdown = 6,
 
     /// <summary>
     /// The receiver was not found.
     /// </summary>
-    NotFound = 6
+    NotFound = 7
 }

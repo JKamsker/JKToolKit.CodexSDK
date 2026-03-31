@@ -64,11 +64,6 @@ internal static class ExperimentalApiGuards
             throw new ArgumentException("Either ThreadId or Path must be specified.", nameof(options));
         }
 
-        if (hasThreadId && hasPath)
-        {
-            throw new ArgumentException("Specify either ThreadId or Path, not both.", nameof(options));
-        }
-
         if (!experimentalApiEnabled && hasPath)
         {
             throw new CodexExperimentalApiRequiredException("thread/fork.path");

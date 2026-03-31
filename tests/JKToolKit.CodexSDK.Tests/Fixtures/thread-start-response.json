@@ -1,0 +1,17 @@
+{
+  "approvalPolicy": "on-request",
+  "approvalsReviewer": "user",
+  "cwd": "C:\\repo",
+  "model": "gpt-5",
+  "modelProvider": "openai",
+  "sandbox": "workspace-write",
+  "serviceTier": "fast",
+  "thread": {
+    "id": "t_started",
+    "name": "Started",
+    "preview": "Start preview",
+    "createdAt": "2026-02-05T00:00:00Z",
+    "source": "cli"
+  },
+  "futureField": true
+}

@@ -42,10 +42,10 @@ public sealed record class TurnStartParams
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
-    /// Gets an optional approval reviewer routing override for this turn and subsequent turns (raw JSON object).
+    /// Gets an optional approval reviewer routing override for this turn and subsequent turns.
     /// </summary>
     [JsonPropertyName("approvalsReviewer")]
-    public JsonElement? ApprovalsReviewer { get; init; }
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox policy override for this turn and subsequent turns.

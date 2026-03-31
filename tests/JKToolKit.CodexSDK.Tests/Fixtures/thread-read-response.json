@@ -2,14 +2,25 @@
   "thread": {
     "id": "t_read",
     "name": "Read Me",
+    "preview": "Read Preview",
     "archived": false,
     "createdAt": "2026-02-02T00:00:00Z",
+    "updatedAt": 1770001200,
     "cwd": "C:\\repo",
-    "model": "gpt-5",
-    "modelProvider": "openai",
+    "path": "C:\\repo\\.codex\\sessions\\rollout-t_read.jsonl",
+    "source": {
+      "kind": "cli"
+    },
+    "turns": [
+      { "id": "turn_1" },
+      { "id": "turn_2" },
+      { "id": "turn_3" }
+    ],
     "extra": { "any": "value" }
   },
+  "model": "gpt-5",
+  "modelProvider": "openai",
+  "serviceTier": "fast",
   "historySummary": { "turns": 3 },
   "unknownTopLevel": true
 }
-

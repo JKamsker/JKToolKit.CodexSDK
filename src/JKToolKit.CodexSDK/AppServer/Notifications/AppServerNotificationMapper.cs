@@ -224,6 +224,15 @@ internal static class AppServerNotificationMapper
                 apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
                 @params: p),
 
+            "skills/changed" => new SkillsChangedNotification(
+                @params: p),
+
+            "serverRequest/resolved" => new ServerRequestResolvedNotification(
+                threadId: GetString(p, "threadId") ?? string.Empty,
+                requestId: AppServerNotificationParsing.GetAny(p, "requestId"),
+                requestIdValue: AppServerNotificationParsing.GetScalarText(p, "requestId"),
+                @params: p),
+
             "fs/changed" => new FsChangedNotification(
                 WatchId: GetString(p, "watchId") ?? string.Empty,
                 ChangedPaths: GetStringArray(p, "changedPaths"),
@@ -232,11 +241,27 @@ internal static class AppServerNotificationMapper
             "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
                 query: GetString(p, "query") ?? string.Empty,
-                files: ParseFuzzyFileSearchResults(p),
+                files: AppServerNotificationParsing.ParseFuzzyFileSearchResults(p),
                 @params: p),
 
             "fuzzyFileSearch/sessionCompleted" => new FuzzyFileSearchSessionCompletedNotification(
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
+                @params: p),
+
+            "item/autoApprovalReview/started" => new ItemAutoApprovalReviewStartedNotification(
+                threadId: GetString(p, "threadId") ?? string.Empty,
+                turnId: GetString(p, "turnId") ?? string.Empty,
+                targetItemId: GetString(p, "targetItemId") ?? string.Empty,
+                action: AppServerNotificationParsing.GetAny(p, "action"),
+                review: AppServerNotificationParsing.ParseGuardianApprovalReviewInfo(p, "review"),
+                @params: p),
+
+            "item/autoApprovalReview/completed" => new ItemAutoApprovalReviewCompletedNotification(
+                threadId: GetString(p, "threadId") ?? string.Empty,
+                turnId: GetString(p, "turnId") ?? string.Empty,
+                targetItemId: GetString(p, "targetItemId") ?? string.Empty,
+                action: AppServerNotificationParsing.GetAny(p, "action"),
+                review: AppServerNotificationParsing.ParseGuardianApprovalReviewInfo(p, "review"),
                 @params: p),
 
             "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
@@ -411,62 +436,6 @@ internal static class AppServerNotificationMapper
             list.Add(new TurnPlanStep(
                 Step: GetString(el, "step") ?? string.Empty,
                 Status: GetString(el, "status") ?? string.Empty));
-        }
-
-        return list;
-    }
-
-    private static IReadOnlyList<FuzzyFileSearchResult> ParseFuzzyFileSearchResults(JsonElement obj)
-    {
-        if (!obj.TryGetProperty("files", out var filesProp) || filesProp.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<FuzzyFileSearchResult>();
-        }
-
-        var list = new List<FuzzyFileSearchResult>();
-        foreach (var item in filesProp.EnumerateArray())
-        {
-            if (item.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            var root = GetString(item, "root") ?? string.Empty;
-            var path = GetString(item, "path") ?? string.Empty;
-            var fileName = GetString(item, "fileName") ?? GetString(item, "file_name") ?? string.Empty;
-
-            uint score = 0;
-            if (item.TryGetProperty("score", out var scoreProp) &&
-                scoreProp.ValueKind == JsonValueKind.Number &&
-                scoreProp.TryGetUInt32(out var s))
-            {
-                score = s;
-            }
-
-            IReadOnlyList<uint>? indices = null;
-            if (item.TryGetProperty("indices", out var indicesProp) && indicesProp.ValueKind == JsonValueKind.Array)
-            {
-                var idx = new List<uint>();
-                foreach (var i in indicesProp.EnumerateArray())
-                {
-                    if (i.ValueKind == JsonValueKind.Number && i.TryGetUInt32(out var n))
-                    {
-                        idx.Add(n);
-                    }
-                }
-
-                indices = idx;
-            }
-
-            list.Add(new FuzzyFileSearchResult
-            {
-                Root = root,
-                Path = path,
-                FileName = fileName,
-                Score = score,
-                MatchType = GetString(item, "matchType") ?? GetString(item, "match_type"),
-                Indices = indices
-            });
         }
 
         return list;
