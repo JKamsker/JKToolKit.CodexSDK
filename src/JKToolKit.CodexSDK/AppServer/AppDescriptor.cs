@@ -38,6 +38,16 @@ public sealed record class AppDescriptor
     public string? DistributionChannel { get; init; }
 
     /// <summary>
+    /// Gets optional app metadata, when present (raw).
+    /// </summary>
+    public JsonElement? AppMetadata { get; init; }
+
+    /// <summary>
+    /// Gets optional branding metadata, when present (raw).
+    /// </summary>
+    public JsonElement? Branding { get; init; }
+
+    /// <summary>
     /// Gets an optional install URL, when present.
     /// </summary>
     public string? InstallUrl { get; init; }
@@ -61,6 +71,11 @@ public sealed record class AppDescriptor
     /// Gets plugin display names associated with the app, when present.
     /// </summary>
     public IReadOnlyList<string>? PluginDisplayNames { get; init; }
+
+    /// <summary>
+    /// Gets optional app labels by key, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Labels { get; init; }
 
     /// <summary>
     /// Gets an optional disabled reason string, when present.

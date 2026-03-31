@@ -33,8 +33,12 @@ public sealed record class NetworkRequirements
     public bool? DangerouslyAllowNonLoopbackProxy { get; init; }
 
     /// <summary>
-    /// Gets whether non-loopback admin access is allowed, when present (dangerous).
+    /// Gets whether non-loopback admin access is allowed.
     /// </summary>
+    /// <remarks>
+    /// This legacy field is no longer projected from upstream requirements payloads.
+    /// </remarks>
+    [Obsolete("This legacy field is no longer projected from app-server network requirements.")]
     public bool? DangerouslyAllowNonLoopbackAdmin { get; init; }
 
     /// <summary>

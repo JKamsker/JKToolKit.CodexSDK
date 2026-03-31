@@ -177,11 +177,14 @@ internal static class CodexAppServerClientSkillsAppsParsers
                 LogoUrl = GetStringOrNull(item, "logoUrl") ?? GetStringOrNull(item, "logo_url"),
                 LogoUrlDark = GetStringOrNull(item, "logoUrlDark") ?? GetStringOrNull(item, "logo_url_dark"),
                 DistributionChannel = GetStringOrNull(item, "distributionChannel"),
+                AppMetadata = TryGetObject(item, "appMetadata"),
+                Branding = TryGetObject(item, "branding"),
                 InstallUrl = GetStringOrNull(item, "installUrl"),
                 IsAccessible = GetBoolOrNull(item, "isAccessible"),
                 IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
                 Title = GetStringOrNull(item, "title"),
                 PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames"),
+                Labels = ParseStringMap(item, "labels"),
                 DisabledReason = GetStringOrNull(item, "disabledReason"),
                 Raw = item
             });
@@ -226,6 +229,25 @@ internal static class CodexAppServerClientSkillsAppsParsers
         }
 
         return skills;
+    }
+
+    private static IReadOnlyDictionary<string, string>? ParseStringMap(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } values)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var item in values.EnumerateObject())
+        {
+            if (item.Value.ValueKind == JsonValueKind.String)
+            {
+                result[item.Name] = item.Value.GetString() ?? string.Empty;
+            }
+        }
+
+        return result.Count == 0 ? null : result;
     }
 }
 

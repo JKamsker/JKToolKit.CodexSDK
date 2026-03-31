@@ -24,6 +24,11 @@ public sealed record class ConfigRequirements
     public IReadOnlyList<CodexWebSearchMode>? AllowedWebSearchModes { get; init; }
 
     /// <summary>
+    /// Gets feature-gating requirements by feature name, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? FeatureRequirements { get; init; }
+
+    /// <summary>
     /// Gets the enforced residency requirement, when present.
     /// </summary>
     public CodexResidencyRequirement? EnforceResidency { get; init; }
@@ -41,4 +46,3 @@ public sealed record class ConfigRequirements
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-

@@ -18,11 +18,19 @@ public sealed class ConfigRequirementsParsingTests
         requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never", "on-request");
         requirements.AllowedSandboxModes!.Select(m => m.Value).Should().Equal("read-only", "workspace-write");
         requirements.AllowedWebSearchModes!.Select(m => m.Value).Should().Equal("disabled", "cached", "live");
+        requirements.FeatureRequirements.Should().NotBeNull();
+        requirements.FeatureRequirements!["apps"].Should().BeTrue();
+        requirements.FeatureRequirements["network"].Should().BeFalse();
+        requirements.FeatureRequirements.ContainsKey("ignoreMe").Should().BeFalse();
         requirements.EnforceResidency!.Value.Value.Should().Be("us");
 
         requirements.Network.Should().NotBeNull();
         requirements.Network!.HttpPort.Should().Be(8080);
+#pragma warning disable CS0618
+        requirements.Network.DangerouslyAllowNonLoopbackAdmin.Should().BeNull();
+#pragma warning restore CS0618
         requirements.Network.Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
+        requirements.Network.Raw.TryGetProperty("dangerouslyAllowNonLoopbackAdmin", out _).Should().BeTrue();
 
         requirements.Raw.TryGetProperty("unknownTopLevelField", out _).Should().BeTrue();
     }

@@ -35,6 +35,8 @@ internal static class CodexAppServerClientConfigRequirementsParser
             .Select(w => w!.Value)
             .ToArray();
 
+        var featureRequirements = ParseBoolMap(req, "featureRequirements");
+
         CodexResidencyRequirement? residency = null;
         if (CodexResidencyRequirement.TryParse(GetStringOrNull(req, "enforceResidency"), out var r))
         {
@@ -52,6 +54,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowedApprovalPolicies = allowedApprovalPolicies,
             AllowedSandboxModes = allowedSandboxModes,
             AllowedWebSearchModes = allowedWebSearchModes,
+            FeatureRequirements = featureRequirements,
             EnforceResidency = residency,
             Network = network,
             Raw = req.Clone()
@@ -67,7 +70,6 @@ internal static class CodexAppServerClientConfigRequirementsParser
             SocksPort = GetInt32OrNull(network, "socksPort"),
             AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
             DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
-            DangerouslyAllowNonLoopbackAdmin = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackAdmin"),
             DangerouslyAllowAllUnixSockets = GetBoolOrNull(network, "dangerouslyAllowAllUnixSockets"),
             Domains = ParseDomainPermissions(network, "domains"),
             ManagedAllowedDomainsOnly = GetBoolOrNull(network, "managedAllowedDomainsOnly"),
@@ -78,6 +80,25 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
             Raw = network.Clone()
         };
+    }
+
+    private static IReadOnlyDictionary<string, bool>? ParseBoolMap(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } values)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, bool>(StringComparer.Ordinal);
+        foreach (var item in values.EnumerateObject())
+        {
+            if (item.Value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                result[item.Name] = item.Value.GetBoolean();
+            }
+        }
+
+        return result.Count == 0 ? null : result;
     }
 
     private static IReadOnlyDictionary<string, NetworkDomainPermission>? ParseDomainPermissions(JsonElement obj, string propertyName)
