@@ -58,6 +58,34 @@ internal static class CodexProcessLauncherIo
         }
     }
 
+    internal static async Task WriteOptionalStdinPayloadAndCloseStdinAsync(
+        Process process,
+        string? payload,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (payload is not null)
+            {
+                await process.StandardInput.WriteAsync(payload.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            process.StandardInput.Close();
+            logger.LogTrace("Closed stdin for process {ProcessId}", process.Id);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error writing stdin payload to process {ProcessId}", process.Id);
+            throw new InvalidOperationException("Failed to write stdin payload to Codex process stdin.", ex);
+        }
+    }
+
     internal static async Task<string?> TryReadStandardErrorAsync(Process process)
     {
         if (!process.StartInfo.RedirectStandardError)

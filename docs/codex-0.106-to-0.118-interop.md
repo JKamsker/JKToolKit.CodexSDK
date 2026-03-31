@@ -16,7 +16,7 @@
 ## Implementation Tasklist
 
 - [x] Add first-class `ServiceTier` support across thread start/resume/fork, turn start, and typed thread summaries.
-- [ ] Add exec prompt-plus-stdin support while keeping the legacy stdin-prompt API working.
+- [x] Add exec prompt-plus-stdin support while keeping the legacy stdin-prompt API working.
 - [ ] Add typed app-server account login start/cancel wrappers for API key, browser ChatGPT login, and device-code login.
 - [x] Extend app/network projections with `pluginDisplayNames`, canonical domain permissions, canonical unix-socket permissions, and newer network flags.
 - [ ] Re-run focused unit coverage and full validation after the interop changes land.

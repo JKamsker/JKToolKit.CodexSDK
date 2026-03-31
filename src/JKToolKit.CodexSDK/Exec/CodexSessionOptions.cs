@@ -18,6 +18,7 @@ public class CodexSessionOptions
 {
     private string? _workingDirectory;
     private string? _prompt;
+    private string? _promptArgument;
     private CodexModel _model = CodexModel.Default;
     private CodexReasoningEffort _reasoningEffort = CodexReasoningEffort.Medium;
     private IReadOnlyList<string> _additionalOptions = Array.Empty<string>();
@@ -55,11 +56,12 @@ public class CodexSessionOptions
     }
 
     /// <summary>
-    /// Gets or sets the initial prompt to send to the Codex session.
+    /// Gets or sets the legacy prompt to send to the Codex session via stdin.
     /// </summary>
     /// <remarks>
-    /// This is the user's instruction or query that Codex will process.
-    /// This property is required and must be set to a non-empty value.
+    /// This preserves the original SDK behavior where <c>codex exec -</c> is used and the prompt is written to stdin.
+    /// Use <see cref="PromptArgument"/> together with <see cref="StdinPayload"/> to target newer Codex CLI builds that
+    /// support passing the prompt as a normal argv token while streaming separate stdin content.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// Thrown when attempting to set a null value.
@@ -82,6 +84,45 @@ public class CodexSessionOptions
             _prompt = value;
         }
     }
+
+    /// <summary>
+    /// Gets or sets the prompt argument to pass directly on the <c>codex exec</c> command line.
+    /// </summary>
+    /// <remarks>
+    /// When set, the SDK uses prompt-argument mode instead of the legacy <see cref="Prompt"/> stdin-prompt mode.
+    /// This can be combined with <see cref="StdinPayload"/> to take advantage of newer upstream prompt-plus-stdin support.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// Thrown when attempting to set an empty or whitespace value.
+    /// </exception>
+    public string? PromptArgument
+    {
+        get => _promptArgument;
+        set
+        {
+            if (value is null)
+            {
+                _promptArgument = null;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException(
+                    "PromptArgument cannot be empty or whitespace.",
+                    nameof(PromptArgument));
+
+            _promptArgument = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets optional stdin content to stream separately from the prompt argument.
+    /// </summary>
+    /// <remarks>
+    /// This is only valid when <see cref="PromptArgument"/> is set.
+    /// The SDK writes this payload verbatim without appending a trailing newline.
+    /// </remarks>
+    public string? StdinPayload { get; set; }
 
     /// <summary>
     /// Gets or sets the Codex model to use for this session.
@@ -226,8 +267,20 @@ public class CodexSessionOptions
         if (!Directory.Exists(_workingDirectory))
             throw new InvalidOperationException($"WorkingDirectory '{_workingDirectory}' does not exist.");
 
-        if (string.IsNullOrWhiteSpace(_prompt))
-            throw new InvalidOperationException("Prompt is required and cannot be empty.");
+        var hasLegacyPrompt = !string.IsNullOrWhiteSpace(_prompt);
+        var hasPromptArgument = !string.IsNullOrWhiteSpace(_promptArgument);
+
+        if (hasLegacyPrompt == hasPromptArgument)
+        {
+            throw hasLegacyPrompt
+                ? new InvalidOperationException("Specify either Prompt or PromptArgument, but not both.")
+                : new InvalidOperationException("Either Prompt or PromptArgument is required and cannot be empty.");
+        }
+
+        if (!hasPromptArgument && StdinPayload is not null)
+        {
+            throw new InvalidOperationException("StdinPayload can only be used when PromptArgument is set.");
+        }
 
         if (string.IsNullOrWhiteSpace(Model.Value))
             throw new InvalidOperationException("Model is required and cannot be empty.");
@@ -325,14 +378,30 @@ public class CodexSessionOptions
     {
         Validate();
 
-        return new CodexSessionOptions(WorkingDirectory, Prompt)
+        var clone = new CodexSessionOptions
         {
+            WorkingDirectory = WorkingDirectory,
             Model = Model,
             ReasoningEffort = ReasoningEffort,
             AdditionalOptions = new List<string>(AdditionalOptions),
             CodexBinaryPath = CodexBinaryPath,
             IdleTimeout = IdleTimeout,
-            OutputSchema = OutputSchema
+            OutputSchema = OutputSchema,
+            PromptArgument = PromptArgument,
+            StdinPayload = StdinPayload
         };
+
+        if (!UsesPromptArgumentMode)
+        {
+            clone.Prompt = Prompt;
+        }
+
+        return clone;
     }
+
+    internal bool UsesPromptArgumentMode => !string.IsNullOrWhiteSpace(_promptArgument);
+
+    internal string CommandPromptToken => UsesPromptArgumentMode ? _promptArgument! : "-";
+
+    internal string? StandardInputPayload => UsesPromptArgumentMode ? StdinPayload : _prompt;
 }

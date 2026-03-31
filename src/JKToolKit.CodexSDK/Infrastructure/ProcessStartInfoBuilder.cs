@@ -65,7 +65,7 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add(option);
         }
 
-        startInfo.ArgumentList.Add("-");
+        startInfo.ArgumentList.Add(options.CommandPromptToken);
 
         return startInfo;
     }
@@ -120,7 +120,7 @@ internal static class ProcessStartInfoBuilder
 
         startInfo.ArgumentList.Add("resume");
         startInfo.ArgumentList.Add(sessionId.Value);
-        startInfo.ArgumentList.Add("-");
+        startInfo.ArgumentList.Add(options.CommandPromptToken);
 
         return startInfo;
     }

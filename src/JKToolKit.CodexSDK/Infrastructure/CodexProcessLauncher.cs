@@ -69,8 +69,14 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
                 "Codex process started successfully with PID: {ProcessId}",
                 process.Id);
 
-            // Write prompt to stdin and close it
-            await CodexProcessLauncherIo.WritePromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken);
+            if (options.UsesPromptArgumentMode)
+            {
+                await CodexProcessLauncherIo.WriteOptionalStdinPayloadAndCloseStdinAsync(process, options.StdinPayload, _logger, cancellationToken);
+            }
+            else
+            {
+                await CodexProcessLauncherIo.WritePromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken);
+            }
 
             return process;
         }
@@ -275,7 +281,14 @@ public sealed class CodexProcessLauncher : ICodexProcessLauncher
                 "Codex resume process started successfully with PID: {ProcessId}",
                 process.Id);
 
-            await CodexProcessLauncherIo.WritePromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken);
+            if (options.UsesPromptArgumentMode)
+            {
+                await CodexProcessLauncherIo.WriteOptionalStdinPayloadAndCloseStdinAsync(process, options.StdinPayload, _logger, cancellationToken);
+            }
+            else
+            {
+                await CodexProcessLauncherIo.WritePromptAndCloseStdinAsync(process, options.Prompt, _logger, cancellationToken);
+            }
 
             return process;
         }
