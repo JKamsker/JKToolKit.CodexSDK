@@ -93,13 +93,13 @@ public sealed class CollabReceiverStatusJsonConverter : JsonConverter<CollabRece
     public static string ToWireValue(CollabReceiverStatus value) =>
         value switch
         {
-            CollabReceiverStatus.PendingInit => "pendingInit",
+            CollabReceiverStatus.PendingInit => "pending_init",
             CollabReceiverStatus.Running => "running",
             CollabReceiverStatus.Interrupted => "interrupted",
             CollabReceiverStatus.Completed => "completed",
             CollabReceiverStatus.Errored => "errored",
             CollabReceiverStatus.Shutdown => "shutdown",
-            CollabReceiverStatus.NotFound => "notFound",
+            CollabReceiverStatus.NotFound => "not_found",
             _ => "unknown"
         };
 }

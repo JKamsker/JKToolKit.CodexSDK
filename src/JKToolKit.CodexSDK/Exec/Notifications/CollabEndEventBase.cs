@@ -11,14 +11,14 @@ public abstract record CollabEndEventBase : CodexEvent
     public required string CallId { get; init; }
 
     /// <summary>
-    /// Gets the sender thread id, when provided.
+    /// Gets the sender thread id.
     /// </summary>
-    public string? SenderThreadId { get; init; }
+    public required string SenderThreadId { get; init; }
 
     /// <summary>
-    /// Gets the receiver thread id, when provided.
+    /// Gets the receiver thread id.
     /// </summary>
-    public string? ReceiverThreadId { get; init; }
+    public required string ReceiverThreadId { get; init; }
 
     /// <summary>
     /// Gets the receiver agent nickname, when provided.

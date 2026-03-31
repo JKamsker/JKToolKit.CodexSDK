@@ -660,6 +660,8 @@ public class JsonlEventParserTests
                 ""new_agent_nickname"": ""nick"",
                 ""new_agent_role"": ""worker"",
                 ""prompt"": ""go"",
+                ""model"": ""gpt-5.4"",
+                ""reasoning_effort"": ""high"",
                 ""status"": ""running""
             }}
         }}";
@@ -673,6 +675,8 @@ public class JsonlEventParserTests
         evt.NewThreadId.Should().Be("t_new");
         evt.Status.Should().Be("running");
         evt.StatusInfo!.Status.Should().Be(CollabAgentStatus.Running);
+        evt.Model.Should().Be("gpt-5.4");
+        evt.ReasoningEffort.Should().Be("high");
     }
 
     [Fact]
@@ -690,6 +694,8 @@ public class JsonlEventParserTests
                 ""new_agent_nickname"": ""nick"",
                 ""new_agent_role"": ""worker"",
                 ""prompt"": ""go"",
+                ""model"": ""gpt-5.4"",
+                ""reasoning_effort"": ""high"",
                 ""status"": {{ ""completed"": null }}
             }}
         }}";
@@ -702,6 +708,38 @@ public class JsonlEventParserTests
         evt.StatusInfo.Should().NotBeNull();
         evt.StatusInfo!.Status.Should().Be(CollabAgentStatus.Completed);
         evt.StatusInfo.PayloadText.Should().BeNull();
+        evt.Model.Should().Be("gpt-5.4");
+        evt.ReasoningEffort.Should().Be("high");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabAgentSpawnEnd_PreservesSnakeCaseStatusStrings()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_agent_spawn_end"",
+                ""call_id"": ""c1"",
+                ""sender_thread_id"": ""t_sender"",
+                ""new_thread_id"": ""t_new"",
+                ""new_agent_nickname"": ""nick"",
+                ""new_agent_role"": ""worker"",
+                ""prompt"": ""go"",
+                ""model"": ""gpt-5.4"",
+                ""reasoning_effort"": ""high"",
+                ""status"": ""pendingInit""
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabAgentSpawnEndEvent>().Subject;
+        evt.Status.Should().Be("pending_init");
+        evt.StatusInfo.Should().NotBeNull();
+        evt.StatusInfo!.Status.Should().Be(CollabAgentStatus.PendingInit);
     }
 
     [Fact]
@@ -810,7 +848,32 @@ public class JsonlEventParserTests
         var evt = events[0].Should().BeOfType<CollabWaitingEndEvent>().Subject;
         evt.Type.Should().Be("collab_waiting_end");
         evt.CallId.Should().Be("c3");
-        evt.Statuses!.Should().ContainKey("t1").WhoseValue.Should().Be("completed");
+        evt.Statuses.Should().ContainKey("t1").WhoseValue.Should().Be("completed");
+        evt.AgentStatuses.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabWaitingEnd_PreservesSnakeCaseStatusStrings()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_waiting_end"",
+                ""call_id"": ""c3"",
+                ""sender_thread_id"": ""t_sender"",
+                ""statuses"": {{
+                    ""t1"": ""pendingInit""
+                }}
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabWaitingEndEvent>().Subject;
+        evt.Statuses.Should().ContainKey("t1").WhoseValue.Should().Be("pending_init");
     }
 
     [Fact]
@@ -837,7 +900,30 @@ public class JsonlEventParserTests
         var evt = events[0].Should().BeOfType<CollabWaitingBeginEvent>().Subject;
         evt.ReceiverThreadIds.Should().ContainInOrder("t1", "t2");
         evt.ReceiverAgents.Should().ContainSingle();
-        evt.ReceiverAgents![0].AgentNickname.Should().Be("Ada");
+        evt.ReceiverAgents[0].AgentNickname.Should().Be("Ada");
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_CollabWaitingBegin_DefaultsReceiverAgentsToEmpty()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""collab_waiting_begin"",
+                ""call_id"": ""c3"",
+                ""sender_thread_id"": ""t_sender"",
+                ""receiver_thread_ids"": [""t1""]
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<CollabWaitingBeginEvent>().Subject;
+        evt.ReceiverThreadIds.Should().ContainSingle().Which.Should().Be("t1");
+        evt.ReceiverAgents.Should().BeEmpty();
     }
 
     [Fact]
@@ -870,11 +956,13 @@ public class JsonlEventParserTests
 
         events.Should().HaveCount(1);
         var evt = events[0].Should().BeOfType<CollabWaitingEndEvent>().Subject;
-        evt.Statuses!["t1"].Should().Be("interrupted");
-        evt.StatusInfos!["t1"].Status.Should().Be(CollabAgentStatus.Interrupted);
-        evt.StatusInfos["t1"].PayloadText.Should().Be("paused");
+        evt.Statuses["t1"].Should().Be("interrupted");
+        evt.StatusInfos.Should().NotBeNull();
+        var statusInfos = evt.StatusInfos!;
+        statusInfos["t1"].Status.Should().Be(CollabAgentStatus.Interrupted);
+        statusInfos["t1"].PayloadText.Should().Be("paused");
         evt.AgentStatuses.Should().ContainSingle();
-        evt.AgentStatuses![0].AgentNickname.Should().Be("Ada");
+        evt.AgentStatuses[0].AgentNickname.Should().Be("Ada");
         evt.AgentStatuses[0].StatusInfo.PayloadText.Should().Be("paused");
     }
 

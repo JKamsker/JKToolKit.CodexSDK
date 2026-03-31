@@ -66,13 +66,13 @@ public static class CollabAgentStatusJsonConverter
     public static string ToWireValue(CollabAgentStatus value) =>
         value switch
         {
-            CollabAgentStatus.PendingInit => "pendingInit",
+            CollabAgentStatus.PendingInit => "pending_init",
             CollabAgentStatus.Running => "running",
             CollabAgentStatus.Interrupted => "interrupted",
             CollabAgentStatus.Completed => "completed",
             CollabAgentStatus.Errored => "errored",
             CollabAgentStatus.Shutdown => "shutdown",
-            CollabAgentStatus.NotFound => "notFound",
+            CollabAgentStatus.NotFound => "not_found",
             _ => "unknown"
         };
 }

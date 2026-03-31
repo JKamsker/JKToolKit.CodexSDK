@@ -28,5 +28,5 @@ public sealed record CollabAgentSpawnBeginEvent : CodexEvent
     /// <summary>
     /// Gets the effective reasoning effort used by the spawned agent.
     /// </summary>
-    public string? ReasoningEffort { get; init; }
+    public required string ReasoningEffort { get; init; }
 }

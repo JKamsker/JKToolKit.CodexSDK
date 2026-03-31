@@ -18,7 +18,7 @@ public sealed record CollabWaitingBeginEvent : CodexEvent
     /// <summary>
     /// Gets optional receiver metadata.
     /// </summary>
-    public IReadOnlyList<CollabAgentRef>? ReceiverAgents { get; init; }
+    public IReadOnlyList<CollabAgentRef> ReceiverAgents { get; init; } = Array.Empty<CollabAgentRef>();
 
     /// <summary>
     /// Gets the tool call id associated with this wait.

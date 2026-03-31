@@ -14,10 +14,12 @@ internal static partial class JsonlEventEnvelopeParsers
         var senderThreadId = TryGetString(payload, "sender_thread_id");
         var prompt = TryGetString(payload, "prompt");
         var model = TryGetString(payload, "model");
+        var reasoningEffort = TryGetString(payload, "reasoning_effort");
         if (string.IsNullOrWhiteSpace(callId) ||
             string.IsNullOrWhiteSpace(senderThreadId) ||
             prompt is null ||
-            string.IsNullOrWhiteSpace(model))
+            string.IsNullOrWhiteSpace(model) ||
+            string.IsNullOrWhiteSpace(reasoningEffort))
         {
             return null;
         }
@@ -31,7 +33,7 @@ internal static partial class JsonlEventEnvelopeParsers
             SenderThreadId = senderThreadId,
             Prompt = prompt,
             Model = model,
-            ReasoningEffort = TryGetString(payload, "reasoning_effort")
+            ReasoningEffort = reasoningEffort
         };
     }
 
@@ -39,10 +41,24 @@ internal static partial class JsonlEventEnvelopeParsers
     {
         var payload = GetEventBody(root);
         var callId = TryGetString(payload, "call_id");
-        if (string.IsNullOrWhiteSpace(callId))
+        var senderThreadId = TryGetString(payload, "sender_thread_id");
+        var prompt = TryGetString(payload, "prompt");
+        var model = TryGetString(payload, "model");
+        var reasoningEffort = TryGetString(payload, "reasoning_effort");
+        if (string.IsNullOrWhiteSpace(callId) ||
+            string.IsNullOrWhiteSpace(senderThreadId) ||
+            prompt is null ||
+            string.IsNullOrWhiteSpace(model) ||
+            string.IsNullOrWhiteSpace(reasoningEffort))
+        {
             return null;
+        }
 
         var statusInfo = ParseCollabAgentStatusInfoUnion(payload, "status");
+        if (statusInfo is null)
+        {
+            return null;
+        }
 
         return new CollabAgentSpawnEndEvent
         {
@@ -50,14 +66,14 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            SenderThreadId = TryGetString(payload, "sender_thread_id"),
+            SenderThreadId = senderThreadId,
             NewThreadId = TryGetString(payload, "new_thread_id"),
             NewAgentNickname = TryGetString(payload, "new_agent_nickname"),
             NewAgentRole = TryGetString(payload, "new_agent_role"),
-            Prompt = TryGetString(payload, "prompt"),
-            Model = TryGetString(payload, "model"),
-            ReasoningEffort = TryGetString(payload, "reasoning_effort"),
-            Status = statusInfo is null ? null : CollabAgentStatusJsonConverter.ToWireValue(statusInfo.Status),
+            Prompt = prompt,
+            Model = model,
+            ReasoningEffort = reasoningEffort,
+            Status = CollabAgentStatusJsonConverter.ToWireValue(statusInfo.Status),
             StatusInfo = statusInfo
         };
     }
@@ -93,10 +109,22 @@ internal static partial class JsonlEventEnvelopeParsers
     {
         var payload = GetEventBody(root);
         var callId = TryGetString(payload, "call_id");
-        if (string.IsNullOrWhiteSpace(callId))
+        var senderThreadId = TryGetString(payload, "sender_thread_id");
+        var receiverThreadId = TryGetString(payload, "receiver_thread_id");
+        var prompt = TryGetString(payload, "prompt");
+        if (string.IsNullOrWhiteSpace(callId) ||
+            string.IsNullOrWhiteSpace(senderThreadId) ||
+            string.IsNullOrWhiteSpace(receiverThreadId) ||
+            prompt is null)
+        {
             return null;
+        }
 
         var statusInfo = ParseCollabAgentStatusInfoUnion(payload, "status");
+        if (statusInfo is null)
+        {
+            return null;
+        }
 
         return new CollabAgentInteractionEndEvent
         {
@@ -104,12 +132,12 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            SenderThreadId = TryGetString(payload, "sender_thread_id"),
-            ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
+            SenderThreadId = senderThreadId,
+            ReceiverThreadId = receiverThreadId,
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Prompt = TryGetString(payload, "prompt"),
-            Status = statusInfo is null ? null : CollabAgentStatusJsonConverter.ToWireValue(statusInfo.Status),
+            Prompt = prompt,
+            Status = CollabAgentStatusJsonConverter.ToWireValue(statusInfo.Status),
             StatusInfo = statusInfo
         };
     }
@@ -122,16 +150,24 @@ internal static partial class JsonlEventEnvelopeParsers
         if (string.IsNullOrWhiteSpace(senderThreadId) || string.IsNullOrWhiteSpace(callId))
             return null;
 
-        var receiverThreadIds = new List<string>();
-        if (payload.TryGetProperty("receiver_thread_ids", out var receiverThreadIdsEl) &&
-            receiverThreadIdsEl.ValueKind == JsonValueKind.Array)
+        if (!payload.TryGetProperty("receiver_thread_ids", out var receiverThreadIdsEl) ||
+            receiverThreadIdsEl.ValueKind != JsonValueKind.Array)
         {
-            foreach (var receiverThreadIdEl in receiverThreadIdsEl.EnumerateArray())
+            return null;
+        }
+
+        var receiverThreadIds = new List<string>();
+        foreach (var receiverThreadIdEl in receiverThreadIdsEl.EnumerateArray())
+        {
+            if (receiverThreadIdEl.ValueKind != JsonValueKind.String)
             {
-                if (receiverThreadIdEl.ValueKind == JsonValueKind.String)
-                {
-                    receiverThreadIds.Add(receiverThreadIdEl.GetString() ?? string.Empty);
-                }
+                continue;
+            }
+
+            var value = receiverThreadIdEl.GetString();
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                receiverThreadIds.Add(value);
             }
         }
 
@@ -151,27 +187,29 @@ internal static partial class JsonlEventEnvelopeParsers
     {
         var payload = GetEventBody(root);
         var callId = TryGetString(payload, "call_id");
-        if (string.IsNullOrWhiteSpace(callId))
-            return null;
-
-        IReadOnlyDictionary<string, string>? statuses = null;
-        IReadOnlyDictionary<string, CollabAgentStatusInfo>? statusInfos = null;
-        if (payload.TryGetProperty("statuses", out var statusesEl) && statusesEl.ValueKind == JsonValueKind.Object)
+        var senderThreadId = TryGetString(payload, "sender_thread_id");
+        if (string.IsNullOrWhiteSpace(callId) || string.IsNullOrWhiteSpace(senderThreadId))
         {
-            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var infoDict = new Dictionary<string, CollabAgentStatusInfo>(StringComparer.OrdinalIgnoreCase);
-            foreach (var prop in statusesEl.EnumerateObject())
-            {
-                var info = ParseCollabAgentStatusInfoUnion(prop.Value);
-                if (info is null)
-                    continue;
+            return null;
+        }
 
-                dict[prop.Name] = CollabAgentStatusJsonConverter.ToWireValue(info.Status);
-                infoDict[prop.Name] = info;
+        if (!payload.TryGetProperty("statuses", out var statusesEl) || statusesEl.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var statuses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var statusInfos = new Dictionary<string, CollabAgentStatusInfo>(StringComparer.OrdinalIgnoreCase);
+        foreach (var prop in statusesEl.EnumerateObject())
+        {
+            var info = ParseCollabAgentStatusInfoUnion(prop.Value);
+            if (info is null)
+            {
+                continue;
             }
 
-            statuses = dict.Count == 0 ? null : dict;
-            statusInfos = infoDict.Count == 0 ? null : infoDict;
+            statuses[prop.Name] = CollabAgentStatusJsonConverter.ToWireValue(info.Status);
+            statusInfos[prop.Name] = info;
         }
 
         return new CollabWaitingEndEvent
@@ -180,9 +218,9 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            SenderThreadId = TryGetString(payload, "sender_thread_id"),
+            SenderThreadId = senderThreadId,
             Statuses = statuses,
-            StatusInfos = statusInfos,
+            StatusInfos = statusInfos.Count == 0 ? null : statusInfos,
             AgentStatuses = ParseCollabAgentStatusEntries(payload, "agent_statuses")
         };
     }
@@ -215,10 +253,20 @@ internal static partial class JsonlEventEnvelopeParsers
     {
         var payload = GetEventBody(root);
         var callId = TryGetString(payload, "call_id");
-        if (string.IsNullOrWhiteSpace(callId))
+        var senderThreadId = TryGetString(payload, "sender_thread_id");
+        var receiverThreadId = TryGetString(payload, "receiver_thread_id");
+        if (string.IsNullOrWhiteSpace(callId) ||
+            string.IsNullOrWhiteSpace(senderThreadId) ||
+            string.IsNullOrWhiteSpace(receiverThreadId))
+        {
             return null;
+        }
 
         var statusInfo = ParseCollabAgentStatusInfoUnion(payload, "status");
+        if (statusInfo is null)
+        {
+            return null;
+        }
 
         return new CollabCloseEndEvent
         {
@@ -226,13 +274,11 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            SenderThreadId = TryGetString(payload, "sender_thread_id"),
-            ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
+            SenderThreadId = senderThreadId,
+            ReceiverThreadId = receiverThreadId,
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Status = statusInfo is null
-                ? CollabReceiverStatus.Unknown
-                : ConvertCollabAgentStatus(statusInfo.Status),
+            Status = ConvertCollabAgentStatus(statusInfo.Status),
             StatusInfo = statusInfo
         };
     }
@@ -267,10 +313,20 @@ internal static partial class JsonlEventEnvelopeParsers
     {
         var payload = GetEventBody(root);
         var callId = TryGetString(payload, "call_id");
-        if (string.IsNullOrWhiteSpace(callId))
+        var senderThreadId = TryGetString(payload, "sender_thread_id");
+        var receiverThreadId = TryGetString(payload, "receiver_thread_id");
+        if (string.IsNullOrWhiteSpace(callId) ||
+            string.IsNullOrWhiteSpace(senderThreadId) ||
+            string.IsNullOrWhiteSpace(receiverThreadId))
+        {
             return null;
+        }
 
         var statusInfo = ParseCollabAgentStatusInfoUnion(payload, "status");
+        if (statusInfo is null)
+        {
+            return null;
+        }
 
         return new CollabResumeEndEvent
         {
@@ -278,21 +334,19 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            SenderThreadId = TryGetString(payload, "sender_thread_id"),
-            ReceiverThreadId = TryGetString(payload, "receiver_thread_id"),
+            SenderThreadId = senderThreadId,
+            ReceiverThreadId = receiverThreadId,
             ReceiverAgentNickname = TryGetString(payload, "receiver_agent_nickname"),
             ReceiverAgentRole = TryGetString(payload, "receiver_agent_role"),
-            Status = statusInfo is null
-                ? CollabReceiverStatus.Unknown
-                : ConvertCollabAgentStatus(statusInfo.Status),
+            Status = ConvertCollabAgentStatus(statusInfo.Status),
             StatusInfo = statusInfo
         };
     }
 
-    private static IReadOnlyList<CollabAgentRef>? ParseCollabAgentRefs(JsonElement payload, string propertyName)
+    private static IReadOnlyList<CollabAgentRef> ParseCollabAgentRefs(JsonElement payload, string propertyName)
     {
         if (!payload.TryGetProperty(propertyName, out var refsEl) || refsEl.ValueKind != JsonValueKind.Array)
-            return null;
+            return Array.Empty<CollabAgentRef>();
 
         var refs = new List<CollabAgentRef>();
         foreach (var entry in refsEl.EnumerateArray())
@@ -312,13 +366,13 @@ internal static partial class JsonlEventEnvelopeParsers
             });
         }
 
-        return refs.Count == 0 ? null : refs;
+        return refs.Count == 0 ? Array.Empty<CollabAgentRef>() : refs;
     }
 
-    private static IReadOnlyList<CollabAgentStatusEntry>? ParseCollabAgentStatusEntries(JsonElement payload, string propertyName)
+    private static IReadOnlyList<CollabAgentStatusEntry> ParseCollabAgentStatusEntries(JsonElement payload, string propertyName)
     {
         if (!payload.TryGetProperty(propertyName, out var entriesEl) || entriesEl.ValueKind != JsonValueKind.Array)
-            return null;
+            return Array.Empty<CollabAgentStatusEntry>();
 
         var entries = new List<CollabAgentStatusEntry>();
         foreach (var entry in entriesEl.EnumerateArray())
@@ -340,7 +394,7 @@ internal static partial class JsonlEventEnvelopeParsers
             });
         }
 
-        return entries.Count == 0 ? null : entries;
+        return entries.Count == 0 ? Array.Empty<CollabAgentStatusEntry>() : entries;
     }
 
     private static CollabAgentStatusInfo? ParseCollabAgentStatusInfoUnion(JsonElement payload, string propertyName)
