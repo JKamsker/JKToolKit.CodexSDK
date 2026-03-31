@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.ResponseItems;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -23,6 +24,11 @@ public sealed record class RawResponseItemCompletedNotification : AppServerNotif
     public JsonElement Item { get; }
 
     /// <summary>
+    /// Gets the typed parsed response item payload.
+    /// </summary>
+    public CodexResponseItem ResponseItem { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="RawResponseItemCompletedNotification"/>.
     /// </summary>
     public RawResponseItemCompletedNotification(string ThreadId, string TurnId, JsonElement Item, JsonElement Params)
@@ -30,6 +36,7 @@ public sealed record class RawResponseItemCompletedNotification : AppServerNotif
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;
-        this.Item = Item;
+        this.Item = Item.Clone();
+        this.ResponseItem = CodexResponseItemParser.Parse(this.Item);
     }
 }

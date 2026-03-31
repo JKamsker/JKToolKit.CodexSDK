@@ -123,6 +123,11 @@ internal static class CodexAppServerClientJson
             ? p
             : null;
 
+    public static JsonElement? TryGetElement(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p)
+            ? p.Clone()
+            : null;
+
     public static string? GetStringOrNull(JsonElement obj, string propertyName) =>
         obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.String
             ? p.GetString()

@@ -26,15 +26,23 @@ internal static class CodexAppServerClientThreadResponseParsers
         var serviceTier = CodexServiceTier.TryParse(GetStringOrNull(result, "serviceTier"), out var parsedServiceTier)
             ? parsedServiceTier
             : summary.ServiceTier;
+        var approvalPolicyRaw = TryGetElement(result, "approvalPolicy");
+        var sandboxRaw = TryGetElement(result, "sandbox");
+        var reasoningEffort = CodexReasoningEffort.TryParse(GetStringOrNull(result, "reasoningEffort"), out var parsedReasoningEffort)
+            ? parsedReasoningEffort
+            : (CodexReasoningEffort?)null;
 
         return new CodexThread(
             summary.ThreadId,
             result,
             summary,
             approvalPolicy,
+            approvalPolicyRaw,
             approvalsReviewer,
             sandbox,
-            serviceTier);
+            sandboxRaw,
+            serviceTier,
+            reasoningEffort);
     }
 
     public static CodexThreadReadResult ParseReadResult(JsonElement result, string fallbackThreadId)
@@ -49,7 +57,7 @@ internal static class CodexAppServerClientThreadResponseParsers
         return new CodexThreadReadResult
         {
             Thread = summary,
-            HistorySummary = TryGetObject(result, "historySummary"),
+            Turns = CodexAppServerClientThreadTurnParsers.ParseTurns(result),
             Raw = result
         };
     }
