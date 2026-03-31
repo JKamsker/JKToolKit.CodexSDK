@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Resiliency;
@@ -6,12 +7,15 @@ namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 internal partial interface ICodexAppServerClientAdapter : IAsyncDisposable
 {
     Task ExitTask { get; }
+    AppServerInitializeResult? InitializeResult { get; }
+    AppServerNotificationDropStats NotificationDropStats { get; }
 
     Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct);
 
     Task<TResult?> CallAsync<TResult>(string method, object? @params, JsonSerializerOptions? serializerOptions, CancellationToken ct);
 
     IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct);
+    IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct);
 }
 
 internal sealed partial class CodexAppServerClientAdapter : ICodexAppServerClientAdapter
@@ -24,6 +28,8 @@ internal sealed partial class CodexAppServerClientAdapter : ICodexAppServerClien
     }
 
     public Task ExitTask => _inner.ExitTask;
+    public AppServerInitializeResult? InitializeResult => _inner.InitializeResult;
+    public AppServerNotificationDropStats NotificationDropStats => _inner.NotificationDropStats;
 
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct) => _inner.CallAsync(method, @params, ct);
 
@@ -31,6 +37,7 @@ internal sealed partial class CodexAppServerClientAdapter : ICodexAppServerClien
         _inner.CallAsync<TResult>(method, @params, serializerOptions, ct);
 
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct) => _inner.Notifications(ct);
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct) => _inner.NotificationsRaw(ct);
 
     public ValueTask DisposeAsync() => _inner.DisposeAsync();
 }

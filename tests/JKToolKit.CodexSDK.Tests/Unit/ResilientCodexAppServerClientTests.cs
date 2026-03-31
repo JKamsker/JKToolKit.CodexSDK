@@ -9,6 +9,8 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.AppServer.Resiliency;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -78,6 +80,26 @@ public sealed class ResilientCodexAppServerClientTests
     public void ResilientClient_ExposesStableDirectClientParityMethods()
     {
         AssertStableMethodParity(typeof(ResilientCodexAppServerClient));
+    }
+
+    [Fact]
+    public async Task ResilientClient_ExposesInitializeResultAndNotificationDropStats()
+    {
+        var initResult = new AppServerInitializeResult(
+            JsonDocument.Parse("""{"userAgent":"demo/1.0"}""").RootElement);
+        var stats = new AppServerNotificationDropStats(1, 2, 3, 4, 5, 6);
+
+        var adapter = new FakeAdapter
+        {
+            InitializeResultValue = initResult,
+            NotificationDropStatsValue = stats
+        };
+
+        var factory = new SequenceFactory(adapter);
+        await using var client = await StartAsync(factory, new CodexAppServerResilienceOptions());
+
+        client.InitializeResult.Should().Be(initResult);
+        client.NotificationDropStats.Should().Be(stats);
     }
 
     [Fact]
@@ -152,6 +174,82 @@ public sealed class ResilientCodexAppServerClientTests
     }
 
     [Fact]
+    public async Task CallAsync_WhenServerOverloaded_RetriedByPolicyWithoutRestart()
+    {
+        var attempts = 0;
+        var adapter = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) =>
+            {
+                if (attempts++ == 0)
+                {
+                    throw new JsonRpcRemoteException(new JsonRpcError(
+                        -32001,
+                        "Server overloaded; retry later."));
+                }
+
+                using var resultDoc = JsonDocument.Parse("""{"ok":true}""");
+                return Task.FromResult(resultDoc.RootElement.Clone());
+            }
+        };
+
+        var factory = new SequenceFactory(adapter);
+        var options = new CodexAppServerResilienceOptions
+        {
+            AutoRestart = false,
+            RetryPolicy = _ => new ValueTask<CodexAppServerRetryDecision>(CodexAppServerRetryDecision.Retry())
+        };
+
+        await using var client = await StartAsync(factory, options);
+
+        var result = await client.CallAsync("ping", @params: null);
+        result.GetProperty("ok").GetBoolean().Should().BeTrue();
+        attempts.Should().Be(2);
+        factory.StartCount.Should().Be(1);
+        client.RestartCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CallAsync_RequestFailedOverload_RetriedByPolicy()
+    {
+        var attempts = 0;
+        var adapter = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) =>
+            {
+                if (attempts++ == 0)
+                {
+                    using var doc = JsonDocument.Parse("""{"codexErrorInfo":"serverOverloaded"}""");
+                    throw new CodexAppServerRequestFailedException(
+                        method: "turn/steer",
+                        errorCode: -32001,
+                        errorMessage: "server overloaded; retry later.",
+                        errorData: doc.RootElement.Clone(),
+                        userAgent: null);
+                }
+
+                using var resultDoc = JsonDocument.Parse("""{"ok":true}""");
+                return Task.FromResult(resultDoc.RootElement.Clone());
+            }
+        };
+
+        var factory = new SequenceFactory(adapter);
+        var options = new CodexAppServerResilienceOptions
+        {
+            AutoRestart = false,
+            RetryPolicy = _ => new ValueTask<CodexAppServerRetryDecision>(CodexAppServerRetryDecision.Retry())
+        };
+
+        await using var client = await StartAsync(factory, options);
+
+        var result = await client.CallAsync("turn/steer", @params: null);
+        result.GetProperty("ok").GetBoolean().Should().BeTrue();
+        attempts.Should().Be(2);
+        factory.StartCount.Should().Be(1);
+        client.RestartCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task Notifications_ContinueAcrossRestarts_AndEmitRestartMarker()
     {
         var first = new FakeAdapter
@@ -185,6 +283,43 @@ public sealed class ResilientCodexAppServerClientTests
         }
 
         seen.Should().ContainInOrder("note/one", "client/restarted", "note/two");
+        factory.StartCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task NotificationsRaw_ContinueAcrossRestarts_AndEmitRestartMarker()
+    {
+        var first = new FakeAdapter
+        {
+            NotificationsRawImpl = FirstRawNotifications
+        };
+
+        var second = new FakeAdapter
+        {
+            NotificationsRawImpl = SecondRawNotifications
+        };
+
+        var factory = new SequenceFactory(first, second);
+        var options = new CodexAppServerResilienceOptions
+        {
+            AutoRestart = true,
+            NotificationsContinueAcrossRestarts = true,
+            EmitRestartMarkerNotifications = true
+        };
+
+        await using var client = await StartAsync(factory, options);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        var seen = new List<string>();
+
+        await foreach (var n in client.NotificationsRaw(cts.Token))
+        {
+            seen.Add(n.Method);
+            if (seen.Count >= 3)
+                break;
+        }
+
+        seen.Should().ContainInOrder("note/raw-one", "client/restarted", "note/raw-two");
         factory.StartCount.Should().Be(2);
     }
 
@@ -264,6 +399,21 @@ public sealed class ResilientCodexAppServerClientTests
     {
         await Task.Yield();
         yield return new UnknownNotification("note/two", EmptyJson());
+    }
+
+    private static async IAsyncEnumerable<AppServerRpcNotification> FirstRawNotifications(
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        await Task.Yield();
+        yield return new AppServerRpcNotification("note/raw-one", EmptyJson());
+        throw Disconnect("nope", exitCode: 7);
+    }
+
+    private static async IAsyncEnumerable<AppServerRpcNotification> SecondRawNotifications(
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        await Task.Yield();
+        yield return new AppServerRpcNotification("note/raw-two", EmptyJson());
     }
 
     [Fact]
@@ -474,6 +624,7 @@ public sealed class ResilientCodexAppServerClientTests
         public Func<string, object?, JsonSerializerOptions?, CancellationToken, Task<object?>>? CallAsyncTypedImpl { get; init; }
 
         public Func<CancellationToken, IAsyncEnumerable<AppServerNotification>>? NotificationsImpl { get; init; }
+        public Func<CancellationToken, IAsyncEnumerable<AppServerRpcNotification>>? NotificationsRawImpl { get; init; }
 
         public Func<string, CancellationToken, Task>? CompactThreadAsyncImpl { get; init; }
 
@@ -491,6 +642,10 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task ExitTask => _exit.Task;
 
+        public AppServerInitializeResult? InitializeResultValue { get; init; }
+
+        public AppServerNotificationDropStats NotificationDropStatsValue { get; init; } = new(0, 0, 0, 0, 0, 0);
+
         public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct)
         {
             if (CallAsyncImpl is null)
@@ -507,11 +662,25 @@ public sealed class ResilientCodexAppServerClientTests
             return result is null ? default : (TResult?)result;
         }
 
+        public AppServerInitializeResult? InitializeResult => InitializeResultValue;
+
+        public AppServerNotificationDropStats NotificationDropStats => NotificationDropStatsValue;
+
         public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct)
         {
             if (NotificationsImpl is null)
                 return AsyncEnumerable.Empty<AppServerNotification>();
             return NotificationsImpl(ct);
+        }
+
+        public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct)
+        {
+            if (NotificationsRawImpl is null)
+            {
+                return AsyncEnumerable.Empty<AppServerRpcNotification>();
+            }
+
+            return NotificationsRawImpl(ct);
         }
 
         public Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct) =>

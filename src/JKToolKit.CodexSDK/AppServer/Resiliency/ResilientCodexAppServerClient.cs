@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Resiliency.Internal;
 using Microsoft.Extensions.Logging;
@@ -69,10 +70,31 @@ public sealed partial class ResilientCodexAppServerClient : IAsyncDisposable
     }
 
     /// <summary>
+    /// Gets the initialize result payload, if <see cref="CodexAppServerClient.InitializeAsync"/> has completed on the active inner client.
+    /// </summary>
+    public AppServerInitializeResult? InitializeResult => _connection.InitializeResult;
+
+    /// <summary>
+    /// A task that completes when the resilient client is disposed or faulted.
+    /// </summary>
+    public Task ExitTask => _connection.ExitTask;
+
+    /// <summary>
+    /// Gets drop counters for bounded notification buffers from the active inner client.
+    /// </summary>
+    public AppServerNotificationDropStats NotificationDropStats => _connection.NotificationDropStats;
+
+    /// <summary>
     /// Returns a notification stream. When enabled, the stream continues across restarts.
     /// </summary>
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
         _executor.Notifications(ct);
+
+    /// <summary>
+    /// Returns the raw JSON-RPC notification stream. When enabled, the stream continues across restarts.
+    /// </summary>
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
+        _executor.NotificationsRaw(ct);
 
     /// <summary>
     /// Sends an arbitrary JSON-RPC request to the app server.
