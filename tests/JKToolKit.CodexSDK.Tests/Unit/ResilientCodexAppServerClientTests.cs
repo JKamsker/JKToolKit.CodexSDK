@@ -1,6 +1,9 @@
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
@@ -48,6 +51,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.StartFuzzyFileSearchSessionAsync),
         nameof(CodexAppServerClient.UpdateFuzzyFileSearchSessionAsync),
         nameof(CodexAppServerClient.StopFuzzyFileSearchSessionAsync),
+        nameof(CodexAppServerClient.FuzzyFileSearchAsync),
         nameof(CodexAppServerClient.StartTurnAsync),
         nameof(CodexAppServerClient.SteerTurnAsync),
         nameof(CodexAppServerClient.SteerTurnRawAsync),
@@ -481,6 +485,8 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Func<TurnSteerOptions, CancellationToken, Task<string>>? SteerTurnAsyncImpl { get; init; }
 
+        public Func<string, IReadOnlyList<string>, string?, CancellationToken, Task<IReadOnlyList<FuzzyFileSearchResult>>>? FuzzyFileSearchAsyncImpl { get; init; }
+
         public Func<string, string, string?, CancellationToken, Task>? StartThreadRealtimeAsyncImpl { get; init; }
 
         public Task ExitTask => _exit.Task;
@@ -621,6 +627,9 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task UpdateFuzzyFileSearchSessionAsync(string sessionId, string query, CancellationToken ct) =>
             NotSupported();
+
+        public Task<IReadOnlyList<FuzzyFileSearchResult>> FuzzyFileSearchAsync(string query, IReadOnlyList<string> roots, string? cancellationToken, CancellationToken ct) =>
+            FuzzyFileSearchAsyncImpl?.Invoke(query, roots, cancellationToken, ct) ?? NotSupported<IReadOnlyList<FuzzyFileSearchResult>>();
 
         public Task StopFuzzyFileSearchSessionAsync(string sessionId, CancellationToken ct) =>
             NotSupported();

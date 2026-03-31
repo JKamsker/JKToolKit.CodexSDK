@@ -78,15 +78,24 @@ internal static class AppServerNotificationParsing
             _ => null
         };
 
-    private static FuzzyFileSearchMatchType ParseMatchType(string? value) =>
-        value?.Trim() switch
+    private static FuzzyFileSearchMatchType ParseMatchType(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
         {
-            "path" => FuzzyFileSearchMatchType.Path,
-            "fileName" => FuzzyFileSearchMatchType.FileName,
-            "filename" => FuzzyFileSearchMatchType.FileName,
-            "file_name" => FuzzyFileSearchMatchType.FileName,
+            return FuzzyFileSearchMatchType.Unknown;
+        }
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "file" => FuzzyFileSearchMatchType.File,
+            "directory" => FuzzyFileSearchMatchType.Directory,
+            "dir" => FuzzyFileSearchMatchType.Directory,
+            "path" => FuzzyFileSearchMatchType.File,
+            "filename" => FuzzyFileSearchMatchType.File,
+            "file_name" => FuzzyFileSearchMatchType.File,
             _ => FuzzyFileSearchMatchType.Unknown
         };
+    }
 
     private static GuardianApprovalReviewStatus ParseGuardianApprovalReviewStatus(string? value) =>
         value?.Trim() switch

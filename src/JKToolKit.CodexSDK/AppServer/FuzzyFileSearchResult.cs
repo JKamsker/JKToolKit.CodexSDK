@@ -11,14 +11,14 @@ public enum FuzzyFileSearchMatchType
     Unknown = 0,
 
     /// <summary>
-    /// The match was driven by the file path.
+    /// The match is backed by a file entry.
     /// </summary>
-    Path = 1,
+    File = 1,
 
     /// <summary>
-    /// The match was driven by the file name.
+    /// The match is backed by a directory entry.
     /// </summary>
-    FileName = 2
+    Directory = 2
 }
 
 /// <summary>
@@ -52,7 +52,7 @@ public sealed record class FuzzyFileSearchResult
     public string? MatchType { get; init; }
 
     /// <summary>
-    /// Gets the parsed match classification.
+    /// Gets the parsed match classification (file vs directory).
     /// </summary>
     public FuzzyFileSearchMatchType MatchKind { get; init; }
 

@@ -110,14 +110,14 @@ public sealed class AppServerNotificationMapperTests
     [Fact]
     public void Map_FuzzyFileSearchSessionUpdated_PreservesMatchType()
     {
-        var updated = JsonDocument.Parse("""{"sessionId":"s1","query":"","files":[{"root":"C:\\repo","path":"src\\App.cs","fileName":"App.cs","score":42,"matchType":"path"}]}""").RootElement;
+        var updated = JsonDocument.Parse("""{"sessionId":"s1","query":"","files":[{"root":"C:\\repo","path":"src\\App.cs","fileName":"App.cs","score":42,"matchType":"file"}]}""").RootElement;
         var notification = AppServerNotificationMapper.Map("fuzzyFileSearch/sessionUpdated", updated)
             .Should().BeOfType<FuzzyFileSearchSessionUpdatedNotification>()
             .Which;
 
         notification.Files.Should().ContainSingle();
-        notification.Files[0].MatchType.Should().Be("path");
-        notification.Files[0].MatchKind.Should().Be(FuzzyFileSearchMatchType.Path);
+        notification.Files[0].MatchType.Should().Be("file");
+        notification.Files[0].MatchKind.Should().Be(FuzzyFileSearchMatchType.File);
     }
 
     [Fact]

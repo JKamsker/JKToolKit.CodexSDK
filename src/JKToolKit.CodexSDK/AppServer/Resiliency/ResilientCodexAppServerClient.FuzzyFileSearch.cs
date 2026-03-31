@@ -1,5 +1,9 @@
 #pragma warning disable CS1591
 
+using System.Collections.Generic;
+using System.Threading;
+using JKToolKit.CodexSDK.AppServer;
+
 namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 
 public sealed partial class ResilientCodexAppServerClient
@@ -12,6 +16,16 @@ public sealed partial class ResilientCodexAppServerClient
 
     public Task StopFuzzyFileSearchSessionAsync(string sessionId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.FuzzyFileSearch, (c, token) => c.StopFuzzyFileSearchSessionAsync(sessionId, token), ct);
+
+    public Task<IReadOnlyList<FuzzyFileSearchResult>> FuzzyFileSearchAsync(
+        string query,
+        IReadOnlyList<string> roots,
+        string? cancellationToken = null,
+        CancellationToken ct = default) =>
+        ExecuteAsync(
+            CodexAppServerOperationKind.FuzzyFileSearch,
+            (c, token) => c.FuzzyFileSearchAsync(query, roots, cancellationToken, token),
+            ct);
 }
 
 #pragma warning restore CS1591

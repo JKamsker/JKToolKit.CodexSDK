@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -32,13 +35,50 @@ public sealed class AppServerFuzzyFileSearchClientTests
             .WithMessage("*Roots cannot contain*");
     }
 
-    private static CodexAppServerClient CreateClient(bool experimentalApi) =>
-        new(
+    [Fact]
+    public async Task UpdateFuzzyFileSearchSessionAsync_AllowsWhitespaceQuery()
+    {
+        await using var client = CreateClient(experimentalApi: true);
+
+        await client.UpdateFuzzyFileSearchSessionAsync("session-1", "   ");
+    }
+
+    [Fact]
+    public async Task FuzzyFileSearchAsync_SendsTypedRequest()
+    {
+        using var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("fuzzyFileSearch");
+                var typed = @params.Should().BeOfType<FuzzyFileSearchParams>().Which;
+                typed.Query.Should().Be("abc");
+                typed.Roots.Should().Equal(new[] { "C:\\repo" });
+                typed.CancellationToken.Should().Be("token");
+
+                using var doc = JsonDocument.Parse("""{"files":[{"root":"C:\\repo","path":"C:\\repo\\Program.cs","fileName":"Program.cs","score":100,"matchType":"file"}]}""");
+                return Task.FromResult(doc.RootElement.Clone());
+            }
+        };
+
+        await using var client = CreateClient(experimentalApi: true, rpc: rpc);
+
+        var results = await client.FuzzyFileSearchAsync("abc", ["C:\\repo"], cancellationToken: "token");
+
+        results.Should().ContainSingle()
+            .Which.MatchKind.Should().Be(FuzzyFileSearchMatchType.File);
+    }
+
+    private static CodexAppServerClient CreateClient(bool experimentalApi, FakeRpc? rpc = null)
+    {
+        rpc ??= new FakeRpc();
+        return new(
             new CodexAppServerClientOptions { ExperimentalApi = experimentalApi },
             new FakeProcess(),
-            new FakeRpc(),
+            rpc,
             NullLogger.Instance,
             startExitWatcher: false);
+    }
 
     private sealed class FakeProcess : IStdioProcess
     {
@@ -57,8 +97,10 @@ public sealed class AppServerFuzzyFileSearchClientTests
 
         public Func<JsonRpcRequest, ValueTask<JsonRpcResponse>>? OnServerRequest { get; set; }
 
+        public Func<string, object?, CancellationToken, Task<JsonElement>>? SendRequestAsyncImpl { get; set; }
+
         public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct) =>
-            Task.FromResult(JsonDocument.Parse("""{}""").RootElement.Clone());
+            SendRequestAsyncImpl?.Invoke(method, @params, ct) ?? Task.FromResult(JsonDocument.Parse("""{}""").RootElement.Clone());
 
         public Task SendNotificationAsync(string method, object? @params, CancellationToken ct) => Task.CompletedTask;
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

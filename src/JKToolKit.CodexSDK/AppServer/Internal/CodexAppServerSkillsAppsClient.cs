@@ -28,7 +28,38 @@ internal sealed class CodexAppServerSkillsAppsClient
         }
 
         UpstreamV2.SkillsListExtraRootsForCwd[]? perCwd = null;
-        if (options.ExtraRootsForCwd is { Count: > 0 })
+        if (options.PerCwdExtraUserRoots is { Count: > 0 })
+        {
+            perCwd = options.PerCwdExtraUserRoots.Select(entry =>
+            {
+                if (entry is null)
+                {
+                    throw new ArgumentException("PerCwdExtraUserRoots entries must not be null.", nameof(options));
+                }
+
+                if (string.IsNullOrWhiteSpace(entry.Cwd))
+                {
+                    throw new ArgumentException("PerCwdExtraUserRoots entries require a non-empty Cwd.", nameof(options));
+                }
+
+                if (entry.ExtraUserRoots is not { Count: > 0 })
+                {
+                    throw new ArgumentException("PerCwdExtraUserRoots entries require at least one extra root.", nameof(options));
+                }
+
+                if (entry.ExtraUserRoots.Any(string.IsNullOrWhiteSpace))
+                {
+                    throw new ArgumentException("PerCwdExtraUserRoots entries cannot contain null, empty, or whitespace extra roots.", nameof(options));
+                }
+
+                return new UpstreamV2.SkillsListExtraRootsForCwd
+                {
+                    Cwd = entry.Cwd,
+                    ExtraUserRoots = entry.ExtraUserRoots.ToArray()
+                };
+            }).ToArray();
+        }
+        else if (options.ExtraRootsForCwd is { Count: > 0 })
         {
             var cwd = options.Cwd ?? (cwds is { Count: 1 } ? cwds[0] : null);
             if (string.IsNullOrWhiteSpace(cwd))
