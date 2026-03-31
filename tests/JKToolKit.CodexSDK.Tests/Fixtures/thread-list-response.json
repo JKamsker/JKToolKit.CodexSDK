@@ -4,43 +4,55 @@
       "id": "t_1",
       "name": "One",
       "preview": "Preview One",
-      "archived": false,
-      "createdAt": "2026-02-01T00:00:00Z",
+      "createdAt": 1770000000,
       "updatedAt": 1770000600,
       "cwd": "C:\\repo",
       "path": "C:\\repo\\.codex\\sessions\\rollout-t_1.jsonl",
-      "model": "gpt-5",
+      "cliVersion": "0.2.3",
       "modelProvider": "openai",
-      "source": "cli",
-      "ephemeral": false,
       "status": {
         "type": "active",
         "activeFlags": ["waitingOnUserInput"]
       },
+      "ephemeral": false,
+      "source": "cli",
       "turns": [{ "id": "turn_1" }],
       "unknownField": { "x": 1 }
     },
     {
-      "thread": {
-        "id": "t_2",
-        "name": "Two",
-        "preview": "Preview Two",
-        "archived": true,
-        "createdAt": 1700000000,
-        "updatedAt": "2026-02-03T04:05:06Z",
-        "cwd": "/tmp",
-        "path": "C:/Users/Jonas/.codex/archived_sessions/rollout-t_2.jsonl",
-        "model": "gpt-5-mini",
-        "modelProvider": "openai",
-        "source": { "kind": "subagent" },
-        "cliVersion": "0.0.1",
-        "agentNickname": "beta",
-        "agentRole": "reviewer"
+      "id": "t_2",
+      "name": "Two",
+      "preview": "Preview Two",
+      "createdAt": 1700000000,
+      "updatedAt": 1700000100,
+      "cwd": "/tmp",
+      "path": "/tmp/.codex/sessions/rollout-t_2.jsonl",
+      "cliVersion": "0.2.3",
+      "modelProvider": "openai",
+      "status": {
+        "type": "idle"
       },
-      "serviceTier": "flex",
+      "ephemeral": true,
+      "source": {
+        "subAgent": {
+          "thread_spawn": {
+            "parentThreadId": "t_parent",
+            "depth": 1,
+            "agentNickname": "beta",
+            "agentRole": "reviewer"
+          }
+        }
+      },
+      "agentNickname": "beta",
+      "agentRole": "reviewer",
+      "gitInfo": {
+        "sha": "abcdef",
+        "branch": "main",
+        "originUrl": "https://example.com/repo.git"
+      },
+      "turns": [],
       "wrapperUnknown": "ok"
     }
   ],
-  "nextCursor": "cursor_2",
-  "topUnknown": { "y": 2 }
+  "nextCursor": "cursor_2"
 }

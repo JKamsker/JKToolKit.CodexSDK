@@ -3,24 +3,31 @@
     "id": "t_read",
     "name": "Read Me",
     "preview": "Read Preview",
-    "archived": false,
-    "createdAt": "2026-02-02T00:00:00Z",
-    "updatedAt": 1770001200,
+    "createdAt": 1770001200,
+    "updatedAt": 1770001800,
     "cwd": "C:\\repo",
     "path": "C:\\repo\\.codex\\sessions\\rollout-t_read.jsonl",
-    "source": {
-      "kind": "cli"
+    "cliVersion": "0.2.3",
+    "modelProvider": "openai",
+    "status": {
+      "type": "active",
+      "activeFlags": ["waitingOnUserInput"]
     },
+    "ephemeral": false,
+    "source": "cli",
     "turns": [
       { "id": "turn_1" },
       { "id": "turn_2" },
       { "id": "turn_3" }
     ],
+    "gitInfo": {
+      "sha": "deadbeef",
+      "branch": "main",
+      "originUrl": "https://example.com/repo.git"
+    },
     "extra": { "any": "value" }
   },
-  "model": "gpt-5",
-  "modelProvider": "openai",
-  "serviceTier": "fast",
   "historySummary": { "turns": 3 },
+  "futureField": true,
   "unknownTopLevel": true
 }

@@ -25,11 +25,15 @@ public sealed class ThreadApiParsingTests
         threads[0].SourceKind.Should().Be("cli");
         threads[0].TurnCount.Should().Be(1);
         threads[0].ServiceTier.Should().BeNull();
+        threads[0].Status.Should().NotBeNull();
+        threads[0].Status!.Kind.Should().Be(CodexThreadStatusKind.Active);
+        threads[0].Status.ActiveFlags.Should().Contain("waitingOnUserInput");
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
-        threads[1].ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Flex);
-        threads[1].Path.Should().Contain("archived_sessions");
+        threads[1].Path.Should().Contain("rollout-t_2");
         threads[1].SourceKind.Should().Be("subagent");
         threads[1].AgentNickname.Should().Be("beta");
+        threads[1].AgentRole.Should().Be("reviewer");
+        threads[1].ServiceTier.Should().BeNull();
         threads[1].Raw.TryGetProperty("wrapperUnknown", out _).Should().BeTrue();
     }
 
@@ -47,7 +51,7 @@ public sealed class ThreadApiParsingTests
         summary.ModelProvider.Should().Be("openai");
         summary.Path.Should().Contain("rollout-t_read");
         summary.SourceKind.Should().Be("cli");
-        summary.ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Fast);
+        summary.ServiceTier.Should().BeNull();
         summary.TurnCount.Should().Be(3);
     }
 
@@ -88,18 +92,36 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
-    public void ParseReadResult_ProjectsHistorySummary()
+    public void ParseLifecycleThread_PreservesStructuredPayloads()
+    {
+        var raw = JsonFixtures.Load("thread-structured-lifecycle-response.json");
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(raw);
+
+        result.ApprovalPolicy.Should().BeNull();
+        result.ApprovalPolicyRaw.Should().NotBeNull();
+        result.ApprovalPolicyRaw!.Value.ValueKind.Should().Be(JsonValueKind.Object);
+        result.SandboxRaw.Should().NotBeNull();
+        result.SandboxRaw!.Value.ValueKind.Should().Be(JsonValueKind.Object);
+        result.ReasoningEffort.Should().Be(CodexReasoningEffort.XHigh);
+        result.Thread.Status.Should().NotBeNull();
+        result.Thread.Status!.Kind.Should().Be(CodexThreadStatusKind.Active);
+        result.Thread.Status.ActiveFlags.Should().HaveCount(2)
+            .And.Contain(new[] { "waitingOnApproval", "waitingOnUserInput" });
+    }
+
+    [Fact]
+    public void ParseReadResult_ReturnsThreadSummary()
     {
         var raw = JsonFixtures.Load("thread-read-response.json");
 
         var result = CodexAppServerClientThreadResponseParsers.ParseReadResult(raw, "fallback");
 
         result.Thread.ThreadId.Should().Be("t_read");
-        result.HistorySummary.Should().NotBeNull();
-        result.HistorySummary!.Value.GetProperty("turns").GetInt32().Should().Be(3);
+        result.Turns.Should().HaveCount(3);
 
         var response = JsonSerializer.Deserialize<ThreadReadResponse>(JsonFixtures.LoadText("thread-read-response.json"));
-        response!.HistorySummary.Should().NotBeNull();
+        response!.Thread.HasValue.Should().BeTrue();
     }
 
     [Fact]
