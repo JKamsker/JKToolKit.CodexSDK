@@ -141,15 +141,11 @@ public sealed class CodexClientListSessionsTests : IAsyncDisposable
 
     private string CreateSessionLog(SessionId sessionId, DateTimeOffset timestamp, string workingDirectory, string? model)
     {
-        var datePath = Path.Combine(
-            _sessionsRoot,
-            timestamp.Year.ToString("D4"),
-            timestamp.Month.ToString("D2"),
-            timestamp.Day.ToString("D2"));
+        var filePath = SessionLogPathTestHelper.BuildNestedRolloutPath(_sessionsRoot, timestamp, sessionId);
+        var datePath = Path.GetDirectoryName(filePath)!;
 
         Directory.CreateDirectory(datePath);
 
-        var filePath = Path.Combine(datePath, $"rollout-{timestamp:HHmmss}-{sessionId.Value}.jsonl");
         var lines = new[]
         {
             TestJsonlGenerator.GenerateSessionMeta(sessionId, workingDirectory, timestamp, model),

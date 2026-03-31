@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;
 
@@ -55,7 +56,10 @@ public sealed class CodexClientReviewStreamingTests
         Directory.CreateDirectory(sessionsRoot);
         try
         {
-            var expectedLogPath = Path.Combine(sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
+            var expectedLogPath = SessionLogPathTestHelper.BuildNestedRolloutPath(
+                sessionsRoot,
+                DateTimeOffset.Parse("2025-11-20T22:00:00Z"),
+                sessionId);
 
             var launcher = new ReviewProcessLauncher(process);
             var locator = new FakeSessionLocator(expectedLogPath);
@@ -94,7 +98,10 @@ public sealed class CodexClientReviewStreamingTests
         Directory.CreateDirectory(sessionsRoot);
         try
         {
-            var expectedLogPath = Path.Combine(sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
+            var expectedLogPath = SessionLogPathTestHelper.BuildNestedRolloutPath(
+                sessionsRoot,
+                DateTimeOffset.Parse("2025-11-20T22:01:00Z"),
+                sessionId);
 
             var launcher = new ReviewProcessLauncher(process);
             var locator = new FakeSessionLocator(expectedLogPath);
@@ -233,7 +240,10 @@ public sealed class CodexClientReviewStreamingTests
             overrideDirectory ?? sessionsRoot;
 
         public string ResolveSessionLogPath(SessionId sessionId, string? sessionsRootOverride) =>
-            Path.Combine(sessionsRootOverride ?? sessionsRoot, $"rollout-{sessionId.Value}.jsonl");
+            SessionLogPathTestHelper.BuildNestedRolloutPath(
+                sessionsRootOverride ?? sessionsRoot,
+                DateTimeOffset.Parse("2025-11-20T22:00:00Z"),
+                sessionId);
     }
 
     private sealed class SignalTextWriter : TextWriter

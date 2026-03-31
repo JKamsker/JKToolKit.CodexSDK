@@ -22,7 +22,7 @@ public class CodexClientResumeSessionTests
         // Arrange
         var baseTime = DateTimeOffset.Parse("2025-11-20T22:00:00Z");
         var sessionId = SessionId.Parse("session-123");
-        var logPath = "C:\\sessions\\rollout-session-123.jsonl";
+        var logPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime, sessionId);
 
         var lines = new[]
         {
@@ -62,8 +62,8 @@ public class CodexClientResumeSessionTests
     {
         // Arrange
         var sessionId = SessionId.Parse("session-path");
-        var logPath = "C:\\sessions\\rollout-session-path.jsonl";
         var baseTime = DateTimeOffset.Parse("2025-11-20T23:00:00Z");
+        var logPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime, sessionId);
 
         var lines = new[]
         {
@@ -96,8 +96,8 @@ public class CodexClientResumeSessionTests
     {
         // Arrange
         var sessionId = SessionId.Parse("session-filter");
-        var logPath = "C:\\sessions\\rollout-session-filter.jsonl";
         var baseTime = DateTimeOffset.Parse("2025-11-20T23:30:00Z");
+        var logPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime, sessionId);
 
         var lines = new[]
         {
@@ -228,6 +228,9 @@ public class CodexClientResumeSessionTests
             overrideDirectory ?? _sessionsRoot;
 
         public string ResolveSessionLogPath(SessionId sessionId, string? sessionsRoot) =>
-            Path.Combine(sessionsRoot ?? _sessionsRoot, $"rollout-{sessionId}.jsonl");
+            SessionLogPathTestHelper.BuildNestedRolloutPath(
+                sessionsRoot ?? _sessionsRoot,
+                DateTimeOffset.Parse("2025-11-20T22:00:00Z"),
+                sessionId);
     }
 }
