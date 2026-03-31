@@ -322,26 +322,6 @@ internal static class AppServerNotificationMapper
                 Error: GetStringOrNull(p, "error"),
                 Params: p),
 
-            "authStatusChange" => new AuthStatusChangeNotification(
-                AuthMethod: GetStringOrNull(p, "authMethod"),
-                Params: p),
-
-            "loginChatGptComplete" => new LoginChatGptCompleteNotification(
-                LoginId: GetString(p, "loginId") ?? string.Empty,
-                Success: GetBool(p, "success"),
-                Error: GetStringOrNull(p, "error"),
-                Params: p),
-
-            "sessionConfigured" => new SessionConfiguredNotification(
-                SessionId: GetString(p, "sessionId") ?? string.Empty,
-                Model: GetString(p, "model") ?? string.Empty,
-                ReasoningEffort: GetStringOrNull(p, "reasoningEffort"),
-                HistoryLogId: GetInt64(p, "historyLogId"),
-                HistoryEntryCount: GetInt32(p, "historyEntryCount"),
-                InitialMessages: GetOptionalAny(p, "initialMessages"),
-                RolloutPath: GetStringOrNull(p, "rolloutPath"),
-                Params: p),
-
             _ => new UnknownNotification(method, p)
         };
     }

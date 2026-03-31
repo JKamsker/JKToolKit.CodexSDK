@@ -93,6 +93,20 @@ public sealed class AppServerNotificationMapperTests
             .Which.RequestIdValue.Should().Be("123");
     }
 
+    [Theory]
+    [InlineData("authStatusChange")]
+    [InlineData("loginChatGptComplete")]
+    [InlineData("sessionConfigured")]
+    public void Map_LegacyNotificationMethods_ReturnUnknown(string method)
+    {
+        var payload = JsonDocument.Parse("""{"info":"legacy"}""").RootElement;
+
+        var mapped = AppServerNotificationMapper.Map(method, payload);
+
+        var unknown = mapped.Should().BeOfType<UnknownNotification>().Subject;
+        unknown.Method.Should().Be(method);
+    }
+
     [Fact]
     public void Map_FuzzyFileSearchSessionUpdated_PreservesMatchType()
     {
