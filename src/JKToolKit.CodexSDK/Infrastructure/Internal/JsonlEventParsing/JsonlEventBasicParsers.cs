@@ -98,10 +98,9 @@ internal static class JsonlEventBasicParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        var msgString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
-        if (string.IsNullOrWhiteSpace(msgString))
+        if (!TryGetMessageOrText(payload, out var msgString))
         {
-            ctx.Logger.LogWarning("user_message event has empty message/text field");
+            ctx.Logger.LogWarning("user_message event missing message/text field");
             return null;
         }
 
@@ -110,7 +109,7 @@ internal static class JsonlEventBasicParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            Text = msgString
+            Text = msgString ?? string.Empty
         };
     }
 
@@ -122,11 +121,9 @@ internal static class JsonlEventBasicParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        var msgString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
-
-        if (string.IsNullOrWhiteSpace(msgString))
+        if (!TryGetMessageOrText(payload, out var msgString))
         {
-            ctx.Logger.LogWarning("agent_message event has empty message/text field");
+            ctx.Logger.LogWarning("agent_message event missing message/text field");
             return null;
         }
 
@@ -135,7 +132,7 @@ internal static class JsonlEventBasicParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            Text = msgString
+            Text = msgString ?? string.Empty
         };
     }
 
@@ -147,11 +144,9 @@ internal static class JsonlEventBasicParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        var reasoningString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
-
-        if (string.IsNullOrWhiteSpace(reasoningString))
+        if (!TryGetMessageOrText(payload, out var reasoningString))
         {
-            ctx.Logger.LogWarning("agent_reasoning event has empty message/text field");
+            ctx.Logger.LogWarning("agent_reasoning event missing message/text field");
             return null;
         }
 
@@ -160,7 +155,7 @@ internal static class JsonlEventBasicParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            Text = reasoningString
+            Text = reasoningString ?? string.Empty
         };
     }
 
@@ -480,5 +475,23 @@ internal static class JsonlEventBasicParsers
         }
 
         return new RateLimits(primary, secondary, credits);
+    }
+
+    private static bool TryGetMessageOrText(JsonElement payload, out string? value)
+    {
+        if (payload.TryGetProperty("message", out var messageEl) && messageEl.ValueKind == JsonValueKind.String)
+        {
+            value = messageEl.GetString();
+            return true;
+        }
+
+        if (payload.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+        {
+            value = textEl.GetString();
+            return true;
+        }
+
+        value = null;
+        return false;
     }
 }

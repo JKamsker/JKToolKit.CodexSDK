@@ -36,19 +36,34 @@ public sealed class AppServerStableOnlyFlowsTests
     public async Task AppServer_StableOnly_ResumeThreadById_Succeeds()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-
-        await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+        var options = new CodexAppServerClientOptions
         {
             DefaultClientInfo = new("jktoolkit_codexsdk_tests", "JKToolKit.CodexSDK.Tests", "1.0.0")
-        }, cts.Token);
+        };
 
-        var thread = await client.StartThreadAsync(new ThreadStartOptions
+        string threadId;
+
+        await using (var client = await CodexAppServerClient.StartAsync(options, cts.Token))
         {
-            Cwd = Directory.GetCurrentDirectory(),
-            Model = CodexModel.Gpt52Codex
-        }, cts.Token);
+            var thread = await client.StartThreadAsync(new ThreadStartOptions
+            {
+                Cwd = Directory.GetCurrentDirectory(),
+                Model = CodexModel.Gpt52Codex
+            }, cts.Token);
 
-        var resumed = await client.ResumeThreadAsync(thread.Id, cts.Token);
+            threadId = thread.Id;
+
+            await using var turn = await client.StartTurnAsync(threadId, new TurnStartOptions
+            {
+                Input = [TurnInputItem.Text("Reply only with: ok.")]
+            }, cts.Token);
+
+            _ = await turn.Completion.WaitAsync(cts.Token);
+        }
+
+        await using var client2 = await CodexAppServerClient.StartAsync(options, cts.Token);
+
+        var resumed = await client2.ResumeThreadAsync(threadId, cts.Token);
         resumed.Id.Should().NotBeNullOrWhiteSpace();
     }
 

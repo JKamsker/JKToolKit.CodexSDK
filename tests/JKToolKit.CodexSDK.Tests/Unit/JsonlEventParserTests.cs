@@ -237,6 +237,51 @@ public class JsonlEventParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_EventMsg_WrappedAgentReasoning_AllowsEmptyText()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""agent_reasoning"",
+                ""text"": """"
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<AgentReasoningEvent>().Subject;
+        evt.Type.Should().Be("agent_reasoning");
+        evt.Text.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ParseAsync_EventMsg_WrappedUserMessage_WithImagesAndEmptyMessage_ParsesAsEmptyText()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""event_msg"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": {{
+                ""type"": ""user_message"",
+                ""message"": """",
+                ""images"": [""data:image/png;base64,AAA="" ],
+                ""local_images"": [],
+                ""text_elements"": []
+            }}
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().HaveCount(1);
+        var evt = events[0].Should().BeOfType<UserMessageEvent>().Subject;
+        evt.Type.Should().Be("user_message");
+        evt.Text.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ParseAsync_EventMsg_TaskStarted_ParsesTaskStartedEvent()
     {
         var timestamp = DateTimeOffset.UtcNow;
