@@ -20,15 +20,23 @@ public sealed class AppServerNotificationMapperTests
     [Fact]
     public void Map_ThreadRealtimeNotifications_ToTypedRecords()
     {
-        var started = JsonDocument.Parse("""{"threadId":"t","sessionId":"s"}""").RootElement;
-        AppServerNotificationMapper.Map("thread/realtime/started", started)
+        var started = JsonDocument.Parse("""{"threadId":"t","sessionId":"s","version":"v2"}""").RootElement;
+        var startedMapped = AppServerNotificationMapper.Map("thread/realtime/started", started)
             .Should().BeOfType<ThreadRealtimeStartedNotification>()
-            .Which.SessionId.Should().Be("s");
+            .Which;
+
+        startedMapped.SessionId.Should().Be("s");
+        startedMapped.Version.Should().Be("v2");
 
         var itemAdded = JsonDocument.Parse("""{"threadId":"t","item":{"type":"x"}}""").RootElement;
         AppServerNotificationMapper.Map("thread/realtime/itemAdded", itemAdded)
             .Should().BeOfType<ThreadRealtimeItemAddedNotification>()
             .Which.ItemType.Should().Be("x");
+
+        var transcriptUpdated = JsonDocument.Parse("""{"threadId":"t","role":"assistant","text":"hello"}""").RootElement;
+        AppServerNotificationMapper.Map("thread/realtime/transcriptUpdated", transcriptUpdated)
+            .Should().BeOfType<ThreadRealtimeTranscriptUpdatedNotification>()
+            .Which.Text.Should().Be("hello");
 
         var audioDelta = JsonDocument.Parse("""{"threadId":"t","audio":{"data":"abc","numChannels":2,"sampleRate":24000,"samplesPerChannel":480}}""").RootElement;
         var mapped = AppServerNotificationMapper.Map("thread/realtime/outputAudio/delta", audioDelta);
@@ -45,6 +53,55 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("thread/realtime/error", error)
             .Should().BeOfType<ThreadRealtimeErrorNotification>()
             .Which.Message.Should().Be("oops");
+    }
+
+    [Fact]
+    public void Map_NewlyTypedNotificationMethods_ToTypedRecords()
+    {
+        var commandExecDelta = JsonDocument.Parse("""{"processId":"p1","stream":"stdout","deltaBase64":"aGVsbG8=","capReached":false}""").RootElement;
+        AppServerNotificationMapper.Map("command/exec/outputDelta", commandExecDelta)
+            .Should().BeOfType<CommandExecOutputDeltaNotification>()
+            .Which.ProcessId.Should().Be("p1");
+
+        var fsChanged = JsonDocument.Parse("""{"watchId":"w1","changedPaths":["C:\\repo\\a.txt","C:\\repo\\b.txt"]}""").RootElement;
+        AppServerNotificationMapper.Map("fs/changed", fsChanged)
+            .Should().BeOfType<FsChangedNotification>()
+            .Which.ChangedPaths.Should().HaveCount(2);
+
+        var hookStarted = JsonDocument.Parse("""{"threadId":"t","turnId":"u","run":{"id":"r1","status":"running"}}""").RootElement;
+        AppServerNotificationMapper.Map("hook/started", hookStarted)
+            .Should().BeOfType<HookStartedNotification>()
+            .Which.ThreadId.Should().Be("t");
+
+        var hookCompleted = JsonDocument.Parse("""{"threadId":"t","run":{"id":"r1","status":"completed"}}""").RootElement;
+        AppServerNotificationMapper.Map("hook/completed", hookCompleted)
+            .Should().BeOfType<HookCompletedNotification>()
+            .Which.TurnId.Should().BeNull();
+
+        var startupStatus = JsonDocument.Parse("""{"name":"server-1","status":"ready","error":null}""").RootElement;
+        AppServerNotificationMapper.Map("mcpServer/startupStatus/updated", startupStatus)
+            .Should().BeOfType<McpServerStartupStatusUpdatedNotification>()
+            .Which.Status.Should().Be("ready");
+    }
+
+    [Fact]
+    public void Map_ReasoningIndexNotifications_UseLongValues()
+    {
+        const long summaryIndex = 3_000_000_000;
+        var summaryTextDelta = JsonDocument.Parse("""{"threadId":"t","turnId":"u","itemId":"i","delta":"x","summaryIndex":3000000000}""").RootElement;
+        AppServerNotificationMapper.Map("item/reasoning/summaryTextDelta", summaryTextDelta)
+            .Should().BeOfType<ReasoningSummaryTextDeltaNotification>()
+            .Which.SummaryIndex.Should().Be(summaryIndex);
+
+        var summaryPartAdded = JsonDocument.Parse("""{"threadId":"t","turnId":"u","itemId":"i","summaryIndex":"4000000000"}""").RootElement;
+        AppServerNotificationMapper.Map("item/reasoning/summaryPartAdded", summaryPartAdded)
+            .Should().BeOfType<ReasoningSummaryPartAddedNotification>()
+            .Which.SummaryIndex.Should().Be(4_000_000_000L);
+
+        var textDelta = JsonDocument.Parse("""{"threadId":"t","turnId":"u","itemId":"i","delta":"x","contentIndex":5000000000}""").RootElement;
+        AppServerNotificationMapper.Map("item/reasoning/textDelta", textDelta)
+            .Should().BeOfType<ReasoningTextDeltaNotification>()
+            .Which.ContentIndex.Should().Be(5_000_000_000L);
     }
 
     [Fact]

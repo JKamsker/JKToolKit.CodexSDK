@@ -60,11 +60,18 @@ internal static class AppServerNotificationMapper
             "thread/realtime/started" => new ThreadRealtimeStartedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 SessionId: GetStringOrNull(p, "sessionId"),
+                Version: GetString(p, "version") ?? string.Empty,
                 Params: p),
 
             "thread/realtime/itemAdded" => new ThreadRealtimeItemAddedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Item: GetAny(p, "item"),
+                Params: p),
+
+            "thread/realtime/transcriptUpdated" => new ThreadRealtimeTranscriptUpdatedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Role: GetString(p, "role") ?? string.Empty,
+                Text: GetString(p, "text") ?? string.Empty,
                 Params: p),
 
             "thread/realtime/outputAudio/delta" => new ThreadRealtimeOutputAudioDeltaNotification(
@@ -93,6 +100,18 @@ internal static class AppServerNotificationMapper
             "turn/started" => new TurnStartedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Turn: GetAny(p, "turn"),
+                Params: p),
+
+            "hook/started" => new HookStartedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetStringOrNull(p, "turnId"),
+                Run: GetAny(p, "run"),
+                Params: p),
+
+            "hook/completed" => new HookCompletedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetStringOrNull(p, "turnId"),
+                Run: GetAny(p, "run"),
                 Params: p),
 
             "item/agentMessage/delta" => new AgentMessageDeltaNotification(
@@ -139,6 +158,13 @@ internal static class AppServerNotificationMapper
                 Delta: GetString(p, "delta") ?? string.Empty,
                 Params: p),
 
+            "command/exec/outputDelta" => new CommandExecOutputDeltaNotification(
+                ProcessId: GetString(p, "processId") ?? string.Empty,
+                Stream: GetString(p, "stream") ?? string.Empty,
+                DeltaBase64: GetString(p, "deltaBase64") ?? string.Empty,
+                CapReached: GetBool(p, "capReached"),
+                Params: p),
+
             "rawResponseItem/completed" => new RawResponseItemCompletedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
@@ -180,6 +206,12 @@ internal static class AppServerNotificationMapper
                 Error: GetStringOrNull(p, "error"),
                 Params: p),
 
+            "mcpServer/startupStatus/updated" => new McpServerStartupStatusUpdatedNotification(
+                Name: GetString(p, "name") ?? string.Empty,
+                Status: GetString(p, "status") ?? string.Empty,
+                Error: GetStringOrNull(p, "error"),
+                Params: p),
+
             "account/updated" => new AccountUpdatedNotification(
                 AuthMode: GetStringOrNull(p, "authMode"),
                 Params: p),
@@ -191,6 +223,11 @@ internal static class AppServerNotificationMapper
             "app/list/updated" => new AppListUpdatedNotification(
                 apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
                 @params: p),
+
+            "fs/changed" => new FsChangedNotification(
+                WatchId: GetString(p, "watchId") ?? string.Empty,
+                ChangedPaths: GetStringArray(p, "changedPaths"),
+                Params: p),
 
             "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
@@ -207,14 +244,14 @@ internal static class AppServerNotificationMapper
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 ItemId: GetString(p, "itemId") ?? string.Empty,
                 Delta: GetString(p, "delta") ?? string.Empty,
-                SummaryIndex: GetInt32(p, "summaryIndex"),
+                SummaryIndex: GetInt64(p, "summaryIndex"),
                 Params: p),
 
             "item/reasoning/summaryPartAdded" => new ReasoningSummaryPartAddedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 ItemId: GetString(p, "itemId") ?? string.Empty,
-                SummaryIndex: GetInt32(p, "summaryIndex"),
+                SummaryIndex: GetInt64(p, "summaryIndex"),
                 Params: p),
 
             "item/reasoning/textDelta" => new ReasoningTextDeltaNotification(
@@ -222,7 +259,7 @@ internal static class AppServerNotificationMapper
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 ItemId: GetString(p, "itemId") ?? string.Empty,
                 Delta: GetString(p, "delta") ?? string.Empty,
-                ContentIndex: GetInt32(p, "contentIndex"),
+                ContentIndex: GetInt64(p, "contentIndex"),
                 Params: p),
 
             "thread/compacted" => new ContextCompactedNotification(

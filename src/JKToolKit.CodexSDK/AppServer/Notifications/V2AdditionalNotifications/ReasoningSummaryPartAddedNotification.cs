@@ -25,7 +25,7 @@ public sealed record class ReasoningSummaryPartAddedNotification : AppServerNoti
     /// <summary>
     /// Gets the new summary index.
     /// </summary>
-    public int SummaryIndex { get; }
+    public long SummaryIndex { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="ReasoningSummaryPartAddedNotification"/>.
@@ -34,7 +34,7 @@ public sealed record class ReasoningSummaryPartAddedNotification : AppServerNoti
         string ThreadId,
         string TurnId,
         string ItemId,
-        int SummaryIndex,
+        long SummaryIndex,
         JsonElement Params)
         : base("item/reasoning/summaryPartAdded", Params)
     {

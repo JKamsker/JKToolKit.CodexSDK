@@ -23,7 +23,9 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "thread/realtime/closed",
         "model/rerouted",
         "turn/started",
+        "hook/started",
         "turn/completed",
+        "hook/completed",
         "turn/diff/updated",
         "turn/plan/updated",
         "item/started",
@@ -31,13 +33,16 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "rawResponseItem/completed",
         "item/agentMessage/delta",
         "item/plan/delta",
+        "command/exec/outputDelta",
         "item/commandExecution/outputDelta",
         "item/commandExecution/terminalInteraction",
         "item/fileChange/outputDelta",
         "item/mcpToolCall/progress",
         "mcpServer/oauthLogin/completed",
+        "mcpServer/startupStatus/updated",
         "account/updated",
         "account/rateLimits/updated",
+        "fs/changed",
         "item/reasoning/summaryTextDelta",
         "item/reasoning/summaryPartAdded",
         "item/reasoning/textDelta",
@@ -51,7 +56,8 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "sessionConfigured",
         "app/list/updated",
         "fuzzyFileSearch/sessionUpdated",
-        "fuzzyFileSearch/sessionCompleted"
+        "fuzzyFileSearch/sessionCompleted",
+        "thread/realtime/transcriptUpdated"
     ];
 
     public static IEnumerable<object[]> BogusParams()
