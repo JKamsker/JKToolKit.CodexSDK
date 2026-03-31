@@ -40,11 +40,13 @@ public sealed class PluginClientTests
                         "brandColor": "#123456",
                         "defaultPrompt": ["Open a pull request"],
                         "capabilities": ["issues", "pull-requests"],
-                        "screenshots": ["https://example.test/shot.png"]
+                        "composerIcon": "./assets/icon.png",
+                        "logo": "./assets/logo.png",
+                        "screenshots": ["./assets/screenshot.png"]
                       },
                       "source": {
-                        "type": "curated",
-                        "channel": "official"
+                        "type": "local",
+                        "path": "C:\\plugins\\plug-1"
                       }
                     }
                   ]
@@ -69,11 +71,15 @@ public sealed class PluginClientTests
         result.Marketplaces[0].Plugins[0].Interface.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].Interface!.DisplayName.Should().Be("Plugin One Display");
         result.Marketplaces[0].Plugins[0].Interface!.Capabilities.Should().Equal("issues", "pull-requests");
+        result.Marketplaces[0].Plugins[0].Interface!.ComposerIconPath.Should().Be("./assets/icon.png");
+        result.Marketplaces[0].Plugins[0].Interface!.LogoPath.Should().Be("./assets/logo.png");
+        result.Marketplaces[0].Plugins[0].Interface!.Screenshots.Should().Equal("./assets/screenshot.png");
         result.Marketplaces[0].Plugins[0].SourceInfo.Should().NotBeNull();
-        result.Marketplaces[0].Plugins[0].SourceInfo!.Type.Should().Be(PluginSourceType.Parse("curated"));
+        result.Marketplaces[0].Plugins[0].SourceInfo!.Type.Should().Be(PluginSourceType.Local);
+        result.Marketplaces[0].Plugins[0].SourceInfo!.Path.Should().Be("C:\\plugins\\plug-1");
         result.Marketplaces[0].Plugins[0].Source.Should().NotBeNull();
-        result.Marketplaces[0].Plugins[0].Source!.Value.TryGetProperty("channel", out var channel).Should().BeTrue();
-        channel.GetString().Should().Be("official");
+        result.Marketplaces[0].Plugins[0].Source!.Value.TryGetProperty("path", out var sourcePath).Should().BeTrue();
+        sourcePath.GetString().Should().Be("C:\\plugins\\plug-1");
         rpc.LastMethod.Should().Be("plugin/list");
     }
 

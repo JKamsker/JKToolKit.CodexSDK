@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -16,6 +17,8 @@ public sealed class ConfigRequirementsParsingTests
         requirements.Should().NotBeNull();
 
         requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never", "on-request");
+        requirements.AllowedAskForApproval.Should().NotBeNull();
+        requirements.AllowedAskForApproval!.Select(a => a.Policy!.Value).Should().Equal("never", "on-request");
         requirements.AllowedSandboxModes!.Select(m => m.Value).Should().Equal("read-only", "workspace-write");
         requirements.AllowedWebSearchModes!.Select(m => m.Value).Should().Equal("disabled", "cached", "live");
         requirements.FeatureRequirements.Should().NotBeNull();
@@ -33,6 +36,42 @@ public sealed class ConfigRequirementsParsingTests
         requirements.Network.Raw.TryGetProperty("dangerouslyAllowNonLoopbackAdmin", out _).Should().BeTrue();
 
         requirements.Raw.TryGetProperty("unknownTopLevelField", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ParseConfigRequirementsReadRequirements_PopulatesAskForApprovalUnion()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "requirements": {
+                "allowedApprovalPolicies": [
+                  "never",
+                  {
+                    "granular": {
+                      "sandbox_approval": true,
+                      "rules": false,
+                      "mcp_elicitations": true,
+                      "skill_approval": true,
+                      "request_permissions": false
+                    }
+                  }
+                ]
+              }
+            }
+            """);
+
+        var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(doc.RootElement, experimentalApiEnabled: true);
+        requirements.Should().NotBeNull();
+        requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never");
+        requirements.AllowedAskForApproval.Should().NotBeNull();
+        requirements.AllowedAskForApproval!.Should().HaveCount(2);
+        requirements.AllowedAskForApproval[1].Granular.Should().NotBeNull();
+        requirements.AllowedAskForApproval[1].Granular!.SandboxApproval.Should().BeTrue();
+        requirements.AllowedAskForApproval[1].Granular.Rules.Should().BeFalse();
+        requirements.AllowedAskForApproval[1].Granular.McpElicitations.Should().BeTrue();
+        requirements.AllowedAskForApproval[1].Granular.SkillApproval.Should().BeTrue();
+        requirements.AllowedAskForApproval[1].Granular.RequestPermissions.Should().BeFalse();
     }
 
     [Fact]

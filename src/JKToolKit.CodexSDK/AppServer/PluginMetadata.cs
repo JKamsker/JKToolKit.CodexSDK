@@ -64,7 +64,7 @@ public sealed record class PluginInterfaceMetadata
     public required IReadOnlyList<string> Capabilities { get; init; }
 
     /// <summary>
-    /// Gets the advertised screenshot URLs.
+    /// Gets the advertised screenshot asset paths.
     /// </summary>
     public required IReadOnlyList<string> Screenshots { get; init; }
 
@@ -84,9 +84,19 @@ public sealed record class PluginInterfaceMetadata
     public string? WebsiteUrl { get; init; }
 
     /// <summary>
+    /// Gets the optional composer icon asset path.
+    /// </summary>
+    public string? ComposerIconPath { get; init; }
+
+    /// <summary>
     /// Gets the optional composer icon payload.
     /// </summary>
     public JsonElement? ComposerIcon { get; init; }
+
+    /// <summary>
+    /// Gets the optional logo asset path.
+    /// </summary>
+    public string? LogoPath { get; init; }
 
     /// <summary>
     /// Gets the optional logo payload.
@@ -149,6 +159,11 @@ public sealed record class PluginSourceDescriptor
     /// Gets the typed source kind when the payload provides one.
     /// </summary>
     public PluginSourceType? Type { get; init; }
+
+    /// <summary>
+    /// Gets the source asset path when the payload provides one.
+    /// </summary>
+    public string? Path { get; init; }
 
     /// <summary>
     /// Gets the raw source payload.

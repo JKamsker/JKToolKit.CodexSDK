@@ -241,7 +241,9 @@ internal static class CodexAppServerClientPluginParsers
             PrivacyPolicyUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "privacyPolicyUrl"),
             TermsOfServiceUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "termsOfServiceUrl"),
             WebsiteUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "websiteUrl"),
+            ComposerIconPath = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "composerIcon"),
             ComposerIcon = ClonePropertyOrNull(interfaceObject, "composerIcon"),
+            LogoPath = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "logo"),
             Logo = ClonePropertyOrNull(interfaceObject, "logo"),
             Raw = interfaceObject.Clone()
         };
@@ -276,6 +278,7 @@ internal static class CodexAppServerClientPluginParsers
         return new PluginSourceDescriptor
         {
             Type = ParsePluginSourceType(sourceObject, "type"),
+            Path = CodexAppServerClientJson.GetStringOrNull(sourceObject, "path"),
             Raw = sourceObject.Clone()
         };
     }

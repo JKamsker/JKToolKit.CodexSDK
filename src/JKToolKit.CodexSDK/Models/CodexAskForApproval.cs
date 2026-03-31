@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Models;
@@ -112,6 +113,76 @@ public readonly record struct CodexAskForApproval
     /// Converts a granular object form to the union type.
     /// </summary>
     public static implicit operator CodexAskForApproval(CodexAskForApprovalGranular granular) => FromGranular(granular);
+
+    /// <summary>
+    /// Tries to parse an <see cref="CodexAskForApproval"/> value from JSON.
+    /// </summary>
+    public static bool TryParse(JsonElement element, out CodexAskForApproval askForApproval)
+    {
+        if (element.ValueKind == JsonValueKind.String &&
+            CodexApprovalPolicy.TryParse(element.GetString(), out var policy))
+        {
+            askForApproval = FromPolicy(policy);
+            return true;
+        }
+
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty("granular", out var granularElement) &&
+            TryParseGranular(granularElement, out var granular))
+        {
+            askForApproval = FromGranular(granular);
+            return true;
+        }
+
+        askForApproval = default;
+        return false;
+    }
+
+    private static bool TryParseGranular(JsonElement element, out CodexAskForApprovalGranular granular)
+    {
+        if (!TryGetBoolProperty(element, "sandbox_approval", out var sandbox) ||
+            !TryGetBoolProperty(element, "rules", out var rules) ||
+            !TryGetBoolProperty(element, "mcp_elicitations", out var mcp))
+        {
+            granular = default!;
+            return false;
+        }
+
+        granular = new CodexAskForApprovalGranular
+        {
+            SandboxApproval = sandbox,
+            Rules = rules,
+            McpElicitations = mcp,
+            SkillApproval = GetBoolProperty(element, "skill_approval"),
+            RequestPermissions = GetBoolProperty(element, "request_permissions")
+        };
+
+        return true;
+    }
+
+    private static bool TryGetBoolProperty(JsonElement element, string propertyName, out bool value)
+    {
+        if (element.TryGetProperty(propertyName, out var property))
+        {
+            if (property.ValueKind == JsonValueKind.True)
+            {
+                value = true;
+                return true;
+            }
+
+            if (property.ValueKind == JsonValueKind.False)
+            {
+                value = false;
+                return true;
+            }
+        }
+
+        value = false;
+        return false;
+    }
+
+    private static bool GetBoolProperty(JsonElement element, string propertyName) =>
+        TryGetBoolProperty(element, propertyName, out var flag) ? flag : false;
 
     /// <summary>
     /// Converts a legacy reject object form to the union type.

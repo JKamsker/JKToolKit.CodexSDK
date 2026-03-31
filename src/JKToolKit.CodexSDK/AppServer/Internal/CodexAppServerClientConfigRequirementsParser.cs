@@ -17,11 +17,30 @@ internal static class CodexAppServerClientConfigRequirementsParser
             return null;
         }
 
-        var allowedApprovalPolicies = GetOptionalStringArray(req, "allowedApprovalPolicies")
-            ?.Select(s => CodexApprovalPolicy.TryParse(s, out var p) ? p : (CodexApprovalPolicy?)null)
-            .Where(p => p.HasValue)
-            .Select(p => p!.Value)
-            .ToArray();
+        List<CodexApprovalPolicy>? allowedApprovalPolicyValues = null;
+        List<CodexAskForApproval>? allowedAskForApprovalValues = null;
+        if (CodexAppServerClientJson.TryGetArray(req, "allowedApprovalPolicies") is { } approvalPoliciesArray)
+        {
+            foreach (var policyElement in approvalPoliciesArray.EnumerateArray())
+            {
+                if (CodexAskForApproval.TryParse(policyElement, out var askForApproval))
+                {
+                    (allowedAskForApprovalValues ??= new List<CodexAskForApproval>()).Add(askForApproval);
+                    if (askForApproval.Policy is { } policy)
+                    {
+                        (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(policy);
+                    }
+
+                    continue;
+                }
+
+                if (policyElement.ValueKind == JsonValueKind.String &&
+                    CodexApprovalPolicy.TryParse(policyElement.GetString(), out var policy))
+                {
+                    (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(policy);
+                }
+            }
+        }
 
         var allowedSandboxModes = GetOptionalStringArray(req, "allowedSandboxModes")
             ?.Select(s => CodexSandboxMode.TryParse(s, out var m) ? m : (CodexSandboxMode?)null)
@@ -51,7 +70,8 @@ internal static class CodexAppServerClientConfigRequirementsParser
 
         return new ConfigRequirements
         {
-            AllowedApprovalPolicies = allowedApprovalPolicies,
+            AllowedApprovalPolicies = allowedApprovalPolicyValues?.ToArray(),
+            AllowedAskForApproval = allowedAskForApprovalValues?.ToArray(),
             AllowedSandboxModes = allowedSandboxModes,
             AllowedWebSearchModes = allowedWebSearchModes,
             FeatureRequirements = featureRequirements,

@@ -14,6 +14,11 @@ public sealed record class ConfigRequirements
     public IReadOnlyList<CodexApprovalPolicy>? AllowedApprovalPolicies { get; init; }
 
     /// <summary>
+    /// Gets the allow-list of approval policies expressed as <c>AskForApproval</c> union values, when present.
+    /// </summary>
+    public IReadOnlyList<CodexAskForApproval>? AllowedAskForApproval { get; init; }
+
+    /// <summary>
     /// Gets the allow-list of sandbox modes, when present.
     /// </summary>
     public IReadOnlyList<CodexSandboxMode>? AllowedSandboxModes { get; init; }

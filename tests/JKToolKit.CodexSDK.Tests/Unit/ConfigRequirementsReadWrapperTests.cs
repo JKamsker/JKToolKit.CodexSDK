@@ -39,6 +39,8 @@ public sealed class ConfigRequirementsReadWrapperTests
         result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
         result.Requirements.Should().NotBeNull();
         result.Requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never");
+        result.Requirements.AllowedAskForApproval.Should().NotBeNull();
+        result.Requirements.AllowedAskForApproval!.Should().HaveCount(1);
     }
 
     [Fact]
