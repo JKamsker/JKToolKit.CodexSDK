@@ -31,9 +31,13 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                ServiceTier = options.ServiceTier?.Value,
+                ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
+                    options.ServiceTier,
+                    options.ClearServiceTier,
+                    nameof(ThreadStartOptions.ClearServiceTier)),
                 ServiceName = options.ServiceName,
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+                ApprovalsReviewer = options.ApprovalsReviewer,
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
@@ -87,14 +91,18 @@ internal sealed class CodexAppServerThreadsClient
             "thread/resume",
             new ThreadResumeParams
             {
-                ThreadId = options.ThreadId,
+                ThreadId = CodexAppServerWireBuilders.BuildThreadIdOrPlaceholder(options.ThreadId),
                 History = history,
                 Path = options.Path,
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                ServiceTier = options.ServiceTier?.Value,
+                ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
+                    options.ServiceTier,
+                    options.ClearServiceTier,
+                    nameof(ThreadResumeOptions.ClearServiceTier)),
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+                ApprovalsReviewer = options.ApprovalsReviewer,
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
@@ -156,14 +164,18 @@ internal sealed class CodexAppServerThreadsClient
         };
     }
 
-    public async Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default)
+    public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default) =>
+        ReadThreadAsync(threadId, new ThreadReadOptions(), ct);
+
+    public async Task<CodexThreadReadResult> ReadThreadAsync(string threadId, ThreadReadOptions options, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+        ArgumentNullException.ThrowIfNull(options);
 
         var result = await _sendRequestAsync(
             "thread/read",
-            new UpstreamV2.ThreadReadParams { ThreadId = threadId, IncludeTurns = false },
+            new ThreadReadParams { ThreadId = threadId, IncludeTurns = options.IncludeTurns },
             ct);
 
         var threadObject = CodexAppServerClientJson.TryGetObject(result, "thread") ?? result;
@@ -368,9 +380,22 @@ internal sealed class CodexAppServerThreadsClient
             "thread/fork",
             new ThreadForkParams
             {
-                ThreadId = options.ThreadId,
+                ThreadId = CodexAppServerWireBuilders.BuildThreadIdOrPlaceholder(options.ThreadId),
                 Path = options.Path,
-                ServiceTier = options.ServiceTier?.Value,
+                ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
+                    options.ServiceTier,
+                    options.ClearServiceTier,
+                    nameof(ThreadForkOptions.ClearServiceTier)),
+                Model = options.Model?.Value,
+                ModelProvider = options.ModelProvider,
+                Cwd = options.Cwd,
+                ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+                ApprovalsReviewer = options.ApprovalsReviewer,
+                Sandbox = options.Sandbox?.ToAppServerWireValue(),
+                Config = options.Config,
+                BaseInstructions = options.BaseInstructions,
+                DeveloperInstructions = options.DeveloperInstructions,
+                Ephemeral = options.Ephemeral,
                 PersistExtendedHistory = options.PersistExtendedHistory
             },
             ct);
@@ -385,7 +410,7 @@ internal sealed class CodexAppServerThreadsClient
         return new CodexThread(threadId, result);
     }
 
-    public async Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default)
+    public async Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
@@ -395,8 +420,10 @@ internal sealed class CodexAppServerThreadsClient
             new UpstreamV2.ThreadArchiveParams { ThreadId = threadId },
             ct);
 
-        var id = CodexAppServerClientJson.ExtractThreadId(result) ?? threadId;
-        return new CodexThread(id, result);
+        return new ThreadArchiveResult
+        {
+            Raw = result
+        };
     }
 
     public async Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)

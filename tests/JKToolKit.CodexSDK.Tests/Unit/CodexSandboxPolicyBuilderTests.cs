@@ -24,6 +24,46 @@ public sealed class CodexSandboxPolicyBuilderTests
     }
 
     [Fact]
+    public void ReadOnly_WithNetworkAccess_BuildsShape()
+    {
+        var policy = CodexSandboxPolicyBuilder.ReadOnly(networkAccess: true);
+
+        var text = JsonSerializer.Serialize(policy, CodexAppServerClient.CreateDefaultSerializerOptions());
+        using var doc = JsonDocument.Parse(text);
+        var json = doc.RootElement;
+
+        json.GetProperty("type").GetString().Should().Be("readOnly");
+        json.GetProperty("networkAccess").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact]
+    public void ExternalSandbox_Default_OmitsNetworkAccess()
+    {
+        var policy = CodexSandboxPolicyBuilder.ExternalSandbox();
+
+        var text = JsonSerializer.Serialize(policy, CodexAppServerClient.CreateDefaultSerializerOptions());
+        using var doc = JsonDocument.Parse(text);
+        var json = doc.RootElement;
+
+        json.GetProperty("type").GetString().Should().Be("externalSandbox");
+        json.TryGetProperty("networkAccess", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ExternalSandbox_WithNetworkAccess_BuildsShape()
+    {
+        var policy = CodexSandboxPolicyBuilder.ExternalSandbox(
+            networkAccess: JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy.SandboxNetworkAccess.Enabled);
+
+        var text = JsonSerializer.Serialize(policy, CodexAppServerClient.CreateDefaultSerializerOptions());
+        using var doc = JsonDocument.Parse(text);
+        var json = doc.RootElement;
+
+        json.GetProperty("type").GetString().Should().Be("externalSandbox");
+        json.GetProperty("networkAccess").GetString().Should().Be("enabled");
+    }
+
+    [Fact]
     public void WorkspaceWrite_WithReadOnlyAccess_BuildsShape()
     {
         var policy = CodexSandboxPolicyBuilder.WorkspaceWrite(

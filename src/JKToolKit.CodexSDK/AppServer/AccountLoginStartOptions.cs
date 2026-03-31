@@ -38,12 +38,14 @@ public abstract record class AccountLoginStartOptions
     public sealed record class ChatGptDeviceCode : AccountLoginStartOptions;
 
     /// <summary>
-    /// Supplies externally managed ChatGPT auth tokens.
+    /// Supplies externally managed ChatGPT auth tokens (experimental).
+    /// This flow is gated behind app-server experimental API capability.
     /// </summary>
     public sealed record class ChatGptAuthTokens : AccountLoginStartOptions
     {
         /// <summary>
         /// Initializes a new externally managed ChatGPT token login request.
+        /// This option requires the client to be initialized with experimental API capability.
         /// </summary>
         public ChatGptAuthTokens(string accessToken, string chatGptAccountId, string? chatGptPlanType = null)
         {

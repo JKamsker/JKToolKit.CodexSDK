@@ -6,6 +6,11 @@ internal static class ExperimentalApiGuards
     {
         if (!experimentalApiEnabled)
         {
+            if (options.AskForApproval is { Granular: not null })
+            {
+                throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+            }
+
             if (options.ExperimentalRawEvents)
             {
                 throw new CodexExperimentalApiRequiredException("thread/start.experimentalRawEvents");
@@ -27,6 +32,11 @@ internal static class ExperimentalApiGuards
     {
         if (!experimentalApiEnabled)
         {
+            if (options.AskForApproval is { Granular: not null })
+            {
+                throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+            }
+
             if (options.History is not null)
             {
                 throw new CodexExperimentalApiRequiredException("thread/resume.history");
@@ -64,6 +74,11 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("thread/fork.path");
         }
 
+        if (!experimentalApiEnabled && options.AskForApproval is { Granular: not null })
+        {
+            throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+        }
+
         if (!experimentalApiEnabled && options.PersistExtendedHistory)
         {
             throw new CodexExperimentalApiRequiredException("thread/fork.persistFullHistory");
@@ -72,6 +87,11 @@ internal static class ExperimentalApiGuards
 
     internal static void ValidateTurnStart(TurnStartOptions options, bool experimentalApiEnabled)
     {
+        if (!experimentalApiEnabled && options.AskForApproval is { Granular: not null })
+        {
+            throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+        }
+
         if (!experimentalApiEnabled && options.CollaborationMode is not null)
         {
             throw new CodexExperimentalApiRequiredException("turn/start.collaborationMode");

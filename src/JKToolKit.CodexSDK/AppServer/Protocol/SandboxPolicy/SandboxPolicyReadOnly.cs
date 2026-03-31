@@ -13,6 +13,16 @@ public abstract partial record class SandboxPolicy
         public override string Type => "readOnly";
 
         /// <summary>
+        /// Gets an optional value indicating whether outbound network access is allowed while this policy is active.
+        /// </summary>
+        /// <remarks>
+        /// When omitted, the server default is <c>false</c>.
+        /// </remarks>
+        [JsonPropertyName("networkAccess")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? NetworkAccess { get; init; }
+
+        /// <summary>
         /// Gets optional read-only access controls (upstream feature).
         /// </summary>
         /// <remarks>

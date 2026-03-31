@@ -26,6 +26,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
     private readonly CodexAppServerMcpClient _mcpClient;
+    private readonly CodexAppServerPluginsClient _pluginsClient;
+    private readonly CodexAppServerCommandExecClient _commandExecClient;
+    private readonly CodexAppServerFilesystemClient _filesystemClient;
     private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
     private readonly CodexAppServerTurnsClient _turnsClient;
     private readonly CodexAppServerCollaborationModesClient _collaborationModesClient;
@@ -135,6 +138,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
         _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled, logger);
         _mcpClient = new CodexAppServerMcpClient(_core.SendRequestAsync);
+        _pluginsClient = new CodexAppServerPluginsClient(_core.SendRequestAsync);
+        _commandExecClient = new CodexAppServerCommandExecClient(_core.SendRequestAsync);
+        _filesystemClient = new CodexAppServerFilesystemClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _collaborationModesClient = new CodexAppServerCollaborationModesClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
@@ -304,6 +310,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.ReadThreadAsync(threadId, ct);
 
     /// <summary>
+    /// Reads a thread by ID with additional options.
+    /// </summary>
+    public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, ThreadReadOptions options, CancellationToken ct = default) =>
+        _threadsClient.ReadThreadAsync(threadId, options, ct);
+
+    /// <summary>
     /// Lists identifiers of threads currently loaded in memory by the app-server.
     /// </summary>
     public Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default) =>
@@ -345,7 +357,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Archives a thread.
     /// </summary>
-    public Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
+    public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         _threadsClient.ArchiveThreadAsync(threadId, ct);
 
     /// <summary>

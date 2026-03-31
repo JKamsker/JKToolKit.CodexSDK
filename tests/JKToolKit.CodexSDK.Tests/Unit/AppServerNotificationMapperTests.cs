@@ -85,6 +85,18 @@ public sealed class AppServerNotificationMapperTests
     }
 
     [Fact]
+    public void Map_FuzzyFileSearchSessionUpdated_PreservesMatchType()
+    {
+        var updated = JsonDocument.Parse("""{"sessionId":"s1","query":"","files":[{"root":"C:\\repo","path":"src\\App.cs","fileName":"App.cs","score":42,"matchType":"path"}]}""").RootElement;
+        var notification = AppServerNotificationMapper.Map("fuzzyFileSearch/sessionUpdated", updated)
+            .Should().BeOfType<FuzzyFileSearchSessionUpdatedNotification>()
+            .Which;
+
+        notification.Files.Should().ContainSingle();
+        notification.Files[0].MatchType.Should().Be("path");
+    }
+
+    [Fact]
     public void Map_ReasoningIndexNotifications_UseLongValues()
     {
         const long summaryIndex = 3_000_000_000;
@@ -111,6 +123,18 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("model/rerouted", json)
             .Should().BeOfType<ModelReroutedNotification>()
             .Which.ToModel.Should().Be("b");
+    }
+
+    [Fact]
+    public void Map_AccountUpdated_ParsesPlanType()
+    {
+        var json = JsonDocument.Parse("""{"authMode":"chatgpt","planType":"pro"}""").RootElement;
+
+        var mapped = AppServerNotificationMapper.Map("account/updated", json);
+
+        var typed = mapped.Should().BeOfType<AccountUpdatedNotification>().Subject;
+        typed.AuthMode.Should().Be("chatgpt");
+        typed.PlanType.Should().Be("pro");
     }
 
     [Fact]

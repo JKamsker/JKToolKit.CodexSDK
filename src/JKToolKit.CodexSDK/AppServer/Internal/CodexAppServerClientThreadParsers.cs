@@ -71,10 +71,9 @@ internal static class CodexAppServerClientThreadParsers
         }
         var createdAt = GetDateTimeOffsetOrNull(primary, "createdAt");
         var cwd = GetStringOrNull(primary, "cwd");
-        var model =
-            GetStringOrNull(primary, "model") ??
-            GetStringOrNull(primary, "modelProvider");
-        var serviceTier = CodexServiceTier.TryParse(GetStringOrNull(primary, "serviceTier"), out var parsedServiceTier)
+        var model = GetStringOrNull(primary, "model");
+        var modelProvider = GetStringOrNull(primary, "modelProvider");
+        var serviceTier = CodexServiceTier.TryParse(GetStringOrNull(threadObject, "serviceTier"), out var parsedServiceTier)
             ? parsedServiceTier
             : (CodexServiceTier?)null;
 
@@ -88,6 +87,7 @@ internal static class CodexAppServerClientThreadParsers
             CreatedAt = createdAt,
             Cwd = cwd,
             Model = model,
+            ModelProvider = modelProvider,
             ServiceTier = serviceTier,
             Raw = threadObject
         };

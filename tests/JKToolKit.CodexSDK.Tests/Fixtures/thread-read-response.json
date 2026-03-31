@@ -1,11 +1,12 @@
 {
   "thread": {
-    "threadId": "t_read",
+    "id": "t_read",
     "name": "Read Me",
     "archived": false,
     "createdAt": "2026-02-02T00:00:00Z",
     "cwd": "C:\\repo",
     "model": "gpt-5",
+    "modelProvider": "openai",
     "extra": { "any": "value" }
   },
   "historySummary": { "turns": 3 },

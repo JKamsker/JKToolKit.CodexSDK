@@ -42,6 +42,15 @@ public sealed class TurnStartOptions
     public CodexAskForApproval? AskForApproval { get; set; }
 
     /// <summary>
+    /// Optional approval reviewer routing override (raw JSON object).
+    /// </summary>
+    /// <remarks>
+    /// In the v2 app-server protocol, this override applies to this turn and subsequent turns.
+    /// This can be used to route approval requests to a specific review destination.
+    /// </remarks>
+    public JsonElement? ApprovalsReviewer { get; set; }
+
+    /// <summary>
     /// Optional sandbox policy override for this turn and subsequent turns.
     /// </summary>
     public SandboxPolicy? SandboxPolicy { get; set; }
@@ -59,8 +68,21 @@ public sealed class TurnStartOptions
     /// </summary>
     /// <remarks>
     /// In the v2 app-server protocol, this override applies to this turn and subsequent turns.
+    /// Set <see cref="ClearServiceTier"/> to <see langword="true"/> to explicitly clear any inherited service tier
+    /// override (serialize <c>"serviceTier": null</c>) instead of inheriting.
     /// </remarks>
     public CodexServiceTier? ServiceTier { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to explicitly clear the service tier override for this turn and
+    /// subsequent turns.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="true"/>, the SDK serializes <c>"serviceTier": null</c>.
+    /// This is distinct from leaving both <see cref="ServiceTier"/> and <see cref="ClearServiceTier"/> unset,
+    /// which omits the field and inherits existing behavior.
+    /// </remarks>
+    public bool ClearServiceTier { get; set; }
 
     /// <summary>
     /// Gets or sets an optional reasoning effort.
@@ -113,9 +135,11 @@ public sealed class TurnStartOptions
             Cwd = Cwd,
             ApprovalPolicy = ApprovalPolicy,
             AskForApproval = AskForApproval,
+            ApprovalsReviewer = ApprovalsReviewer,
             SandboxPolicy = SandboxPolicy,
             Model = Model,
             ServiceTier = ServiceTier,
+            ClearServiceTier = ClearServiceTier,
             Effort = Effort,
             Summary = Summary,
             Personality = Personality,

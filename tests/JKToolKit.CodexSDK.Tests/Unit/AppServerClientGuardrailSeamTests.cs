@@ -144,7 +144,7 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
-    public async Task ResumeThread_WithPathOnly_AllowsNullThreadId_WhenExperimentalEnabled()
+    public async Task ResumeThread_WithPathOnly_SendsPlaceholderThreadId_WhenExperimentalEnabled()
     {
         using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
         var rpc = new RecordingRpc { Result = doc.RootElement };
@@ -165,7 +165,7 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.RequestCount.Should().Be(1);
         rpc.LastMethod.Should().Be("thread/resume");
         rpc.LastParams.Should().BeOfType<ThreadResumeParams>();
-        ((ThreadResumeParams)rpc.LastParams!).ThreadId.Should().BeNull();
+        ((ThreadResumeParams)rpc.LastParams!).ThreadId.Should().BeEmpty();
     }
 
     [Fact]

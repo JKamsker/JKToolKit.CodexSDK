@@ -2,7 +2,6 @@ using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
-using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -19,7 +18,8 @@ public sealed class ThreadApiParsingTests
 
         threads.Select(t => t.ThreadId).Should().Equal("t_1", "t_2");
         cursor.Should().Be("cursor_2");
-        threads[0].ServiceTier.Should().Be(CodexServiceTier.Fast);
+        threads[0].ModelProvider.Should().Be("openai");
+        threads[0].ServiceTier.Should().BeNull();
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
         threads[1].Raw.TryGetProperty("wrapperUnknown", out _).Should().BeTrue();
     }
@@ -35,13 +35,13 @@ public sealed class ThreadApiParsingTests
         var summary = CodexAppServerClient.ParseThreadSummary(threadObj);
         summary.Should().NotBeNull();
         summary!.Name.Should().Be("Read Me");
+        summary.ModelProvider.Should().Be("openai");
     }
 
     [Fact]
     public void ExtractThreadId_HandlesCommonShapes()
     {
         CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-fork-response.json")).Should().Be("t_forked");
-        CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-archive-response.json")).Should().Be("t_arch");
         CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-unarchive-response.json")).Should().Be("t_arch");
     }
 

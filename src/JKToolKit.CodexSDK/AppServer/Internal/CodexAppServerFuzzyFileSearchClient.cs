@@ -41,7 +41,9 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
     {
         if (string.IsNullOrWhiteSpace(sessionId))
             throw new ArgumentException("SessionId cannot be empty or whitespace.", nameof(sessionId));
-        if (string.IsNullOrWhiteSpace(query))
+        if (query is null)
+            throw new ArgumentNullException(nameof(query));
+        if (query.Length > 0 && string.IsNullOrWhiteSpace(query))
             throw new ArgumentException("Query cannot be empty or whitespace.", nameof(query));
 
         if (!_experimentalApiEnabled())

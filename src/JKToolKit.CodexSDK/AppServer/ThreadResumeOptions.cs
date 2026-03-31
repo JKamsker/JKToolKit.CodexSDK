@@ -55,7 +55,16 @@ public sealed class ThreadResumeOptions
     /// <summary>
     /// Gets or sets an optional service tier override for the resumed thread.
     /// </summary>
+    /// <remarks>
+    /// Set <see cref="ClearServiceTier"/> to <see langword="true"/> to explicitly clear any inherited service tier
+    /// override instead of inheriting the current value.
+    /// </remarks>
     public CodexServiceTier? ServiceTier { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to explicitly clear the service tier override.
+    /// </summary>
+    public bool ClearServiceTier { get; set; }
 
     /// <summary>
     /// Gets or sets an optional approval policy.
@@ -73,6 +82,11 @@ public sealed class ThreadResumeOptions
     /// selectively rejecting specific approval prompt types.
     /// </remarks>
     public CodexAskForApproval? AskForApproval { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional approval reviewer routing override (raw JSON object).
+    /// </summary>
+    public JsonElement? ApprovalsReviewer { get; set; }
 
     /// <summary>
     /// Gets or sets an optional sandbox mode.

@@ -17,7 +17,7 @@ public sealed record class ThreadResumeParams
     /// Gets the thread identifier to resume (when resuming by ID).
     /// </summary>
     [JsonPropertyName("threadId")]
-    public string? ThreadId { get; init; }
+    public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets an optional history override to resume from (raw JSON).
@@ -62,7 +62,7 @@ public sealed record class ThreadResumeParams
     /// Gets an optional service tier override for the resumed thread.
     /// </summary>
     [JsonPropertyName("serviceTier")]
-    public string? ServiceTier { get; init; }
+    public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
     /// Gets an optional approval policy override for the resumed thread.
@@ -77,6 +77,12 @@ public sealed record class ThreadResumeParams
     /// </remarks>
     [JsonPropertyName("approvalPolicy")]
     public object? ApprovalPolicy { get; init; }
+
+    /// <summary>
+    /// Gets an optional approval reviewer routing override (raw JSON object).
+    /// </summary>
+    [JsonPropertyName("approvalsReviewer")]
+    public JsonElement? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the resumed thread (wire value).

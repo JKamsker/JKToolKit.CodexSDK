@@ -26,8 +26,12 @@ public sealed record class FuzzyFileSearchResult
     public uint Score { get; init; }
 
     /// <summary>
+    /// Gets the upstream match type when present.
+    /// </summary>
+    public string? MatchType { get; init; }
+
+    /// <summary>
     /// Gets the match indices when present.
     /// </summary>
     public IReadOnlyList<uint>? Indices { get; init; }
 }
-

@@ -11,8 +11,8 @@ public sealed record class ThreadListResponse
     /// <summary>
     /// Gets the threads array when present (raw).
     /// </summary>
-    [JsonPropertyName("threads")]
-    public JsonElement? Threads { get; init; }
+    [JsonPropertyName("data")]
+    public JsonElement? Data { get; init; }
 
     /// <summary>
     /// Gets the next cursor token when present.

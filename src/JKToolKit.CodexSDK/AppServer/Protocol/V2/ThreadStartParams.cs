@@ -30,7 +30,7 @@ public sealed record class ThreadStartParams
     /// Gets an optional service tier override for the thread.
     /// </summary>
     [JsonPropertyName("serviceTier")]
-    public string? ServiceTier { get; init; }
+    public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
     /// Gets an optional service name identifier.
@@ -47,6 +47,12 @@ public sealed record class ThreadStartParams
     /// </remarks>
     [JsonPropertyName("approvalPolicy")]
     public object? ApprovalPolicy { get; init; }
+
+    /// <summary>
+    /// Gets an optional approval reviewer routing override (raw JSON object).
+    /// </summary>
+    [JsonPropertyName("approvalsReviewer")]
+    public JsonElement? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the thread (wire value).

@@ -1,23 +1,24 @@
 {
-  "threads": [
+  "data": [
     {
-      "threadId": "t_1",
+      "id": "t_1",
       "name": "One",
       "archived": false,
       "createdAt": "2026-02-01T00:00:00Z",
       "cwd": "C:\\repo",
       "model": "gpt-5",
-      "serviceTier": "fast",
+      "modelProvider": "openai",
       "unknownField": { "x": 1 }
     },
     {
       "thread": {
         "id": "t_2",
-        "threadName": "Two",
+        "name": "Two",
         "archived": true,
         "createdAt": 1700000000,
         "cwd": "/tmp",
-        "model": "gpt-5"
+        "model": "gpt-5-mini",
+        "modelProvider": "openai"
       },
       "wrapperUnknown": "ok"
     }

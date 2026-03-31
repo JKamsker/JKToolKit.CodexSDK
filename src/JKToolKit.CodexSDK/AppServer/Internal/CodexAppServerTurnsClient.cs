@@ -2,9 +2,9 @@ using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
-using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using JKToolKit.CodexSDK.Models;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -60,9 +60,13 @@ internal sealed class CodexAppServerTurnsClient
             Input = options.Input.Select(i => i.Wire).ToArray(),
             Cwd = options.Cwd,
             ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+            ApprovalsReviewer = options.ApprovalsReviewer,
             SandboxPolicy = options.SandboxPolicy,
             Model = options.Model?.Value,
-            ServiceTier = options.ServiceTier?.Value,
+            ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
+                options.ServiceTier,
+                options.ClearServiceTier,
+                nameof(TurnStartOptions.ClearServiceTier)),
             Effort = options.Effort?.Value,
             Summary = options.Summary,
             Personality = options.Personality,
@@ -185,6 +189,11 @@ internal sealed class CodexAppServerTurnsClient
         }
 
         var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId");
+        if (string.IsNullOrWhiteSpace(reviewThreadId))
+        {
+            throw new InvalidOperationException(
+                $"review/start returned no reviewThreadId. Raw result: {result}");
+        }
 
         var turnObj = CodexAppServerClientJson.TryGetObject(result, "turn") ?? result;
         var turnId = CodexAppServerClientJson.ExtractTurnId(turnObj);
@@ -194,7 +203,7 @@ internal sealed class CodexAppServerTurnsClient
                 $"review/start returned no turn id. Raw result: {result}");
         }
 
-        var turnThreadId = CodexAppServerClientJson.ExtractThreadId(turnObj) ?? reviewThreadId ?? options.ThreadId;
+        var turnThreadId = CodexAppServerClientJson.ExtractThreadId(turnObj) ?? reviewThreadId;
 
         return new ReviewStartResult
         {
@@ -236,4 +245,5 @@ internal sealed class CodexAppServerTurnsClient
             SandboxPolicy.WorkspaceWrite w => w.ReadOnlyAccess is not null,
             _ => false
         };
+
 }

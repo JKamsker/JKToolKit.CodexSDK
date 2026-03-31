@@ -53,6 +53,63 @@ internal sealed class CodexAppServerConfigClient
         return CodexAppServerClientConfigReadParsers.ParseConfigReadResult(result);
     }
 
+    public async Task<AccountReadResult> ReadAccountAsync(AccountReadOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "account/read",
+            new
+            {
+                refreshToken = options.RefreshToken
+            },
+            ct);
+
+        var account = CodexAppServerClientJson.TryGetObject(result, "account");
+
+        return new AccountReadResult
+        {
+            Account = account.HasValue ? account.Value.Clone() : null,
+            RequiresOpenaiAuth = CodexAppServerClientJson.GetBoolOrNull(result, "requiresOpenaiAuth"),
+            Raw = result
+        };
+    }
+
+    public async Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default)
+    {
+        var result = await _sendRequestAsync(
+            "account/rateLimits/read",
+            null,
+            ct);
+
+        var rateLimits = CodexAppServerClientJson.TryGetObject(result, "rateLimits");
+
+        IReadOnlyDictionary<string, JsonElement>? rateLimitsByLimitId = null;
+        var byLimitId = CodexAppServerClientJson.TryGetObject(result, "rateLimitsByLimitId");
+        if (byLimitId.HasValue)
+        {
+            var parsed = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+            foreach (var property in byLimitId.Value.EnumerateObject())
+            {
+                if (property.Value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+                {
+                    continue;
+                }
+
+                parsed[property.Name] = property.Value.Clone();
+            }
+
+            rateLimitsByLimitId = parsed;
+        }
+
+        return new AccountRateLimitsReadResult
+        {
+            RateLimits = rateLimits.HasValue ? rateLimits.Value.Clone() : EmptyObject(),
+            RateLimitsByLimitId = rateLimitsByLimitId,
+            Raw = result
+        };
+    }
+
     public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
     {
         var emptyParams = new { };
@@ -133,6 +190,10 @@ internal sealed class CodexAppServerConfigClient
     public async Task<AccountLoginStartResult> StartAccountLoginAsync(AccountLoginStartOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (options is AccountLoginStartOptions.ChatGptAuthTokens && !_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("account/login/start.chatgptAuthTokens");
+        }
 
         var result = await _sendRequestAsync(
             "account/login/start",
@@ -256,14 +317,27 @@ internal sealed class CodexAppServerConfigClient
             ct);
     }
 
-    public async Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default)
+    public Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default) =>
+        StartWindowsSandboxSetupAsync(
+            new WindowsSandboxSetupStartOptions(WindowsSandboxSetupMode.Parse(mode)),
+            ct);
+
+    public async Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(mode))
-            throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(mode));
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.Mode.Value))
+            throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(options));
+
+        if (options.Cwd is not null && string.IsNullOrWhiteSpace(options.Cwd))
+            throw new ArgumentException("Cwd cannot be empty or whitespace when provided.", nameof(options));
 
         var result = await _sendRequestAsync(
             "windowsSandbox/setupStart",
-            new { mode },
+            new
+            {
+                mode = options.Mode.Value,
+                cwd = options.Cwd
+            },
             ct);
 
         var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
@@ -274,6 +348,12 @@ internal sealed class CodexAppServerConfigClient
         }
 
         return started.Value;
+    }
+
+    private static JsonElement EmptyObject()
+    {
+        using var emptyDoc = JsonDocument.Parse("{}");
+        return emptyDoc.RootElement.Clone();
     }
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -39,6 +40,66 @@ public sealed class ExperimentalApiGuardsTests
 
         act.Should().Throw<CodexExperimentalApiRequiredException>()
             .Which.Descriptor.Should().Be("turn/start.collaborationMode");
+    }
+
+    [Fact]
+    public void ValidateThreadStart_Throws_WhenAskForApprovalGranularSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadStartOptions
+        {
+            AskForApproval = new CodexAskForApprovalGranular
+            {
+                SandboxApproval = true,
+                Rules = false,
+                RequestPermissions = true,
+                McpElicitations = true
+            }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("askForApproval.granular");
+    }
+
+    [Fact]
+    public void ValidateThreadResume_Throws_WhenAskForApprovalGranularSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadResumeOptions
+        {
+            ThreadId = "t",
+            AskForApproval = new CodexAskForApprovalGranular
+            {
+                SandboxApproval = true,
+                Rules = true,
+                McpElicitations = false
+            }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("askForApproval.granular");
+    }
+
+    [Fact]
+    public void ValidateTurnStart_Throws_WhenAskForApprovalGranularSet_AndExperimentalDisabled()
+    {
+        var options = new TurnStartOptions
+        {
+            AskForApproval = new CodexAskForApprovalGranular
+            {
+                SandboxApproval = true,
+                Rules = false,
+                SkillApproval = true,
+                McpElicitations = true
+            }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("askForApproval.granular");
     }
 
     [Fact]
@@ -98,6 +159,13 @@ public sealed class ExperimentalApiGuardsTests
         {
             ExperimentalApiGuards.ValidateThreadStart(new ThreadStartOptions
             {
+                AskForApproval = new CodexAskForApprovalGranular
+                {
+                    SandboxApproval = true,
+                    Rules = false,
+                    RequestPermissions = true,
+                    McpElicitations = true
+                },
                 ExperimentalRawEvents = true,
                 PersistExtendedHistory = true,
                 DynamicTools =
@@ -114,6 +182,13 @@ public sealed class ExperimentalApiGuardsTests
             ExperimentalApiGuards.ValidateThreadResume(new ThreadResumeOptions
             {
                 ThreadId = "t",
+                AskForApproval = new CodexAskForApprovalGranular
+                {
+                    SandboxApproval = true,
+                    Rules = false,
+                    SkillApproval = true,
+                    McpElicitations = true
+                },
                 History = history.RootElement,
                 Path = "C:\\rollout",
                 PersistExtendedHistory = true
@@ -124,7 +199,17 @@ public sealed class ExperimentalApiGuardsTests
                 Path = "C:\\rollout",
                 PersistExtendedHistory = true
             }, experimentalApiEnabled: true);
-            ExperimentalApiGuards.ValidateTurnStart(new TurnStartOptions { CollaborationMode = collab.RootElement }, experimentalApiEnabled: true);
+            ExperimentalApiGuards.ValidateTurnStart(new TurnStartOptions
+            {
+                AskForApproval = new CodexAskForApprovalGranular
+                {
+                    SandboxApproval = true,
+                    Rules = false,
+                    RequestPermissions = true,
+                    McpElicitations = true
+                },
+                CollaborationMode = collab.RootElement
+            }, experimentalApiEnabled: true);
         };
 
         act.Should().NotThrow();

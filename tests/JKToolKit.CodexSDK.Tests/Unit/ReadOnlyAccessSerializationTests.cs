@@ -56,6 +56,17 @@ public sealed class ReadOnlyAccessSerializationTests
     }
 
     [Fact]
+    public void SandboxPolicy_ReadOnly_IncludesNetworkAccess_WhenSet()
+    {
+        var json = JsonSerializer.Serialize(
+            new SandboxPolicy.ReadOnly { NetworkAccess = true },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"type\":\"readOnly\"");
+        json.Should().Contain("\"networkAccess\":true");
+    }
+
+    [Fact]
     public void SandboxPolicy_WorkspaceWrite_OmitsReadOnlyAccess_WhenNull()
     {
         var json = JsonSerializer.Serialize(
@@ -74,6 +85,28 @@ public sealed class ReadOnlyAccessSerializationTests
 
         json.Should().Contain("\"readOnlyAccess\":");
         json.Should().Contain("\"type\":\"restricted\"");
+    }
+
+    [Fact]
+    public void SandboxPolicy_ExternalSandbox_OmitsNetworkAccess_WhenUnset()
+    {
+        var json = JsonSerializer.Serialize(
+            new SandboxPolicy.ExternalSandbox(),
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Be("{\"type\":\"externalSandbox\"}");
+        json.Should().NotContain("\"networkAccess\"");
+    }
+
+    [Fact]
+    public void SandboxPolicy_ExternalSandbox_IncludesTypedNetworkAccess_WhenSet()
+    {
+        var json = JsonSerializer.Serialize(
+            new SandboxPolicy.ExternalSandbox { NetworkAccess = SandboxNetworkAccess.Enabled },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"type\":\"externalSandbox\"");
+        json.Should().Contain("\"networkAccess\":\"enabled\"");
     }
 }
 

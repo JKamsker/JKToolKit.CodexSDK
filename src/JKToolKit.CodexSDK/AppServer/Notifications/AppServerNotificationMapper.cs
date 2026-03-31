@@ -464,6 +464,7 @@ internal static class AppServerNotificationMapper
                 Path = path,
                 FileName = fileName,
                 Score = score,
+                MatchType = GetString(item, "matchType") ?? GetString(item, "match_type"),
                 Indices = indices
             });
         }

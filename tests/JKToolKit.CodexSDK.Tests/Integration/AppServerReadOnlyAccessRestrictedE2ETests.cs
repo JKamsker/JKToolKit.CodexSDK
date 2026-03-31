@@ -7,6 +7,8 @@ namespace JKToolKit.CodexSDK.Tests.Integration;
 
 public sealed class AppServerReadOnlyAccessRestrictedE2ETests
 {
+    private static readonly Version ReadOnlyAccessMinSupportedVersion = new(0, 118, 0);
+
     [CodexE2EFact]
     public async Task AppServer_ReadOnlyAccessRestricted_StartTurn_Succeeds_WhenSupported()
     {
@@ -23,6 +25,8 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
             {
                 DefaultClientInfo = new("jktoolkit_codexsdk_tests", "JKToolKit.CodexSDK.Tests", "1.0.0")
             }, cts.Token);
+
+            var codexBuildVersion = client.InitializeResult?.CodexBuildVersion;
 
             var thread = await client.StartThreadAsync(new ThreadStartOptions
             {
@@ -44,9 +48,12 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
                 var completed = await turn.Completion.WaitAsync(cts.Token);
                 completed.Status.Should().NotBeNullOrWhiteSpace();
             }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("rejected sandboxPolicy parameters", StringComparison.Ordinal))
+            catch (InvalidOperationException ex)
+                when (ex.Message.Contains("rejected sandboxPolicy parameters", StringComparison.Ordinal) &&
+                      codexBuildVersion is not null &&
+                      codexBuildVersion < ReadOnlyAccessMinSupportedVersion)
             {
-                // This is an optional E2E test, and older Codex app-server builds may not support ReadOnlyAccess overrides.
+                // Older Codex app-server builds may reject ReadOnlyAccess overrides.
                 return;
             }
         }
