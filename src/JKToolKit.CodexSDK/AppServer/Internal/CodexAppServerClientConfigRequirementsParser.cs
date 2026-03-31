@@ -26,18 +26,18 @@ internal static class CodexAppServerClientConfigRequirementsParser
                 if (CodexAskForApproval.TryParse(policyElement, out var askForApproval))
                 {
                     (allowedAskForApprovalValues ??= new List<CodexAskForApproval>()).Add(askForApproval);
-                    if (askForApproval.Policy is { } policy)
+                    if (askForApproval.Policy is { } approvalPolicy)
                     {
-                        (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(policy);
+                        (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(approvalPolicy);
                     }
 
                     continue;
                 }
 
                 if (policyElement.ValueKind == JsonValueKind.String &&
-                    CodexApprovalPolicy.TryParse(policyElement.GetString(), out var policy))
+                    CodexApprovalPolicy.TryParse(policyElement.GetString(), out var parsedPolicy))
                 {
-                    (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(policy);
+                    (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(parsedPolicy);
                 }
             }
         }

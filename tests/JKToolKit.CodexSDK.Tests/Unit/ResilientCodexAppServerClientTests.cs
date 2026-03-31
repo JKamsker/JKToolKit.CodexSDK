@@ -510,7 +510,13 @@ public sealed class ResilientCodexAppServerClientTests
             options: options,
             logger: logger);
 
-        return Task.FromResult(resilient);
+        return ConnectAsync(resilient);
+    }
+
+    private static async Task<ResilientCodexAppServerClient> ConnectAsync(ResilientCodexAppServerClient resilient)
+    {
+        await resilient.EnsureConnectedAsync();
+        return resilient;
     }
 
     private static CodexAppServerDisconnectedException Disconnect(string message, int exitCode) =>

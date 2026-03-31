@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
@@ -21,7 +22,7 @@ public sealed class ReviewDetachedPlumbingTests
             Result = JsonSerializer.SerializeToElement(new
             {
                 reviewThreadId,
-                turn = new { id = turnId, threadId = reviewThreadId }
+                turn = new { id = turnId, threadId = "thr_original" }
             })
         };
 
@@ -42,6 +43,9 @@ public sealed class ReviewDetachedPlumbingTests
         review.ReviewThreadId.Should().Be(reviewThreadId);
         review.Turn.ThreadId.Should().Be(reviewThreadId);
         review.Turn.TurnId.Should().Be(turnId);
+
+        await review.Invoking(r => r.Turn.SteerAsync([TurnInputItem.Text("whisper")], CancellationToken.None))
+            .Should().ThrowAsync<NotSupportedException>();
 
         var completionTask = review.Turn.Completion;
 

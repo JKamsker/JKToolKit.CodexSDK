@@ -24,6 +24,11 @@ public sealed record class CodexThread
     public CodexApprovalPolicy? ApprovalPolicy { get; }
 
     /// <summary>
+    /// Gets the raw approval policy payload returned by the lifecycle response, when present.
+    /// </summary>
+    public JsonElement? ApprovalPolicyRaw { get; }
+
+    /// <summary>
     /// Gets the approval reviewer returned by the lifecycle response, when present.
     /// </summary>
     public CodexApprovalsReviewer? ApprovalsReviewer { get; }
@@ -32,6 +37,16 @@ public sealed record class CodexThread
     /// Gets the sandbox mode returned by the lifecycle response, when present.
     /// </summary>
     public CodexSandboxMode? Sandbox { get; }
+
+    /// <summary>
+    /// Gets the raw sandbox payload returned by the lifecycle response, when present.
+    /// </summary>
+    public JsonElement? SandboxRaw { get; }
+
+    /// <summary>
+    /// Gets the reasoning effort requested by the lifecycle response, when present.
+    /// </summary>
+    public CodexReasoningEffort? ReasoningEffort { get; }
 
     /// <summary>
     /// Gets the service tier returned by the lifecycle response, when present.
@@ -51,9 +66,12 @@ public sealed record class CodexThread
         JsonElement raw,
         CodexThreadSummary? thread = null,
         CodexApprovalPolicy? approvalPolicy = null,
+        JsonElement? approvalPolicyRaw = null,
         CodexApprovalsReviewer? approvalsReviewer = null,
         CodexSandboxMode? sandbox = null,
-        CodexServiceTier? serviceTier = null)
+        JsonElement? sandboxRaw = null,
+        CodexServiceTier? serviceTier = null,
+        CodexReasoningEffort? reasoningEffort = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Thread = thread ?? new CodexThreadSummary
@@ -62,8 +80,11 @@ public sealed record class CodexThread
             Raw = raw
         };
         ApprovalPolicy = approvalPolicy;
+        ApprovalPolicyRaw = approvalPolicyRaw;
         ApprovalsReviewer = approvalsReviewer;
         Sandbox = sandbox;
+        SandboxRaw = sandboxRaw;
+        ReasoningEffort = reasoningEffort;
         ServiceTier = serviceTier;
         Raw = raw;
     }

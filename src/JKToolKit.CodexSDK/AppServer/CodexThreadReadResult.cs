@@ -19,7 +19,6 @@ public sealed record class CodexThreadReadResult
     public required JsonElement Raw { get; init; }
 
     /// <summary>
-    /// <summary>
     /// Gets the parsed turn information included when turns are requested.
     /// </summary>
     public IReadOnlyList<CodexTurn>? Turns { get; init; }

@@ -136,6 +136,8 @@ public sealed partial class ResilientCodexAppServerClient : IAsyncDisposable
     /// </summary>
     public Task RestartAsync(CancellationToken ct = default) => _connection.RestartAsync(ct);
 
+    internal Task EnsureConnectedAsync(CancellationToken ct = default) => _connection.EnsureConnectedAsync(ct);
+
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
 }

@@ -22,12 +22,13 @@ public sealed class CodexAppServerSkillsAppsClientTests
             {
                 method.Should().Be("skills/list");
                 var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
-                typed.PerCwdExtraUserRoots.Should().HaveCount(2);
+                var entries = typed.PerCwdExtraUserRoots.ToArray();
+                entries.Should().HaveCount(2);
 
-                typed.PerCwdExtraUserRoots[0].Cwd.Should().Be("cwd-1");
-                typed.PerCwdExtraUserRoots[0].ExtraUserRoots.Should().Equal(new[] { "root-a" });
-                typed.PerCwdExtraUserRoots[1].Cwd.Should().Be("cwd-2");
-                typed.PerCwdExtraUserRoots[1].ExtraUserRoots.Should().Equal(new[] { "root-b", "root-c" });
+                entries[0].Cwd.Should().Be("cwd-1");
+                entries[0].ExtraUserRoots.Should().Equal(new[] { "root-a" });
+                entries[1].Cwd.Should().Be("cwd-2");
+                entries[1].ExtraUserRoots.Should().Equal(new[] { "root-b", "root-c" });
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -64,10 +65,11 @@ public sealed class CodexAppServerSkillsAppsClientTests
             {
                 method.Should().Be("skills/list");
                 var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
-                typed.PerCwdExtraUserRoots.Should().HaveCount(1);
+                var entries = typed.PerCwdExtraUserRoots.ToArray();
+                entries.Should().HaveCount(1);
 
-                typed.PerCwdExtraUserRoots[0].Cwd.Should().Be("cwd-main");
-                typed.PerCwdExtraUserRoots[0].ExtraUserRoots.Should().Equal(new[] { "extra" });
+                entries[0].Cwd.Should().Be("cwd-main");
+                entries[0].ExtraUserRoots.Should().Equal(new[] { "extra" });
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }

@@ -41,6 +41,11 @@ public sealed record class CodexThreadSummary
     public IReadOnlyList<string>? ActiveFlags { get; init; }
 
     /// <summary>
+    /// Gets the structured status metadata, when present.
+    /// </summary>
+    public CodexThreadStatus? Status { get; init; }
+
+    /// <summary>
     /// Gets the optional thread preview text, when present.
     /// </summary>
     public string? Preview { get; init; }

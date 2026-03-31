@@ -52,13 +52,16 @@ internal static class CodexAppServerClientThreadParsers
         var name = GetString(primary, secondary, "name", "threadName", "title", "preview");
         var preview = GetString(primary, secondary, "preview");
 
-        var status = TryGetObject(primary, "status") ?? TryGetObject(secondary, "status");
-        var statusType = status is { } st ? GetStringOrNull(st, "type") : null;
+        var statusRaw = TryGetObject(primary, "status") ?? TryGetObject(secondary, "status");
+        var statusType = statusRaw is { } st ? GetStringOrNull(st, "type") : null;
         var activeFlags =
             string.Equals(statusType, "active", StringComparison.OrdinalIgnoreCase) &&
-            status is { } sf
+            statusRaw is { } sf
                 ? GetOptionalStringArray(sf, "activeFlags")
                 : null;
+        var status = statusType is { } type && statusRaw is { } raw
+            ? new CodexThreadStatus(type, activeFlags, raw.Clone())
+            : null;
 
         var archived = GetBool(primary, secondary, "archived");
         if (archived is null &&
@@ -71,9 +74,9 @@ internal static class CodexAppServerClientThreadParsers
         var updatedAt = GetDateTimeOffset(primary, secondary, "updatedAt");
         var cwd = GetString(primary, secondary, "cwd");
         var pathValue = GetString(primary, secondary, "path");
-        var model = GetString(primary, secondary, "model");
+        var model = GetString(secondary, default, "model");
         var modelProvider = GetString(primary, secondary, "modelProvider");
-        var serviceTier = CodexServiceTier.TryParse(GetString(primary, secondary, "serviceTier"), out var parsedServiceTier)
+        var serviceTier = CodexServiceTier.TryParse(GetString(secondary, default, "serviceTier"), out var parsedServiceTier)
             ? parsedServiceTier
             : (CodexServiceTier?)null;
         var ephemeral = GetBool(primary, secondary, "ephemeral");
@@ -104,7 +107,8 @@ internal static class CodexAppServerClientThreadParsers
             AgentNickname = agentNickname,
             AgentRole = agentRole,
             TurnCount = turnCount,
-            Raw = threadObject
+            Raw = threadObject,
+            Status = status
         };
     }
 
@@ -192,7 +196,22 @@ internal static class CodexAppServerClientThreadParsers
             return null;
         }
 
-        return GetStringOrNull(so, "kind") ?? GetStringOrNull(so, "type");
+        var kind = GetStringOrNull(so, "kind") ?? GetStringOrNull(so, "type");
+        if (!string.IsNullOrWhiteSpace(kind))
+        {
+            return kind;
+        }
+
+        foreach (var property in so.EnumerateObject())
+        {
+            var name = property.Name;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                return name.ToLowerInvariant();
+            }
+        }
+
+        return null;
     }
 }
 

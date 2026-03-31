@@ -46,7 +46,7 @@ public sealed class AppServerFuzzyFileSearchClientTests
     [Fact]
     public async Task FuzzyFileSearchAsync_SendsTypedRequest()
     {
-        using var rpc = new FakeRpc
+        await using var rpc = new FakeRpc
         {
             SendRequestAsyncImpl = (method, @params, _) =>
             {

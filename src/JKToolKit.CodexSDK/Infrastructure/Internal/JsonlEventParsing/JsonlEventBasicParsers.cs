@@ -168,59 +168,6 @@ internal static partial class JsonlEventBasicParsers
         };
     }
 
-    public static TurnContextEvent? ParseTurnContextEvent(
-        JsonElement root,
-        DateTimeOffset timestamp,
-        string type,
-        JsonElement rawPayload,
-        in JsonlEventParserContext ctx)
-    {
-        string? approvalPolicy = null;
-        string? sandboxPolicyType = null;
-        bool? networkAccess = null;
-        string? networkAccessMode = null;
-        JsonElement? sandboxPolicyJson = null;
-
-        if (root.TryGetProperty("payload", out var payload))
-        {
-            if (payload.TryGetProperty("approval_policy", out var approvalElement))
-            {
-                approvalPolicy = approvalElement.ValueKind switch
-                {
-                    JsonValueKind.Null => null,
-                    JsonValueKind.String => approvalElement.GetString(),
-                    _ => approvalElement.GetRawText()
-                };
-            }
-
-            // Codex has produced both `sandbox_policy_type: string` and `sandbox_policy: { type, network_access }`.
-            if (payload.TryGetProperty("sandbox_policy_type", out var sandboxElement) && sandboxElement.ValueKind == JsonValueKind.String)
-                sandboxPolicyType = sandboxElement.GetString();
-
-            if (payload.TryGetProperty("sandbox_policy", out var sandboxPolicy) && sandboxPolicy.ValueKind == JsonValueKind.Object)
-            {
-                sandboxPolicyJson = sandboxPolicy.Clone();
-
-                if (sandboxPolicy.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
-                    sandboxPolicyType = typeEl.GetString();
-
-                ParseNetworkAccess(sandboxPolicy, ref networkAccess, ref networkAccessMode);
-            }
-        }
-
-        return new TurnContextEvent
-        {
-            Timestamp = timestamp,
-            Type = type,
-            RawPayload = rawPayload,
-            ApprovalPolicy = approvalPolicy,
-            SandboxPolicyType = sandboxPolicyType,
-            NetworkAccess = networkAccess,
-            NetworkAccessMode = networkAccessMode,
-            SandboxPolicyJson = sandboxPolicyJson
-        };
-    }
-
     public static CompactedEvent? ParseCompactedEvent(
         JsonElement root,
         DateTimeOffset timestamp,

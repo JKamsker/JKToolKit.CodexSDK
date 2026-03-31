@@ -1,5 +1,5 @@
 {"method":"item/agentMessage/delta","params":{"threadId":"t1","turnId":"u1","itemId":"i1","delta":"hello"}}
-{"method":"thread/started","params":{"thread":{"id":"thr_123","name":"Thread 123","preview":"","modelProvider":"openai","createdAt":1770000000,"updatedAt":1770000500,"cwd":"C:\\repo","path":"C:\\repo\\.codex\\sessions\\thr_123.jsonl","cliVersion":"0.2.3","status":{"type":"idle"},"ephemeral":false,"source":"cli","turns":[],"gitInfo":{"sha":"abc123","branch":"main","originUrl":"https://example.com/repo.git"}}}
+{"method":"thread/started","params":{"thread":{"id":"thr_123","name":"Thread 123","preview":"","modelProvider":"openai","createdAt":1770000000,"updatedAt":1770000500,"cwd":"C:\\repo","path":"C:\\repo\\.codex\\sessions\\thr_123.jsonl","cliVersion":"0.2.3","status":{"type":"idle"},"ephemeral":false,"source":"cli","turns":[],"gitInfo":{"sha":"abc123","branch":"main","originUrl":"https://example.com/repo.git"}}}}
 {"method":"thread/name/updated","params":{"threadId":"thr_123","threadName":"NewName"}}
 {"method":"turn/started","params":{"threadId":"thr_123","turn":{"id":"turn_1","status":"inProgress","items":[],"error":null}}}
 {"method":"item/started","params":{"threadId":"t1","turnId":"u1","item":{"type":"agentMessage","id":"i1","text":"hello"}}}

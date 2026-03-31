@@ -15,12 +15,6 @@ public sealed record class ThreadReadResponse
     public JsonElement? Thread { get; init; }
 
     /// <summary>
-    /// Gets the optional history summary object when present (raw).
-    /// </summary>
-    [JsonPropertyName("historySummary")]
-    public JsonElement? HistorySummary { get; init; }
-
-    /// <summary>
     /// Gets additional unmodeled properties for forward compatibility.
     /// </summary>
     [JsonExtensionData]

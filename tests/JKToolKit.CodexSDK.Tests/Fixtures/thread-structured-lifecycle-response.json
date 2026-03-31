@@ -1,0 +1,40 @@
+{
+  "approvalPolicy": {
+    "granular": {
+      "sandbox_approval": true,
+      "rules": false,
+      "skill_approval": true,
+      "request_permissions": false,
+      "mcp_elicitations": true
+    }
+  },
+  "approvalsReviewer": "guardian_subagent",
+  "cwd": "C:\\repo",
+  "model": "gpt-5",
+  "modelProvider": "openai",
+  "serviceTier": "fast",
+  "sandbox": {
+    "type": "workspaceWrite",
+    "writableRoots": [
+      "C:\\repo",
+      "C:\\tmp"
+    ],
+    "networkAccess": true
+  },
+  "reasoningEffort": "xhigh",
+  "thread": {
+    "id": "t_structured",
+    "name": "Structured",
+    "preview": "Structured preview",
+    "createdAt": 1700000000,
+    "updatedAt": "2026-03-01T03:00:00Z",
+    "source": "cli",
+    "status": {
+      "type": "active",
+      "activeFlags": [
+        "waitingOnApproval",
+        "waitingOnUserInput"
+      ]
+    }
+  }
+}

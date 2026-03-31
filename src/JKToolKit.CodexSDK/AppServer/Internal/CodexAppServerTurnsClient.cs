@@ -208,20 +208,20 @@ internal sealed class CodexAppServerTurnsClient
 
         return new ReviewStartResult
         {
-            Turn = CreateTurnHandle(turnThreadId, turnId),
+            Turn = CreateTurnHandle(reviewThreadId, turnId, supportsSteer: false),
             ReviewThreadId = reviewThreadId,
             Raw = result
         };
     }
 
-    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId)
+    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId, bool supportsSteer = true)
     {
         var handle = new CodexTurnHandle(
             threadId,
             turnId,
             interrupt: c => InterruptAsync(threadId, turnId, c),
-            steer: (input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
-            steerRaw: (input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
+            steer: supportsSteer ? (Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<string>>)((input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c)) : null,
+            steerRaw: supportsSteer ? (Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<TurnSteerResult>>)((input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c)) : null,
             onDispose: () =>
             {
                 _removeTurnHandle(turnId);
