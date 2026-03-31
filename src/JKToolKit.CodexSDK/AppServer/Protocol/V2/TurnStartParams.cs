@@ -54,6 +54,12 @@ public sealed record class TurnStartParams
     public string? Model { get; init; }
 
     /// <summary>
+    /// Gets an optional service tier override for this turn and subsequent turns.
+    /// </summary>
+    [JsonPropertyName("serviceTier")]
+    public string? ServiceTier { get; init; }
+
+    /// <summary>
     /// Gets an optional reasoning effort override for this turn and subsequent turns (wire value).
     /// </summary>
     /// <remarks>

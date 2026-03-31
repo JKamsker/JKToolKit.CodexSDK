@@ -9,7 +9,8 @@
       "distributionChannel": "built-in",
       "installUrl": "https://example.com/install",
       "isAccessible": true,
-      "isEnabled": true
+      "isEnabled": true,
+      "pluginDisplayNames": [ "GitHub", "GitHub Enterprise" ]
     },
     {
       "id": "app_2",

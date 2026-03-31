@@ -1,3 +1,5 @@
+using JKToolKit.CodexSDK.Models;
+
 namespace JKToolKit.CodexSDK.AppServer;
 
 /// <summary>
@@ -14,6 +16,11 @@ public sealed class ThreadForkOptions
     /// [UNSTABLE] Gets or sets a rollout path to fork from (experimental-gated in newer upstream Codex builds).
     /// </summary>
     public string? Path { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional service tier override for the forked thread.
+    /// </summary>
+    public CodexServiceTier? ServiceTier { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to persist additional rollout event variants required to reconstruct

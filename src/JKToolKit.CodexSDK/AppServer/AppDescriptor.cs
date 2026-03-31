@@ -58,6 +58,11 @@ public sealed record class AppDescriptor
     public string? Title { get; init; }
 
     /// <summary>
+    /// Gets plugin display names associated with the app, when present.
+    /// </summary>
+    public IReadOnlyList<string>? PluginDisplayNames { get; init; }
+
+    /// <summary>
     /// Gets an optional disabled reason string, when present.
     /// </summary>
     public string? DisabledReason { get; init; }

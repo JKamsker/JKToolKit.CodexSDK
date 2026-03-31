@@ -38,6 +38,21 @@ public sealed record class NetworkRequirements
     public bool? DangerouslyAllowNonLoopbackAdmin { get; init; }
 
     /// <summary>
+    /// Gets whether all unix sockets are allowed, when present (dangerous).
+    /// </summary>
+    public bool? DangerouslyAllowAllUnixSockets { get; init; }
+
+    /// <summary>
+    /// Gets the canonical managed domain permission map, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, NetworkDomainPermission>? Domains { get; init; }
+
+    /// <summary>
+    /// Gets whether only managed allowed domains should be honored, when present.
+    /// </summary>
+    public bool? ManagedAllowedDomainsOnly { get; init; }
+
+    /// <summary>
     /// Gets an allow-list of domains, when present.
     /// </summary>
     public IReadOnlyList<string>? AllowedDomains { get; init; }
@@ -53,6 +68,11 @@ public sealed record class NetworkRequirements
     public IReadOnlyList<string>? AllowUnixSockets { get; init; }
 
     /// <summary>
+    /// Gets the canonical managed unix-socket permission map, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, NetworkUnixSocketPermission>? UnixSockets { get; init; }
+
+    /// <summary>
     /// Gets whether local binding is allowed, when present.
     /// </summary>
     public bool? AllowLocalBinding { get; init; }
@@ -62,4 +82,3 @@ public sealed record class NetworkRequirements
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-

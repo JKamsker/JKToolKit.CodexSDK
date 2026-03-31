@@ -59,6 +59,12 @@ public sealed record class ThreadResumeParams
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets an optional service tier override for the resumed thread.
+    /// </summary>
+    [JsonPropertyName("serviceTier")]
+    public string? ServiceTier { get; init; }
+
+    /// <summary>
     /// Gets an optional approval policy override for the resumed thread.
     /// </summary>
     /// <remarks>

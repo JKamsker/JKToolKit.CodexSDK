@@ -62,6 +62,7 @@ internal sealed class CodexAppServerTurnsClient
             ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
             SandboxPolicy = options.SandboxPolicy,
             Model = options.Model?.Value,
+            ServiceTier = options.ServiceTier?.Value,
             Effort = options.Effort?.Value,
             Summary = options.Summary,
             Personality = options.Personality,

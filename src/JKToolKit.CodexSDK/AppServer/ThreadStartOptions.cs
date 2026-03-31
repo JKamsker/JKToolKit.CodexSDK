@@ -25,6 +25,11 @@ public sealed class ThreadStartOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional service tier override for the thread.
+    /// </summary>
+    public CodexServiceTier? ServiceTier { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional service name identifier for the thread.
     /// </summary>
     public string? ServiceName { get; set; }

@@ -31,6 +31,7 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
+                ServiceTier = options.ServiceTier?.Value,
                 ServiceName = options.ServiceName,
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
@@ -92,6 +93,7 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
+                ServiceTier = options.ServiceTier?.Value,
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
                 Config = options.Config,
@@ -368,6 +370,7 @@ internal sealed class CodexAppServerThreadsClient
             {
                 ThreadId = options.ThreadId,
                 Path = options.Path,
+                ServiceTier = options.ServiceTier?.Value,
                 PersistExtendedHistory = options.PersistExtendedHistory
             },
             ct);

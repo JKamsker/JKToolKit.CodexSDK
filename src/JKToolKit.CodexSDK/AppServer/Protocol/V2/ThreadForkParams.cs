@@ -20,6 +20,12 @@ public sealed record class ThreadForkParams
     public string? Path { get; init; }
 
     /// <summary>
+    /// Gets an optional service tier override for the forked thread.
+    /// </summary>
+    [JsonPropertyName("serviceTier")]
+    public string? ServiceTier { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether to persist additional rollout event variants required to reconstruct a richer
     /// thread history on subsequent resume/fork/read (experimental).
     /// </summary>

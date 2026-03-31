@@ -53,6 +53,11 @@ public sealed class ThreadResumeOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional service tier override for the resumed thread.
+    /// </summary>
+    public CodexServiceTier? ServiceTier { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional approval policy.
     /// </summary>
     /// <remarks>

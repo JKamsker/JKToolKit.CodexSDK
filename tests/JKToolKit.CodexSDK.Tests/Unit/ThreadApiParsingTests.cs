@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -18,6 +19,7 @@ public sealed class ThreadApiParsingTests
 
         threads.Select(t => t.ThreadId).Should().Equal("t_1", "t_2");
         cursor.Should().Be("cursor_2");
+        threads[0].ServiceTier.Should().Be(CodexServiceTier.Fast);
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
         threads[1].Raw.TryGetProperty("wrapperUnknown", out _).Should().BeTrue();
     }

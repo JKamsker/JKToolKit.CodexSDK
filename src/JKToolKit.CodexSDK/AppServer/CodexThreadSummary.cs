@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -53,6 +54,11 @@ public sealed record class CodexThreadSummary
     /// Gets the model associated with the thread, when present.
     /// </summary>
     public string? Model { get; init; }
+
+    /// <summary>
+    /// Gets the service tier associated with the thread, when present.
+    /// </summary>
+    public CodexServiceTier? ServiceTier { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the thread summary.

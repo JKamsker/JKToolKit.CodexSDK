@@ -181,6 +181,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
                 IsAccessible = GetBoolOrNull(item, "isAccessible"),
                 IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
                 Title = GetStringOrNull(item, "title"),
+                PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames"),
                 DisabledReason = GetStringOrNull(item, "disabledReason"),
                 Raw = item
             });

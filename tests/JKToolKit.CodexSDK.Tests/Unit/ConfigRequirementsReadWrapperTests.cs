@@ -71,7 +71,22 @@ public sealed class ConfigRequirementsReadWrapperTests
         {
             requirements = new
             {
-                network = new { enabled = true, httpPort = 8080 }
+                network = new
+                {
+                    enabled = true,
+                    httpPort = 8080,
+                    dangerouslyAllowAllUnixSockets = true,
+                    managedAllowedDomainsOnly = true,
+                    domains = new Dictionary<string, string>
+                    {
+                        ["api.openai.com"] = "allow",
+                        ["example.com"] = "deny"
+                    },
+                    unixSockets = new Dictionary<string, string>
+                    {
+                        ["/tmp/codex.sock"] = "allow"
+                    }
+                }
             }
         });
 
@@ -86,6 +101,13 @@ public sealed class ConfigRequirementsReadWrapperTests
         result.Requirements.Should().NotBeNull();
         result.Requirements!.Network.Should().NotBeNull();
         result.Requirements.Network!.HttpPort.Should().Be(8080);
+        result.Requirements.Network.DangerouslyAllowAllUnixSockets.Should().BeTrue();
+        result.Requirements.Network.ManagedAllowedDomainsOnly.Should().BeTrue();
+        result.Requirements.Network.Domains.Should().NotBeNull();
+        result.Requirements.Network.Domains!["api.openai.com"].Should().Be(NetworkDomainPermission.Allow);
+        result.Requirements.Network.Domains["example.com"].Should().Be(NetworkDomainPermission.Deny);
+        result.Requirements.Network.UnixSockets.Should().NotBeNull();
+        result.Requirements.Network.UnixSockets!["/tmp/codex.sock"].Should().Be(NetworkUnixSocketPermission.Allow);
     }
 
     private sealed class FakeProcess : IStdioProcess

@@ -27,6 +27,12 @@ public sealed record class ThreadStartParams
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets an optional service tier override for the thread.
+    /// </summary>
+    [JsonPropertyName("serviceTier")]
+    public string? ServiceTier { get; init; }
+
+    /// <summary>
     /// Gets an optional service name identifier.
     /// </summary>
     [JsonPropertyName("serviceName")]

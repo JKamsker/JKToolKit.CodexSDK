@@ -55,6 +55,14 @@ public sealed class TurnStartOptions
     public CodexModel? Model { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional service tier override.
+    /// </summary>
+    /// <remarks>
+    /// In the v2 app-server protocol, this override applies to this turn and subsequent turns.
+    /// </remarks>
+    public CodexServiceTier? ServiceTier { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional reasoning effort.
     /// </summary>
     /// <remarks>
@@ -107,6 +115,7 @@ public sealed class TurnStartOptions
             AskForApproval = AskForApproval,
             SandboxPolicy = SandboxPolicy,
             Model = Model,
+            ServiceTier = ServiceTier,
             Effort = Effort,
             Summary = Summary,
             Personality = Personality,

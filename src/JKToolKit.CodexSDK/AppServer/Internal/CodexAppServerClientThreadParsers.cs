@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -73,6 +74,9 @@ internal static class CodexAppServerClientThreadParsers
         var model =
             GetStringOrNull(primary, "model") ??
             GetStringOrNull(primary, "modelProvider");
+        var serviceTier = CodexServiceTier.TryParse(GetStringOrNull(primary, "serviceTier"), out var parsedServiceTier)
+            ? parsedServiceTier
+            : (CodexServiceTier?)null;
 
         return new CodexThreadSummary
         {
@@ -84,6 +88,7 @@ internal static class CodexAppServerClientThreadParsers
             CreatedAt = createdAt,
             Cwd = cwd,
             Model = model,
+            ServiceTier = serviceTier,
             Raw = threadObject
         };
     }

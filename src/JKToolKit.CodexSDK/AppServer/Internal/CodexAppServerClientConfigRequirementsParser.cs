@@ -68,11 +68,63 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
             DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
             DangerouslyAllowNonLoopbackAdmin = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackAdmin"),
+            DangerouslyAllowAllUnixSockets = GetBoolOrNull(network, "dangerouslyAllowAllUnixSockets"),
+            Domains = ParseDomainPermissions(network, "domains"),
+            ManagedAllowedDomainsOnly = GetBoolOrNull(network, "managedAllowedDomainsOnly"),
             AllowedDomains = GetOptionalStringArray(network, "allowedDomains"),
             DeniedDomains = GetOptionalStringArray(network, "deniedDomains"),
             AllowUnixSockets = GetOptionalStringArray(network, "allowUnixSockets"),
+            UnixSockets = ParseUnixSocketPermissions(network, "unixSockets"),
             AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
             Raw = network.Clone()
         };
+    }
+
+    private static IReadOnlyDictionary<string, NetworkDomainPermission>? ParseDomainPermissions(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } permissions)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, NetworkDomainPermission>(StringComparer.Ordinal);
+        foreach (var item in permissions.EnumerateObject())
+        {
+            if (item.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            if (NetworkDomainPermission.TryParse(item.Value.GetString(), out var permission))
+            {
+                result[item.Name] = permission;
+            }
+        }
+
+        return result.Count == 0 ? null : result;
+    }
+
+    private static IReadOnlyDictionary<string, NetworkUnixSocketPermission>? ParseUnixSocketPermissions(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } permissions)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, NetworkUnixSocketPermission>(StringComparer.Ordinal);
+        foreach (var item in permissions.EnumerateObject())
+        {
+            if (item.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            if (NetworkUnixSocketPermission.TryParse(item.Value.GetString(), out var permission))
+            {
+                result[item.Name] = permission;
+            }
+        }
+
+        return result.Count == 0 ? null : result;
     }
 }

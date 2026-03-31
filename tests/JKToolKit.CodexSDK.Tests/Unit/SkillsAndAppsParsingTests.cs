@@ -29,6 +29,7 @@ public sealed class SkillsAndAppsParsingTests
         apps[1].IsEnabled.Should().BeFalse();
         apps[1].DisabledReason.Should().Be("authRequired");
         apps[0].LogoUrl.Should().NotBeNullOrWhiteSpace();
+        apps[0].PluginDisplayNames.Should().Equal("GitHub", "GitHub Enterprise");
         apps[1].Raw.TryGetProperty("unknown", out _).Should().BeTrue();
     }
 }
