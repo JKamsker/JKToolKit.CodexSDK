@@ -16,12 +16,18 @@ internal partial class NetworkRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowLocalBinding")]
     public bool? AllowLocalBinding { get; set; } = default!;
 
+    /// <summary>
+    /// Legacy compatibility view derived from `unix_sockets`.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("allowUnixSockets")]
     public System.Collections.Generic.ICollection<string>? AllowUnixSockets { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("allowUpstreamProxy")]
     public bool? AllowUpstreamProxy { get; set; } = default!;
 
+    /// <summary>
+    /// Legacy compatibility view derived from `domains`.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("allowedDomains")]
     public System.Collections.Generic.ICollection<string>? AllowedDomains { get; set; } = default!;
 
@@ -31,8 +37,17 @@ internal partial class NetworkRequirements
     [System.Text.Json.Serialization.JsonPropertyName("dangerouslyAllowNonLoopbackProxy")]
     public bool? DangerouslyAllowNonLoopbackProxy { get; set; } = default!;
 
+    /// <summary>
+    /// Legacy compatibility view derived from `domains`.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("deniedDomains")]
     public System.Collections.Generic.ICollection<string>? DeniedDomains { get; set; } = default!;
+
+    /// <summary>
+    /// Canonical network permission map for `experimental_network`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("domains")]
+    public System.Collections.Generic.IDictionary<string, NetworkDomainPermission>? Domains { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool? Enabled { get; set; } = default!;
@@ -40,8 +55,20 @@ internal partial class NetworkRequirements
     [System.Text.Json.Serialization.JsonPropertyName("httpPort")]
     public int? HttpPort { get; set; } = default!;
 
+    /// <summary>
+    /// When true, only managed allowlist entries are respected while managed network enforcement is active.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("managedAllowedDomainsOnly")]
+    public bool? ManagedAllowedDomainsOnly { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("socksPort")]
     public int? SocksPort { get; set; } = default!;
+
+    /// <summary>
+    /// Canonical unix socket permission map for `experimental_network`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("unixSockets")]
+    public System.Collections.Generic.IDictionary<string, NetworkUnixSocketPermission>? UnixSockets { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
