@@ -157,7 +157,7 @@ public sealed class AppServerCommandAndFilesystemTests
 
         result.Enablement.Should().Contain(new KeyValuePair<string, bool>("featureA", true));
         result.Enablement.Should().Contain(new KeyValuePair<string, bool>("featureB", false));
-        rpc.LastMethod.Should().Be("experimentalFeatureEnablement/set");
+        rpc.LastMethod.Should().Be("experimentalFeature/enablement/set");
     }
 
     [Fact]

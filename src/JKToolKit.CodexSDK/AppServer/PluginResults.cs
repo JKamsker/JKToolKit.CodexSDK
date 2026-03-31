@@ -8,7 +8,7 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class PluginListOptions
 {
     /// <summary>
-    /// Gets or sets the working directories used to resolve plugin marketplaces.
+    /// Gets or sets the absolute working directories used to resolve plugin marketplaces.
     /// </summary>
     public IReadOnlyList<string>? Cwds { get; set; }
 
@@ -55,7 +55,7 @@ public sealed record class PluginListResult
 public sealed class PluginReadOptions
 {
     /// <summary>
-    /// Gets or sets the marketplace path that contains the plugin.
+    /// Gets or sets the absolute marketplace path that contains the plugin.
     /// </summary>
     public required string MarketplacePath { get; set; }
 
@@ -87,7 +87,7 @@ public sealed record class PluginReadResult
 public sealed class PluginInstallOptions
 {
     /// <summary>
-    /// Gets or sets the marketplace path that contains the plugin.
+    /// Gets or sets the absolute marketplace path that contains the plugin.
     /// </summary>
     public required string MarketplacePath { get; set; }
 

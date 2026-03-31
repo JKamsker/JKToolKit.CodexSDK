@@ -11,7 +11,7 @@ public sealed class SkillsConfigWriteOptions
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// Gets or sets the path-based selector for the skill.
+    /// Gets or sets the absolute path-based selector for the skill.
     /// </summary>
     public string? Path { get; set; }
 

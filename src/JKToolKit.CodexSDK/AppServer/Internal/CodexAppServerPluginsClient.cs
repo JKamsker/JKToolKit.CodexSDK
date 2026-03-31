@@ -14,6 +14,7 @@ internal sealed class CodexAppServerPluginsClient
     public async Task<PluginListResult> ListPluginsAsync(PluginListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(options.Cwds, nameof(options), "Cwds");
 
         var result = await _sendRequestAsync(
             "plugin/list",
@@ -30,8 +31,7 @@ internal sealed class CodexAppServerPluginsClient
     public async Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (string.IsNullOrWhiteSpace(options.MarketplacePath))
-            throw new ArgumentException("MarketplacePath cannot be empty or whitespace.", nameof(options));
+        CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.MarketplacePath, nameof(options), "MarketplacePath");
         if (string.IsNullOrWhiteSpace(options.PluginName))
             throw new ArgumentException("PluginName cannot be empty or whitespace.", nameof(options));
 
@@ -50,8 +50,7 @@ internal sealed class CodexAppServerPluginsClient
     public async Task<PluginInstallResult> InstallPluginAsync(PluginInstallOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (string.IsNullOrWhiteSpace(options.MarketplacePath))
-            throw new ArgumentException("MarketplacePath cannot be empty or whitespace.", nameof(options));
+        CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.MarketplacePath, nameof(options), "MarketplacePath");
         if (string.IsNullOrWhiteSpace(options.PluginName))
             throw new ArgumentException("PluginName cannot be empty or whitespace.", nameof(options));
 

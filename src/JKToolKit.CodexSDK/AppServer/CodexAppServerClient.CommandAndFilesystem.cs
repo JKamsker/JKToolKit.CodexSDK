@@ -91,11 +91,11 @@ public sealed partial class CodexAppServerClient
 
         if (!ExperimentalApiEnabled)
         {
-            throw new CodexExperimentalApiRequiredException("experimentalFeatureEnablement/set");
+            throw new CodexExperimentalApiRequiredException("experimentalFeature/enablement/set");
         }
 
         var result = await _core.SendRequestAsync(
-            "experimentalFeatureEnablement/set",
+            "experimentalFeature/enablement/set",
             new
             {
                 enablement = options.Enablement

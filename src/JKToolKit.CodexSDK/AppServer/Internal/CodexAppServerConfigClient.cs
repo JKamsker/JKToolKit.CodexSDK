@@ -177,6 +177,11 @@ internal sealed class CodexAppServerConfigClient
             throw new ArgumentException("Exactly one of Path or Name must be provided.", nameof(options));
         }
 
+        if (hasPath)
+        {
+            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.Path, nameof(options), "Path");
+        }
+
         var result = await _sendRequestAsync(
             "skills/config/write",
             new SkillsConfigWriteParams

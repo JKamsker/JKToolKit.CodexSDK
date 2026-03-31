@@ -98,7 +98,7 @@ public sealed record class ThreadMetadataUpdateResult
 }
 
 /// <summary>
-/// Options for <c>experimentalFeatureEnablement/set</c>.
+/// Options for <c>experimentalFeature/enablement/set</c>.
 /// </summary>
 public sealed class ExperimentalFeatureEnablementSetOptions
 {
@@ -109,7 +109,7 @@ public sealed class ExperimentalFeatureEnablementSetOptions
 }
 
 /// <summary>
-/// Result returned by <c>experimentalFeatureEnablement/set</c>.
+/// Result returned by <c>experimentalFeature/enablement/set</c>.
 /// </summary>
 public sealed record class ExperimentalFeatureEnablementSetResult
 {

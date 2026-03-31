@@ -16,10 +16,15 @@ internal sealed class CodexAppServerSkillsAppsClient
     public async Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (!string.IsNullOrWhiteSpace(options.Cwd))
+        {
+            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.Cwd, nameof(options), "Cwd");
+        }
 
         IReadOnlyList<string>? cwds = null;
         if (options.Cwds is { Count: > 0 })
         {
+            CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(options.Cwds, nameof(options), "Cwds");
             cwds = options.Cwds;
         }
         else if (!string.IsNullOrWhiteSpace(options.Cwd))
@@ -41,16 +46,17 @@ internal sealed class CodexAppServerSkillsAppsClient
                 {
                     throw new ArgumentException("PerCwdExtraUserRoots entries require a non-empty Cwd.", nameof(options));
                 }
+                CodexAppServerPathValidation.ValidateRequiredAbsolutePath(entry.Cwd, nameof(options), "PerCwdExtraUserRoots[].Cwd");
 
                 if (entry.ExtraUserRoots is not { Count: > 0 })
                 {
                     throw new ArgumentException("PerCwdExtraUserRoots entries require at least one extra root.", nameof(options));
                 }
 
-                if (entry.ExtraUserRoots.Any(string.IsNullOrWhiteSpace))
-                {
-                    throw new ArgumentException("PerCwdExtraUserRoots entries cannot contain null, empty, or whitespace extra roots.", nameof(options));
-                }
+                CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(
+                    entry.ExtraUserRoots,
+                    nameof(options),
+                    "PerCwdExtraUserRoots[].ExtraUserRoots");
 
                 return new UpstreamV2.SkillsListExtraRootsForCwd
                 {
@@ -66,6 +72,8 @@ internal sealed class CodexAppServerSkillsAppsClient
             {
                 throw new ArgumentException("ExtraRootsForCwd requires a single Cwd scope.", nameof(options));
             }
+            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(cwd, nameof(options), "Cwd");
+            CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(options.ExtraRootsForCwd, nameof(options), "ExtraRootsForCwd");
 
             perCwd =
             [

@@ -25,10 +25,10 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 var entries = typed.PerCwdExtraUserRoots.ToArray();
                 entries.Should().HaveCount(2);
 
-                entries[0].Cwd.Should().Be("cwd-1");
-                entries[0].ExtraUserRoots.Should().Equal(new[] { "root-a" });
-                entries[1].Cwd.Should().Be("cwd-2");
-                entries[1].ExtraUserRoots.Should().Equal(new[] { "root-b", "root-c" });
+                entries[0].Cwd.Should().Be("C:\\cwd-1");
+                entries[0].ExtraUserRoots.Should().Equal(new[] { "C:\\root-a" });
+                entries[1].Cwd.Should().Be("D:\\cwd-2");
+                entries[1].ExtraUserRoots.Should().Equal(new[] { "D:\\root-b", "D:\\root-c" });
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -42,13 +42,13 @@ public sealed class CodexAppServerSkillsAppsClientTests
             {
                 new SkillsListExtraRootsForCwdEntry
                 {
-                    Cwd = "cwd-1",
-                    ExtraUserRoots = new[] { "root-a" }
+                    Cwd = "C:\\cwd-1",
+                    ExtraUserRoots = new[] { "C:\\root-a" }
                 },
                 new SkillsListExtraRootsForCwdEntry
                 {
-                    Cwd = "cwd-2",
-                    ExtraUserRoots = new[] { "root-b", "root-c" }
+                    Cwd = "D:\\cwd-2",
+                    ExtraUserRoots = new[] { "D:\\root-b", "D:\\root-c" }
                 }
             }
         };
@@ -68,8 +68,8 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 var entries = typed.PerCwdExtraUserRoots.ToArray();
                 entries.Should().HaveCount(1);
 
-                entries[0].Cwd.Should().Be("cwd-main");
-                entries[0].ExtraUserRoots.Should().Equal(new[] { "extra" });
+                entries[0].Cwd.Should().Be("C:\\cwd-main");
+                entries[0].ExtraUserRoots.Should().Equal(new[] { "C:\\extra" });
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -79,11 +79,33 @@ public sealed class CodexAppServerSkillsAppsClientTests
 
         var options = new SkillsListOptions
         {
-            Cwds = new[] { "cwd-main" },
-            ExtraRootsForCwd = new[] { "extra" }
+            Cwds = new[] { "C:\\cwd-main" },
+            ExtraRootsForCwd = new[] { "C:\\extra" }
         };
 
         await client.ListSkillsAsync(options);
+    }
+
+    [Fact]
+    public async Task ListSkillsAsync_RejectsRelativePerCwdExtraRoots()
+    {
+        var client = new CodexAppServerSkillsAppsClient((_, _, _) =>
+            Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone()));
+
+        var act = async () => await client.ListSkillsAsync(new SkillsListOptions
+        {
+            PerCwdExtraUserRoots =
+            [
+                new SkillsListExtraRootsForCwdEntry
+                {
+                    Cwd = "C:\\repo",
+                    ExtraUserRoots = ["relative\\skills"]
+                }
+            ]
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*absolute paths*");
     }
 
     private sealed class FakeRpc

@@ -87,6 +87,11 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("skills/changed", JsonDocument.Parse("""{}""").RootElement)
             .Should().BeOfType<SkillsChangedNotification>();
 
+        var appListUpdated = JsonDocument.Parse("""{"data":[{"id":"app-1","name":"Calendar","isEnabled":true}]}""").RootElement;
+        AppServerNotificationMapper.Map("app/list/updated", appListUpdated)
+            .Should().BeOfType<AppListUpdatedNotification>()
+            .Which.Apps.Should().ContainSingle();
+
         var requestResolved = JsonDocument.Parse("""{"threadId":"t1","requestId":123}""").RootElement;
         AppServerNotificationMapper.Map("serverRequest/resolved", requestResolved)
             .Should().BeOfType<ServerRequestResolvedNotification>()

@@ -221,7 +221,8 @@ internal static class AppServerNotificationMapper
                 Params: p),
 
             "app/list/updated" => new AppListUpdatedNotification(
-                apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
+                apps: AppServerNotificationParsing.ParseAppsList(p),
+                data: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
                 @params: p),
 
             "skills/changed" => new SkillsChangedNotification(

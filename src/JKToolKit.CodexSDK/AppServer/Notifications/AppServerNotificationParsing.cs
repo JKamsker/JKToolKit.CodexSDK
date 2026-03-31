@@ -5,6 +5,9 @@ namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
 internal static class AppServerNotificationParsing
 {
+    public static IReadOnlyList<AppDescriptor> ParseAppsList(JsonElement obj) =>
+        Internal.CodexAppServerClientSkillsAppsParsers.ParseAppsListApps(obj);
+
     public static IReadOnlyList<FuzzyFileSearchResult> ParseFuzzyFileSearchResults(JsonElement obj)
     {
         if (!TryGetArray(obj, "files", out var files))
