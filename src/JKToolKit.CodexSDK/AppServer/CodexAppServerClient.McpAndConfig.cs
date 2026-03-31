@@ -68,5 +68,25 @@ public sealed partial class CodexAppServerClient
     /// </remarks>
     public Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct = default) =>
         _mcpClient.StartMcpServerOauthLoginAsync(options, ct);
+
+    /// <summary>
+    /// Starts an account login flow.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/login/start</c>.
+    /// Supported flows include API-key login, browser ChatGPT login, device-code ChatGPT login, and externally managed
+    /// ChatGPT auth-token submission.
+    /// </remarks>
+    public Task<AccountLoginStartResult> StartAccountLoginAsync(AccountLoginStartOptions options, CancellationToken ct = default) =>
+        _configClient.StartAccountLoginAsync(options, ct);
+
+    /// <summary>
+    /// Cancels a pending account login flow.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/login/cancel</c>.
+    /// </remarks>
+    public Task<AccountLoginCancelResult> CancelAccountLoginAsync(string loginId, CancellationToken ct = default) =>
+        _configClient.CancelAccountLoginAsync(loginId, ct);
 }
 

@@ -3,6 +3,7 @@ using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using Microsoft.Extensions.Logging;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -127,6 +128,34 @@ internal sealed class CodexAppServerConfigClient
             EffectiveEnabled = CodexAppServerClientJson.GetBoolOrNull(result, "effectiveEnabled"),
             Raw = result
         };
+    }
+
+    public async Task<AccountLoginStartResult> StartAccountLoginAsync(AccountLoginStartOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "account/login/start",
+            CodexAppServerAccountLoginParsers.BuildStartParams(options),
+            ct);
+
+        return CodexAppServerAccountLoginParsers.ParseStartResult(result);
+    }
+
+    public async Task<AccountLoginCancelResult> CancelAccountLoginAsync(string loginId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(loginId))
+            throw new ArgumentException("LoginId cannot be empty or whitespace.", nameof(loginId));
+
+        var result = await _sendRequestAsync(
+            "account/login/cancel",
+            new UpstreamV2.CancelLoginAccountParams
+            {
+                LoginId = loginId
+            },
+            ct);
+
+        return CodexAppServerAccountLoginParsers.ParseCancelResult(result);
     }
 
     public async Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct = default)
