@@ -62,13 +62,14 @@ public sealed partial class CodexAppServerClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
+        var gitInfoPatch = BuildGitInfoPatch(options.GitInfo);
 
         var result = await _core.SendRequestAsync(
             "thread/metadata/update",
             new
             {
                 threadId = options.ThreadId,
-                gitInfo = BuildGitInfoPatch(options.GitInfo)
+                gitInfo = gitInfoPatch
             },
             ct).ConfigureAwait(false);
 
@@ -167,26 +168,42 @@ public sealed partial class CodexAppServerClient
     {
         if (gitInfo is null)
         {
-            return null;
+            throw new ArgumentException("GitInfo is required.", nameof(gitInfo));
         }
 
         var patch = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (gitInfo.UpdateBranch)
         {
+            ValidateGitInfoValue(gitInfo.Branch, nameof(ThreadGitInfoUpdate.Branch));
             patch["branch"] = gitInfo.Branch;
         }
 
         if (gitInfo.UpdateOriginUrl)
         {
+            ValidateGitInfoValue(gitInfo.OriginUrl, nameof(ThreadGitInfoUpdate.OriginUrl));
             patch["originUrl"] = gitInfo.OriginUrl;
         }
 
         if (gitInfo.UpdateSha)
         {
+            ValidateGitInfoValue(gitInfo.Sha, nameof(ThreadGitInfoUpdate.Sha));
             patch["sha"] = gitInfo.Sha;
         }
 
+        if (patch.Count == 0)
+        {
+            throw new ArgumentException("At least one GitInfo update flag must be set.", nameof(gitInfo));
+        }
+
         return patch;
+    }
+
+    private static void ValidateGitInfoValue(string? value, string propertyName)
+    {
+        if (value is not null && string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException($"{propertyName} cannot be empty or whitespace when included in the patch.", propertyName);
+        }
     }
 
     private static IReadOnlyDictionary<string, bool> ParseFeatureEnablement(JsonElement result)

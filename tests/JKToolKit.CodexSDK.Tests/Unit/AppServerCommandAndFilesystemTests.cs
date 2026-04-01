@@ -208,6 +208,54 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task UpdateThreadMetadataAsync_RequiresGitInfo()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thr-1"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*GitInfo is required*");
+    }
+
+    [Fact]
+    public async Task UpdateThreadMetadataAsync_RequiresAtLeastOnePatchFlag()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thr-1",
+            GitInfo = new ThreadGitInfoUpdate()
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*At least one GitInfo update flag must be set*");
+    }
+
+    [Fact]
+    public async Task UpdateThreadMetadataAsync_RejectsWhitespacePatchValues()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thr-1",
+            GitInfo = new ThreadGitInfoUpdate
+            {
+                UpdateBranch = true,
+                Branch = "   "
+            }
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Branch cannot be empty or whitespace*");
+    }
+
+    [Fact]
     public async Task SetExperimentalFeatureEnablementAsync_ParsesResponse()
     {
         using var doc = JsonDocument.Parse("""{"enablement":{"featureA":true,"featureB":false}}""");

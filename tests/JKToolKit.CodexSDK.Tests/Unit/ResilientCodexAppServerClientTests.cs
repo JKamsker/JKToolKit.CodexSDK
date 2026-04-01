@@ -485,6 +485,55 @@ public sealed class ResilientCodexAppServerClientTests
                 invoked.Add(nameof(ICodexAppServerClientAdapter.StartFuzzyFileSearchSessionAsync));
                 return Task.CompletedTask;
             },
+            ThreadShellCommandAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.ThreadShellCommandAsync));
+                return Task.FromResult(new ThreadShellCommandResult { Raw = EmptyJson() });
+            },
+            UpdateThreadMetadataAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.UpdateThreadMetadataAsync));
+                return Task.FromResult(new ThreadMetadataUpdateResult
+                {
+                    Thread = new CodexThread("thread-1", EmptyJson()),
+                    Raw = EmptyJson()
+                });
+            },
+            FsReadFileAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsReadFileAsync));
+                return Task.FromResult(new FsReadFileResult { DataBase64 = "aGVsbG8=", Raw = EmptyJson() });
+            },
+            FsWriteFileAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsWriteFileAsync));
+                return Task.FromResult(new FsWriteFileResult { Raw = EmptyJson() });
+            },
+            FsCreateDirectoryAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsCreateDirectoryAsync));
+                return Task.FromResult(new FsCreateDirectoryResult { Raw = EmptyJson() });
+            },
+            FsGetMetadataAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsGetMetadataAsync));
+                return Task.FromResult(new FsGetMetadataResult { Raw = EmptyJson() });
+            },
+            FsReadDirectoryAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsReadDirectoryAsync));
+                return Task.FromResult(new FsReadDirectoryResult { Entries = [], Raw = EmptyJson() });
+            },
+            FsRemoveAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsRemoveAsync));
+                return Task.FromResult(new FsRemoveResult { Raw = EmptyJson() });
+            },
+            FsCopyAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.FsCopyAsync));
+                return Task.FromResult(new FsCopyResult { Raw = EmptyJson() });
+            },
             SteerTurnAsyncImpl = (_, _) =>
             {
                 invoked.Add(nameof(ICodexAppServerClientAdapter.SteerTurnAsync));
@@ -504,6 +553,19 @@ public sealed class ResilientCodexAppServerClientTests
         await client.ImportExternalAgentConfigAsync([]);
         await client.ReloadMcpServersAsync();
         await client.StartFuzzyFileSearchSessionAsync("session-1", ["C:\\repo"]);
+        _ = await client.ThreadShellCommandAsync(new ThreadShellCommandOptions { ThreadId = "thread-1", Command = "dir" });
+        _ = await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thread-1",
+            GitInfo = new ThreadGitInfoUpdate { UpdateBranch = true, Branch = "main" }
+        });
+        _ = await client.FsReadFileAsync(new FsReadFileOptions { Path = "C:\\repo\\a.txt" });
+        _ = await client.FsWriteFileAsync(new FsWriteFileOptions { Path = "C:\\repo\\a.txt", DataBase64 = "aGVsbG8=" });
+        _ = await client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = "C:\\repo\\dir" });
+        _ = await client.FsGetMetadataAsync(new FsGetMetadataOptions { Path = "C:\\repo\\a.txt" });
+        _ = await client.FsReadDirectoryAsync(new FsReadDirectoryOptions { Path = "C:\\repo" });
+        _ = await client.FsRemoveAsync(new FsRemoveOptions { Path = "C:\\repo\\gone.txt" });
+        _ = await client.FsCopyAsync(new FsCopyOptions { SourcePath = "C:\\repo\\a.txt", DestinationPath = "C:\\repo\\b.txt" });
         var steerResult = await client.SteerTurnAsync(new TurnSteerOptions
         {
             ThreadId = "thread-1",
@@ -518,6 +580,15 @@ public sealed class ResilientCodexAppServerClientTests
             nameof(ICodexAppServerClientAdapter.ImportExternalAgentConfigAsync),
             nameof(ICodexAppServerClientAdapter.ReloadMcpServersAsync),
             nameof(ICodexAppServerClientAdapter.StartFuzzyFileSearchSessionAsync),
+            nameof(ICodexAppServerClientAdapter.ThreadShellCommandAsync),
+            nameof(ICodexAppServerClientAdapter.UpdateThreadMetadataAsync),
+            nameof(ICodexAppServerClientAdapter.FsReadFileAsync),
+            nameof(ICodexAppServerClientAdapter.FsWriteFileAsync),
+            nameof(ICodexAppServerClientAdapter.FsCreateDirectoryAsync),
+            nameof(ICodexAppServerClientAdapter.FsGetMetadataAsync),
+            nameof(ICodexAppServerClientAdapter.FsReadDirectoryAsync),
+            nameof(ICodexAppServerClientAdapter.FsRemoveAsync),
+            nameof(ICodexAppServerClientAdapter.FsCopyAsync),
             nameof(ICodexAppServerClientAdapter.SteerTurnAsync),
             nameof(ICodexAppServerClientAdapter.StartThreadRealtimeAsync));
     }
@@ -782,6 +853,24 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Func<string, string, string?, CancellationToken, Task>? StartThreadRealtimeAsyncImpl { get; init; }
 
+        public Func<ThreadShellCommandOptions, CancellationToken, Task<ThreadShellCommandResult>>? ThreadShellCommandAsyncImpl { get; init; }
+
+        public Func<ThreadMetadataUpdateOptions, CancellationToken, Task<ThreadMetadataUpdateResult>>? UpdateThreadMetadataAsyncImpl { get; init; }
+
+        public Func<FsReadFileOptions, CancellationToken, Task<FsReadFileResult>>? FsReadFileAsyncImpl { get; init; }
+
+        public Func<FsWriteFileOptions, CancellationToken, Task<FsWriteFileResult>>? FsWriteFileAsyncImpl { get; init; }
+
+        public Func<FsCreateDirectoryOptions, CancellationToken, Task<FsCreateDirectoryResult>>? FsCreateDirectoryAsyncImpl { get; init; }
+
+        public Func<FsGetMetadataOptions, CancellationToken, Task<FsGetMetadataResult>>? FsGetMetadataAsyncImpl { get; init; }
+
+        public Func<FsReadDirectoryOptions, CancellationToken, Task<FsReadDirectoryResult>>? FsReadDirectoryAsyncImpl { get; init; }
+
+        public Func<FsRemoveOptions, CancellationToken, Task<FsRemoveResult>>? FsRemoveAsyncImpl { get; init; }
+
+        public Func<FsCopyOptions, CancellationToken, Task<FsCopyResult>>? FsCopyAsyncImpl { get; init; }
+
         public Task ExitTask => _exit.Task;
 
         public AppServerInitializeResult? InitializeResultValue { get; init; }
@@ -1007,6 +1096,33 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<CommandExecTerminateResult> CommandExecTerminateAsync(CommandExecTerminateOptions options, CancellationToken ct) =>
             NotSupported<CommandExecTerminateResult>();
+
+        public Task<ThreadShellCommandResult> ThreadShellCommandAsync(ThreadShellCommandOptions options, CancellationToken ct) =>
+            ThreadShellCommandAsyncImpl?.Invoke(options, ct) ?? NotSupported<ThreadShellCommandResult>();
+
+        public Task<ThreadMetadataUpdateResult> UpdateThreadMetadataAsync(ThreadMetadataUpdateOptions options, CancellationToken ct) =>
+            UpdateThreadMetadataAsyncImpl?.Invoke(options, ct) ?? NotSupported<ThreadMetadataUpdateResult>();
+
+        public Task<FsReadFileResult> FsReadFileAsync(FsReadFileOptions options, CancellationToken ct) =>
+            FsReadFileAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsReadFileResult>();
+
+        public Task<FsWriteFileResult> FsWriteFileAsync(FsWriteFileOptions options, CancellationToken ct) =>
+            FsWriteFileAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsWriteFileResult>();
+
+        public Task<FsCreateDirectoryResult> FsCreateDirectoryAsync(FsCreateDirectoryOptions options, CancellationToken ct) =>
+            FsCreateDirectoryAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsCreateDirectoryResult>();
+
+        public Task<FsGetMetadataResult> FsGetMetadataAsync(FsGetMetadataOptions options, CancellationToken ct) =>
+            FsGetMetadataAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsGetMetadataResult>();
+
+        public Task<FsReadDirectoryResult> FsReadDirectoryAsync(FsReadDirectoryOptions options, CancellationToken ct) =>
+            FsReadDirectoryAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsReadDirectoryResult>();
+
+        public Task<FsRemoveResult> FsRemoveAsync(FsRemoveOptions options, CancellationToken ct) =>
+            FsRemoveAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsRemoveResult>();
+
+        public Task<FsCopyResult> FsCopyAsync(FsCopyOptions options, CancellationToken ct) =>
+            FsCopyAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsCopyResult>();
 
         public Task<FsWatchResult> FsWatchAsync(FsWatchOptions options, CancellationToken ct) =>
             NotSupported<FsWatchResult>();
