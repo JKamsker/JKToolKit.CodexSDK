@@ -25,6 +25,7 @@ public class CodexSessionOptions
     private CodexReasoningEffort _reasoningEffort = CodexReasoningEffort.Medium;
     private bool _reasoningEffortOverrideExplicitlySet;
     private IReadOnlyList<string> _additionalOptions = Array.Empty<string>();
+    private IReadOnlyList<string> _images = Array.Empty<string>();
     private TimeSpan? _idleTimeout;
     private CodexOutputSchema? _outputSchema;
 
@@ -188,6 +189,23 @@ public class CodexSessionOptions
         {
             ArgumentNullException.ThrowIfNull(value);
             _additionalOptions = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets image file paths to attach to the prompt via <c>--image</c>.
+    /// </summary>
+    /// <remarks>
+    /// Each entry should be a path to an image file. The SDK passes one <c>--image &lt;path&gt;</c>
+    /// argument per entry. Supported during both new sessions and resume.
+    /// </remarks>
+    public IReadOnlyList<string> Images
+    {
+        get => _images;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            _images = value;
         }
     }
 
@@ -391,6 +409,7 @@ public class CodexSessionOptions
         var clone = new CodexSessionOptions
         {
             AdditionalOptions = new List<string>(AdditionalOptions),
+            Images = new List<string>(Images),
             CodexBinaryPath = CodexBinaryPath,
             IdleTimeout = IdleTimeout,
             OutputSchema = OutputSchema,

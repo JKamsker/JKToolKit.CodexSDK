@@ -57,6 +57,8 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add(schemaPath);
         }
 
+        AddImages(startInfo, options);
+
         foreach (var option in options.AdditionalOptions)
         {
             startInfo.ArgumentList.Add(option);
@@ -115,6 +117,8 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add("--output-schema");
             startInfo.ArgumentList.Add(schemaPath);
         }
+
+        AddImages(startInfo, options);
 
         foreach (var option in options.AdditionalOptions)
         {
@@ -255,6 +259,15 @@ internal static class ProcessStartInfoBuilder
         {
             startInfo.ArgumentList.Add("--config");
             startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        }
+    }
+
+    private static void AddImages(ProcessStartInfo startInfo, CodexSessionOptions options)
+    {
+        foreach (var imagePath in options.Images)
+        {
+            startInfo.ArgumentList.Add("--image");
+            startInfo.ArgumentList.Add(imagePath);
         }
     }
 }
