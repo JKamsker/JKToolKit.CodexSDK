@@ -166,13 +166,15 @@ internal static class CodexAppServerClientJson
 
     public static int GetRequiredInt32(JsonElement obj, string propertyName, string? context = null)
     {
-        var value = GetInt32OrNull(obj, propertyName);
-        if (!value.HasValue)
+        if (obj.ValueKind != JsonValueKind.Object ||
+            !obj.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.Number ||
+            !property.TryGetInt32(out var value))
         {
             throw new InvalidOperationException(FormatMissingPropertyMessage(propertyName, context));
         }
 
-        return value.Value;
+        return value;
     }
 
     public static bool? GetBoolOrNull(JsonElement obj, string propertyName)
@@ -252,13 +254,15 @@ internal static class CodexAppServerClientJson
 
     public static long GetRequiredInt64(JsonElement obj, string propertyName, string? context = null)
     {
-        var value = GetInt64OrNull(obj, propertyName);
-        if (!value.HasValue)
+        if (obj.ValueKind != JsonValueKind.Object ||
+            !obj.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.Number ||
+            !property.TryGetInt64(out var value))
         {
             throw new InvalidOperationException(FormatMissingPropertyMessage(propertyName, context));
         }
 
-        return value.Value;
+        return value;
     }
 
     public static DateTimeOffset? GetDateTimeOffsetOrNull(JsonElement obj, string propertyName)

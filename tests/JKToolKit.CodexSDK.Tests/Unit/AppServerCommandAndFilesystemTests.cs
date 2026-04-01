@@ -88,6 +88,24 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task CommandExecAsync_SerializesLargeOutputBytesCap()
+    {
+        using var doc = JsonDocument.Parse("""{"exitCode":0,"stdout":"","stderr":""}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.CommandExecAsync(new CommandExecOptions
+        {
+            Command = ["cmd"],
+            OutputBytesCap = 3_000_000_000
+        });
+
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"outputBytesCap\":3000000000");
+    }
+
+    [Fact]
     public async Task CommandExecAsync_RequiresProcessId_WhenStreaming()
     {
         await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
@@ -311,6 +329,24 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task FsWriteFileAsync_AllowsEmptyPayload()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.FsWriteFileAsync(new FsWriteFileOptions
+        {
+            Path = "C:\\repo\\empty.txt",
+            DataBase64 = string.Empty
+        });
+
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"dataBase64\":\"\"");
+    }
+
+    [Fact]
     public async Task FsReadWriteMetadataDirectoryCopyAndRemoveAsync_ParseExpectedResults()
     {
         await using var client = CreateClient(new SequencedRecordingRpc(
@@ -344,6 +380,86 @@ public sealed class AppServerCommandAndFilesystemTests
 
         _ = await client.FsCopyAsync(new FsCopyOptions { SourcePath = "C:\\repo\\a.txt", DestinationPath = "C:\\repo\\b.txt" });
         _ = await client.FsRemoveAsync(new FsRemoveOptions { Path = "C:\\repo\\b.txt", Force = true });
+    }
+
+    [Fact]
+    public async Task FsGetMetadataAsync_StringTimestamps_AreRejected()
+    {
+        using var doc = JsonDocument.Parse("""{"isFile":true,"isDirectory":false,"createdAtMs":"123","modifiedAtMs":"456"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.FsGetMetadataAsync(new FsGetMetadataOptions { Path = "C:\\repo\\a.txt" });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*createdAtMs*");
+    }
+
+    [Fact]
+    public async Task FsReadDirectoryAsync_NonObjectEntries_AreRejected()
+    {
+        using var doc = JsonDocument.Parse("""{"entries":[123]}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.FsReadDirectoryAsync(new FsReadDirectoryOptions { Path = "C:\\repo" });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*entries[]*objects*");
+    }
+
+    [Fact]
+    public async Task CommandExecAsync_StringExitCode_IsRejected()
+    {
+        using var doc = JsonDocument.Parse("""{"exitCode":"0","stdout":"","stderr":""}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.CommandExecAsync(new CommandExecOptions
+        {
+            Command = ["cmd"]
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*exitCode*");
+    }
+
+    [Theory]
+    [InlineData("fs/writeFile")]
+    [InlineData("fs/createDirectory")]
+    [InlineData("fs/remove")]
+    [InlineData("fs/copy")]
+    [InlineData("fs/unwatch")]
+    [InlineData("command/exec/write")]
+    [InlineData("command/exec/resize")]
+    [InlineData("command/exec/terminate")]
+    public async Task EmptySuccessResponses_RequireObjectPayloads(string method)
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("null").RootElement };
+        await using var client = CreateClient(rpc);
+
+        Func<Task> act = method switch
+        {
+            "fs/writeFile" => () => client.FsWriteFileAsync(new FsWriteFileOptions { Path = "C:\\repo\\a.txt", DataBase64 = string.Empty }),
+            "fs/createDirectory" => () => client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = "C:\\repo\\dir" }),
+            "fs/remove" => () => client.FsRemoveAsync(new FsRemoveOptions { Path = "C:\\repo\\a.txt" }),
+            "fs/copy" => () => client.FsCopyAsync(new FsCopyOptions { SourcePath = "C:\\repo\\a.txt", DestinationPath = "C:\\repo\\b.txt" }),
+            "fs/unwatch" => () => client.FsUnwatchAsync(new FsUnwatchOptions { WatchId = "watch-1" }),
+            "command/exec/write" => () => client.CommandExecWriteAsync(new CommandExecWriteOptions { ProcessId = "proc-1", DeltaBase64 = string.Empty }),
+            "command/exec/resize" => () => client.CommandExecResizeAsync(new CommandExecResizeOptions
+            {
+                ProcessId = "proc-1",
+                Size = new CommandExecTerminalSize { Columns = 80, Rows = 24 }
+            }),
+            "command/exec/terminate" => () => client.CommandExecTerminateAsync(new CommandExecTerminateOptions { ProcessId = "proc-1" }),
+            _ => throw new NotSupportedException(method)
+        };
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*JSON object*");
     }
 
     [Fact]

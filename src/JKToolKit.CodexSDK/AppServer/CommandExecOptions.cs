@@ -35,7 +35,7 @@ public sealed class CommandExecOptions
     /// <summary>
     /// Gets or sets the optional per-stream output cap in bytes.
     /// </summary>
-    public int? OutputBytesCap { get; set; }
+    public long? OutputBytesCap { get; set; }
 
     /// <summary>
     /// Gets or sets the optional client-supplied process identifier.

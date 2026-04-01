@@ -37,8 +37,8 @@ internal sealed class CodexAppServerFilesystemClient
     {
         ArgumentNullException.ThrowIfNull(options);
         ValidatePath(options.Path, nameof(options));
-        if (string.IsNullOrWhiteSpace(options.DataBase64))
-            throw new ArgumentException("DataBase64 cannot be empty or whitespace.", nameof(options));
+        if (options.DataBase64 is null)
+            throw new ArgumentException("DataBase64 cannot be null.", nameof(options));
 
         var result = await _sendRequestAsync(
             "fs/writeFile",
@@ -49,6 +49,7 @@ internal sealed class CodexAppServerFilesystemClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "fs/writeFile response");
         return new FsWriteFileResult { Raw = result };
     }
 
@@ -66,6 +67,7 @@ internal sealed class CodexAppServerFilesystemClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "fs/createDirectory response");
         return new FsCreateDirectoryResult { Raw = result };
     }
 
@@ -127,6 +129,7 @@ internal sealed class CodexAppServerFilesystemClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "fs/remove response");
         return new FsRemoveResult { Raw = result };
     }
 
@@ -146,6 +149,7 @@ internal sealed class CodexAppServerFilesystemClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "fs/copy response");
         return new FsCopyResult { Raw = result };
     }
 
@@ -184,6 +188,7 @@ internal sealed class CodexAppServerFilesystemClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "fs/unwatch response");
         return new FsUnwatchResult { Raw = result };
     }
 
@@ -220,7 +225,7 @@ internal sealed class CodexAppServerFilesystemClient
         {
             if (entry.ValueKind != JsonValueKind.Object)
             {
-                continue;
+                throw new InvalidOperationException("fs/readDirectory response entries[] must contain only objects.");
             }
 
             parsed.Add(new FsDirectoryEntry
@@ -233,6 +238,14 @@ internal sealed class CodexAppServerFilesystemClient
         }
 
         return parsed;
+    }
+
+    private static void EnsureObjectResponse(JsonElement result, string context)
+    {
+        if (result.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"{context} must be a JSON object.");
+        }
     }
 
     private static JsonElement GetRequiredArray(JsonElement obj, string propertyName, string context)

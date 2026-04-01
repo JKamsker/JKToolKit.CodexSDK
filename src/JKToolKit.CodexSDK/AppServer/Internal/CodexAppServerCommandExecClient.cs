@@ -47,14 +47,14 @@ internal sealed class CodexAppServerCommandExecClient
             },
             ct).ConfigureAwait(false);
 
-            return new CommandExecResult
-            {
-                ExitCode = CodexAppServerClientJson.GetRequiredInt32(result, "exitCode", "command/exec response"),
-                Stdout = CodexAppServerClientJson.GetRequiredString(result, "stdout", "command/exec response"),
-                Stderr = CodexAppServerClientJson.GetRequiredString(result, "stderr", "command/exec response"),
-                Raw = result
-            };
-        }
+        return new CommandExecResult
+        {
+            ExitCode = CodexAppServerClientJson.GetRequiredInt32(result, "exitCode", "command/exec response"),
+            Stdout = CodexAppServerClientJson.GetRequiredString(result, "stdout", "command/exec response"),
+            Stderr = CodexAppServerClientJson.GetRequiredString(result, "stderr", "command/exec response"),
+            Raw = result
+        };
+    }
 
     public async Task<CommandExecWriteResult> CommandExecWriteAsync(CommandExecWriteOptions options, CancellationToken ct = default)
     {
@@ -74,6 +74,7 @@ internal sealed class CodexAppServerCommandExecClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "command/exec/write response");
         return new CommandExecWriteResult { Raw = result };
     }
 
@@ -98,6 +99,7 @@ internal sealed class CodexAppServerCommandExecClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "command/exec/resize response");
         return new CommandExecResizeResult { Raw = result };
     }
 
@@ -115,6 +117,7 @@ internal sealed class CodexAppServerCommandExecClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "command/exec/terminate response");
         return new CommandExecTerminateResult { Raw = result };
     }
 
@@ -182,5 +185,13 @@ internal sealed class CodexAppServerCommandExecClient
         var serializerOptions = CodexAppServerClient.CreateDefaultSerializerOptions();
         var payload = JsonSerializer.SerializeToElement(sandboxPolicy, serializerOptions);
         return payload.Deserialize<UpstreamV2.SandboxPolicy2>(serializerOptions);
+    }
+
+    private static void EnsureObjectResponse(JsonElement result, string context)
+    {
+        if (result.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"{context} must be a JSON object.");
+        }
     }
 }
