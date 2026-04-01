@@ -29,6 +29,7 @@ internal static class CodexSessionLocatorHelpers
     {
         SessionId? sessionId = null;
         DateTimeOffset? createdAt = null;
+        DateTimeOffset? updatedAt = null;
         string? sessionMetaWorkingDirectory = null;
         string? latestTurnContextWorkingDirectory = null;
         CodexModel? model = null;
@@ -49,9 +50,11 @@ internal static class CodexSessionLocatorHelpers
             {
                 using var doc = JsonDocument.Parse(line);
                 var root = doc.RootElement;
+                UpdateLatestTimestamp(RolloutLineParsing.GetTopLevelTimestampOrNull(root));
 
                 if (RolloutLineParsing.TryGetPayloadObject(root, "session_meta", out var payload))
                 {
+                    UpdateLatestTimestamp(RolloutLineParsing.GetPayloadTimestampOrNull(payload));
                     createdAt ??= RolloutLineParsing.GetTopLevelTimestampOrNull(root) ??
                                   RolloutLineParsing.GetPayloadTimestampOrNull(payload);
 
@@ -81,6 +84,7 @@ internal static class CodexSessionLocatorHelpers
 
                 if (RolloutLineParsing.TryGetPayloadObject(root, "turn_context", out payload))
                 {
+                    UpdateLatestTimestamp(RolloutLineParsing.GetPayloadTimestampOrNull(payload));
                     if (payload.TryGetProperty("cwd", out var cwdElement) &&
                         cwdElement.ValueKind == JsonValueKind.String)
                     {
@@ -126,7 +130,21 @@ internal static class CodexSessionLocatorHelpers
             CreatedAt: effectiveCreatedAt,
             WorkingDirectory: latestTurnContextWorkingDirectory ?? sessionMetaWorkingDirectory,
             Model: model,
-            HumanLabel: humanLabel);
+            HumanLabel: humanLabel,
+            UpdatedAt: updatedAt ?? effectiveCreatedAt);
+
+        void UpdateLatestTimestamp(DateTimeOffset? candidate)
+        {
+            if (candidate is null)
+            {
+                return;
+            }
+
+            if (updatedAt is null || candidate > updatedAt.Value)
+            {
+                updatedAt = candidate;
+            }
+        }
     }
 
     internal static bool MatchesFilter(CodexSessionInfo sessionInfo, SessionFilter filter)

@@ -27,6 +27,33 @@ public sealed class CodexResumeTargetResolverTests
     }
 
     [Fact]
+    public async Task TryResolveAsync_PrefersMostRecentlyUpdatedSession_ForMostRecentTarget()
+    {
+        var newerCreated = CreateSession(
+            "id-1",
+            "newer-created",
+            "C:\\repo",
+            DateTimeOffset.Parse("2026-04-01T09:00:00Z"),
+            updatedAt: DateTimeOffset.Parse("2026-04-01T09:00:00Z"));
+        var olderCreatedButLatestUpdated = CreateSession(
+            "id-2",
+            "latest-updated",
+            "C:\\repo",
+            DateTimeOffset.Parse("2026-04-01T08:00:00Z"),
+            updatedAt: DateTimeOffset.Parse("2026-04-01T10:00:00Z"));
+        var locator = new RecordingSessionLocator(newerCreated, olderCreatedButLatestUpdated);
+
+        var resolved = await CodexResumeTargetResolver.TryResolveAsync(
+            locator,
+            "C:\\sessions",
+            CodexResumeTarget.MostRecent(),
+            workingDirectory: "C:\\repo",
+            CancellationToken.None);
+
+        resolved.Should().Be(olderCreatedButLatestUpdated);
+    }
+
+    [Fact]
     public async Task TryResolveAsync_PrefersExactIdMatch_OverHumanLabelMatch()
     {
         var idMatch = CreateSession("shared", "friendly", "C:\\repo", DateTimeOffset.Parse("2026-04-01T09:00:00Z"));
@@ -60,13 +87,19 @@ public sealed class CodexResumeTargetResolverTests
         locator.LastFilter.Should().BeNull();
     }
 
-    private static CodexSessionInfo CreateSession(string id, string label, string cwd, DateTimeOffset createdAt) =>
-        new(SessionId.Parse(id), $"C:\\sessions\\{id}.jsonl", createdAt, cwd, Model: null, HumanLabel: label);
+    private static CodexSessionInfo CreateSession(
+        string id,
+        string label,
+        string cwd,
+        DateTimeOffset createdAt,
+        DateTimeOffset? updatedAt = null) =>
+        new(SessionId.Parse(id), $"C:\\sessions\\{id}.jsonl", createdAt, cwd, Model: null, HumanLabel: label, UpdatedAt: updatedAt);
 
     private sealed class RecordingSessionLocator(params CodexSessionInfo[] sessions) : ICodexSessionLocator
     {
         private readonly IReadOnlyList<CodexSessionInfo> _sessions = sessions
-            .OrderByDescending(session => session.CreatedAt)
+            .OrderByDescending(session => session.UpdatedAt ?? session.CreatedAt)
+            .ThenByDescending(session => session.CreatedAt)
             .ToArray();
 
         public SessionFilter? LastFilter { get; private set; }

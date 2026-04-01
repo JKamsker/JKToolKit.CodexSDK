@@ -384,6 +384,8 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionsRoot,
             filter?.ToString() ?? "none");
 
+        var matchedSessions = new List<CodexSessionInfo>();
+
         foreach (var entry in CodexSessionLocatorHelpers.EnumerateSessionFiles(_fileSystem, _logger, sessionsRoot, SessionFilePattern))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -441,6 +443,15 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
                 continue;
             }
 
+            matchedSessions.Add(sessionInfo);
+        }
+
+        foreach (var sessionInfo in matchedSessions
+                     .OrderByDescending(session => session.UpdatedAt ?? session.CreatedAt)
+                     .ThenByDescending(session => session.CreatedAt)
+                     .ThenBy(session => session.LogPath, StringComparer.OrdinalIgnoreCase))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             yield return sessionInfo;
         }
     }

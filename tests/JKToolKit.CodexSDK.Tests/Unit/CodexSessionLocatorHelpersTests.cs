@@ -84,6 +84,7 @@ public sealed class CodexSessionLocatorHelpersTests
         session!.WorkingDirectory.Should().Be("D:\\latest-2");
         session.Model.Should().Be(JKToolKit.CodexSDK.Models.CodexModel.Parse("gpt-5-codex"));
         session.CreatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T10:00:00Z"));
+        session.UpdatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T10:02:00Z"));
     }
 
     [Fact]
@@ -105,6 +106,7 @@ public sealed class CodexSessionLocatorHelpersTests
         session.Should().NotBeNull();
         session!.Model.Should().BeNull();
         session.CreatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T09:59:59Z"));
+        session.UpdatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T09:59:59Z"));
     }
 }
 
