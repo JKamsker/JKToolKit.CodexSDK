@@ -14,35 +14,36 @@ public sealed class AuthAccountConfigWrappersTests
     [Fact]
     public async Task GetConversationSummaryAsync_CallsExpectedMethod_AndParsesResponse()
     {
+        var summaryPath = XPaths.JsonAbs("codex/home/sessions/2026/04/01/rollout.jsonl");
+        var cwdPath = XPaths.JsonAbs("repo");
+        var json = $@"{{
+            ""summary"": {{
+                ""conversationId"": ""thr-123"",
+                ""path"": ""{summaryPath}"",
+                ""preview"": ""hello"",
+                ""timestamp"": ""2026-04-01T10:00:00Z"",
+                ""updatedAt"": ""2026-04-01T10:01:00Z"",
+                ""modelProvider"": ""openai"",
+                ""cwd"": ""{cwdPath}"",
+                ""cliVersion"": ""0.118.0"",
+                ""source"": ""exec"",
+                ""gitInfo"": {{
+                    ""sha"": ""abc123"",
+                    ""branch"": ""main"",
+                    ""originUrl"": ""https://example.test/repo.git""
+                }}
+            }}
+        }}";
+
         var rpc = new FakeRpc
         {
             AssertMethod = "getConversationSummary",
             AssertParams = p =>
             {
-                var json = JsonSerializer.SerializeToElement(p);
-                json.GetProperty("conversationId").GetString().Should().Be("thr-123");
+                var elem = JsonSerializer.SerializeToElement(p);
+                elem.GetProperty("conversationId").GetString().Should().Be("thr-123");
             },
-            Result = JsonSerializer.SerializeToElement(new
-            {
-                summary = new
-                {
-                    conversationId = "thr-123",
-                    path = "C:/codex/home/sessions/2026/04/01/rollout.jsonl",
-                    preview = "hello",
-                    timestamp = "2026-04-01T10:00:00Z",
-                    updatedAt = "2026-04-01T10:01:00Z",
-                    modelProvider = "openai",
-                    cwd = "C:/repo",
-                    cliVersion = "0.118.0",
-                    source = "exec",
-                    gitInfo = new
-                    {
-                        sha = "abc123",
-                        branch = "main",
-                        originUrl = "https://example.test/repo.git"
-                    }
-                }
-            })
+            Result = JsonDocument.Parse(json).RootElement
         };
 
         await using var client = CreateClient(rpc);
@@ -53,7 +54,7 @@ public sealed class AuthAccountConfigWrappersTests
         });
 
         result.Summary.ConversationId.Should().Be("thr-123");
-        result.Summary.Path.Should().Be("C:/codex/home/sessions/2026/04/01/rollout.jsonl");
+        result.Summary.Path.Should().Be(summaryPath);
         result.Summary.GitInfo.Should().NotBeNull();
         result.Summary.GitInfo!.Sha.Should().Be("abc123");
     }

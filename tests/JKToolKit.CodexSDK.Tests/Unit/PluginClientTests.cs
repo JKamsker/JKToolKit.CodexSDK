@@ -14,47 +14,50 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ListPluginsAsync_ParsesTypedMarketplacePluginAndSourceMetadata()
     {
+        var marketPath = XPaths.JsonAbs("market");
+        var iconPath = XPaths.JsonAbs("market/assets/icon.png");
+        var logoPath = XPaths.JsonAbs("market/assets/logo.png");
+        var screenshotPath = XPaths.JsonAbs("market/assets/screenshot.png");
+        var sourcePath = XPaths.JsonAbs("plugins/plug-1");
         using var doc = JsonDocument.Parse(
-            """
-            {
-              "featuredPluginIds": ["plug-1"],
-              "marketplaceLoadErrors": [{ "marketplacePath": "C:\\market", "message": "failed" }],
-              "marketplaces": [
-                {
-                  "name": "official",
-                  "path": "C:\\market",
-                  "interface": { "displayName": "Official Marketplace" },
-                  "plugins": [
-                    {
-                      "id": "plug-1",
-                      "name": "Plugin One",
-                      "installed": true,
-                      "enabled": true,
-                      "authPolicy": "ON_INSTALL",
-                      "installPolicy": "AVAILABLE",
-                      "interface": {
-                        "displayName": "Plugin One Display",
-                        "shortDescription": "Short",
-                        "longDescription": "Long",
-                        "category": "developer-tools",
-                        "developerName": "Example Corp",
-                        "brandColor": "#123456",
-                        "defaultPrompt": ["Open a pull request"],
-                        "capabilities": ["issues", "pull-requests"],
-                        "composerIcon": "C:\\market\\assets\\icon.png",
-                        "logo": "C:\\market\\assets\\logo.png",
-                        "screenshots": ["C:\\market\\assets\\screenshot.png"]
-                      },
-                      "source": {
-                        "type": "local",
-                        "path": "C:\\plugins\\plug-1"
-                      }
-                    }
+            $@"{{
+              ""featuredPluginIds"": [""plug-1""],
+              ""marketplaceLoadErrors"": [{{ ""marketplacePath"": ""{marketPath}"", ""message"": ""failed"" }}],
+              ""marketplaces"": [
+                {{
+                  ""name"": ""official"",
+                  ""path"": ""{marketPath}"",
+                  ""interface"": {{ ""displayName"": ""Official Marketplace"" }},
+                  ""plugins"": [
+                    {{
+                      ""id"": ""plug-1"",
+                      ""name"": ""Plugin One"",
+                      ""installed"": true,
+                      ""enabled"": true,
+                      ""authPolicy"": ""ON_INSTALL"",
+                      ""installPolicy"": ""AVAILABLE"",
+                      ""interface"": {{
+                        ""displayName"": ""Plugin One Display"",
+                        ""shortDescription"": ""Short"",
+                        ""longDescription"": ""Long"",
+                        ""category"": ""developer-tools"",
+                        ""developerName"": ""Example Corp"",
+                        ""brandColor"": ""#123456"",
+                        ""defaultPrompt"": [""Open a pull request""],
+                        ""capabilities"": [""issues"", ""pull-requests""],
+                        ""composerIcon"": ""{iconPath}"",
+                        ""logo"": ""{logoPath}"",
+                        ""screenshots"": [""{screenshotPath}""]
+                      }},
+                      ""source"": {{
+                        ""type"": ""local"",
+                        ""path"": ""{sourcePath}""
+                      }}
+                    }}
                   ]
-                }
+                }}
               ]
-            }
-            """);
+            }}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
@@ -72,21 +75,22 @@ public sealed class PluginClientTests
         result.Marketplaces[0].Plugins[0].Interface.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].Interface!.DisplayName.Should().Be("Plugin One Display");
         result.Marketplaces[0].Plugins[0].Interface!.Capabilities.Should().Equal("issues", "pull-requests");
-        result.Marketplaces[0].Plugins[0].Interface!.ComposerIconPath.Should().Be("C:\\market\\assets\\icon.png");
-        result.Marketplaces[0].Plugins[0].Interface!.LogoPath.Should().Be("C:\\market\\assets\\logo.png");
-        result.Marketplaces[0].Plugins[0].Interface!.Screenshots.Should().Equal("C:\\market\\assets\\screenshot.png");
+        result.Marketplaces[0].Plugins[0].Interface!.ComposerIconPath.Should().Be(iconPath);
+        result.Marketplaces[0].Plugins[0].Interface!.LogoPath.Should().Be(logoPath);
+        result.Marketplaces[0].Plugins[0].Interface!.Screenshots.Should().Equal(screenshotPath);
         result.Marketplaces[0].Plugins[0].SourceInfo.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].SourceInfo!.Type.Should().Be(PluginSourceType.Local);
-        result.Marketplaces[0].Plugins[0].SourceInfo!.Path.Should().Be("C:\\plugins\\plug-1");
-        result.Marketplaces[0].Plugins[0].Source.TryGetProperty("path", out var sourcePath).Should().BeTrue();
-        sourcePath.GetString().Should().Be("C:\\plugins\\plug-1");
+        result.Marketplaces[0].Plugins[0].SourceInfo!.Path.Should().Be(sourcePath);
+        result.Marketplaces[0].Plugins[0].Source.TryGetProperty("path", out var sourcePathElem).Should().BeTrue();
+        sourcePathElem.GetString().Should().Be(sourcePath);
         rpc.LastMethod.Should().Be("plugin/list");
     }
 
     [Fact]
     public async Task ListPluginsAsync_DefaultsOptionalArraysToEmpty()
     {
-        using var doc = JsonDocument.Parse("""{"marketplaces":[{"name":"official","path":"C:\\market","plugins":[]}]}""");
+        var marketPath = XPaths.JsonAbs("market");
+        using var doc = JsonDocument.Parse($@"{{""marketplaces"":[{{""name"":""official"",""path"":""{marketPath}"",""plugins"":[]}}]}}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
@@ -125,51 +129,51 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ReadPluginAsync_ParsesDetailSurfaceAndSkillInterfaceMetadata()
     {
+        var marketPath = XPaths.JsonAbs("market");
+        var pluginSourcePath = XPaths.JsonAbs("plugins/plug-1");
         using var doc = JsonDocument.Parse(
-            """
-            {
-              "plugin": {
-                "description": "desc",
-                "marketplaceName": "official",
-                "marketplacePath": "C:\\market",
-                "skills": [
-                  {
-                    "name": "skill-a",
-                    "path": "skills\\a",
-                    "enabled": true,
-                    "description": "desc",
-                    "interface": {
-                      "displayName": "Skill A",
-                      "brandColor": "#abcdef",
-                      "defaultPrompt": "Explain the failing build",
-                      "iconLarge": "https://example.test/skill-large.png",
-                      "iconSmall": "https://example.test/skill-small.png",
-                      "shortDescription": "Skill short"
-                    }
-                  }
+            $@"{{
+              ""plugin"": {{
+                ""description"": ""desc"",
+                ""marketplaceName"": ""official"",
+                ""marketplacePath"": ""{marketPath}"",
+                ""skills"": [
+                  {{
+                    ""name"": ""skill-a"",
+                    ""path"": ""skills/a"",
+                    ""enabled"": true,
+                    ""description"": ""desc"",
+                    ""interface"": {{
+                      ""displayName"": ""Skill A"",
+                      ""brandColor"": ""#abcdef"",
+                      ""defaultPrompt"": ""Explain the failing build"",
+                      ""iconLarge"": ""https://example.test/skill-large.png"",
+                      ""iconSmall"": ""https://example.test/skill-small.png"",
+                      ""shortDescription"": ""Skill short""
+                    }}
+                  }}
                 ],
-                "summary": {
-                  "id": "plug-1",
-                  "name": "Plugin One",
-                  "installed": true,
-                  "enabled": true,
-                  "authPolicy": "ON_USE",
-                  "installPolicy": "INSTALLED_BY_DEFAULT",
-                  "source": {
-                    "type": "local",
-                    "path": "C:\\plugins\\plug-1"
-                  },
-                  "interface": {
-                    "displayName": "Plugin One Display",
-                    "capabilities": [],
-                    "screenshots": []
-                  }
-                },
-                "apps": [],
-                "mcpServers": []
-              }
-            }
-            """);
+                ""summary"": {{
+                  ""id"": ""plug-1"",
+                  ""name"": ""Plugin One"",
+                  ""installed"": true,
+                  ""enabled"": true,
+                  ""authPolicy"": ""ON_USE"",
+                  ""installPolicy"": ""INSTALLED_BY_DEFAULT"",
+                  ""source"": {{
+                    ""type"": ""local"",
+                    ""path"": ""{pluginSourcePath}""
+                  }},
+                  ""interface"": {{
+                    ""displayName"": ""Plugin One Display"",
+                    ""capabilities"": [],
+                    ""screenshots"": []
+                  }}
+                }},
+                ""apps"": [],
+                ""mcpServers"": []
+              }}
+            }}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
@@ -374,29 +378,29 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ReadPluginAsync_MissingMarketplaceName_Throws()
     {
+        var marketPath = XPaths.JsonAbs("market");
+        var pluginSourcePath = XPaths.JsonAbs("plugins/plug-1");
         using var doc = JsonDocument.Parse(
-            """
-            {
-              "plugin": {
-                "marketplacePath": "C:\\market",
-                "skills": [],
-                "apps": [],
-                "mcpServers": [],
-                "summary": {
-                  "id": "plug-1",
-                  "name": "Plugin One",
-                  "installed": true,
-                  "enabled": true,
-                  "authPolicy": "ON_USE",
-                  "installPolicy": "INSTALLED_BY_DEFAULT",
-                  "source": {
-                    "type": "local",
-                    "path": "C:\\plugins\\plug-1"
-                  }
-                }
-              }
-            }
-            """);
+            $@"{{
+              ""plugin"": {{
+                ""marketplacePath"": ""{marketPath}"",
+                ""skills"": [],
+                ""apps"": [],
+                ""mcpServers"": [],
+                ""summary"": {{
+                  ""id"": ""plug-1"",
+                  ""name"": ""Plugin One"",
+                  ""installed"": true,
+                  ""enabled"": true,
+                  ""authPolicy"": ""ON_USE"",
+                  ""installPolicy"": ""INSTALLED_BY_DEFAULT"",
+                  ""source"": {{
+                    ""type"": ""local"",
+                    ""path"": ""{pluginSourcePath}""
+                  }}
+                }}
+              }}
+            }}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 

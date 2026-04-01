@@ -3,6 +3,7 @@ using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -103,7 +104,7 @@ public sealed class AppServerNotificationMapperTests
         commandExecNotification.Stream.Should().Be("stdout");
         commandExecNotification.StreamKind.Should().Be(CommandExecOutputStreamKind.Stdout);
 
-        var fsChanged = JsonDocument.Parse("""{"watchId":"w1","changedPaths":["C:\\repo\\a.txt","C:\\repo\\b.txt"]}""").RootElement;
+        var fsChanged = JsonDocument.Parse($@"{{""watchId"":""w1"",""changedPaths"":[""{XPaths.JsonAbs("repo/a.txt")}"",""{XPaths.JsonAbs("repo/b.txt")}""]}}").RootElement;
         AppServerNotificationMapper.Map("fs/changed", fsChanged)
             .Should().BeOfType<FsChangedNotification>()
             .Which.ChangedPaths.Should().HaveCount(2);
