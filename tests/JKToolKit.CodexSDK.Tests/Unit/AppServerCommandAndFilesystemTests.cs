@@ -296,7 +296,7 @@ public sealed class AppServerCommandAndFilesystemTests
         using var doc = JsonDocument.Parse("""{"enablement":{"featureA":true,"featureB":false}}""");
         var rpc = new RecordingRpc { Result = doc.RootElement };
 
-        await using var client = CreateClient(rpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+        await using var client = CreateClient(rpc);
 
         var result = await client.SetExperimentalFeatureEnablementAsync(new ExperimentalFeatureEnablementSetOptions
         {
@@ -306,6 +306,22 @@ public sealed class AppServerCommandAndFilesystemTests
         result.Enablement.Should().Contain(new KeyValuePair<string, bool>("featureA", true));
         result.Enablement.Should().Contain(new KeyValuePair<string, bool>("featureB", false));
         rpc.LastMethod.Should().Be("experimentalFeature/enablement/set");
+    }
+
+    [Fact]
+    public async Task SetExperimentalFeatureEnablementAsync_InvalidResponse_Throws()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{"enablement":{"featureA":"yes"}}""").RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.SetExperimentalFeatureEnablementAsync(new ExperimentalFeatureEnablementSetOptions
+        {
+            Enablement = new Dictionary<string, bool> { ["featureA"] = true }
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*non-boolean enablement value*");
     }
 
     [Fact]

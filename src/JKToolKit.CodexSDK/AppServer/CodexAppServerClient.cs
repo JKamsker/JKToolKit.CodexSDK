@@ -35,8 +35,6 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerCollaborationModesClient _collaborationModesClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
 
-    private bool ExperimentalApiEnabled => _core.ExperimentalApiEnabled;
-
     internal static bool TryParseExperimentalApiRequiredMessage(string? message, out string descriptor)
     {
         const string suffix = " requires experimentalApi capability";

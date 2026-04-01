@@ -91,11 +91,6 @@ public sealed partial class CodexAppServerClient
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(options.Enablement);
 
-        if (!ExperimentalApiEnabled)
-        {
-            throw new CodexExperimentalApiRequiredException("experimentalFeature/enablement/set");
-        }
-
         var result = await _core.SendRequestAsync(
             "experimentalFeature/enablement/set",
             new
@@ -209,11 +204,11 @@ public sealed partial class CodexAppServerClient
 
     private static IReadOnlyDictionary<string, bool> ParseFeatureEnablement(JsonElement result)
     {
-        if (result.ValueKind != JsonValueKind.Object ||
-            !result.TryGetProperty("enablement", out var enablement) ||
+        EnsureObjectResponse(result, "experimentalFeature/enablement/set response");
+        if (!result.TryGetProperty("enablement", out var enablement) ||
             enablement.ValueKind != JsonValueKind.Object)
         {
-            return new Dictionary<string, bool>(StringComparer.Ordinal);
+            throw new InvalidOperationException("Missing required property 'enablement' on experimentalFeature/enablement/set response.");
         }
 
         var values = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -226,6 +221,10 @@ public sealed partial class CodexAppServerClient
             else if (property.Value.ValueKind == JsonValueKind.False)
             {
                 values[property.Name] = false;
+            }
+            else
+            {
+                throw new InvalidOperationException("experimentalFeature/enablement/set response contains a non-boolean enablement value.");
             }
         }
 
