@@ -145,7 +145,18 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
 
             if (!_options.AutoRestart && !forceRestart)
             {
-                return;
+                _inner = null;
+
+                var disconnect = trigger as CodexAppServerDisconnectedException ??
+                                 _lastDisconnect ??
+                                 new CodexAppServerDisconnectedException(
+                                     message: "Codex app-server exited and auto-restart is disabled.",
+                                     processId: null,
+                                     exitCode: null,
+                                     stderrTail: Array.Empty<string>());
+
+                Fault(disconnect);
+                throw disconnect;
             }
 
             _state = CodexAppServerConnectionState.Restarting;

@@ -169,7 +169,7 @@ internal sealed class ResilientAppServerExecutor
                 _connection.ThrowIfFaultedOrDisposed();
 
                 var ensureRestartedAsync = isDisconnect
-                    ? new Func<CancellationToken, Task>(c => _connection.EnsureRestartedAsync(version, ex, reason: "policy-ensure-restarted", c))
+                    ? new Func<CancellationToken, Task>(c => _connection.EnsureRestartedAsync(version, ex, reason: "policy-ensure-restarted", c, forceRestart: true))
                     : static _ => Task.CompletedTask;
 
                 var decision = await _options.RetryPolicy(new CodexAppServerRetryContext

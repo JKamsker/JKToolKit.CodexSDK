@@ -332,6 +332,60 @@ public sealed class ResilientCodexAppServerClientTests
     }
 
     [Fact]
+    public async Task ExitTask_WhenInnerExits_AndAutoRestartDisabled_FaultsClient()
+    {
+        var adapter = new FakeAdapter();
+        var factory = new SequenceFactory(adapter);
+        var options = new CodexAppServerResilienceOptions { AutoRestart = false };
+
+        await using var client = await StartAsync(factory, options);
+
+        adapter.SignalExit();
+
+        var act = async () => await client.ExitTask;
+
+        await act.Should().ThrowAsync<CodexAppServerDisconnectedException>();
+        client.State.Should().Be(CodexAppServerConnectionState.Faulted);
+    }
+
+    [Fact]
+    public async Task CallAsync_WhenDisconnected_AndAutoRestartDisabled_CanReconnectViaRetryPolicyHook()
+    {
+        var first = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) => throw Disconnect("boom", exitCode: 99)
+        };
+
+        var second = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) =>
+            {
+                using var doc = JsonDocument.Parse("""{"ok":true}""");
+                return Task.FromResult(doc.RootElement.Clone());
+            }
+        };
+
+        var factory = new SequenceFactory(first, second);
+        var options = new CodexAppServerResilienceOptions
+        {
+            AutoRestart = false,
+            RetryPolicy = async ctx =>
+            {
+                await ctx.EnsureRestartedAsync(ctx.CancellationToken);
+                return CodexAppServerRetryDecision.Retry();
+            }
+        };
+
+        await using var client = await StartAsync(factory, options);
+
+        var result = await client.CallAsync("ping", @params: null);
+
+        result.GetProperty("ok").GetBoolean().Should().BeTrue();
+        factory.StartCount.Should().Be(2);
+        client.RestartCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task Notifications_ContinueAcrossRestarts_AndEmitRestartMarker()
     {
         var first = new FakeAdapter
@@ -979,6 +1033,17 @@ public sealed class ResilientCodexAppServerClientTests
         {
             _exit.TrySetResult();
             return ValueTask.CompletedTask;
+        }
+
+        public void SignalExit(Exception? error = null)
+        {
+            if (error is null)
+            {
+                _exit.TrySetResult();
+                return;
+            }
+
+            _exit.TrySetException(error);
         }
 
         private static Task NotSupported() =>
