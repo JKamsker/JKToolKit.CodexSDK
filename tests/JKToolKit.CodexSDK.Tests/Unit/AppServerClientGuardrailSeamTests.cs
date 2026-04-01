@@ -357,6 +357,25 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task StartThreadRealtime_WhenPromptIsWhitespace_PreservesWireValue()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StartThreadRealtimeAsync("thr_1", "   ", sessionId: null);
+
+        rpc.LastMethod.Should().Be("thread/realtime/start");
+        ((ThreadRealtimeStartParams)rpc.LastParams!).Prompt.Should().Be("   ");
+    }
+
+    [Fact]
     public async Task ListCollaborationModes_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
     {
         var rpc = new FakeRpc();
@@ -453,6 +472,25 @@ public sealed class AppServerClientGuardrailSeamTests
         var p = (ThreadRealtimeAppendTextParams)rpc.LastParams!;
         p.ThreadId.Should().Be("thr_1");
         p.Text.Should().Be("hello");
+    }
+
+    [Fact]
+    public async Task AppendThreadRealtimeText_WhenTextIsWhitespace_PreservesWireValue()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.AppendThreadRealtimeTextAsync("thr_1", "   ");
+
+        rpc.LastMethod.Should().Be("thread/realtime/appendText");
+        ((ThreadRealtimeAppendTextParams)rpc.LastParams!).Text.Should().Be("   ");
     }
 
     [Fact]

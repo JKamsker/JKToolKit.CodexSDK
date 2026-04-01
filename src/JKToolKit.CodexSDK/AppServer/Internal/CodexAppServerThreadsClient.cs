@@ -227,8 +227,7 @@ internal sealed class CodexAppServerThreadsClient
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-        if (string.IsNullOrWhiteSpace(prompt))
-            throw new ArgumentException("Prompt cannot be empty or whitespace.", nameof(prompt));
+        ArgumentNullException.ThrowIfNull(prompt);
 
         if (!_experimentalApiEnabled())
         {
@@ -271,8 +270,7 @@ internal sealed class CodexAppServerThreadsClient
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException("Text cannot be empty or whitespace.", nameof(text));
+        ArgumentNullException.ThrowIfNull(text);
 
         if (!_experimentalApiEnabled())
         {
