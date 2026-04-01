@@ -388,19 +388,19 @@ Built-in handlers:
 
 - `AlwaysApproveHandler`
 - `AlwaysDenyHandler`
-- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console; supports tool requests and token refresh prompts)
+- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console; supports approval requests, MCP elicitations, tool requests, and token refresh prompts)
 
 If no handler is configured, server requests are rejected with a JSON-RPC error to avoid deadlocks.
 
 Notes:
 
-- `AlwaysApproveHandler` / `AlwaysDenyHandler` cover only approval request methods.
+- `AlwaysApproveHandler` / `AlwaysDenyHandler` cover approval requests including `item/permissions/requestApproval` and `mcpServer/elicitation/request`.
 - `PromptConsoleApprovalHandler` additionally supports `item/tool/requestUserInput`, `item/tool/call`, and `account/chatgptAuthTokens/refresh` by prompting on the console.
 - For production usage (especially `item/tool/call` and token refresh), implement a custom handler to avoid interactive prompts and to integrate with your app's auth/tooling.
 
 Experimental helpers:
 
-- The SDK exposes wire DTOs under `JKToolKit.CodexSDK.AppServer.Protocol.V2` for server request payloads such as `item/tool/requestUserInput` and `item/tool/call`.
+- The SDK exposes wire DTOs under `JKToolKit.CodexSDK.AppServer.Protocol.V2` for server request payloads such as `item/permissions/requestApproval`, `mcpServer/elicitation/request`, `item/tool/requestUserInput`, and `item/tool/call`.
 
 ### `ApprovalPolicy` vs `AskForApproval`
 

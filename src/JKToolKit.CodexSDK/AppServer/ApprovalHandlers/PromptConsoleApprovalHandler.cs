@@ -14,6 +14,16 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
     /// <inheritdoc />
     public ValueTask<JsonElement> HandleAsync(string method, JsonElement? @params, CancellationToken ct)
     {
+        if (method == "mcpServer/elicitation/request")
+        {
+            return ValueTask.FromResult(HandleMcpServerElicitationRequest(@params));
+        }
+
+        if (method == "item/permissions/requestApproval")
+        {
+            return ValueTask.FromResult(HandlePermissionsRequestApproval(@params));
+        }
+
         if (method == "item/tool/requestUserInput")
         {
             return ValueTask.FromResult(HandleRequestUserInput(@params));
@@ -159,6 +169,96 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
         }
     }
 
+    private static JsonElement HandlePermissionsRequestApproval(JsonElement? @params)
+    {
+        if (@params is not { } raw)
+        {
+            throw new InvalidOperationException("item/permissions/requestApproval missing params.");
+        }
+
+        var request = raw.Deserialize<PermissionsRequestApprovalParams>(SerializerOptions) ??
+                      throw new InvalidOperationException("Failed to deserialize item/permissions/requestApproval params.");
+
+        Console.Error.WriteLine("Server request: item/permissions/requestApproval");
+        Console.Error.WriteLine($"threadId={request.ThreadId} turnId={request.TurnId} itemId={request.ItemId}");
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            Console.Error.WriteLine($"reason={request.Reason}");
+        }
+
+        Console.Error.WriteLine(request.Permissions.ToString());
+        Console.Error.Write("Grant requested permissions? [y/N]: ");
+        var answer = Console.ReadLine();
+        var approved = string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(answer, "yes", StringComparison.OrdinalIgnoreCase);
+
+        if (!approved)
+        {
+            return JsonSerializer.SerializeToElement(
+                new PermissionsRequestApprovalResponse
+                {
+                    Permissions = EmptyObject(),
+                    Scope = PermissionGrantScope.Turn
+                },
+                SerializerOptions);
+        }
+
+        Console.Error.Write("Persist grant for session? [y/N]: ");
+        var scopeAnswer = Console.ReadLine();
+        var scope = string.Equals(scopeAnswer, "y", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(scopeAnswer, "yes", StringComparison.OrdinalIgnoreCase)
+            ? PermissionGrantScope.Session
+            : PermissionGrantScope.Turn;
+
+        return JsonSerializer.SerializeToElement(
+            new PermissionsRequestApprovalResponse
+            {
+                Permissions = request.Permissions,
+                Scope = scope
+            },
+            SerializerOptions);
+    }
+
+    private static JsonElement HandleMcpServerElicitationRequest(JsonElement? @params)
+    {
+        if (@params is not { } raw)
+        {
+            throw new InvalidOperationException("mcpServer/elicitation/request missing params.");
+        }
+
+        var request = raw.Deserialize<McpServerElicitationRequestParams>(SerializerOptions) ??
+                      throw new InvalidOperationException("Failed to deserialize mcpServer/elicitation/request params.");
+
+        Console.Error.WriteLine("Server request: mcpServer/elicitation/request");
+        Console.Error.WriteLine($"threadId={request.ThreadId} turnId={request.TurnId ?? "n/a"} serverName={request.ServerName} mode={request.Mode}");
+        Console.Error.WriteLine(request.Message);
+
+        if (request.Mode == McpServerElicitationMode.Form && request.RequestedSchema is { } requestedSchema)
+        {
+            Console.Error.WriteLine(requestedSchema.ToString());
+        }
+
+        if (request.Mode == McpServerElicitationMode.Url && !string.IsNullOrWhiteSpace(request.Url))
+        {
+            Console.Error.WriteLine($"url={request.Url}");
+            Console.Error.WriteLine($"elicitationId={request.ElicitationId ?? "n/a"}");
+        }
+
+        var action = ReadElicitationAction();
+        var content = action == McpServerElicitationAction.Accept
+            ? ReadElicitationContent(request.Mode)
+            : null;
+
+        return JsonSerializer.SerializeToElement(
+            new McpServerElicitationRequestResponse
+            {
+                Action = action,
+                Content = content,
+                Meta = null
+            },
+            SerializerOptions);
+    }
+
     private static JsonElement HandleRequestUserInput(JsonElement? @params)
     {
         if (@params is not { } raw)
@@ -222,6 +322,50 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
         }
 
         return JsonSerializer.SerializeToElement(new ToolRequestUserInputResponse { Answers = answers }, SerializerOptions);
+    }
+
+    private static McpServerElicitationAction ReadElicitationAction()
+    {
+        Console.Error.Write("Action? [a]ccept/[d]ecline/[c]ancel (default decline): ");
+        var answer = (Console.ReadLine() ?? string.Empty).Trim();
+
+        return answer.ToLowerInvariant() switch
+        {
+            "a" or "accept" or "y" or "yes" => McpServerElicitationAction.Accept,
+            "c" or "cancel" => McpServerElicitationAction.Cancel,
+            _ => McpServerElicitationAction.Decline
+        };
+    }
+
+    private static JsonElement? ReadElicitationContent(McpServerElicitationMode mode)
+    {
+        if (mode == McpServerElicitationMode.Url)
+        {
+            return null;
+        }
+
+        Console.Error.Write("Accepted form content as JSON (blank for {}): ");
+        var line = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return EmptyObject();
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(line);
+            return doc.RootElement.Clone();
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException("Accepted elicitation content must be valid JSON.", ex);
+        }
+    }
+
+    private static JsonElement EmptyObject()
+    {
+        using var doc = JsonDocument.Parse("{}");
+        return doc.RootElement.Clone();
     }
 }
 
