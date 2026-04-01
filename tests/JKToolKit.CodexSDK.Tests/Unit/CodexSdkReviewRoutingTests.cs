@@ -48,7 +48,11 @@ public sealed class CodexSdkReviewRoutingTests
     {
         var rpc = new SequencedRpc();
         rpc.EnqueueResult("thread/start", JsonSerializer.SerializeToElement(new { id = "thr_1" }));
-        rpc.EnqueueResult("review/start", JsonSerializer.SerializeToElement(new { turn = new { id = "turn_1", threadId = "thr_1" } }));
+        rpc.EnqueueResult("review/start", JsonSerializer.SerializeToElement(new
+        {
+            reviewThreadId = "thr_1",
+            turn = new { id = "turn_1", threadId = "thr_1" }
+        }));
 
         await using var appClient = new CodexAppServerClient(
             new CodexAppServerClientOptions(),
@@ -77,7 +81,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.Mode.Should().Be(CodexSdkReviewMode.AppServer);
         routed.AppServer.Should().NotBeNull();
         routed.AppServer!.Thread.Id.Should().Be("thr_1");
-        routed.AppServer.BootstrapThread.Id.Should().Be("thr_1");
+        routed.AppServer.SourceThread.Id.Should().Be("thr_1");
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();
@@ -122,7 +126,7 @@ public sealed class CodexSdkReviewRoutingTests
 
         routed.AppServer.Should().NotBeNull();
         routed.AppServer!.Thread.Id.Should().Be("thr_review");
-        routed.AppServer.BootstrapThread.Id.Should().Be("thr_bootstrap");
+        routed.AppServer.SourceThread.Id.Should().Be("thr_bootstrap");
         routed.AppServer.Review.ReviewThreadId.Should().Be("thr_review");
 
         await routed.DisposeAsync();
@@ -162,7 +166,7 @@ public sealed class CodexSdkReviewRoutingTests
 
         routed.AppServer.Should().NotBeNull();
         routed.AppServer!.Thread.Id.Should().Be("thr_existing");
-        routed.AppServer.BootstrapThread.Id.Should().Be("thr_existing");
+        routed.AppServer.SourceThread.Id.Should().Be("thr_existing");
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();

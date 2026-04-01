@@ -82,7 +82,7 @@ public sealed class CodexSdk : IAsyncDisposable
         Exec.ReviewAsync(options, ct);
 
     /// <summary>
-    /// Starts an app-server review (<c>review/start</c>) by creating a thread and returning a running turn.
+    /// Starts an app-server review (<c>review/start</c>) using either a new or existing source thread and returns a running turn.
     /// </summary>
     public async Task<CodexSdkAppServerReviewSession> ReviewAppServerAsync(CodexSdkAppServerReviewOptions options, CancellationToken ct = default)
     {

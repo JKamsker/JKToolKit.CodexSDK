@@ -105,12 +105,12 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
     internal CodexSdkAppServerReviewSession(
         CodexAppServerClient client,
         CodexThread thread,
-        CodexThread bootstrapThread,
+        CodexThread sourceThread,
         ReviewStartResult review)
     {
         Client = client;
         Thread = thread;
-        BootstrapThread = bootstrapThread;
+        SourceThread = sourceThread;
         Review = review;
     }
 
@@ -128,7 +128,13 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
     /// Gets the source thread used to submit the review.
     /// For inline reviews this matches <see cref="Thread"/>; for detached reviews it is the source thread.
     /// </summary>
-    public CodexThread BootstrapThread { get; }
+    public CodexThread SourceThread { get; }
+
+    /// <summary>
+    /// Gets the source thread used to submit the review.
+    /// </summary>
+    [Obsolete("Use SourceThread. BootstrapThread is kept as a compatibility alias.")]
+    public CodexThread BootstrapThread => SourceThread;
 
     /// <summary>
     /// Gets the review start result, including the running review turn handle.

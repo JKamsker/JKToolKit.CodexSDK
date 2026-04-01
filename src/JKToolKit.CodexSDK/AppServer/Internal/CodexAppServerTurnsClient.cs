@@ -142,9 +142,16 @@ internal sealed class CodexAppServerTurnsClient
                 CodexAppServerClient.BuildTurnSteerParams(options),
                 ct);
 
+            var turnId = CodexAppServerClientJson.ExtractTurnId(raw);
+            if (string.IsNullOrWhiteSpace(turnId))
+            {
+                throw new InvalidOperationException(
+                    $"turn/steer returned no turn id. Raw result: {raw}");
+            }
+
             return new TurnSteerResult
             {
-                TurnId = CodexAppServerClientJson.ExtractTurnId(raw) ?? options.ExpectedTurnId,
+                TurnId = turnId,
                 Raw = raw
             };
         }
@@ -189,10 +196,7 @@ internal sealed class CodexAppServerTurnsClient
         }
 
         var turnObj = CodexAppServerClientJson.TryGetObject(result, "turn") ?? result;
-        var turnThreadId = CodexAppServerClientJson.ExtractThreadId(turnObj) ??
-                           CodexAppServerClientJson.ExtractThreadId(result) ??
-                           options.ThreadId;
-        var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId") ?? turnThreadId;
+        var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId");
         if (string.IsNullOrWhiteSpace(reviewThreadId))
         {
             throw new InvalidOperationException(

@@ -95,7 +95,7 @@ public sealed class SdkReviewRouteCommand : AsyncCommand<SdkReviewRouteSettings>
             {
                 var session = routed.AppServer ?? throw new InvalidOperationException("Expected AppServer review session.");
                 Console.WriteLine(
-                    $"[app-server] thread={session.Thread.Id} bootstrapThread={session.BootstrapThread.Id} reviewThread={session.Review.ReviewThreadId}");
+                    $"[app-server] thread={session.Thread.Id} sourceThread={session.SourceThread.Id} reviewThread={session.Review.ReviewThreadId}");
 
                 await foreach (var ev in session.Review.Turn.Events(ct))
                 {
