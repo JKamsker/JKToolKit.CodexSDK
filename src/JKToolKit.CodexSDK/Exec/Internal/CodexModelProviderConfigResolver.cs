@@ -36,6 +36,7 @@ internal static partial class CodexModelProviderConfigResolver
         string? topLevelProfile = null;
         string? topLevelModelProvider = null;
         string? currentProfileSection = null;
+        var insideAnySection = false;
         var profileProviders = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var rawLine in lines)
@@ -53,6 +54,7 @@ internal static partial class CodexModelProviderConfigResolver
 
             if (TryParseSection(line, out var sectionName))
             {
+                insideAnySection = true;
                 currentProfileSection = sectionName;
                 continue;
             }
@@ -62,7 +64,10 @@ internal static partial class CodexModelProviderConfigResolver
                 continue;
             }
 
-            if (currentProfileSection is null)
+            // Only treat keys as top-level when we haven't entered any section yet.
+            // Non-profile sections (e.g. [model_providers.openai]) set currentProfileSection
+            // to null but should NOT be treated as top-level context.
+            if (!insideAnySection)
             {
                 if (string.Equals(key, "profile", StringComparison.Ordinal))
                 {
@@ -76,7 +81,8 @@ internal static partial class CodexModelProviderConfigResolver
                 continue;
             }
 
-            if (string.Equals(key, "model_provider", StringComparison.Ordinal))
+            if (currentProfileSection is not null &&
+                string.Equals(key, "model_provider", StringComparison.Ordinal))
             {
                 profileProviders[currentProfileSection] = value;
             }

@@ -43,7 +43,21 @@ internal sealed partial class CodexSessionRunner
 
     internal async Task<ICodexSessionHandle> ResumeSessionAsync(SessionId sessionId, CancellationToken cancellationToken)
     {
-        return await ResumeSessionAsync(CodexResumeTarget.BySelector(sessionId.Value, includeAllSessions: true), workingDirectory: null, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        _clientOptions.Validate();
+
+        var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
+        var logPath = await _sessionLocator.FindSessionLogAsync(sessionId, sessionsRoot, cancellationToken).ConfigureAwait(false);
+
+        return await CodexSessionRunnerLogHelpers.CreateHandleFromLogAsync(
+            logPath,
+            cancellationToken,
+            _tailer,
+            _parser,
+            _processLauncher,
+            _clientOptions.ProcessExitTimeout,
+            _loggerFactory,
+            _logger).ConfigureAwait(false);
     }
 
     internal async Task<ICodexSessionHandle> ResumeSessionAsync(CodexResumeTarget target, string? workingDirectory, CancellationToken cancellationToken)
