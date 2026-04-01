@@ -196,10 +196,10 @@ internal static class CodexAppServerClientPluginParsers
     {
         return new PluginSkillDescriptor
         {
-            Name = CodexAppServerClientJson.GetStringOrNull(item, "name") ?? string.Empty,
-            Path = CodexAppServerClientJson.GetStringOrNull(item, "path") ?? string.Empty,
-            Enabled = CodexAppServerClientJson.GetBoolOrNull(item, "enabled") == true,
-            Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin skill"),
+            Path = CodexAppServerClientJson.GetRequiredString(item, "path", "plugin skill"),
+            Enabled = CodexAppServerClientJson.GetRequiredBool(item, "enabled", "plugin skill"),
+            Description = CodexAppServerClientJson.GetRequiredString(item, "description", "plugin skill"),
             ShortDescription = CodexAppServerClientJson.GetStringOrNull(item, "shortDescription"),
             Interface = ParsePluginSkillInterface(item),
             Raw = item.Clone()

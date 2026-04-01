@@ -164,12 +164,17 @@ internal static partial class AppServerNotificationMapper
                 Delta: GetString(p, "delta") ?? string.Empty,
                 Params: p),
 
-            "command/exec/outputDelta" => new CommandExecOutputDeltaNotification(
-                ProcessId: GetString(p, "processId") ?? string.Empty,
-                Stream: GetString(p, "stream") ?? string.Empty,
-                DeltaBase64: GetString(p, "deltaBase64") ?? string.Empty,
-                CapReached: GetBool(p, "capReached"),
-                Params: p),
+            "command/exec/outputDelta" when
+                TryGetRequiredString(p, "processId", out var processId) &&
+                TryGetRequiredString(p, "stream", out var stream) &&
+                TryGetRequiredString(p, "deltaBase64", out var deltaBase64) &&
+                TryGetRequiredBool(p, "capReached", out var capReached)
+                => new CommandExecOutputDeltaNotification(
+                    ProcessId: processId,
+                    Stream: stream,
+                    DeltaBase64: deltaBase64,
+                    CapReached: capReached,
+                    Params: p),
 
             "rawResponseItem/completed" => new RawResponseItemCompletedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -336,6 +341,30 @@ internal static partial class AppServerNotificationMapper
 
         value = prop.GetString() ?? string.Empty;
         return true;
+    }
+
+    private static bool TryGetRequiredBool(JsonElement obj, string propertyName, out bool value)
+    {
+        value = default;
+
+        if (!obj.TryGetProperty(propertyName, out var prop))
+        {
+            return false;
+        }
+
+        if (prop.ValueKind == JsonValueKind.True)
+        {
+            value = true;
+            return true;
+        }
+
+        if (prop.ValueKind == JsonValueKind.False)
+        {
+            value = false;
+            return true;
+        }
+
+        return false;
     }
 
     private static string? GetStringOrNull(JsonElement obj, string propertyName) =>

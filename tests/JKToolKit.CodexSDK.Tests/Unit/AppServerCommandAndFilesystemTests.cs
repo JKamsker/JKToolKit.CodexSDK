@@ -195,6 +195,23 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task ThreadShellCommandAsync_RequiresObjectResponse()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("null").RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ThreadShellCommandAsync(new ThreadShellCommandOptions
+        {
+            ThreadId = "thr-1",
+            Command = "git status"
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*thread/shellCommand response*JSON object*");
+    }
+
+    [Fact]
     public async Task UpdateThreadMetadataAsync_SendsPatchFlags_AndParsesThread()
     {
         using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1","gitInfo":{"branch":"main","originUrl":"https://example.invalid/repo.git","sha":"abc123"}}}""");

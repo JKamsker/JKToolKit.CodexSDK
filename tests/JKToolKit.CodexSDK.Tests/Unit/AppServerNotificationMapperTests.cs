@@ -145,6 +145,15 @@ public sealed class AppServerNotificationMapperTests
             .Which.RequestId.StringValue.Should().Be("req-1");
     }
 
+    [Fact]
+    public void Map_CommandExecOutputDelta_WithMalformedPayload_ReturnsUnknown()
+    {
+        var invalid = JsonDocument.Parse("""{"processId":"p1","stream":"stdout"}""").RootElement;
+
+        AppServerNotificationMapper.Map("command/exec/outputDelta", invalid)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
     [Theory]
     [InlineData("authStatusChange")]
     [InlineData("loginChatGptComplete")]

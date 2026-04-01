@@ -163,6 +163,49 @@ public sealed class PluginClientTests
     }
 
     [Fact]
+    public async Task ReadPluginAsync_MissingRequiredSkillFields_Throws()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "plugin": {
+                "marketplaceName": "official",
+                "marketplacePath": "C:\\market",
+                "skills": [
+                  {
+                    "name": "skill-a",
+                    "enabled": true
+                  }
+                ],
+                "summary": {
+                  "id": "plug-1",
+                  "name": "Plugin One",
+                  "installed": true,
+                  "enabled": true,
+                  "authPolicy": "ON_USE",
+                  "installPolicy": "INSTALLED_BY_DEFAULT",
+                  "source": {
+                    "type": "local",
+                    "path": "C:\\plugins\\plug-1"
+                  }
+                }
+              }
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ReadPluginAsync(new PluginReadOptions
+        {
+            MarketplacePath = "C:\\market",
+            PluginName = "plugin-one"
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*path*");
+    }
+
+    [Fact]
     public async Task InstallPluginAsync_ParsesTypedAuthPolicyAndDefaultsAppsNeedingAuth()
     {
         using var doc = JsonDocument.Parse("""{"authPolicy":"ON_INSTALL","appsNeedingAuth":[]}""");

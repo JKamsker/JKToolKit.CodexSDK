@@ -48,6 +48,7 @@ public sealed partial class CodexAppServerClient
             },
             ct).ConfigureAwait(false);
 
+        EnsureObjectResponse(result, "thread/shellCommand response");
         return new ThreadShellCommandResult
         {
             Raw = result
@@ -229,5 +230,13 @@ public sealed partial class CodexAppServerClient
         }
 
         return values;
+    }
+
+    private static void EnsureObjectResponse(JsonElement result, string context)
+    {
+        if (result.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"{context} must be a JSON object.");
+        }
     }
 }
