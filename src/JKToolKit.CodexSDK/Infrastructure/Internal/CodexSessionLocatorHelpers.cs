@@ -226,7 +226,7 @@ internal static class CodexSessionLocatorHelpers
             yield break;
         }
 
-        var candidates = new List<(string FilePath, DateTime? CreatedAtUtc)>();
+        var candidates = new List<(string FilePath, DateTime? CreatedAtUtc, DateTime? FileNameTimestamp, string? Uuid)>();
 
         foreach (var file in files)
         {
@@ -235,7 +235,7 @@ internal static class CodexSessionLocatorHelpers
                 continue;
             }
 
-            var fileName = Path.GetFileName(file);
+            var fileName = Path.GetFileNameWithoutExtension(file);
             if (!sessionFilePattern.IsMatch(fileName))
             {
                 logger.LogTrace("Skipping non-session file {FilePath}", file);
@@ -243,15 +243,42 @@ internal static class CodexSessionLocatorHelpers
             }
 
             var createdAtUtc = TryGetCreationTimeUtc(fileSystem, logger, file);
-            candidates.Add((file, createdAtUtc));
+            var (fileNameTimestamp, uuid) = TryParseFileNameTimestampAndUuid(fileName);
+            candidates.Add((file, createdAtUtc, fileNameTimestamp, uuid));
         }
 
+        // Upstream orders by filename-embedded timestamp descending, then UUID descending.
+        // Fall back to OS creation time when the filename does not contain a parseable timestamp.
         foreach (var c in candidates
-                     .OrderByDescending(c => c.CreatedAtUtc ?? DateTime.MinValue)
-                     .ThenBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
+                     .OrderByDescending(c => c.FileNameTimestamp ?? c.CreatedAtUtc ?? DateTime.MinValue)
+                     .ThenByDescending(c => c.Uuid, StringComparer.OrdinalIgnoreCase))
         {
-            yield return c;
+            yield return (c.FilePath, c.CreatedAtUtc);
         }
+    }
+
+    private static (DateTime? Timestamp, string? Uuid) TryParseFileNameTimestampAndUuid(string fileNameWithoutExtension)
+    {
+        var match = RolloutTimestampedFileNamePattern.Match(fileNameWithoutExtension);
+        if (!match.Success)
+        {
+            return (null, null);
+        }
+
+        // Format: rollout-YYYY-MM-DDThh-mm-ss-<uuid>
+        // Group 1: timestamp part  Group 2: uuid part
+        DateTime? ts = null;
+        if (DateTime.TryParseExact(
+                match.Groups[1].Value,
+                "yyyy-MM-dd'T'HH-mm-ss",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out var parsed))
+        {
+            ts = parsed;
+        }
+
+        return (ts, match.Groups[2].Value);
     }
 
     internal static DateTime? TryGetCreationTimeUtc(IFileSystem fileSystem, ILogger logger, string filePath)
