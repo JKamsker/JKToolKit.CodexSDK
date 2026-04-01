@@ -73,6 +73,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.CommandExecWriteAsync),
         nameof(CodexAppServerClient.CommandExecResizeAsync),
         nameof(CodexAppServerClient.CommandExecTerminateAsync),
+        nameof(CodexAppServerClient.SetExperimentalFeatureEnablementAsync),
         nameof(CodexAppServerClient.FsWatchAsync),
         nameof(CodexAppServerClient.FsUnwatchAsync),
         nameof(CodexAppServerClient.ListCollaborationModesAsync),
@@ -499,6 +500,15 @@ public sealed class ResilientCodexAppServerClientTests
                     Raw = EmptyJson()
                 });
             },
+            SetExperimentalFeatureEnablementAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.SetExperimentalFeatureEnablementAsync));
+                return Task.FromResult(new ExperimentalFeatureEnablementSetResult
+                {
+                    Enablement = new Dictionary<string, bool> { ["feature-x"] = true },
+                    Raw = EmptyJson()
+                });
+            },
             FsReadFileAsyncImpl = (_, _) =>
             {
                 invoked.Add(nameof(ICodexAppServerClientAdapter.FsReadFileAsync));
@@ -559,6 +569,10 @@ public sealed class ResilientCodexAppServerClientTests
             ThreadId = "thread-1",
             GitInfo = new ThreadGitInfoUpdate { UpdateBranch = true, Branch = "main" }
         });
+        _ = await client.SetExperimentalFeatureEnablementAsync(new ExperimentalFeatureEnablementSetOptions
+        {
+            Enablement = new Dictionary<string, bool> { ["feature-x"] = true }
+        });
         _ = await client.FsReadFileAsync(new FsReadFileOptions { Path = "C:\\repo\\a.txt" });
         _ = await client.FsWriteFileAsync(new FsWriteFileOptions { Path = "C:\\repo\\a.txt", DataBase64 = "aGVsbG8=" });
         _ = await client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = "C:\\repo\\dir" });
@@ -582,6 +596,7 @@ public sealed class ResilientCodexAppServerClientTests
             nameof(ICodexAppServerClientAdapter.StartFuzzyFileSearchSessionAsync),
             nameof(ICodexAppServerClientAdapter.ThreadShellCommandAsync),
             nameof(ICodexAppServerClientAdapter.UpdateThreadMetadataAsync),
+            nameof(ICodexAppServerClientAdapter.SetExperimentalFeatureEnablementAsync),
             nameof(ICodexAppServerClientAdapter.FsReadFileAsync),
             nameof(ICodexAppServerClientAdapter.FsWriteFileAsync),
             nameof(ICodexAppServerClientAdapter.FsCreateDirectoryAsync),
@@ -857,6 +872,8 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Func<ThreadMetadataUpdateOptions, CancellationToken, Task<ThreadMetadataUpdateResult>>? UpdateThreadMetadataAsyncImpl { get; init; }
 
+        public Func<ExperimentalFeatureEnablementSetOptions, CancellationToken, Task<ExperimentalFeatureEnablementSetResult>>? SetExperimentalFeatureEnablementAsyncImpl { get; init; }
+
         public Func<FsReadFileOptions, CancellationToken, Task<FsReadFileResult>>? FsReadFileAsyncImpl { get; init; }
 
         public Func<FsWriteFileOptions, CancellationToken, Task<FsWriteFileResult>>? FsWriteFileAsyncImpl { get; init; }
@@ -1102,6 +1119,9 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<ThreadMetadataUpdateResult> UpdateThreadMetadataAsync(ThreadMetadataUpdateOptions options, CancellationToken ct) =>
             UpdateThreadMetadataAsyncImpl?.Invoke(options, ct) ?? NotSupported<ThreadMetadataUpdateResult>();
+
+        public Task<ExperimentalFeatureEnablementSetResult> SetExperimentalFeatureEnablementAsync(ExperimentalFeatureEnablementSetOptions options, CancellationToken ct) =>
+            SetExperimentalFeatureEnablementAsyncImpl?.Invoke(options, ct) ?? NotSupported<ExperimentalFeatureEnablementSetResult>();
 
         public Task<FsReadFileResult> FsReadFileAsync(FsReadFileOptions options, CancellationToken ct) =>
             FsReadFileAsyncImpl?.Invoke(options, ct) ?? NotSupported<FsReadFileResult>();

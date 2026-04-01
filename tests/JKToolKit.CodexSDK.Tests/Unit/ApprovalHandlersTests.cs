@@ -37,6 +37,53 @@ public sealed class ApprovalHandlersTests
     }
 
     [Fact]
+    public async Task AlwaysApproveHandler_UsesAvailableCommandDecision_WhenProvided()
+    {
+        var handler = new AlwaysApproveHandler();
+        var request = JsonDocument.Parse(
+            """
+            {
+              "threadId": "thr",
+              "turnId": "turn",
+              "itemId": "item",
+              "availableDecisions": [
+                { "acceptWithExecpolicyAmendment": { "rule": "allow" } },
+                "decline"
+              ]
+            }
+            """).RootElement;
+
+        var payload = await handler.HandleAsync("item/commandExecution/requestApproval", request, ct: default);
+
+        payload.GetProperty("decision")
+            .GetProperty("acceptWithExecpolicyAmendment")
+            .GetProperty("rule")
+            .GetString()
+            .Should().Be("allow");
+    }
+
+    [Fact]
+    public async Task AlwaysDenyHandler_UsesAvailableFileChangeDecision_WhenDeclineUnavailable()
+    {
+        var handler = new AlwaysDenyHandler();
+        var request = JsonDocument.Parse(
+            """
+            {
+              "threadId": "thr",
+              "turnId": "turn",
+              "itemId": "item",
+              "availableDecisions": [
+                "cancel"
+              ]
+            }
+            """).RootElement;
+
+        var payload = await handler.HandleAsync("item/fileChange/requestApproval", request, ct: default);
+
+        payload.GetProperty("decision").GetString().Should().Be("cancel");
+    }
+
+    [Fact]
     public async Task AlwaysApproveHandler_GrantsRequestedPermissions()
     {
         var handler = new AlwaysApproveHandler();

@@ -107,6 +107,15 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
             .Should().BeOfType<UnknownNotification>();
     }
 
+    [Fact]
+    public void Map_ServerRequestResolved_WithNonScalarRequestId_ReturnsUnknown()
+    {
+        var payload = Parse("""{"threadId":"thread-1","requestId":{"nested":true}}""");
+
+        AppServerNotificationMapper.Map("serverRequest/resolved", payload)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
     private static JsonElement Parse(string json)
     {
         using var doc = JsonDocument.Parse(json);

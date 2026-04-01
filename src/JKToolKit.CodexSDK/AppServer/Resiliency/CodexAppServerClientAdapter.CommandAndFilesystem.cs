@@ -14,6 +14,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<ThreadMetadataUpdateResult> UpdateThreadMetadataAsync(ThreadMetadataUpdateOptions options, CancellationToken ct);
 
+    Task<ExperimentalFeatureEnablementSetResult> SetExperimentalFeatureEnablementAsync(ExperimentalFeatureEnablementSetOptions options, CancellationToken ct);
+
     Task<FsReadFileResult> FsReadFileAsync(FsReadFileOptions options, CancellationToken ct);
 
     Task<FsWriteFileResult> FsWriteFileAsync(FsWriteFileOptions options, CancellationToken ct);
@@ -46,6 +48,8 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<ThreadShellCommandResult> ThreadShellCommandAsync(ThreadShellCommandOptions options, CancellationToken ct) => _inner.ThreadShellCommandAsync(options, ct);
 
     public Task<ThreadMetadataUpdateResult> UpdateThreadMetadataAsync(ThreadMetadataUpdateOptions options, CancellationToken ct) => _inner.UpdateThreadMetadataAsync(options, ct);
+
+    public Task<ExperimentalFeatureEnablementSetResult> SetExperimentalFeatureEnablementAsync(ExperimentalFeatureEnablementSetOptions options, CancellationToken ct) => _inner.SetExperimentalFeatureEnablementAsync(options, ct);
 
     public Task<FsReadFileResult> FsReadFileAsync(FsReadFileOptions options, CancellationToken ct) => _inner.FsReadFileAsync(options, ct);
 

@@ -13,23 +13,27 @@ public sealed record class ServerRequestResolvedNotification : AppServerNotifica
     public string ThreadId { get; }
 
     /// <summary>
-    /// Gets the raw request identifier payload.
+    /// Gets the typed request identifier.
     /// </summary>
-    public JsonElement RequestId { get; }
+    public CodexRequestId RequestId { get; }
 
     /// <summary>
-    /// Gets a scalar request identifier when the upstream payload used a scalar value.
+    /// Gets the raw request identifier payload.
     /// </summary>
-    public string? RequestIdValue { get; }
+    public JsonElement RequestIdRaw => RequestId.Raw;
+
+    /// <summary>
+    /// Gets the request identifier as text.
+    /// </summary>
+    public string RequestIdValue => RequestId.ValueText;
 
     /// <summary>
     /// Initializes a new instance of <see cref="ServerRequestResolvedNotification"/>.
     /// </summary>
-    public ServerRequestResolvedNotification(string threadId, JsonElement requestId, string? requestIdValue, JsonElement @params)
+    public ServerRequestResolvedNotification(string threadId, CodexRequestId requestId, JsonElement @params)
         : base("serverRequest/resolved", @params)
     {
         ThreadId = threadId;
         RequestId = requestId;
-        RequestIdValue = requestIdValue;
     }
 }

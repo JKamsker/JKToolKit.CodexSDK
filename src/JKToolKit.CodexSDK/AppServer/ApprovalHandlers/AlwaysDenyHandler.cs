@@ -13,8 +13,10 @@ public sealed class AlwaysDenyHandler : IAppServerApprovalHandler
     {
         var response = method switch
         {
-            "item/commandExecution/requestApproval" or "item/fileChange/requestApproval" =>
-                JsonSerializer.SerializeToElement(new { decision = "decline" }),
+            "item/commandExecution/requestApproval" =>
+                AppServerApprovalDecisionJson.CreateCommandExecutionResponse(DeserializeOrNull<CommandExecutionRequestApprovalParams>(@params), approve: false),
+            "item/fileChange/requestApproval" =>
+                AppServerApprovalDecisionJson.CreateFileChangeResponse(DeserializeOrNull<FileChangeRequestApprovalParams>(@params), approve: false),
             "execCommandApproval" or "applyPatchApproval" =>
                 JsonSerializer.SerializeToElement(new { decision = "denied" }),
             "item/permissions/requestApproval" => JsonSerializer.SerializeToElement(
@@ -33,6 +35,23 @@ public sealed class AlwaysDenyHandler : IAppServerApprovalHandler
         };
 
         return ValueTask.FromResult(response);
+    }
+
+    private static T? DeserializeOrNull<T>(JsonElement? @params) where T : class
+    {
+        if (@params is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return @params.Value.Deserialize<T>();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static JsonElement EmptyObject()

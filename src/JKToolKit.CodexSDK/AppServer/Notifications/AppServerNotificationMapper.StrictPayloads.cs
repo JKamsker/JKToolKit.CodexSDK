@@ -76,6 +76,19 @@ internal static partial class AppServerNotificationMapper
             Params: p);
     }
 
+    private static ServerRequestResolvedNotification? TryMapServerRequestResolved(JsonElement p)
+    {
+        var threadId = GetString(p, "threadId");
+        if (string.IsNullOrWhiteSpace(threadId) ||
+            !p.TryGetProperty("requestId", out var requestIdElement) ||
+            !CodexRequestId.TryParse(requestIdElement, out var requestId))
+        {
+            return null;
+        }
+
+        return new ServerRequestResolvedNotification(threadId, requestId!, p);
+    }
+
     private static bool TryParseMcpServerStartupState(string? value, out McpServerStartupState status)
     {
         switch (value)

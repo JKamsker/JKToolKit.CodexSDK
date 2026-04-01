@@ -132,9 +132,17 @@ public sealed class AppServerNotificationMapperTests
             .Which.Apps.Should().ContainSingle();
 
         var requestResolved = JsonDocument.Parse("""{"threadId":"t1","requestId":123}""").RootElement;
-        AppServerNotificationMapper.Map("serverRequest/resolved", requestResolved)
+        var resolvedNotification = AppServerNotificationMapper.Map("serverRequest/resolved", requestResolved)
             .Should().BeOfType<ServerRequestResolvedNotification>()
-            .Which.RequestIdValue.Should().Be("123");
+            .Which;
+
+        resolvedNotification.RequestId.IntegerValue.Should().Be(123);
+        resolvedNotification.RequestIdValue.Should().Be("123");
+
+        var stringRequestResolved = JsonDocument.Parse("""{"threadId":"t1","requestId":"req-1"}""").RootElement;
+        AppServerNotificationMapper.Map("serverRequest/resolved", stringRequestResolved)
+            .Should().BeOfType<ServerRequestResolvedNotification>()
+            .Which.RequestId.StringValue.Should().Be("req-1");
     }
 
     [Theory]

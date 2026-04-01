@@ -22,6 +22,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<ThreadMetadataUpdateResult> UpdateThreadMetadataAsync(ThreadMetadataUpdateOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.UpdateThreadMetadataAsync(options, token), ct);
 
+    public Task<ExperimentalFeatureEnablementSetResult> SetExperimentalFeatureEnablementAsync(ExperimentalFeatureEnablementSetOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.SetExperimentalFeatureEnablementAsync(options, token), ct);
+
     public Task<FsReadFileResult> FsReadFileAsync(FsReadFileOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Filesystem, (c, token) => c.FsReadFileAsync(options, token), ct);
 

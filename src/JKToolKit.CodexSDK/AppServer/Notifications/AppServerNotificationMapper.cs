@@ -228,11 +228,7 @@ internal static partial class AppServerNotificationMapper
             "skills/changed" => new SkillsChangedNotification(
                 @params: p),
 
-            "serverRequest/resolved" => new ServerRequestResolvedNotification(
-                threadId: GetString(p, "threadId") ?? string.Empty,
-                requestId: AppServerNotificationParsing.GetAny(p, "requestId"),
-                requestIdValue: AppServerNotificationParsing.GetScalarText(p, "requestId"),
-                @params: p),
+            "serverRequest/resolved" => (AppServerNotification?)TryMapServerRequestResolved(p) ?? new UnknownNotification(method, p),
 
             "fs/changed" => (AppServerNotification?)TryMapFsChanged(p) ?? new UnknownNotification(method, p),
 
