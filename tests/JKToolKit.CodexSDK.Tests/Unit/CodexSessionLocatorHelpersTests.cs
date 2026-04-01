@@ -110,14 +110,14 @@ public sealed class CodexSessionLocatorHelpersTests
     }
 
     [Theory]
-    [InlineData(@"C:\repo", @"C:\repo", true)]
-    [InlineData(@"C:\repo\", @"C:\repo", true)]
-    [InlineData(@"C:\repo", @"C:\repo\", true)]
-    [InlineData(@"C:\repo\sub\..", @"C:\repo", true)]
-    [InlineData(@"C:\repo", @"D:\repo", false)]
+    [InlineData("/repo", "/repo", true)]
+    [InlineData("/repo/", "/repo", true)]
+    [InlineData("/repo", "/repo/", true)]
+    [InlineData("/repo/sub/..", "/repo", true)]
+    [InlineData("/repo", "/other", false)]
     [InlineData(null, null, true)]
-    [InlineData(@"C:\repo", null, false)]
-    [InlineData(null, @"C:\repo", false)]
+    [InlineData("/repo", null, false)]
+    [InlineData(null, "/repo", false)]
     public void NormalizedPathEquals_HandlesVariousPathForms(string? a, string? b, bool expected)
     {
         CodexSessionLocatorHelpers.NormalizedPathEquals(a, b).Should().Be(expected);
