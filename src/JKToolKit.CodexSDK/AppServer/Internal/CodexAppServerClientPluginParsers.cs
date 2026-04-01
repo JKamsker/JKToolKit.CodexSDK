@@ -7,15 +7,16 @@ internal static class CodexAppServerClientPluginParsers
     public static PluginListResult ParsePluginListResult(JsonElement result)
     {
         var marketplaces = new List<PluginMarketplace>();
-        if (CodexAppServerClientJson.TryGetArray(result, "marketplaces") is { } marketplacesArray)
+        var marketplacesArray = CodexAppServerClientJson.TryGetArray(result, "marketplaces")
+            ?? throw new InvalidOperationException("plugin/list returned no marketplaces array.");
+        foreach (var item in marketplacesArray.EnumerateArray())
         {
-            foreach (var item in marketplacesArray.EnumerateArray())
+            if (item.ValueKind != JsonValueKind.Object)
             {
-                if (item.ValueKind == JsonValueKind.Object)
-                {
-                    marketplaces.Add(ParsePluginMarketplace(item));
-                }
+                throw new InvalidOperationException("plugin/list marketplaces[] entries must be objects.");
             }
+
+            marketplaces.Add(ParsePluginMarketplace(item));
         }
 
         var errors = new List<MarketplaceLoadError>();
@@ -25,14 +26,14 @@ internal static class CodexAppServerClientPluginParsers
             {
                 if (item.ValueKind != JsonValueKind.Object)
                 {
-                    continue;
+                    throw new InvalidOperationException("plugin/list marketplaceLoadErrors[] entries must be objects.");
                 }
 
                 var marketplacePath = CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath");
                 var message = CodexAppServerClientJson.GetStringOrNull(item, "message");
                 if (string.IsNullOrWhiteSpace(marketplacePath) || string.IsNullOrWhiteSpace(message))
                 {
-                    continue;
+                    throw new InvalidOperationException("plugin/list marketplaceLoadErrors[] entries must contain marketplacePath and message.");
                 }
 
                 errors.Add(new MarketplaceLoadError
@@ -95,24 +96,32 @@ internal static class CodexAppServerClientPluginParsers
         };
     }
 
-    public static PluginUninstallResult ParsePluginUninstallResult(JsonElement result) =>
-        new()
+    public static PluginUninstallResult ParsePluginUninstallResult(JsonElement result)
+    {
+        if (result.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("plugin/uninstall response must be a JSON object.");
+        }
+
+        return new PluginUninstallResult
         {
             Raw = result
         };
+    }
 
     private static PluginMarketplace ParsePluginMarketplace(JsonElement item)
     {
         var plugins = new List<PluginSummaryDescriptor>();
-        if (CodexAppServerClientJson.TryGetArray(item, "plugins") is { } pluginsArray)
+        var pluginsArray = CodexAppServerClientJson.TryGetArray(item, "plugins")
+            ?? throw new InvalidOperationException("plugin/list marketplaces[] entries must contain a plugins array.");
+        foreach (var plugin in pluginsArray.EnumerateArray())
         {
-            foreach (var plugin in pluginsArray.EnumerateArray())
+            if (plugin.ValueKind != JsonValueKind.Object)
             {
-                if (plugin.ValueKind == JsonValueKind.Object)
-                {
-                    plugins.Add(ParsePluginSummary(plugin));
-                }
+                throw new InvalidOperationException("plugin/list marketplaces[].plugins[] entries must be objects.");
             }
+
+            plugins.Add(ParsePluginSummary(plugin));
         }
 
         return new PluginMarketplace
@@ -134,28 +143,32 @@ internal static class CodexAppServerClientPluginParsers
             ?? throw new InvalidOperationException("plugin/read returned a plugin without summary.");
 
         var skills = new List<PluginSkillDescriptor>();
-        if (CodexAppServerClientJson.TryGetArray(item, "skills") is { } skillsArray)
+        var skillsArray = CodexAppServerClientJson.TryGetArray(item, "skills")
+            ?? throw new InvalidOperationException("plugin/read returned a plugin without skills.");
+        foreach (var skill in skillsArray.EnumerateArray())
         {
-            foreach (var skill in skillsArray.EnumerateArray())
+            if (skill.ValueKind != JsonValueKind.Object)
             {
-                if (skill.ValueKind == JsonValueKind.Object)
-                {
-                    skills.Add(ParsePluginSkill(skill));
-                }
+                throw new InvalidOperationException("plugin/read skills[] entries must be objects.");
             }
+
+            skills.Add(ParsePluginSkill(skill));
         }
 
         var apps = new List<PluginAppDescriptor>();
-        if (CodexAppServerClientJson.TryGetArray(item, "apps") is { } appsArray)
+        var appsArray = CodexAppServerClientJson.TryGetArray(item, "apps")
+            ?? throw new InvalidOperationException("plugin/read returned a plugin without apps.");
+        foreach (var app in appsArray.EnumerateArray())
         {
-            foreach (var app in appsArray.EnumerateArray())
+            if (app.ValueKind != JsonValueKind.Object)
             {
-                if (app.ValueKind == JsonValueKind.Object)
-                {
-                    apps.Add(ParsePluginApp(app));
-                }
+                throw new InvalidOperationException("plugin/read apps[] entries must be objects.");
             }
+
+            apps.Add(ParsePluginApp(app));
         }
+
+        var mcpServers = GetRequiredStringArray(item, "mcpServers", "plugin/read plugin");
 
         return new PluginDetailDescriptor
         {
@@ -166,11 +179,30 @@ internal static class CodexAppServerClientPluginParsers
                 CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath"),
                 "marketplacePath",
                 "plugin/read plugin"),
-            McpServers = CodexAppServerClientJson.GetOptionalStringArray(item, "mcpServers") ?? Array.Empty<string>(),
+            McpServers = mcpServers,
             Skills = skills,
             Apps = apps,
             Raw = item.Clone()
         };
+    }
+
+    private static IReadOnlyList<string> GetRequiredStringArray(JsonElement item, string propertyName, string context)
+    {
+        var array = CodexAppServerClientJson.TryGetArray(item, propertyName)
+            ?? throw new InvalidOperationException($"{context} is missing required array property '{propertyName}'.");
+
+        var values = new List<string>();
+        foreach (var entry in array.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidOperationException($"{context} property '{propertyName}' entries must be strings.");
+            }
+
+            values.Add(entry.GetString() ?? string.Empty);
+        }
+
+        return values;
     }
 
     private static PluginSummaryDescriptor ParsePluginSummary(JsonElement item)
@@ -240,6 +272,12 @@ internal static class CodexAppServerClientPluginParsers
             return null;
         }
 
+        var capabilities = GetRequiredStringArray(interfaceObject, "capabilities", "plugin interface");
+        var screenshots = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPaths(
+            GetRequiredStringArray(interfaceObject, "screenshots", "plugin interface"),
+            "screenshots",
+            "plugin interface");
+
         return new PluginInterfaceMetadata
         {
             DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "displayName"),
@@ -249,11 +287,8 @@ internal static class CodexAppServerClientPluginParsers
             DeveloperName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "developerName"),
             BrandColor = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "brandColor"),
             DefaultPrompts = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "defaultPrompt") ?? Array.Empty<string>(),
-            Capabilities = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "capabilities") ?? Array.Empty<string>(),
-            Screenshots = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPaths(
-                CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "screenshots"),
-                "screenshots",
-                "plugin interface"),
+            Capabilities = capabilities,
+            Screenshots = screenshots,
             PrivacyPolicyUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "privacyPolicyUrl"),
             TermsOfServiceUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "termsOfServiceUrl"),
             WebsiteUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "websiteUrl"),

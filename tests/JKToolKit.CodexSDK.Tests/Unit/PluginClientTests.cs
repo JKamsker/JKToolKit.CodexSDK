@@ -96,6 +96,32 @@ public sealed class PluginClientTests
     }
 
     [Fact]
+    public async Task ListPluginsAsync_MissingMarketplaces_Throws()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ListPluginsAsync(new PluginListOptions());
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*marketplaces*");
+    }
+
+    [Fact]
+    public async Task ListPluginsAsync_MissingMarketplacePlugins_Throws()
+    {
+        using var doc = JsonDocument.Parse("""{"marketplaces":[{"name":"official","path":"C:\\market"}]}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ListPluginsAsync(new PluginListOptions());
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*plugins*");
+    }
+
+    [Fact]
     public async Task ReadPluginAsync_ParsesDetailSurfaceAndSkillInterfaceMetadata()
     {
         using var doc = JsonDocument.Parse(
@@ -133,9 +159,13 @@ public sealed class PluginClientTests
                     "path": "C:\\plugins\\plug-1"
                   },
                   "interface": {
-                    "displayName": "Plugin One Display"
+                    "displayName": "Plugin One Display",
+                    "capabilities": [],
+                    "screenshots": []
                   }
-                }
+                },
+                "apps": [],
+                "mcpServers": []
               }
             }
             """);
@@ -159,6 +189,7 @@ public sealed class PluginClientTests
         result.Plugin.Skills[0].Interface!.DisplayName.Should().Be("Skill A");
         result.Plugin.Skills[0].Interface!.DefaultPrompt.Should().Be("Explain the failing build");
         result.Plugin.Apps.Should().BeEmpty();
+        result.Plugin.McpServers.Should().BeEmpty();
         rpc.LastMethod.Should().Be("plugin/read");
     }
 
@@ -188,7 +219,9 @@ public sealed class PluginClientTests
                     "type": "local",
                     "path": "C:\\plugins\\plug-1"
                   }
-                }
+                },
+                "apps": [],
+                "mcpServers": []
               }
             }
             """);
@@ -203,6 +236,86 @@ public sealed class PluginClientTests
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*path*");
+    }
+
+    [Fact]
+    public async Task ReadPluginAsync_MissingRequiredCollections_Throws()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "plugin": {
+                "marketplaceName": "official",
+                "marketplacePath": "C:\\market",
+                "summary": {
+                  "id": "plug-1",
+                  "name": "Plugin One",
+                  "installed": true,
+                  "enabled": true,
+                  "authPolicy": "ON_USE",
+                  "installPolicy": "INSTALLED_BY_DEFAULT",
+                  "source": {
+                    "type": "local",
+                    "path": "C:\\plugins\\plug-1"
+                  }
+                }
+              }
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ReadPluginAsync(new PluginReadOptions
+        {
+            MarketplacePath = "C:\\market",
+            PluginName = "plugin-one"
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*skills*");
+    }
+
+    [Fact]
+    public async Task ReadPluginAsync_InterfaceMissingRequiredCollections_Throws()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "plugin": {
+                "marketplaceName": "official",
+                "marketplacePath": "C:\\market",
+                "skills": [],
+                "apps": [],
+                "mcpServers": [],
+                "summary": {
+                  "id": "plug-1",
+                  "name": "Plugin One",
+                  "installed": true,
+                  "enabled": true,
+                  "authPolicy": "ON_USE",
+                  "installPolicy": "INSTALLED_BY_DEFAULT",
+                  "source": {
+                    "type": "local",
+                    "path": "C:\\plugins\\plug-1"
+                  },
+                  "interface": {
+                    "displayName": "Plugin One Display"
+                  }
+                }
+              }
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ReadPluginAsync(new PluginReadOptions
+        {
+            MarketplacePath = "C:\\market",
+            PluginName = "plugin-one"
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*capabilities*");
     }
 
     [Fact]
@@ -265,6 +378,9 @@ public sealed class PluginClientTests
             {
               "plugin": {
                 "marketplacePath": "C:\\market",
+                "skills": [],
+                "apps": [],
+                "mcpServers": [],
                 "summary": {
                   "id": "plug-1",
                   "name": "Plugin One",
@@ -322,6 +438,19 @@ public sealed class PluginClientTests
         rpc.LastMethod.Should().Be("plugin/uninstall");
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"pluginId\":\"plug-1\"");
+    }
+
+    [Fact]
+    public async Task UninstallPluginAsync_NonObjectResponse_Throws()
+    {
+        using var doc = JsonDocument.Parse("""null""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.UninstallPluginAsync(new PluginUninstallOptions { PluginId = "plug-1" });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*plugin/uninstall response must be a JSON object*");
     }
 
     private static CodexAppServerClient CreateClient(RecordingRpc rpc) =>
