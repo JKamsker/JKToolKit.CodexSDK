@@ -80,6 +80,18 @@ internal static class CodexSessionRunnerLogHelpers
             {
                 throw;
             }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Timeout — fall through to selectedSession or newSessionFileTask below.
+            }
+            catch (Exception ex) when (selectedSession is not null)
+            {
+                logger.LogDebug(
+                    ex,
+                    "Failed to resolve captured resume session id {SessionId} by id; falling back to pre-selected session log.",
+                    resolvedId);
+                return await sessionLocator.ValidateLogFileAsync(selectedSession.LogPath, cancellationToken).ConfigureAwait(false);
+            }
             catch (Exception ex) when (newSessionFileTask is not null)
             {
                 logger.LogDebug(
