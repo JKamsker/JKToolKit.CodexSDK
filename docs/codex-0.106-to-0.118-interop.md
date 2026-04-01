@@ -18,153 +18,97 @@
 - [x] Add first-class `ServiceTier` support across thread start/resume/fork, turn start, and typed thread summaries.
 - [x] Add exec prompt-plus-stdin support while keeping the legacy stdin-prompt API working.
 - [x] Add typed app-server account login start/cancel wrappers for API key, browser ChatGPT login, and device-code login.
+- [x] Add stable wrappers for `model/list`, `experimentalFeature/list`, `config/value/write`, `config/batchWrite`, `account/logout`, and `feedback/upload`.
+- [x] Add public wrappers for `command/exec*`, `plugin/*`, `fs/watch`, and `fs/unwatch`.
+- [x] Add typed external-agent config interop and stricter import/detect parity.
 - [x] Extend app/network projections with `pluginDisplayNames`, canonical domain permissions, canonical unix-socket permissions, and newer network flags.
 - [x] Re-run focused unit coverage and full validation after the interop changes land.
 
-## Highest-Value SDK Gaps
+## Remaining Highest-Value SDK Gaps
 
-### 1. App-server auth/login is still under-modeled
+### 1. Thread lifecycle and `thread/read` are still too lossy
 
-The biggest `0.118.0` gap is app-server account login. Upstream now supports device-code ChatGPT login on `account/login/start`, but the SDK only exposes completion notifications, not a first-class request/response API.
+The SDK now covers the stable app-server method surface much more completely, but thread snapshots still lag upstream. The biggest remaining gaps are typed `thread.turns`, `gitInfo`, richer `thread.source`, and more complete `ThreadItem` unions on `thread/read`.
 
 Relevant code:
 
-- `src/JKToolKit.CodexSDK/AppServer/CodexAppServerClient.McpAndConfig.cs`
+- `src/JKToolKit.CodexSDK/AppServer/CodexThread.cs`
+- `src/JKToolKit.CodexSDK/AppServer/CodexThreadSummary.cs`
+- `src/JKToolKit.CodexSDK/AppServer/ThreadRead/CodexThreadItem.cs`
+- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerClientThreadResponseParsers.cs`
+
+Recommended work:
+
+1. Preserve lifecycle-response `thread.turns` arrays instead of only `TurnCount`.
+2. Project typed `gitInfo` and richer thread-source metadata.
+3. Cover more stable `ThreadItem` variants and object unions.
+
+### 2. Exec resume/structured-output parity still trails the CLI
+
+The SDK now supports prompt-plus-stdin, but `exec resume` still differs from upstream around target resolution, `--all` argument placement, ephemeral sessions, and structured-output success/failure handling.
+
+Relevant code:
+
+- `src/JKToolKit.CodexSDK/Exec/Internal/CodexResumeTargetResolver.cs`
+- `src/JKToolKit.CodexSDK/Exec/Internal/CodexSessionRunner.cs`
+- `src/JKToolKit.CodexSDK/StructuredOutputs/Internal/StructuredOutputExecCapture.cs`
+- `src/JKToolKit.CodexSDK/Infrastructure/ProcessStartInfoBuilder.cs`
+
+Recommended work:
+
+1. Align resume target resolution with upstream `thread/list` / `updated_at` behavior.
+2. Fix `resume --all` argv ordering and bootstrap capture for JSON-mode `thread_id`.
+3. Stop reporting structured-output success from failed/interrupted turns.
+4. Revisit the SDK’s current hard rejection of ephemeral exec handles.
+
+### 3. Notifications and server requests still need better parity
+
+Core notification mapping is much better than before, but there is still drift in notification backpressure semantics, raw-notification passthrough, typed request-approval DTOs, and some realtime/collaboration shapes.
+
+Relevant code:
+
+- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerClientCore.cs`
+- `src/JKToolKit.CodexSDK/AppServer/IAppServerApprovalHandler.cs`
 - `src/JKToolKit.CodexSDK/AppServer/Notifications/AppServerNotificationMapper.cs`
+- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerThreadsClient.cs`
+
+Recommended work:
+
+1. Preserve upstream best-effort vs must-deliver notification semantics, especially for command exec.
+2. Add typed DTOs for the remaining common approval/server-request variants.
+3. Tighten realtime/collaboration models where the SDK still flattens structured fields.
+
+### 4. Skills/apps/plugins/catalog typing still weakens upstream contracts
+
+Stable wrappers now exist, but several public result models are still looser than the upstream contract: `skills/list`, `app/list`, plugin summaries/results, config/account projections, and some catalog notifications still rely on nullable or raw JSON where upstream is strongly typed.
+
+Relevant code:
+
+- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerSkillsAppsClient.cs`
+- `src/JKToolKit.CodexSDK/AppServer/AppDescriptor.cs`
+- `src/JKToolKit.CodexSDK/AppServer/PluginModels.cs`
+- `src/JKToolKit.CodexSDK/AppServer/PluginResults.cs`
+- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerConfigClient.CatalogAndFeedback.cs`
+
+Recommended work:
+
+1. Remove client-side validation that is stricter than upstream where the server already returns per-entry errors.
+2. Tighten required fields and typed unions on stable list/read/install result shapes.
+3. Continue replacing raw JSON placeholders with ergonomic typed projections where the upstream contract is stable.
+
+### 5. Generated DTO drift remains a recurring maintenance problem
+
+The vendored generator output is still materially wrong for several important unions and enums. The SDK now works around many of those gaps with manual projections, but generator drift still creates misleading types under `Generated/Upstream/AppServer/V2`.
+
+Relevant code:
+
+- `src/JKToolKit.CodexSDK/Generated/Upstream/AppServer/V2`
 - `src/JKToolKit.CodexSDK.UpstreamGen/AppServerV2DtoGenerator.Fixups.cs`
 
 Recommended work:
 
-1. Add typed wrappers for `account/login/start` and related auth flows.
-2. Fix generator handling for important auth unions so they do not collapse to extension-data placeholders.
-
-### 2. Exec-mode does not support prompt-plus-stdin
-
-Upstream `0.118.0` added `codex exec` support for passing a prompt argument while still streaming separate stdin content. The SDK still models the older `-` prompt-only workflow.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/Exec/CodexSessionOptions.cs`
-- `src/JKToolKit.CodexSDK/Infrastructure/ProcessStartInfoBuilder.cs`
-- `src/JKToolKit.CodexSDK/Infrastructure/Internal/CodexProcessLauncherIo.cs`
-
-Recommended work:
-
-1. Split exec inputs into `PromptArgument` and `StdinPayload` or equivalent.
-2. Keep the current API as a compatibility path.
-
-### 3. Service tier / fast mode is not first-class
-
-`serviceTier` entered app-server surfaces in the `0.108.x` line and became more important once fast mode became the default in `0.111.0`. Generated DTOs know about it, but the public thread/turn option types do not.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/AppServer/ThreadStartOptions.cs`
-- `src/JKToolKit.CodexSDK/AppServer/ThreadResumeOptions.cs`
-- `src/JKToolKit.CodexSDK/AppServer/TurnStartOptions.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Protocol/V2/ThreadStartParams.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Protocol/V2/ThreadResumeParams.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Protocol/V2/TurnStartParams.cs`
-
-Recommended work:
-
-1. Add a public `ServiceTier` abstraction.
-2. Wire it through thread start, resume, fork, and turn start.
-
-### 4. App-server `command/exec` exists in generated schema, not in public API
-
-`0.113.0` introduced standalone app-server `command/exec` with write/resize/terminate and streaming output. The SDK only exposes raw escape hatches here.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/Generated/Upstream/AppServer/V2/CommandExec*.g.cs`
-- `src/JKToolKit.CodexSDK/AppServer/CodexAppServerClient.JsonRpc.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Notifications/AppServerNotificationMapper.cs`
-
-Recommended work:
-
-1. Add public wrappers for `command/exec`, `command/exec/write`, `command/exec/resize`, and `command/exec/terminate`.
-2. Add typed mapping for `command/exec/outputDelta`.
-
-### 5. Plugin support is mostly latent, not public
-
-From `0.110.0` onward, plugin install/list/read/install-policy/auth metadata became materially more important. The generated types are present, but the public app-server client still does not expose plugin APIs. `pluginDisplayNames` also is not projected into the public app model.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/Generated/Upstream/AppServer/V2/Plugin*.g.cs`
-- `src/JKToolKit.CodexSDK/Generated/Upstream/AppServer/V2/AppInfo.g.cs`
-- `src/JKToolKit.CodexSDK/AppServer/AppDescriptor.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerClientSkillsAppsParsers.cs`
-
-Recommended work:
-
-1. Add public `plugin/list`, `plugin/read`, `plugin/install`, and `plugin/uninstall` wrappers.
-2. Surface `pluginDisplayNames` on `AppDescriptor`.
-
-### 6. Filesystem watch and shell-command surfaces are missing
-
-`0.115.0` and `0.117.0` added filesystem RPCs and `thread/shellCommand`. The SDK has generated DTOs but no public wrappers or typed notifications.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/Generated/Upstream/AppServer/V2/Fs*.g.cs`
-- `src/JKToolKit.CodexSDK/Generated/Upstream/AppServer/V2/ThreadShellCommand*.g.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Notifications/AppServerNotificationMapper.cs`
-
-Recommended work:
-
-1. Add public `fs/watch` and `fs/unwatch`.
-2. Add typed `fs/changed`.
-3. Add `thread/shellCommand` only after verifying its real sandbox behavior against a live CLI.
-
-### 7. Permission, hook, and guardian review flows are not typed enough
-
-`0.113.0` to `0.115.0` added `request_permissions`, hook notifications, `approvalsReviewer`, and guardian approval review. The SDK is mostly forward-compatible through raw JSON, but not pleasant to consume.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/Models/CodexAskForApproval.cs`
-- `src/JKToolKit.CodexSDK/AppServer/ApprovalHandlers/AlwaysApproveHandler.cs`
-- `src/JKToolKit.CodexSDK/AppServer/ApprovalHandlers/AlwaysDenyHandler.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Notifications/AppServerNotificationMapper.cs`
-- `src/JKToolKit.CodexSDK/Infrastructure/Internal/JsonlEventParsing/JsonlEventEnvelopeParsers.cs`
-
-Recommended work:
-
-1. Add typed permission-request request/response support, including `scope`.
-2. Add typed hook notifications.
-3. Add `ApprovalsReviewer` and guardian review public models.
-
-### 8. Network/provider auth projection is stale
-
-The public `NetworkRequirements` model still exposes the legacy allow/deny view, while newer upstream schemas use canonical domain and unix-socket maps. Custom provider auth also needs better typed support after `0.118.0`.
-
-Relevant code:
-
-- `src/JKToolKit.CodexSDK/AppServer/NetworkRequirements.cs`
-- `src/JKToolKit.CodexSDK/AppServer/Internal/CodexAppServerClientConfigRequirementsParser.cs`
-- `src/JKToolKit.CodexSDK/AppServer/CodexConfigOverridesBuilder.cs`
-
-Recommended work:
-
-1. Extend public network requirement projection to match canonical upstream fields.
-2. Add examples or typed helpers for `model_providers.*.auth`.
-
-## Lower-Priority Gaps
-
-- Type `TurnContextEvent.TraceId` once a `0.112.0+` fixture is captured.
-- Consider typed image-generation items instead of raw fallback only.
-- Add `serverRequest/resolved` and `skills/changed` typed notifications.
-- Surface `CodexHome` and other initialize metadata from app-server initialize results.
-- Revisit model-list exposure once the generator emits cleaner model metadata types.
-
-## Suggested Implementation Order
-
-1. Auth and generator unions: `account/login/start`, device-code flow, auth union fixups.
-2. Exec and tiering: prompt-plus-stdin support, `ServiceTier` public API.
-3. App-server power surfaces: `command/exec`, plugins, filesystem watch, `skills/changed`.
-4. Typed operational flows: hooks, request-permissions, guardian review, network/provider auth.
+1. Keep important public interop on handwritten typed projections rather than raw generated unions.
+2. Add targeted fixups for the most damaging generated placeholders so upstream DTOs are less misleading for internal use.
 
 ## Source Notes
 

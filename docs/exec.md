@@ -14,6 +14,11 @@ This gives you a stable, .NET-native streaming pipeline even when Codex outputs 
 If you need to override where the SDK looks for session logs (attach/resume), set `CodexClientOptions.SessionsRootDirectory`.
 To change where Codex writes sessions, set `CodexClientOptions.CodexHomeDirectory` (sets `CODEX_HOME` for launched processes).
 
+`CodexSessionOptions` supports both exec input styles:
+
+- Legacy stdin-prompt mode via `Prompt`
+- Newer prompt-argument-plus-stdin mode via `PromptArgument` together with optional `StdinPayload`
+
 ## Quick Example
 
 ```csharp
@@ -48,6 +53,23 @@ await foreach (var evt in session.GetEventsAsync(EventStreamOptions.Default))
     }
 }
 ```
+
+## Prompt Argument + Stdin Payload
+
+Use `PromptArgument` when you want the CLI prompt on argv while still piping separate stdin content:
+
+```csharp
+var options = new CodexSessionOptions("<repo-path>", prompt: null)
+{
+    PromptArgument = "Summarize this diff and propose tests.",
+    StdinPayload = File.ReadAllText("diff.txt"),
+    Model = CodexModel.Gpt52Codex
+};
+
+await using var session = await client.StartSessionAsync(options);
+```
+
+Use `Prompt` when you intentionally want the older `codex exec -` workflow.
 
 ## Structured Outputs (JSON to DTO)
 

@@ -68,12 +68,20 @@ To observe drops, use `CodexAppServerClient.NotificationDropStats`.
   - `StartThreadAsync(...)`, `ResumeThreadAsync(...)`
   - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
   - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
-  - `ReadConfigAsync(...)` (`config/read`)
+  - `ReadConfigAsync(...)`, `ReadConfigRequirementsAsync(...)` (`config/read`, `configRequirements/read`)
   - `DetectExternalAgentConfigAsync(...)`, `ImportExternalAgentConfigAsync(...)` (`externalAgentConfig/detect`, `externalAgentConfig/import`)
+  - `ReadAccountAsync(...)`, `ReadAccountRateLimitsAsync(...)`, `StartAccountLoginAsync(...)`, `CancelAccountLoginAsync(...)`, `LogoutAccountAsync(...)`
+  - `ListModelsAsync(...)`, `ListExperimentalFeaturesAsync(...)`
+  - `WriteConfigValueAsync(...)`, `WriteConfigBatchAsync(...)`, `UploadFeedbackAsync(...)`
   - `StartWindowsSandboxSetupAsync(...)` (`windowsSandbox/setupStart`)
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
   - `SteerTurnAsync(...)`
   - `StartReviewAsync(...)`
+  - `CommandExecAsync(...)`, `CommandExecWriteAsync(...)`, `CommandExecResizeAsync(...)`, `CommandExecTerminateAsync(...)`
+  - `FsWatchAsync(...)`, `FsUnwatchAsync(...)`
+  - `ListPluginsAsync(...)`, `ReadPluginAsync(...)`, `InstallPluginAsync(...)`, `UninstallPluginAsync(...)`
+  - `ListCollaborationModesAsync(...)`
+  - `StartThreadRealtimeAsync(...)`, `AppendThreadRealtimeAudioAsync(...)`, `AppendThreadRealtimeTextAsync(...)`, `StopThreadRealtimeAsync(...)`
   - MCP helpers: `ListMcpServerStatusAsync(...)`, `ReloadMcpServersAsync()`, `StartMcpServerOauthLoginAsync(...)`
   - `CallAsync(...)` escape hatch for forward compatibility
 - `CodexTurnHandle`
@@ -84,12 +92,17 @@ To observe drops, use `CodexAppServerClient.NotificationDropStats`.
 
 ### Typed notifications (initial set)
 
-The library maps a small must-have subset of notifications into typed records:
+The library maps a broad stable subset of notifications into typed records:
 
 - `AgentMessageDeltaNotification` (`item/agentMessage/delta`)
 - `ItemStartedNotification` (`item/started`)
 - `ItemCompletedNotification` (`item/completed`)
 - `TurnCompletedNotification` (`turn/completed`)
+- `CommandExecOutputDeltaNotification` (`command/exec/outputDelta`)
+- `FsChangedNotification` (`fs/changed`)
+- `SkillsChangedNotification` (`skills/changed`)
+- `AppListUpdatedNotification` (`app/list/updated`)
+- `AccountLoginCompletedNotification` (`account/login/completed`)
 - `UnknownNotification` fallback for forward-compatibility
 
 It also includes a growing set of additional typed notifications under `JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications`, including:
@@ -97,7 +110,12 @@ It also includes a growing set of additional typed notifications under `JKToolKi
 - `ThreadArchivedNotification` (`thread/archived`)
 - `ThreadUnarchivedNotification` (`thread/unarchived`)
 - `ThreadStatusChangedNotification` (`thread/status/changed`)
+- `HookStartedNotification` / `HookCompletedNotification`
+- `AccountRateLimitsUpdatedNotification`
+- `McpServerStartupStatusUpdatedNotification`
 - `WindowsSandboxSetupCompletedNotification` (`windowsSandbox/setupCompleted`)
+
+Some newer notifications still intentionally preserve raw JSON for unstable nested payloads even when the outer notification is typed.
 
 ## Override Hooks (Forward Compatibility)
 
