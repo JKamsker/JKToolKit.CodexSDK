@@ -76,17 +76,7 @@ internal static class CodexAppServerAccountLoginParsers
         {
             "canceled" => AccountLoginCancelStatus.Canceled,
             "notFound" => AccountLoginCancelStatus.NotFound,
-            _ => AccountLoginCancelStatus.Unknown
+            _ => throw new InvalidOperationException(
+                $"account/login/cancel returned an unknown status '{value ?? "<missing>"}'.")
         };
-
-    private static string GetRequiredString(JsonElement obj, string propertyName, string methodName)
-    {
-        var value = GetStringOrNull(obj, propertyName);
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            return value;
-        }
-
-        throw new InvalidOperationException($"{methodName} response is missing required string '{propertyName}'. Raw result: {obj}");
-    }
 }

@@ -229,13 +229,23 @@ public sealed class AppServerNotificationMapperTests
     [Fact]
     public void Map_AccountUpdated_ParsesPlanType()
     {
-        var json = JsonDocument.Parse("""{"authMode":"chatgpt","planType":"pro"}""").RootElement;
+        var json = JsonDocument.Parse("""{"authMode":"chatgptAuthTokens","planType":"unknown"}""").RootElement;
 
         var mapped = AppServerNotificationMapper.Map("account/updated", json);
 
         var typed = mapped.Should().BeOfType<AccountUpdatedNotification>().Subject;
-        typed.AuthMode.Should().Be("chatgpt");
-        typed.PlanType.Should().Be("pro");
+        typed.AuthMode.Should().Be(CodexAuthMode.ChatGptAuthTokens);
+        typed.PlanType.Should().Be(CodexPlanType.Unknown);
+    }
+
+    [Fact]
+    public void Map_AccountUpdated_WithInvalidFieldType_ReturnsUnknown()
+    {
+        var json = JsonDocument.Parse("""{"authMode":123}""").RootElement;
+
+        var mapped = AppServerNotificationMapper.Map("account/updated", json);
+
+        mapped.Should().BeOfType<UnknownNotification>();
     }
 
     [Fact]

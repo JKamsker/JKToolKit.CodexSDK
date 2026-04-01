@@ -170,9 +170,14 @@ public sealed record class AccountReadResult
     public JsonElement? Account { get; init; }
 
     /// <summary>
+    /// Gets the typed account object when present.
+    /// </summary>
+    public CodexAccountInfo? AccountInfo { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether OpenAI auth is currently required.
     /// </summary>
-    public bool? RequiresOpenaiAuth { get; init; }
+    public bool RequiresOpenaiAuth { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the response.

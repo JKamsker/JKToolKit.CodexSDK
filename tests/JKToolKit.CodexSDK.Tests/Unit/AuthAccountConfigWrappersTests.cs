@@ -45,7 +45,72 @@ public sealed class AuthAccountConfigWrappersTests
         result.RequiresOpenaiAuth.Should().BeFalse();
         result.Account.Should().NotBeNull();
         result.Account!.Value.GetProperty("type").GetString().Should().Be("chatgpt");
-        result.Account!.Value.GetProperty("planType").GetString().Should().Be("plus");
+        var account = result.AccountInfo.Should().BeOfType<CodexChatGptAccountInfo>().Subject;
+        account.Email.Should().Be("person@example.test");
+        account.PlanType.Should().Be(CodexPlanType.Plus);
+    }
+
+    [Fact]
+    public async Task ReadAccountAsync_ParsesApiKeyAndUnknownPlanTypes()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/read",
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                account = new
+                {
+                    type = "apiKey"
+                },
+                requiresOpenaiAuth = true
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var apiKeyAccount = await client.ReadAccountAsync();
+
+        apiKeyAccount.RequiresOpenaiAuth.Should().BeTrue();
+        apiKeyAccount.AccountInfo.Should().BeOfType<CodexApiKeyAccountInfo>();
+
+        rpc.Result = JsonSerializer.SerializeToElement(new
+        {
+            account = new
+            {
+                type = "chatgpt",
+                email = "person@example.test",
+                planType = "unknown"
+            },
+            requiresOpenaiAuth = true
+        });
+
+        var unknownPlanAccount = await client.ReadAccountAsync();
+
+        unknownPlanAccount.AccountInfo.Should().BeOfType<CodexChatGptAccountInfo>()
+            .Which.PlanType.Should().Be(CodexPlanType.Unknown);
+    }
+
+    [Fact]
+    public async Task ReadAccountAsync_MissingRequiredBool_Throws()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/read",
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                account = new
+                {
+                    type = "apiKey"
+                }
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ReadAccountAsync();
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*requiresOpenaiAuth*");
     }
 
     [Fact]
@@ -563,7 +628,7 @@ public sealed class AuthAccountConfigWrappersTests
 
         public Action<object?>? AssertParams { get; init; }
 
-        public JsonElement Result { get; init; }
+        public JsonElement Result { get; set; }
 
         public int SendRequestCallCount { get; private set; }
 

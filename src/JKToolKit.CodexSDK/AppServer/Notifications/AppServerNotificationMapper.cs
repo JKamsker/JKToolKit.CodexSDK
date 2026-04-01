@@ -214,9 +214,7 @@ internal static partial class AppServerNotificationMapper
 
             "mcpServer/startupStatus/updated" => (AppServerNotification?)TryMapMcpServerStartupStatusUpdated(p) ?? new UnknownNotification(method, p),
 
-            "account/updated" => new AccountUpdatedNotification(
-                AuthMode: GetStringOrNull(p, "authMode"),
-                Params: p),
+            "account/updated" => (AppServerNotification?)TryMapAccountUpdated(p) ?? new UnknownNotification(method, p),
 
             "account/rateLimits/updated" => new AccountRateLimitsUpdatedNotification(
                 RateLimits: GetAny(p, "rateLimits"),

@@ -110,6 +110,31 @@ public sealed class AccountLoginWrappersTests
         result.Status.Should().Be(AccountLoginCancelStatus.Canceled);
     }
 
+    [Fact]
+    public async Task CancelAccountLoginAsync_UnknownStatus_Throws()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/login/cancel",
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                status = "paused"
+            })
+        };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.CancelAccountLoginAsync("login_123");
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*unknown status*");
+    }
+
     private sealed class FakeProcess : IStdioProcess
     {
         private readonly TaskCompletionSource _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);

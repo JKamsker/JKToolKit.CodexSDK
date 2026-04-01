@@ -7,6 +7,21 @@ namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
 internal static partial class AppServerNotificationMapper
 {
+    private static AccountUpdatedNotification? TryMapAccountUpdated(JsonElement p)
+    {
+        try
+        {
+            return new AccountUpdatedNotification(
+                AuthMode: CodexAppServerAccountParsers.ParseAuthModeOrNull(p, "authMode", "account/updated"),
+                PlanType: CodexAppServerAccountParsers.ParsePlanTypeOrNull(p, "planType", "account/updated"),
+                Params: p);
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
     private static FsChangedNotification? TryMapFsChanged(JsonElement p)
     {
         var watchId = GetString(p, "watchId");
