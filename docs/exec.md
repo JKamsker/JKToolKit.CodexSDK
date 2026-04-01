@@ -31,7 +31,7 @@ await using var client = new CodexClient(new CodexClientOptions());
 
 var options = new CodexSessionOptions("<repo-path>", "Write a hello world program")
 {
-    Model = CodexModel.Gpt51Codex,
+    Model = CodexModel.Gpt53Codex,
     ReasoningEffort = CodexReasoningEffort.Medium
 };
 

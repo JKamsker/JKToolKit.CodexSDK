@@ -275,7 +275,7 @@ await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServer
 var thread = await codex.StartThreadAsync(new ThreadStartOptions
 {
     Cwd = "<repo-path>",
-    Model = CodexModel.Gpt51Codex,
+    Model = CodexModel.Gpt53Codex,
     ApprovalPolicy = CodexApprovalPolicy.Never,
     Sandbox = CodexSandboxMode.WorkspaceWrite
 });

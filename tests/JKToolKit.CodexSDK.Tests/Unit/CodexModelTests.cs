@@ -9,13 +9,13 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public class CodexModelTests
 {
     [Fact]
-    public void Default_ReturnsGpt52()
+    public void Default_ReturnsGpt53Codex()
     {
         // Act
         var defaultModel = CodexModel.Default;
 
         // Assert
-        defaultModel.Value.Should().Be("gpt-5.2");
+        defaultModel.Value.Should().Be("gpt-5.3-codex");
     }
 
     [Fact]
@@ -65,6 +65,26 @@ public class CodexModelTests
 
         // Assert
         model.Value.Should().Be("gpt-5.2-codex");
+    }
+
+    [Fact]
+    public void Predefined_Gpt53Codex_HasCorrectValue()
+    {
+        // Act
+        var model = CodexModel.Gpt53Codex;
+
+        // Assert
+        model.Value.Should().Be("gpt-5.3-codex");
+    }
+
+    [Fact]
+    public void Predefined_Gpt51Codex_HasCorrectValue()
+    {
+        // Act
+        var model = CodexModel.Gpt51Codex;
+
+        // Assert
+        model.Value.Should().Be("gpt-5.1-codex");
     }
 
     [Fact]
@@ -187,12 +207,14 @@ public class CodexModelTests
         // Act
         var gpt51CodexMax = CodexModel.Gpt51CodexMax;
         var gpt52Codex = CodexModel.Gpt52Codex;
+        var gpt53Codex = CodexModel.Gpt53Codex;
         var gpt51Mini = CodexModel.Gpt51CodexMini;
         var gpt52General = CodexModel.Gpt52;
         var defaultModel = CodexModel.Default;
 
         // Assert
-        defaultModel.Should().Be(gpt52General);
+        defaultModel.Should().Be(gpt53Codex);
+        defaultModel.Should().NotBe(gpt52General);
         defaultModel.Should().NotBe(gpt52Codex);
         defaultModel.Should().NotBe(gpt51CodexMax);
         gpt52Codex.Should().NotBe(gpt51CodexMax);

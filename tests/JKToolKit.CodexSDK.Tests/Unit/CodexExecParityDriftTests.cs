@@ -78,7 +78,7 @@ public sealed class CodexExecParityDriftTests
                 "--cd",
                 workingDirectory,
                 "--model",
-                "gpt-5.2",
+                "gpt-5.3-codex",
                 "--config",
                 "model_reasoning_effort=medium",
                 "-");

@@ -34,7 +34,7 @@ await using var sdk = CodexSdk.Create();
 await using var session = await sdk.Exec.StartSessionAsync(
     new CodexSessionOptions("<workdir>", "Write a hello world program")
     {
-        Model = CodexModel.Gpt51Codex
+        Model = CodexModel.Gpt53Codex
     });
 
 await foreach (var evt in session.GetEventsAsync())
