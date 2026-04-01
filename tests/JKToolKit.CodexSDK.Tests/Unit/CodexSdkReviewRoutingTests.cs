@@ -129,6 +129,70 @@ public sealed class CodexSdkReviewRoutingTests
         rpc.AssertDrained();
     }
 
+    [Fact]
+    public async Task ReviewAsync_AppServerMode_CanUseExistingSourceThread()
+    {
+        var rpc = new SequencedRpc();
+        rpc.EnqueueResult("thread/resume", JsonSerializer.SerializeToElement(new { id = "thr_existing" }));
+        rpc.EnqueueResult("review/start", JsonSerializer.SerializeToElement(new
+        {
+            reviewThreadId = "thr_existing",
+            turn = new { id = "turn_1", threadId = "thr_existing" }
+        }));
+
+        await using var appClient = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var sdk = new CodexSdk(new FakeExecClient(), new FakeAppServerFactory(appClient), new FakeMcpFactory());
+
+        var routed = await sdk.ReviewAsync(new CodexSdkReviewOptions
+        {
+            Mode = CodexSdkReviewMode.AppServer,
+            AppServer = new CodexSdkAppServerReviewOptions
+            {
+                ExistingThreadId = "thr_existing",
+                Delivery = ReviewDelivery.Inline,
+                Target = new AppServerReviewTarget.UncommittedChanges()
+            }
+        });
+
+        routed.AppServer.Should().NotBeNull();
+        routed.AppServer!.Thread.Id.Should().Be("thr_existing");
+        routed.AppServer.BootstrapThread.Id.Should().Be("thr_existing");
+        routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
+
+        await routed.DisposeAsync();
+        rpc.AssertDrained();
+    }
+
+    [Fact]
+    public async Task ReviewAsync_AppServerMode_Throws_WhenThreadSourceIsAmbiguous()
+    {
+        var sdk = new CodexSdk(new FakeExecClient(), new FakeAppServerFactory(throwOnStart: true), new FakeMcpFactory());
+
+        var act = async () => await sdk.ReviewAsync(new CodexSdkReviewOptions
+        {
+            Mode = CodexSdkReviewMode.AppServer,
+            AppServer = new CodexSdkAppServerReviewOptions
+            {
+                ExistingThreadId = "thr_existing",
+                Thread = new ThreadStartOptions
+                {
+                    Cwd = Directory.GetCurrentDirectory(),
+                    Model = CodexModel.Gpt52Codex
+                },
+                Target = new AppServerReviewTarget.UncommittedChanges()
+            }
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Exactly one of Thread or ExistingThreadId must be provided.*");
+    }
+
     private sealed class FakeExecClient : ICodexClient
     {
         public int ReviewCalls { get; private set; }

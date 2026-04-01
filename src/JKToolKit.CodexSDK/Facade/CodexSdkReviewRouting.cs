@@ -47,9 +47,15 @@ public sealed class CodexSdkReviewOptions
 public sealed class CodexSdkAppServerReviewOptions
 {
     /// <summary>
-    /// Gets or sets options for starting the thread that will host the review.
+    /// Gets or sets options for starting the source thread used to submit the review.
     /// </summary>
-    public required ThreadStartOptions Thread { get; init; }
+    public ThreadStartOptions? Thread { get; init; }
+
+    /// <summary>
+    /// Gets or sets an existing source thread identifier to submit the review from.
+    /// Exactly one of <see cref="Thread"/> or <see cref="ExistingThreadId"/> must be provided.
+    /// </summary>
+    public string? ExistingThreadId { get; init; }
 
     /// <summary>
     /// Gets or sets the review delivery mode.
@@ -119,7 +125,7 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
     public CodexThread Thread { get; }
 
     /// <summary>
-    /// Gets the bootstrap thread originally created to submit the review.
+    /// Gets the source thread used to submit the review.
     /// For inline reviews this matches <see cref="Thread"/>; for detached reviews it is the source thread.
     /// </summary>
     public CodexThread BootstrapThread { get; }

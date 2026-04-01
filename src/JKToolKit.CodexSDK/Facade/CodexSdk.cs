@@ -87,15 +87,15 @@ public sealed class CodexSdk : IAsyncDisposable
     public async Task<CodexSdkAppServerReviewSession> ReviewAppServerAsync(CodexSdkAppServerReviewOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(options.Thread);
         ArgumentNullException.ThrowIfNull(options.Target);
+        ValidateReviewSource(options);
 
         CodexAppServerClient? client = null;
         try
         {
             client = await AppServer.StartAsync(ct);
 
-            var bootstrapThread = await client.StartThreadAsync(options.Thread, ct);
+            var bootstrapThread = await ResolveReviewSourceThreadAsync(client, options, ct);
             var review = await client.StartReviewAsync(new ReviewStartOptions
             {
                 ThreadId = bootstrapThread.Id,
@@ -119,6 +119,35 @@ public sealed class CodexSdk : IAsyncDisposable
             }
 
             throw;
+        }
+    }
+
+    private static Task<CodexThread> ResolveReviewSourceThreadAsync(
+        CodexAppServerClient client,
+        CodexSdkAppServerReviewOptions options,
+        CancellationToken ct)
+    {
+        var hasThreadStart = options.Thread is not null;
+        var hasExistingThreadId = !string.IsNullOrWhiteSpace(options.ExistingThreadId);
+
+        if (hasThreadStart)
+        {
+            return client.StartThreadAsync(options.Thread!, ct);
+        }
+
+        return client.ResumeThreadAsync(options.ExistingThreadId!, ct);
+    }
+
+    private static void ValidateReviewSource(CodexSdkAppServerReviewOptions options)
+    {
+        var hasThreadStart = options.Thread is not null;
+        var hasExistingThreadId = !string.IsNullOrWhiteSpace(options.ExistingThreadId);
+
+        if (hasThreadStart == hasExistingThreadId)
+        {
+            throw new ArgumentException(
+                $"Exactly one of {nameof(CodexSdkAppServerReviewOptions.Thread)} or {nameof(CodexSdkAppServerReviewOptions.ExistingThreadId)} must be provided.",
+                nameof(options));
         }
     }
 
