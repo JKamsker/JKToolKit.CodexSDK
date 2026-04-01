@@ -125,10 +125,10 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     public async Task RestartAsync(CancellationToken ct = default)
     {
         var version = Volatile.Read(ref _innerVersion);
-        await EnsureRestartedAsync(version, trigger: null, reason: "manual-restart", ct).ConfigureAwait(false);
+        await EnsureRestartedAsync(version, trigger: null, reason: "manual-restart", ct, forceRestart: true).ConfigureAwait(false);
     }
 
-    public async Task EnsureRestartedAsync(long expectedVersion, Exception? trigger, string? reason, CancellationToken ct)
+    public async Task EnsureRestartedAsync(long expectedVersion, Exception? trigger, string? reason, CancellationToken ct, bool forceRestart = false)
     {
         ThrowIfFaultedOrDisposed();
         ct.ThrowIfCancellationRequested();
@@ -143,7 +143,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
                 return;
             }
 
-            if (!_options.AutoRestart)
+            if (!_options.AutoRestart && !forceRestart)
             {
                 return;
             }

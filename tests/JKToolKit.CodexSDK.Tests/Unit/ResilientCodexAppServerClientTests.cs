@@ -256,6 +256,82 @@ public sealed class ResilientCodexAppServerClientTests
     }
 
     [Fact]
+    public async Task CallAsync_RequestFailedRetryLimitMessage_RetriedByPolicy()
+    {
+        var attempts = 0;
+        var adapter = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) =>
+            {
+                if (attempts++ == 0)
+                {
+                    throw new CodexAppServerRequestFailedException(
+                        method: "turn/steer",
+                        errorCode: -32000,
+                        errorMessage: "Retry limit exceeded after too many failed attempts.",
+                        errorData: null,
+                        userAgent: null);
+                }
+
+                using var resultDoc = JsonDocument.Parse("""{"ok":true}""");
+                return Task.FromResult(resultDoc.RootElement.Clone());
+            }
+        };
+
+        var factory = new SequenceFactory(adapter);
+        var options = new CodexAppServerResilienceOptions
+        {
+            AutoRestart = false,
+            RetryPolicy = _ => new ValueTask<CodexAppServerRetryDecision>(CodexAppServerRetryDecision.Retry())
+        };
+
+        await using var client = await StartAsync(factory, options);
+
+        var result = await client.CallAsync("turn/steer", @params: null);
+        result.GetProperty("ok").GetBoolean().Should().BeTrue();
+        attempts.Should().Be(2);
+        factory.StartCount.Should().Be(1);
+        client.RestartCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RestartAsync_WhenAutoRestartDisabled_RestartsConnection()
+    {
+        var first = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) =>
+            {
+                using var doc = JsonDocument.Parse("""{"instance":"first"}""");
+                return Task.FromResult(doc.RootElement.Clone());
+            }
+        };
+
+        var second = new FakeAdapter
+        {
+            CallAsyncImpl = (_, _, _) =>
+            {
+                using var doc = JsonDocument.Parse("""{"instance":"second"}""");
+                return Task.FromResult(doc.RootElement.Clone());
+            }
+        };
+
+        var factory = new SequenceFactory(first, second);
+        var options = new CodexAppServerResilienceOptions { AutoRestart = false };
+
+        await using var client = await StartAsync(factory, options);
+
+        var beforeRestart = await client.CallAsync("ping", @params: null);
+        beforeRestart.GetProperty("instance").GetString().Should().Be("first");
+
+        await client.RestartAsync();
+
+        var afterRestart = await client.CallAsync("ping", @params: null);
+        afterRestart.GetProperty("instance").GetString().Should().Be("second");
+        factory.StartCount.Should().Be(2);
+        client.RestartCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task Notifications_ContinueAcrossRestarts_AndEmitRestartMarker()
     {
         var first = new FakeAdapter

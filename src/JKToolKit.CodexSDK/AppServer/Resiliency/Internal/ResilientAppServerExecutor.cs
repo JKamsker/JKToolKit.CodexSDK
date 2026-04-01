@@ -271,7 +271,9 @@ internal sealed class ResilientAppServerExecutor
         return normalized.Contains("server overloaded") ||
                normalized.Contains("overload") ||
                normalized.Contains("backpressure") ||
-               normalized.Contains("retry later");
+               normalized.Contains("retry later") ||
+               normalized.Contains("retry limit") ||
+               normalized.Contains("too many failed attempts");
     }
 
     private static bool ContainsRetryToken(JsonElement element)
