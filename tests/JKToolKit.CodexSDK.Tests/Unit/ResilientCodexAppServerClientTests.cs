@@ -423,7 +423,7 @@ public sealed class ResilientCodexAppServerClientTests
     }
 
     [Fact]
-    public async Task NotificationsRaw_ContinueAcrossRestarts_AndEmitRestartMarker()
+    public async Task NotificationsRaw_ContinueAcrossRestarts_WithoutInjectingRestartMarker()
     {
         var first = new FakeAdapter
         {
@@ -451,11 +451,11 @@ public sealed class ResilientCodexAppServerClientTests
         await foreach (var n in client.NotificationsRaw(cts.Token))
         {
             seen.Add(n.Method);
-            if (seen.Count >= 3)
+            if (seen.Count >= 2)
                 break;
         }
 
-        seen.Should().ContainInOrder("note/raw-one", "client/restarted", "note/raw-two");
+        seen.Should().ContainInOrder("note/raw-one", "note/raw-two");
         factory.StartCount.Should().Be(2);
     }
 

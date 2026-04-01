@@ -33,18 +33,7 @@ internal sealed class ResilientAppServerExecutor
     public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
         NotificationStreamWithRestart(
             streamFactory: (inner, token) => inner.NotificationsRaw(token),
-            restartMarkerFactory: _options.EmitRestartMarkerNotifications
-                ? static e =>
-                {
-                    var marker = new ClientRestartedNotification(
-                        restartCount: e.RestartCount,
-                        previousExitCode: e.PreviousExitCode,
-                        timestamp: e.Timestamp,
-                        reason: e.Reason,
-                        previousStderrTail: e.PreviousStderrTail);
-                    return new AppServerRpcNotification(marker.Method, marker.Params);
-                }
-                : null,
+            restartMarkerFactory: null,
             ct);
 
     private async IAsyncEnumerable<TResult> NotificationStreamWithRestart<TResult>(

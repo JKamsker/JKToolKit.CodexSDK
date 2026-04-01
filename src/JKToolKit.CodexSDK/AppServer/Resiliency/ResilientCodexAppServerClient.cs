@@ -91,7 +91,8 @@ public sealed partial class ResilientCodexAppServerClient : IAsyncDisposable
         _executor.Notifications(ct);
 
     /// <summary>
-    /// Returns the raw JSON-RPC notification stream. When enabled, the stream continues across restarts.
+    /// Returns the raw JSON-RPC notification stream. When enabled, the stream continues across restarts
+    /// without injecting local synthetic marker notifications.
     /// </summary>
     public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
         _executor.NotificationsRaw(ct);
