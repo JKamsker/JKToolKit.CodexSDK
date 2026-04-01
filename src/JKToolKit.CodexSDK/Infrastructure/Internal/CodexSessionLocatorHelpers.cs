@@ -235,7 +235,7 @@ internal static class CodexSessionLocatorHelpers
                 continue;
             }
 
-            var fileName = Path.GetFileNameWithoutExtension(file);
+            var fileName = Path.GetFileName(file);
             if (!sessionFilePattern.IsMatch(fileName))
             {
                 logger.LogTrace("Skipping non-session file {FilePath}", file);
@@ -243,7 +243,8 @@ internal static class CodexSessionLocatorHelpers
             }
 
             var createdAtUtc = TryGetCreationTimeUtc(fileSystem, logger, file);
-            var (fileNameTimestamp, uuid) = TryParseFileNameTimestampAndUuid(fileName);
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+            var (fileNameTimestamp, uuid) = TryParseFileNameTimestampAndUuid(fileNameWithoutExtension);
             candidates.Add((file, createdAtUtc, fileNameTimestamp, uuid));
         }
 

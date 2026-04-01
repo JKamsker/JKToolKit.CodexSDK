@@ -118,7 +118,7 @@ internal sealed class CodexAppServerTurnsClient
                 $"turn/start returned no turn id. Raw result: {result}");
         }
 
-        return CreateTurnHandle(threadId, turnId);
+        return CreateTurnHandle(threadId, turnId, rawStartResponse: result);
     }
 
     public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
@@ -218,7 +218,7 @@ internal sealed class CodexAppServerTurnsClient
         };
     }
 
-    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId, bool supportsSteer = true)
+    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId, bool supportsSteer = true, JsonElement? rawStartResponse = null)
     {
         var handle = new CodexTurnHandle(
             threadId,
@@ -230,7 +230,8 @@ internal sealed class CodexAppServerTurnsClient
             {
                 _removeTurnHandle(turnId);
             },
-            bufferCapacity: _options.NotificationBufferCapacity);
+            bufferCapacity: _options.NotificationBufferCapacity,
+            rawStartResponse: rawStartResponse);
 
         _registerTurnHandle(turnId, handle);
 
