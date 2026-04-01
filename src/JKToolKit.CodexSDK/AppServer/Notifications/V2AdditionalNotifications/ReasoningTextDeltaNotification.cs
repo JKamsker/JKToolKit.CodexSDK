@@ -30,7 +30,7 @@ public sealed record class ReasoningTextDeltaNotification : AppServerNotificatio
     /// <summary>
     /// Gets the content index used to group deltas that belong together.
     /// </summary>
-    public int ContentIndex { get; }
+    public long ContentIndex { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="ReasoningTextDeltaNotification"/>.
@@ -40,7 +40,7 @@ public sealed record class ReasoningTextDeltaNotification : AppServerNotificatio
         string TurnId,
         string ItemId,
         string Delta,
-        int ContentIndex,
+        long ContentIndex,
         JsonElement Params)
         : base("item/reasoning/textDelta", Params)
     {

@@ -1,26 +1,24 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 
-internal interface ICodexAppServerClientAdapter : IAsyncDisposable
+internal partial interface ICodexAppServerClientAdapter : IAsyncDisposable
 {
     Task ExitTask { get; }
+    AppServerInitializeResult? InitializeResult { get; }
+    AppServerNotificationDropStats NotificationDropStats { get; }
 
     Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct);
 
+    Task<TResult?> CallAsync<TResult>(string method, object? @params, JsonSerializerOptions? serializerOptions, CancellationToken ct);
+
     IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct);
-
-    Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct);
-
-    Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct);
-
-    Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct);
-
-    Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct);
+    IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct);
 }
 
-internal sealed class CodexAppServerClientAdapter : ICodexAppServerClientAdapter
+internal sealed partial class CodexAppServerClientAdapter : ICodexAppServerClientAdapter
 {
     private readonly CodexAppServerClient _inner;
 
@@ -30,18 +28,16 @@ internal sealed class CodexAppServerClientAdapter : ICodexAppServerClientAdapter
     }
 
     public Task ExitTask => _inner.ExitTask;
+    public AppServerInitializeResult? InitializeResult => _inner.InitializeResult;
+    public AppServerNotificationDropStats NotificationDropStats => _inner.NotificationDropStats;
 
     public Task<JsonElement> CallAsync(string method, object? @params, CancellationToken ct) => _inner.CallAsync(method, @params, ct);
 
+    public Task<TResult?> CallAsync<TResult>(string method, object? @params, JsonSerializerOptions? serializerOptions, CancellationToken ct) =>
+        _inner.CallAsync<TResult>(method, @params, serializerOptions, ct);
+
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct) => _inner.Notifications(ct);
-
-    public Task<CodexThread> StartThreadAsync(ThreadStartOptions options, CancellationToken ct) => _inner.StartThreadAsync(options, ct);
-
-    public Task<CodexThread> ResumeThreadAsync(string threadId, CancellationToken ct) => _inner.ResumeThreadAsync(threadId, ct);
-
-    public Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct) => _inner.ResumeThreadAsync(options, ct);
-
-    public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct) => _inner.StartTurnAsync(threadId, options, ct);
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct) => _inner.NotificationsRaw(ct);
 
     public ValueTask DisposeAsync() => _inner.DisposeAsync();
 }

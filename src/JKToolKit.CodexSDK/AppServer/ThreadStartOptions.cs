@@ -25,6 +25,20 @@ public sealed class ThreadStartOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional service tier override for the thread.
+    /// </summary>
+    /// <remarks>
+    /// Set <see cref="ClearServiceTier"/> to <see langword="true"/> to explicitly clear any inherited service tier
+    /// override instead of inheriting the current value.
+    /// </remarks>
+    public CodexServiceTier? ServiceTier { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to explicitly clear the service tier override.
+    /// </summary>
+    public bool ClearServiceTier { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional service name identifier for the thread.
     /// </summary>
     public string? ServiceName { get; set; }
@@ -45,6 +59,11 @@ public sealed class ThreadStartOptions
     /// selectively rejecting specific approval prompt types.
     /// </remarks>
     public CodexAskForApproval? AskForApproval { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional approval reviewer routing override.
+    /// </summary>
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; set; }
 
     /// <summary>
     /// Gets or sets an optional sandbox mode.

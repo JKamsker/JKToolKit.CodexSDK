@@ -1,8 +1,25 @@
 {
   "thread": {
-    "threadId": "t_arch",
-    "archived": false
+    "id": "t_arch",
+    "name": "Restored",
+    "preview": "Unarchived preview",
+    "createdAt": 1770002000,
+    "updatedAt": 1770003000,
+    "cwd": "C:\\repo",
+    "path": "C:\\repo\\.codex\\sessions\\rollout-t_arch.jsonl",
+    "cliVersion": "0.2.3",
+    "modelProvider": "openai",
+    "status": {
+      "type": "idle"
+    },
+    "ephemeral": false,
+    "source": "cli",
+    "turns": [],
+    "gitInfo": {
+      "sha": "abc123",
+      "branch": "main",
+      "originUrl": "https://example.com/repo.git"
+    }
   },
   "futureField": 42
 }
-

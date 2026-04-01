@@ -97,6 +97,43 @@ public class ProcessStartInfoBuilderTests
     }
 
     [Fact]
+    public void CreateProcessStartInfo_BuildsExpectedArguments_WithPromptArgumentAndStdinPayload()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions
+            {
+                WorkingDirectory = workingDirectory,
+                PromptArgument = "Summarize the piped input.",
+                StdinPayload = "alpha\nbeta",
+                Model = CodexModel.Gpt52Codex,
+                ReasoningEffort = CodexReasoningEffort.Medium
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
+
+            AssertUtf8Encodings(startInfo);
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "--model",
+                "gpt-5.2-codex",
+                "--config",
+                "model_reasoning_effort=medium",
+                "Summarize the piped input.");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CreateResumeStartInfo_BuildsExpectedArguments()
     {
         var workingDirectory = CreateTempDirectory();
@@ -127,6 +164,105 @@ public class ProcessStartInfoBuilderTests
                 "model_reasoning_effort=medium",
                 "resume",
                 "session-abc",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateResumeStartInfo_BuildsExpectedArguments_WithPromptArgument()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions
+            {
+                WorkingDirectory = workingDirectory,
+                PromptArgument = "Continue with the supplied stdin.",
+                Model = CodexModel.Gpt52Codex,
+                ReasoningEffort = CodexReasoningEffort.Medium
+            };
+            var sessionId = SessionId.Parse("session-abc");
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateResumeStartInfo(sessionId, options, clientOptions);
+
+            AssertUtf8Encodings(startInfo);
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "--model",
+                "gpt-5.2-codex",
+                "--config",
+                "model_reasoning_effort=medium",
+                "resume",
+                "session-abc",
+                "Continue with the supplied stdin.");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateResumeStartInfo_BuildsExpectedArguments_WithMostRecentTarget()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "follow-up");
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateResumeStartInfo(CodexResumeTarget.MostRecent(), options, clientOptions);
+
+            AssertUtf8Encodings(startInfo);
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "resume",
+                "--last",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateResumeStartInfo_BuildsExpectedArguments_WithSelectorAndAll()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "follow-up");
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateResumeStartInfo(
+                CodexResumeTarget.BySelector("friendly-thread", includeAllSessions: true),
+                options,
+                clientOptions);
+
+            AssertUtf8Encodings(startInfo);
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "resume",
+                "--all",
+                "friendly-thread",
                 "-");
         }
         finally
@@ -284,33 +420,7 @@ public class ProcessStartInfoBuilderTests
     }
 
     [Fact]
-    public void CreateProcessStartInfo_AllowsXHighOnlyWithGpt51CodexMax()
-    {
-        var workingDirectory = CreateTempDirectory();
-        try
-        {
-            var options = new CodexSessionOptions(workingDirectory, "prompt")
-            {
-                Model = CodexModel.Gpt51CodexMax,
-                ReasoningEffort = CodexReasoningEffort.XHigh
-            };
-            var clientOptions = new CodexClientOptions();
-            var pathProvider = new RecordingPathProvider("codex-default");
-            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
-
-            var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
-
-            startInfo.ArgumentList.Should().Contain("model_reasoning_effort=xhigh");
-            startInfo.ArgumentList.Should().Contain("gpt-5.1-codex-max");
-        }
-        finally
-        {
-            Directory.Delete(workingDirectory, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void CreateProcessStartInfo_Throws_WhenXHighUsedWithoutGpt51CodexMax()
+    public void CreateProcessStartInfo_AllowsXHighWithNonMaxModel()
     {
         var workingDirectory = CreateTempDirectory();
         try
@@ -324,10 +434,85 @@ public class ProcessStartInfoBuilderTests
             var pathProvider = new RecordingPathProvider("codex-default");
             var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
 
+            var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
+
+            startInfo.ArgumentList.Should().Contain("model_reasoning_effort=xhigh");
+            startInfo.ArgumentList.Should().Contain("gpt-5.2-codex");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateProcessStartInfo_AllowsXHighWithoutExplicitModelOverride()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "prompt")
+            {
+                ReasoningEffort = CodexReasoningEffort.XHigh
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var startInfo = launcher.CreateProcessStartInfo(options, clientOptions);
+
+            startInfo.ArgumentList.Should().Contain("model_reasoning_effort=xhigh");
+            startInfo.ArgumentList.Should().NotContain("--model");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateProcessStartInfo_Throws_WhenPromptAndPromptArgumentAreCombined()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "legacy prompt")
+            {
+                PromptArgument = "new prompt"
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
             var act = () => launcher.CreateProcessStartInfo(options, clientOptions);
 
             act.Should().Throw<InvalidOperationException>()
-                .WithMessage("*xhigh*only supported with model 'gpt-5.1-codex-max'*");
+                .WithMessage("Specify either Prompt or PromptArgument, but not both.");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateProcessStartInfo_Throws_WhenStdinPayloadIsUsedWithoutPromptArgument()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "legacy prompt")
+            {
+                StdinPayload = "extra stdin"
+            };
+            var clientOptions = new CodexClientOptions();
+            var pathProvider = new RecordingPathProvider("codex-default");
+            var launcher = new CodexProcessLauncher(pathProvider, NullLogger<CodexProcessLauncher>.Instance);
+
+            var act = () => launcher.CreateProcessStartInfo(options, clientOptions);
+
+            act.Should().Throw<InvalidOperationException>()
+                .WithMessage("StdinPayload can only be used when PromptArgument is set.");
         }
         finally
         {

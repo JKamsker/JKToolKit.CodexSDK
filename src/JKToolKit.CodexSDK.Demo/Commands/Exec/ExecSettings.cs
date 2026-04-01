@@ -7,6 +7,12 @@ public sealed class ExecSettings : CommandSettings
     [CommandOption("-p|--prompt <PROMPT>")]
     public string? PromptOption { get; init; }
 
+    [CommandOption("--prompt-arg <PROMPT>")]
+    public string? PromptArgument { get; init; }
+
+    [CommandOption("--stdin-payload <PAYLOAD>")]
+    public string? StdinPayload { get; init; }
+
     [CommandArgument(0, "[PROMPT]")]
     public string[] Prompt { get; init; } = [];
 

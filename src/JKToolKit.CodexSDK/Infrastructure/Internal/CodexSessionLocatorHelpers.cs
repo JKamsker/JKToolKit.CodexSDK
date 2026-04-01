@@ -29,8 +29,12 @@ internal static class CodexSessionLocatorHelpers
     {
         SessionId? sessionId = null;
         DateTimeOffset? createdAt = null;
-        string? workingDirectory = null;
+        DateTimeOffset? updatedAt = null;
+        string? sessionMetaWorkingDirectory = null;
+        string? latestTurnContextWorkingDirectory = null;
         CodexModel? model = null;
+        string? modelProvider = null;
+        string? humanLabel = null;
 
         using var stream = fileSystem.OpenRead(filePath);
         using var reader = new StreamReader(stream);
@@ -47,46 +51,59 @@ internal static class CodexSessionLocatorHelpers
             {
                 using var doc = JsonDocument.Parse(line);
                 var root = doc.RootElement;
+                UpdateLatestTimestamp(RolloutLineParsing.GetTopLevelTimestampOrNull(root));
 
-                if (root.TryGetProperty("type", out var typeElement) &&
-                    typeElement.GetString() == "session_meta")
+                if (RolloutLineParsing.TryGetPayloadObject(root, "session_meta", out var payload))
                 {
-                    if (root.TryGetProperty("timestamp", out var timestampElement))
+                    UpdateLatestTimestamp(RolloutLineParsing.GetPayloadTimestampOrNull(payload));
+                    createdAt ??= RolloutLineParsing.GetTopLevelTimestampOrNull(root) ??
+                                  RolloutLineParsing.GetPayloadTimestampOrNull(payload);
+
+                    if (payload.TryGetProperty("id", out var idElement))
                     {
-                        createdAt = timestampElement.GetDateTimeOffset();
-                    }
-
-                    if (root.TryGetProperty("payload", out var payload))
-                    {
-                        if (payload.TryGetProperty("id", out var idElement))
+                        var idString = idElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(idString) &&
+                            SessionId.TryParse(idString, out var parsed))
                         {
-                            var idString = idElement.GetString();
-                            if (!string.IsNullOrWhiteSpace(idString))
-                            {
-                                if (SessionId.TryParse(idString, out var parsed))
-                                {
-                                    sessionId = parsed;
-                                }
-                            }
-                        }
-
-                        if (payload.TryGetProperty("cwd", out var cwdElement))
-                        {
-                            workingDirectory = cwdElement.GetString();
-                        }
-
-                        if (payload.TryGetProperty("model", out var modelElement))
-                        {
-                            var modelString = modelElement.GetString();
-                            if (!string.IsNullOrWhiteSpace(modelString) &&
-                                CodexModel.TryParse(modelString, out var parsedModel))
-                            {
-                                model = parsedModel;
-                            }
+                            sessionId = parsed;
                         }
                     }
 
-                    break;
+                    if (payload.TryGetProperty("cwd", out var cwdElement) &&
+                        cwdElement.ValueKind == JsonValueKind.String)
+                    {
+                        sessionMetaWorkingDirectory = cwdElement.GetString();
+                    }
+
+                    modelProvider = TryGetOptionalString(payload, "model_provider") ?? modelProvider;
+
+                    humanLabel ??=
+                        TryGetOptionalString(payload, "thread_name") ??
+                        TryGetOptionalString(payload, "name") ??
+                        TryGetOptionalString(payload, "label");
+
+                    continue;
+                }
+
+                if (RolloutLineParsing.TryGetPayloadObject(root, "turn_context", out payload))
+                {
+                    UpdateLatestTimestamp(RolloutLineParsing.GetPayloadTimestampOrNull(payload));
+                    if (payload.TryGetProperty("cwd", out var cwdElement) &&
+                        cwdElement.ValueKind == JsonValueKind.String)
+                    {
+                        latestTurnContextWorkingDirectory = cwdElement.GetString();
+                    }
+
+                    if (payload.TryGetProperty("model", out var modelElement) &&
+                        modelElement.ValueKind == JsonValueKind.String)
+                    {
+                        var modelString = modelElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(modelString) &&
+                            CodexModel.TryParse(modelString, out var parsedModel))
+                        {
+                            model = parsedModel;
+                        }
+                    }
                 }
             }
             catch (JsonException ex)
@@ -114,8 +131,24 @@ internal static class CodexSessionLocatorHelpers
             Id: sessionId.Value,
             LogPath: filePath,
             CreatedAt: effectiveCreatedAt,
-            WorkingDirectory: workingDirectory,
-            Model: model);
+            WorkingDirectory: latestTurnContextWorkingDirectory ?? sessionMetaWorkingDirectory,
+            Model: model,
+            HumanLabel: humanLabel,
+            UpdatedAt: updatedAt ?? effectiveCreatedAt,
+            ModelProvider: modelProvider);
+
+        void UpdateLatestTimestamp(DateTimeOffset? candidate)
+        {
+            if (candidate is null)
+            {
+                return;
+            }
+
+            if (updatedAt is null || candidate > updatedAt.Value)
+            {
+                updatedAt = candidate;
+            }
+        }
     }
 
     internal static bool MatchesFilter(CodexSessionInfo sessionInfo, SessionFilter filter)
@@ -131,7 +164,7 @@ internal static class CodexSessionLocatorHelpers
         }
 
         if (!string.IsNullOrWhiteSpace(filter.WorkingDirectory) &&
-            !string.Equals(sessionInfo.WorkingDirectory, filter.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
+            !NormalizedPathEquals(sessionInfo.WorkingDirectory, filter.WorkingDirectory))
         {
             return false;
         }
@@ -155,6 +188,12 @@ internal static class CodexSessionLocatorHelpers
             {
                 return false;
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.ModelProvider) &&
+            !string.Equals(sessionInfo.ModelProvider, filter.ModelProvider, StringComparison.Ordinal))
+        {
+            return false;
         }
 
         return true;
@@ -187,7 +226,7 @@ internal static class CodexSessionLocatorHelpers
             yield break;
         }
 
-        var candidates = new List<(string FilePath, DateTime? CreatedAtUtc)>();
+        var candidates = new List<(string FilePath, DateTime? CreatedAtUtc, DateTime? FileNameTimestamp, string? Uuid)>();
 
         foreach (var file in files)
         {
@@ -204,15 +243,43 @@ internal static class CodexSessionLocatorHelpers
             }
 
             var createdAtUtc = TryGetCreationTimeUtc(fileSystem, logger, file);
-            candidates.Add((file, createdAtUtc));
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+            var (fileNameTimestamp, uuid) = TryParseFileNameTimestampAndUuid(fileNameWithoutExtension);
+            candidates.Add((file, createdAtUtc, fileNameTimestamp, uuid));
         }
 
+        // Upstream orders by filename-embedded timestamp descending, then UUID descending.
+        // Fall back to OS creation time when the filename does not contain a parseable timestamp.
         foreach (var c in candidates
-                     .OrderByDescending(c => c.CreatedAtUtc ?? DateTime.MinValue)
-                     .ThenBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
+                     .OrderByDescending(c => c.FileNameTimestamp ?? c.CreatedAtUtc ?? DateTime.MinValue)
+                     .ThenByDescending(c => c.Uuid, StringComparer.OrdinalIgnoreCase))
         {
-            yield return c;
+            yield return (c.FilePath, c.CreatedAtUtc);
         }
+    }
+
+    private static (DateTime? Timestamp, string? Uuid) TryParseFileNameTimestampAndUuid(string fileNameWithoutExtension)
+    {
+        var match = RolloutTimestampedFileNamePattern.Match(fileNameWithoutExtension);
+        if (!match.Success)
+        {
+            return (null, null);
+        }
+
+        // Format: rollout-YYYY-MM-DDThh-mm-ss-<uuid>
+        // Group 1: timestamp part  Group 2: uuid part
+        DateTime? ts = null;
+        if (DateTime.TryParseExact(
+                match.Groups[1].Value,
+                "yyyy-MM-dd'T'HH-mm-ss",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out var parsed))
+        {
+            ts = parsed;
+        }
+
+        return (ts, match.Groups[2].Value);
     }
 
     internal static DateTime? TryGetCreationTimeUtc(IFileSystem fileSystem, ILogger logger, string filePath)
@@ -263,4 +330,36 @@ internal static class CodexSessionLocatorHelpers
             return null;
         }
     }
+
+    private static readonly char[] DirectorySeparators = ['/', '\\'];
+
+    /// <summary>
+    /// Compares two paths after normalizing with <see cref="Path.GetFullPath(string)"/>
+    /// and trimming trailing directory separators, matching the upstream
+    /// <c>AbsolutePathBuf</c> (path-absolutize) normalization semantics.
+    /// </summary>
+    internal static bool NormalizedPathEquals(string? a, string? b)
+    {
+        if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+        {
+            return string.IsNullOrWhiteSpace(a) && string.IsNullOrWhiteSpace(b);
+        }
+
+        try
+        {
+            a = Path.GetFullPath(a).TrimEnd(DirectorySeparators);
+            b = Path.GetFullPath(b).TrimEnd(DirectorySeparators);
+        }
+        catch
+        {
+            // If normalization fails (invalid chars, etc.) fall through to raw comparison.
+        }
+
+        return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? TryGetOptionalString(JsonElement payload, string propertyName) =>
+        payload.TryGetProperty(propertyName, out var element) && element.ValueKind == JsonValueKind.String
+            ? element.GetString()
+            : null;
 }

@@ -68,12 +68,20 @@ To observe drops, use `CodexAppServerClient.NotificationDropStats`.
   - `StartThreadAsync(...)`, `ResumeThreadAsync(...)`
   - `ListThreadsAsync(...)`, `ReadThreadAsync(...)`, `ArchiveThreadAsync(...)`, `UnarchiveThreadAsync(...)`, `ForkThreadAsync(...)`, `SetThreadNameAsync(...)`
   - `ListSkillsAsync(...)`, `ListAppsAsync(...)`
-  - `ReadConfigAsync(...)` (`config/read`)
+  - `ReadConfigAsync(...)`, `ReadConfigRequirementsAsync(...)` (`config/read`, `configRequirements/read`)
   - `DetectExternalAgentConfigAsync(...)`, `ImportExternalAgentConfigAsync(...)` (`externalAgentConfig/detect`, `externalAgentConfig/import`)
+  - `ReadAccountAsync(...)`, `ReadAccountRateLimitsAsync(...)`, `StartAccountLoginAsync(...)`, `CancelAccountLoginAsync(...)`, `LogoutAccountAsync(...)`
+  - `ListModelsAsync(...)`, `ListExperimentalFeaturesAsync(...)`
+  - `WriteConfigValueAsync(...)`, `WriteConfigBatchAsync(...)`, `UploadFeedbackAsync(...)`
   - `StartWindowsSandboxSetupAsync(...)` (`windowsSandbox/setupStart`)
   - `StartTurnAsync(...)` → returns a `CodexTurnHandle`
   - `SteerTurnAsync(...)`
   - `StartReviewAsync(...)`
+  - `CommandExecAsync(...)`, `CommandExecWriteAsync(...)`, `CommandExecResizeAsync(...)`, `CommandExecTerminateAsync(...)`
+  - `FsWatchAsync(...)`, `FsUnwatchAsync(...)`
+  - `ListPluginsAsync(...)`, `ReadPluginAsync(...)`, `InstallPluginAsync(...)`, `UninstallPluginAsync(...)`
+  - `ListCollaborationModesAsync(...)`
+  - `StartThreadRealtimeAsync(...)`, `AppendThreadRealtimeAudioAsync(...)`, `AppendThreadRealtimeTextAsync(...)`, `StopThreadRealtimeAsync(...)`
   - MCP helpers: `ListMcpServerStatusAsync(...)`, `ReloadMcpServersAsync()`, `StartMcpServerOauthLoginAsync(...)`
   - `CallAsync(...)` escape hatch for forward compatibility
 - `CodexTurnHandle`
@@ -84,12 +92,17 @@ To observe drops, use `CodexAppServerClient.NotificationDropStats`.
 
 ### Typed notifications (initial set)
 
-The library maps a small must-have subset of notifications into typed records:
+The library maps a broad stable subset of notifications into typed records:
 
 - `AgentMessageDeltaNotification` (`item/agentMessage/delta`)
 - `ItemStartedNotification` (`item/started`)
 - `ItemCompletedNotification` (`item/completed`)
 - `TurnCompletedNotification` (`turn/completed`)
+- `CommandExecOutputDeltaNotification` (`command/exec/outputDelta`)
+- `FsChangedNotification` (`fs/changed`)
+- `SkillsChangedNotification` (`skills/changed`)
+- `AppListUpdatedNotification` (`app/list/updated`)
+- `AccountLoginCompletedNotification` (`account/login/completed`)
 - `UnknownNotification` fallback for forward-compatibility
 
 It also includes a growing set of additional typed notifications under `JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications`, including:
@@ -97,7 +110,12 @@ It also includes a growing set of additional typed notifications under `JKToolKi
 - `ThreadArchivedNotification` (`thread/archived`)
 - `ThreadUnarchivedNotification` (`thread/unarchived`)
 - `ThreadStatusChangedNotification` (`thread/status/changed`)
+- `HookStartedNotification` / `HookCompletedNotification`
+- `AccountRateLimitsUpdatedNotification`
+- `McpServerStartupStatusUpdatedNotification`
 - `WindowsSandboxSetupCompletedNotification` (`windowsSandbox/setupCompleted`)
+
+Some newer notifications still intentionally preserve raw JSON for unstable nested payloads even when the outer notification is typed.
 
 ## Override Hooks (Forward Compatibility)
 
@@ -257,7 +275,7 @@ await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServer
 var thread = await codex.StartThreadAsync(new ThreadStartOptions
 {
     Cwd = "<repo-path>",
-    Model = CodexModel.Gpt51Codex,
+    Model = CodexModel.Gpt53Codex,
     ApprovalPolicy = CodexApprovalPolicy.Never,
     Sandbox = CodexSandboxMode.WorkspaceWrite
 });
@@ -388,19 +406,19 @@ Built-in handlers:
 
 - `AlwaysApproveHandler`
 - `AlwaysDenyHandler`
-- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console; supports tool requests and token refresh prompts)
+- `PromptConsoleApprovalHandler` (demo-oriented; writes prompts to stderr/console; supports approval requests, MCP elicitations, tool requests, and token refresh prompts)
 
 If no handler is configured, server requests are rejected with a JSON-RPC error to avoid deadlocks.
 
 Notes:
 
-- `AlwaysApproveHandler` / `AlwaysDenyHandler` cover only approval request methods.
+- `AlwaysApproveHandler` / `AlwaysDenyHandler` cover approval requests including `item/permissions/requestApproval` and `mcpServer/elicitation/request`.
 - `PromptConsoleApprovalHandler` additionally supports `item/tool/requestUserInput`, `item/tool/call`, and `account/chatgptAuthTokens/refresh` by prompting on the console.
 - For production usage (especially `item/tool/call` and token refresh), implement a custom handler to avoid interactive prompts and to integrate with your app's auth/tooling.
 
 Experimental helpers:
 
-- The SDK exposes wire DTOs under `JKToolKit.CodexSDK.AppServer.Protocol.V2` for server request payloads such as `item/tool/requestUserInput` and `item/tool/call`.
+- The SDK exposes wire DTOs under `JKToolKit.CodexSDK.AppServer.Protocol.V2` for server request payloads such as `item/permissions/requestApproval`, `mcpServer/elicitation/request`, `item/tool/requestUserInput`, and `item/tool/call`.
 
 ### `ApprovalPolicy` vs `AskForApproval`
 

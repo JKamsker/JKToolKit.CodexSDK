@@ -2,9 +2,9 @@ using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
-using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using JKToolKit.CodexSDK.Models;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -60,8 +60,13 @@ internal sealed class CodexAppServerTurnsClient
             Input = options.Input.Select(i => i.Wire).ToArray(),
             Cwd = options.Cwd,
             ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
+            ApprovalsReviewer = options.ApprovalsReviewer,
             SandboxPolicy = options.SandboxPolicy,
             Model = options.Model?.Value,
+            ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
+                options.ServiceTier,
+                options.ClearServiceTier,
+                nameof(TurnStartOptions.ClearServiceTier)),
             Effort = options.Effort?.Value,
             Summary = options.Summary,
             Personality = options.Personality,
@@ -113,7 +118,7 @@ internal sealed class CodexAppServerTurnsClient
                 $"turn/start returned no turn id. Raw result: {result}");
         }
 
-        return CreateTurnHandle(threadId, turnId);
+        return CreateTurnHandle(threadId, turnId, rawStartResponse: result);
     }
 
     public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
@@ -137,9 +142,16 @@ internal sealed class CodexAppServerTurnsClient
                 CodexAppServerClient.BuildTurnSteerParams(options),
                 ct);
 
+            var turnId = CodexAppServerClientJson.ExtractTurnId(raw);
+            if (string.IsNullOrWhiteSpace(turnId))
+            {
+                throw new InvalidOperationException(
+                    $"turn/steer returned no turn id. Raw result: {raw}");
+            }
+
             return new TurnSteerResult
             {
-                TurnId = CodexAppServerClientJson.ExtractTurnId(raw) ?? options.ExpectedTurnId,
+                TurnId = turnId,
                 Raw = raw
             };
         }
@@ -183,9 +195,14 @@ internal sealed class CodexAppServerTurnsClient
                 innerException: ex);
         }
 
-        var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId");
-
         var turnObj = CodexAppServerClientJson.TryGetObject(result, "turn") ?? result;
+        var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId");
+        if (string.IsNullOrWhiteSpace(reviewThreadId))
+        {
+            throw new InvalidOperationException(
+                $"review/start returned no review thread id. Raw result: {result}");
+        }
+
         var turnId = CodexAppServerClientJson.ExtractTurnId(turnObj);
         if (string.IsNullOrWhiteSpace(turnId))
         {
@@ -193,29 +210,28 @@ internal sealed class CodexAppServerTurnsClient
                 $"review/start returned no turn id. Raw result: {result}");
         }
 
-        var turnThreadId = CodexAppServerClientJson.ExtractThreadId(turnObj) ?? reviewThreadId ?? options.ThreadId;
-
         return new ReviewStartResult
         {
-            Turn = CreateTurnHandle(turnThreadId, turnId),
+            Turn = CreateTurnHandle(reviewThreadId, turnId, supportsSteer: false),
             ReviewThreadId = reviewThreadId,
             Raw = result
         };
     }
 
-    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId)
+    private CodexTurnHandle CreateTurnHandle(string threadId, string turnId, bool supportsSteer = true, JsonElement? rawStartResponse = null)
     {
         var handle = new CodexTurnHandle(
             threadId,
             turnId,
             interrupt: c => InterruptAsync(threadId, turnId, c),
-            steer: (input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
-            steerRaw: (input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c),
+            steer: supportsSteer ? (Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<string>>)((input, c) => SteerTurnAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c)) : null,
+            steerRaw: supportsSteer ? (Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<TurnSteerResult>>)((input, c) => SteerTurnRawAsync(new TurnSteerOptions { ThreadId = threadId, ExpectedTurnId = turnId, Input = input }, c)) : null,
             onDispose: () =>
             {
                 _removeTurnHandle(turnId);
             },
-            bufferCapacity: _options.NotificationBufferCapacity);
+            bufferCapacity: _options.NotificationBufferCapacity,
+            rawStartResponse: rawStartResponse);
 
         _registerTurnHandle(turnId, handle);
 
@@ -235,4 +251,5 @@ internal sealed class CodexAppServerTurnsClient
             SandboxPolicy.WorkspaceWrite w => w.ReadOnlyAccess is not null,
             _ => false
         };
+
 }

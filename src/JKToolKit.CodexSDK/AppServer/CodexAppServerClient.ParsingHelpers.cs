@@ -26,6 +26,9 @@ public sealed partial class CodexAppServerClient
     internal static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject) =>
         CodexAppServerClientThreadParsers.ParseThreadSummary(threadObject);
 
+    internal static CodexThreadSummary? ParseThreadSummary(JsonElement threadObject, JsonElement envelope) =>
+        CodexAppServerClientThreadParsers.ParseThreadSummary(threadObject, envelope);
+
     internal static string? ExtractNextCursor(JsonElement listResult) =>
         CodexAppServerClientThreadParsers.ExtractNextCursor(listResult);
 

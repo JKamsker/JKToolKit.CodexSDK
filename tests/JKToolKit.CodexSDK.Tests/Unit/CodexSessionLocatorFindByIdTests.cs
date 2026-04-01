@@ -52,6 +52,46 @@ public sealed class CodexSessionLocatorFindByIdTests
         resolved.Should().Be(newer);
     }
 
+    [Fact]
+    public async Task FindSessionLogAsync_PrefersLegacyRolloutName_OverGenericSuffixMatch_WhenNoTimestampedRolloutExists()
+    {
+        var sessionsRoot = Path.Combine(Path.GetTempPath(), $"sessions-{Guid.NewGuid():N}");
+        var sessionId = SessionId.Parse("id");
+
+        var legacy = Path.Combine(sessionsRoot, "rollout-id.jsonl");
+        var generic = Path.Combine(sessionsRoot, "anything-id.jsonl");
+
+        var fileSystem = new RecordingFileSystem(
+            sessionsRoot,
+            files: new[] { generic, legacy });
+
+        var locator = new CodexSessionLocator(fileSystem, NullLogger<CodexSessionLocator>.Instance);
+
+        var resolved = await locator.FindSessionLogAsync(sessionId, sessionsRoot, CancellationToken.None);
+
+        resolved.Should().Be(legacy);
+    }
+
+    [Fact]
+    public async Task FindSessionLogAsync_UsesDeterministicPathOrder_WhenTimestampedCandidatesTie()
+    {
+        var sessionsRoot = Path.Combine(Path.GetTempPath(), $"sessions-{Guid.NewGuid():N}");
+        var sessionId = SessionId.Parse("id");
+
+        var candidateA = Path.Combine(sessionsRoot, "a", "rollout-2026-02-26T12-00-00-id.jsonl");
+        var candidateB = Path.Combine(sessionsRoot, "b", "rollout-2026-02-26T12-00-00-id.jsonl");
+
+        var fileSystem = new RecordingFileSystem(
+            sessionsRoot,
+            files: new[] { candidateB, candidateA });
+
+        var locator = new CodexSessionLocator(fileSystem, NullLogger<CodexSessionLocator>.Instance);
+
+        var resolved = await locator.FindSessionLogAsync(sessionId, sessionsRoot, CancellationToken.None);
+
+        resolved.Should().Be(candidateA);
+    }
+
     private sealed class RecordingFileSystem(string sessionsRoot, IReadOnlyList<string> files) : IFileSystem
     {
         public string? LastSearchPattern { get; private set; }

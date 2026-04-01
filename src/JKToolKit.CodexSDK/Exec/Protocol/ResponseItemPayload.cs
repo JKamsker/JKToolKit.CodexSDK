@@ -24,6 +24,11 @@ public sealed record ReasoningResponseItemPayload : ResponseItemPayload
     public required IReadOnlyList<string> SummaryTexts { get; init; }
 
     /// <summary>
+    /// Gets the structured reasoning content parts, when provided.
+    /// </summary>
+    public required IReadOnlyList<ReasoningContentPart> Content { get; init; }
+
+    /// <summary>
     /// Gets the encrypted reasoning content, when provided.
     /// </summary>
     public string? EncryptedContent { get; init; }
@@ -38,6 +43,16 @@ public sealed record MessageResponseItemPayload : ResponseItemPayload
     /// Gets the message role (e.g. <c>assistant</c>, <c>user</c>), when provided.
     /// </summary>
     public string? Role { get; init; }
+
+    /// <summary>
+    /// Gets the message phase (e.g. <c>commentary</c>, <c>final_answer</c>), when provided.
+    /// </summary>
+    public string? Phase { get; init; }
+
+    /// <summary>
+    /// Gets whether this message ends the turn, when provided.
+    /// </summary>
+    public bool? EndTurn { get; init; }
 
     /// <summary>
     /// Gets the structured content parts for this message.
@@ -98,6 +113,11 @@ public sealed record LocalShellCallResponseItemPayload : ResponseItemPayload
     /// Gets the optional user for <c>action.type=exec</c>, when provided.
     /// </summary>
     public string? User { get; init; }
+
+    /// <summary>
+    /// Gets the raw structured action payload, when provided.
+    /// </summary>
+    public JsonElement? ActionJson { get; init; }
 }
 
 /// <summary>
@@ -111,9 +131,19 @@ public sealed record FunctionCallResponseItemPayload : ResponseItemPayload
     public string? Name { get; init; }
 
     /// <summary>
+    /// Gets the optional function namespace, when provided.
+    /// </summary>
+    public string? Namespace { get; init; }
+
+    /// <summary>
     /// Gets the function arguments JSON string, when provided.
     /// </summary>
     public string? ArgumentsJson { get; init; }
+
+    /// <summary>
+    /// Gets the structured function arguments when the upstream payload is non-string.
+    /// </summary>
+    public JsonElement? Arguments { get; init; }
 
     /// <summary>
     /// Gets the call id associated with this function call, when provided.
@@ -135,6 +165,16 @@ public sealed record FunctionCallOutputResponseItemPayload : ResponseItemPayload
     /// Gets the output content, when provided.
     /// </summary>
     public string? Output { get; init; }
+
+    /// <summary>
+    /// Gets the structured output body when the upstream payload is non-string.
+    /// </summary>
+    public JsonElement? OutputJson { get; init; }
+
+    /// <summary>
+    /// Gets typed structured content items when the upstream output is a content-item array.
+    /// </summary>
+    public IReadOnlyList<FunctionToolOutputContentPart>? OutputContent { get; init; }
 }
 
 /// <summary>
@@ -161,6 +201,11 @@ public sealed record CustomToolCallResponseItemPayload : ResponseItemPayload
     /// Gets the tool input payload, when provided.
     /// </summary>
     public string? Input { get; init; }
+
+    /// <summary>
+    /// Gets the structured tool input payload when the upstream value is non-string.
+    /// </summary>
+    public JsonElement? InputJson { get; init; }
 }
 
 /// <summary>
@@ -174,9 +219,102 @@ public sealed record CustomToolCallOutputResponseItemPayload : ResponseItemPaylo
     public string? CallId { get; init; }
 
     /// <summary>
+    /// Gets the tool name associated with this output, when provided.
+    /// </summary>
+    public string? Name { get; init; }
+
+    /// <summary>
     /// Gets the output payload, when provided.
     /// </summary>
     public string? Output { get; init; }
+
+    /// <summary>
+    /// Gets the structured output body when the upstream payload is non-string.
+    /// </summary>
+    public JsonElement? OutputJson { get; init; }
+
+    /// <summary>
+    /// Gets typed structured content items when the upstream output is a content-item array.
+    /// </summary>
+    public IReadOnlyList<FunctionToolOutputContentPart>? OutputContent { get; init; }
+}
+
+/// <summary>
+/// Represents a <c>tool_search_call</c> response item payload emitted by Codex.
+/// </summary>
+public sealed record ToolSearchCallResponseItemPayload : ResponseItemPayload
+{
+    /// <summary>
+    /// Gets the status of the tool search call, when provided.
+    /// </summary>
+    public string? Status { get; init; }
+
+    /// <summary>
+    /// Gets the call id associated with this tool search call, when provided.
+    /// </summary>
+    public string? CallId { get; init; }
+
+    /// <summary>
+    /// Gets the execution identifier, when provided.
+    /// </summary>
+    public string? Execution { get; init; }
+
+    /// <summary>
+    /// Gets the raw arguments payload, when provided.
+    /// </summary>
+    public JsonElement? Arguments { get; init; }
+}
+
+/// <summary>
+/// Represents a <c>tool_search_output</c> response item payload emitted by Codex.
+/// </summary>
+public sealed record ToolSearchOutputResponseItemPayload : ResponseItemPayload
+{
+    /// <summary>
+    /// Gets the status of the tool search output, when provided.
+    /// </summary>
+    public string? Status { get; init; }
+
+    /// <summary>
+    /// Gets the call id associated with this tool search output, when provided.
+    /// </summary>
+    public string? CallId { get; init; }
+
+    /// <summary>
+    /// Gets the execution identifier, when provided.
+    /// </summary>
+    public string? Execution { get; init; }
+
+    /// <summary>
+    /// Gets the returned tool descriptors.
+    /// </summary>
+    public required IReadOnlyList<JsonElement> Tools { get; init; }
+}
+
+/// <summary>
+/// Represents an <c>image_generation_call</c> response item payload emitted by Codex.
+/// </summary>
+public sealed record ImageGenerationCallResponseItemPayload : ResponseItemPayload
+{
+    /// <summary>
+    /// Gets the image generation id, when provided.
+    /// </summary>
+    public string? Id { get; init; }
+
+    /// <summary>
+    /// Gets the status of the image generation call, when provided.
+    /// </summary>
+    public string? Status { get; init; }
+
+    /// <summary>
+    /// Gets the revised prompt, when provided.
+    /// </summary>
+    public string? RevisedPrompt { get; init; }
+
+    /// <summary>
+    /// Gets the generation result, when provided.
+    /// </summary>
+    public string? Result { get; init; }
 }
 
 /// <summary>

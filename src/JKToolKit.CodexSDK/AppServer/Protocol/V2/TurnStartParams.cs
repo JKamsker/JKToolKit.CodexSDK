@@ -42,6 +42,12 @@ public sealed record class TurnStartParams
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
+    /// Gets an optional approval reviewer routing override for this turn and subsequent turns.
+    /// </summary>
+    [JsonPropertyName("approvalsReviewer")]
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
+
+    /// <summary>
     /// Gets an optional sandbox policy override for this turn and subsequent turns.
     /// </summary>
     [JsonPropertyName("sandboxPolicy")]
@@ -52,6 +58,20 @@ public sealed record class TurnStartParams
     /// </summary>
     [JsonPropertyName("model")]
     public string? Model { get; init; }
+
+    /// <summary>
+    /// Gets an optional service tier override for this turn and subsequent turns.
+    /// </summary>
+    /// <remarks>
+    /// Tri-state semantics:
+    /// <list type="bullet">
+    /// <item><description>Unset: inherit existing value (field omitted).</description></item>
+    /// <item><description><c>null</c>: explicitly clear existing override (<c>"serviceTier": null</c>).</description></item>
+    /// <item><description>String: explicitly set a value (for example <c>"fast"</c>).</description></item>
+    /// </list>
+    /// </remarks>
+    [JsonPropertyName("serviceTier")]
+    public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
     /// Gets an optional reasoning effort override for this turn and subsequent turns (wire value).

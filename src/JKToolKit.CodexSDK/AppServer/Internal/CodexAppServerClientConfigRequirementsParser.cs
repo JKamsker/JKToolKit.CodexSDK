@@ -17,11 +17,30 @@ internal static class CodexAppServerClientConfigRequirementsParser
             return null;
         }
 
-        var allowedApprovalPolicies = GetOptionalStringArray(req, "allowedApprovalPolicies")
-            ?.Select(s => CodexApprovalPolicy.TryParse(s, out var p) ? p : (CodexApprovalPolicy?)null)
-            .Where(p => p.HasValue)
-            .Select(p => p!.Value)
-            .ToArray();
+        List<CodexApprovalPolicy>? allowedApprovalPolicyValues = null;
+        List<CodexAskForApproval>? allowedAskForApprovalValues = null;
+        if (CodexAppServerClientJson.TryGetArray(req, "allowedApprovalPolicies") is { } approvalPoliciesArray)
+        {
+            foreach (var policyElement in approvalPoliciesArray.EnumerateArray())
+            {
+                if (CodexAskForApproval.TryParse(policyElement, out var askForApproval))
+                {
+                    (allowedAskForApprovalValues ??= new List<CodexAskForApproval>()).Add(askForApproval);
+                    if (askForApproval.Policy is { } approvalPolicy)
+                    {
+                        (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(approvalPolicy);
+                    }
+
+                    continue;
+                }
+
+                if (policyElement.ValueKind == JsonValueKind.String &&
+                    CodexApprovalPolicy.TryParse(policyElement.GetString(), out var parsedPolicy))
+                {
+                    (allowedApprovalPolicyValues ??= new List<CodexApprovalPolicy>()).Add(parsedPolicy);
+                }
+            }
+        }
 
         var allowedSandboxModes = GetOptionalStringArray(req, "allowedSandboxModes")
             ?.Select(s => CodexSandboxMode.TryParse(s, out var m) ? m : (CodexSandboxMode?)null)
@@ -34,6 +53,8 @@ internal static class CodexAppServerClientConfigRequirementsParser
             .Where(w => w.HasValue)
             .Select(w => w!.Value)
             .ToArray();
+
+        var featureRequirements = ParseBoolMap(req, "featureRequirements");
 
         CodexResidencyRequirement? residency = null;
         if (CodexResidencyRequirement.TryParse(GetStringOrNull(req, "enforceResidency"), out var r))
@@ -49,9 +70,11 @@ internal static class CodexAppServerClientConfigRequirementsParser
 
         return new ConfigRequirements
         {
-            AllowedApprovalPolicies = allowedApprovalPolicies,
+            AllowedApprovalPolicies = allowedApprovalPolicyValues?.ToArray(),
+            AllowedAskForApproval = allowedAskForApprovalValues?.ToArray(),
             AllowedSandboxModes = allowedSandboxModes,
             AllowedWebSearchModes = allowedWebSearchModes,
+            FeatureRequirements = featureRequirements,
             EnforceResidency = residency,
             Network = network,
             Raw = req.Clone()
@@ -67,12 +90,82 @@ internal static class CodexAppServerClientConfigRequirementsParser
             SocksPort = GetInt32OrNull(network, "socksPort"),
             AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
             DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
-            DangerouslyAllowNonLoopbackAdmin = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackAdmin"),
+            DangerouslyAllowAllUnixSockets = GetBoolOrNull(network, "dangerouslyAllowAllUnixSockets"),
+            Domains = ParseDomainPermissions(network, "domains"),
+            ManagedAllowedDomainsOnly = GetBoolOrNull(network, "managedAllowedDomainsOnly"),
             AllowedDomains = GetOptionalStringArray(network, "allowedDomains"),
             DeniedDomains = GetOptionalStringArray(network, "deniedDomains"),
             AllowUnixSockets = GetOptionalStringArray(network, "allowUnixSockets"),
+            UnixSockets = ParseUnixSocketPermissions(network, "unixSockets"),
             AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
             Raw = network.Clone()
         };
+    }
+
+    private static IReadOnlyDictionary<string, bool>? ParseBoolMap(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } values)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, bool>(StringComparer.Ordinal);
+        foreach (var item in values.EnumerateObject())
+        {
+            if (item.Value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                result[item.Name] = item.Value.GetBoolean();
+            }
+        }
+
+        return result.Count == 0 ? null : result;
+    }
+
+    private static IReadOnlyDictionary<string, NetworkDomainPermission>? ParseDomainPermissions(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } permissions)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, NetworkDomainPermission>(StringComparer.Ordinal);
+        foreach (var item in permissions.EnumerateObject())
+        {
+            if (item.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            if (NetworkDomainPermission.TryParse(item.Value.GetString(), out var permission))
+            {
+                result[item.Name] = permission;
+            }
+        }
+
+        return result.Count == 0 ? null : result;
+    }
+
+    private static IReadOnlyDictionary<string, NetworkUnixSocketPermission>? ParseUnixSocketPermissions(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } permissions)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, NetworkUnixSocketPermission>(StringComparer.Ordinal);
+        foreach (var item in permissions.EnumerateObject())
+        {
+            if (item.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            if (NetworkUnixSocketPermission.TryParse(item.Value.GetString(), out var permission))
+            {
+                result[item.Name] = permission;
+            }
+        }
+
+        return result.Count == 0 ? null : result;
     }
 }

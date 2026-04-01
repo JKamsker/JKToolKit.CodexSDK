@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text.Json;
 using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
@@ -13,6 +14,14 @@ public sealed class SessionJsonlParsingSmokeTests
     private static readonly Regex YearRegex = new(@"^\d{4}$", RegexOptions.Compiled);
     private static readonly Regex MonthRegex = new(@"^\d{2}$", RegexOptions.Compiled);
     private static readonly Regex DayRegex = new(@"^\d{2}$", RegexOptions.Compiled);
+    private static readonly HashSet<string> AllowedUnknownEventTypes = new(StringComparer.Ordinal)
+    {
+        "dynamic_tool_call_request",
+        "dynamic_tool_call_response"
+    };
+
+    private static readonly HashSet<string> AllowedUnknownResponseItemPayloadTypes = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> AllowedUnknownMessageContentTypes = new(StringComparer.Ordinal);
 
     [Fact]
     [Trait("Category", "Smoke")]
@@ -101,47 +110,105 @@ public sealed class SessionJsonlParsingSmokeTests
 
                 if (evt is UnknownCodexEvent)
                 {
+                    var unknownType = evt.Type;
+                    if (!AllowedUnknownEventTypes.Contains(unknownType))
+                    {
+                        errors.Add($"{file}:{lineNo}: unknown event type not allowlisted: {unknownType}");
+                        if (errors.Count >= maxErrors)
+                            return;
+                    }
+
                     continue;
                 }
 
                 if (evt is ResponseItemEvent responseItem)
                 {
-                    if (responseItem.Payload is UnknownResponseItemPayload)
+                    if (responseItem.Payload is UnknownResponseItemPayload unknownPayload)
                     {
+                        var payloadType = TryGetTypeDiscriminator(unknownPayload.Raw);
+                        if (!IsAllowlisted(payloadType, AllowedUnknownResponseItemPayloadTypes))
+                        {
+                            errors.Add($"{file}:{lineNo}: response_item unknown payload type not allowlisted: {payloadType ?? "<missing>"}");
+                            if (errors.Count >= maxErrors)
+                                return;
+                        }
+
                         continue;
                     }
 
                     if (responseItem.Payload is MessageResponseItemPayload msg &&
                         msg.Content.Any(p => p is UnknownResponseMessageContentPart))
                     {
+                        foreach (var unknownPart in msg.Content.OfType<UnknownResponseMessageContentPart>())
+                        {
+                            var contentType = TryGetTypeDiscriminator(unknownPart.Raw);
+                            if (!IsAllowlisted(contentType, AllowedUnknownMessageContentTypes))
+                            {
+                                errors.Add($"{file}:{lineNo}: response_item message unknown content type not allowlisted: {contentType ?? "<missing>"}");
+                                if (errors.Count >= maxErrors)
+                                    return;
+                            }
+                        }
+
                         continue;
                     }
                 }
 
                 if (evt is CompactedEvent compacted)
                 {
-                    if (compacted.ReplacementHistory.Any(p => p is UnknownResponseItemPayload))
+                    var hasUnknownReplacementHistoryPayload = false;
+                    foreach (var unknownPayload in compacted.ReplacementHistory.OfType<UnknownResponseItemPayload>())
                     {
-                        continue;
-                    }
-
-                    var skipLine = false;
-                    foreach (var item in compacted.ReplacementHistory.OfType<MessageResponseItemPayload>())
-                    {
-                        if (item.Content.Any(p => p is UnknownResponseMessageContentPart))
+                        hasUnknownReplacementHistoryPayload = true;
+                        var payloadType = TryGetTypeDiscriminator(unknownPayload.Raw);
+                        if (!IsAllowlisted(payloadType, AllowedUnknownResponseItemPayloadTypes))
                         {
-                            skipLine = true;
-                            break;
+                            errors.Add($"{file}:{lineNo}: compacted replacement_history unknown payload type not allowlisted: {payloadType ?? "<missing>"}");
+                            if (errors.Count >= maxErrors)
+                                return;
                         }
                     }
 
-                    if (skipLine)
+                    var hasUnknownMessageContentPart = false;
+                    foreach (var item in compacted.ReplacementHistory.OfType<MessageResponseItemPayload>())
+                    {
+                        foreach (var unknownPart in item.Content.OfType<UnknownResponseMessageContentPart>())
+                        {
+                            hasUnknownMessageContentPart = true;
+                            var contentType = TryGetTypeDiscriminator(unknownPart.Raw);
+                            if (!IsAllowlisted(contentType, AllowedUnknownMessageContentTypes))
+                            {
+                                errors.Add($"{file}:{lineNo}: compacted replacement_history unknown message content type not allowlisted: {contentType ?? "<missing>"}");
+                                if (errors.Count >= maxErrors)
+                                    return;
+                            }
+                        }
+                    }
+
+                    if (hasUnknownReplacementHistoryPayload || hasUnknownMessageContentPart)
                     {
                         continue;
                     }
                 }
             }
         }
+    }
+
+    private static bool IsAllowlisted(string? type, IReadOnlySet<string> allowlist)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+            return false;
+
+        return allowlist.Contains(type);
+    }
+
+    private static string? TryGetTypeDiscriminator(JsonElement el)
+    {
+        return el.ValueKind == JsonValueKind.Object &&
+               el.TryGetProperty("type", out var typeEl) &&
+               typeEl.ValueKind == JsonValueKind.String
+            ? typeEl.GetString()
+            : null;
     }
 
     private static bool IsEnabled()

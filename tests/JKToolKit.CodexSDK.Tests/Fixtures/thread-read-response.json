@@ -1,14 +1,33 @@
 {
   "thread": {
-    "threadId": "t_read",
+    "id": "t_read",
     "name": "Read Me",
-    "archived": false,
-    "createdAt": "2026-02-02T00:00:00Z",
+    "preview": "Read Preview",
+    "createdAt": 1770001200,
+    "updatedAt": 1770001800,
     "cwd": "C:\\repo",
-    "model": "gpt-5",
+    "path": "C:\\repo\\.codex\\sessions\\rollout-t_read.jsonl",
+    "cliVersion": "0.2.3",
+    "modelProvider": "openai",
+    "status": {
+      "type": "active",
+      "activeFlags": ["waitingOnUserInput"]
+    },
+    "ephemeral": false,
+    "source": "cli",
+    "turns": [
+      { "id": "turn_1" },
+      { "id": "turn_2" },
+      { "id": "turn_3" }
+    ],
+    "gitInfo": {
+      "sha": "deadbeef",
+      "branch": "main",
+      "originUrl": "https://example.com/repo.git"
+    },
     "extra": { "any": "value" }
   },
   "historySummary": { "turns": 3 },
+  "futureField": true,
   "unknownTopLevel": true
 }
-

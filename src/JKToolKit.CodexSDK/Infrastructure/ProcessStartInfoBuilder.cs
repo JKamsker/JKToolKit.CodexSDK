@@ -49,10 +49,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
-        startInfo.ArgumentList.Add("--model");
-        startInfo.ArgumentList.Add(options.Model.Value);
-        startInfo.ArgumentList.Add("--config");
-        startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        AddOptionalModelAndReasoningOverrides(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -60,12 +57,14 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add(schemaPath);
         }
 
+        AddImages(startInfo, options);
+
         foreach (var option in options.AdditionalOptions)
         {
             startInfo.ArgumentList.Add(option);
         }
 
-        startInfo.ArgumentList.Add("-");
+        startInfo.ArgumentList.Add(options.CommandPromptToken);
 
         return startInfo;
     }
@@ -79,13 +78,22 @@ internal static class ProcessStartInfoBuilder
     /// <returns>Populated <see cref="ProcessStartInfo"/> ready for launch.</returns>
     public static ProcessStartInfo CreateResume(string executablePath, SessionId sessionId, CodexSessionOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        var target = options.ResumeTargetOverride ?? CodexResumeTarget.BySelector(sessionId.Value);
+        return CreateResume(executablePath, target, options);
+    }
+
+    public static ProcessStartInfo CreateResume(string executablePath, CodexResumeTarget target, CodexSessionOptions options)
+    {
         if (string.IsNullOrWhiteSpace(executablePath))
         {
             throw new ArgumentException("Executable path cannot be null or whitespace.", nameof(executablePath));
         }
 
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
+        target.Validate();
 
         var startInfo = new ProcessStartInfo
         {
@@ -102,10 +110,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("exec");
         startInfo.ArgumentList.Add("--cd");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
-        startInfo.ArgumentList.Add("--model");
-        startInfo.ArgumentList.Add(options.Model.Value);
-        startInfo.ArgumentList.Add("--config");
-        startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        AddOptionalModelAndReasoningOverrides(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -113,14 +118,29 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add(schemaPath);
         }
 
+        AddImages(startInfo, options);
+
         foreach (var option in options.AdditionalOptions)
         {
             startInfo.ArgumentList.Add(option);
         }
 
         startInfo.ArgumentList.Add("resume");
-        startInfo.ArgumentList.Add(sessionId.Value);
-        startInfo.ArgumentList.Add("-");
+        if (target.IncludeAllSessions)
+        {
+            startInfo.ArgumentList.Add("--all");
+        }
+
+        if (target.UseMostRecent)
+        {
+            startInfo.ArgumentList.Add("--last");
+        }
+        else
+        {
+            startInfo.ArgumentList.Add(target.Selector!);
+        }
+
+        startInfo.ArgumentList.Add(options.CommandPromptToken);
 
         return startInfo;
     }
@@ -225,5 +245,29 @@ internal static class ProcessStartInfoBuilder
         startInfo.StandardInputEncoding = utf8NoBom;
         startInfo.StandardOutputEncoding = utf8NoBom;
         startInfo.StandardErrorEncoding = utf8NoBom;
+    }
+
+    private static void AddOptionalModelAndReasoningOverrides(ProcessStartInfo startInfo, CodexSessionOptions options)
+    {
+        if (options.HasExplicitModelOverride)
+        {
+            startInfo.ArgumentList.Add("--model");
+            startInfo.ArgumentList.Add(options.Model.Value);
+        }
+
+        if (options.HasExplicitReasoningEffortOverride)
+        {
+            startInfo.ArgumentList.Add("--config");
+            startInfo.ArgumentList.Add($"model_reasoning_effort={options.ReasoningEffort.Value}");
+        }
+    }
+
+    private static void AddImages(ProcessStartInfo startInfo, CodexSessionOptions options)
+    {
+        foreach (var imagePath in options.Images)
+        {
+            startInfo.ArgumentList.Add("--image");
+            startInfo.ArgumentList.Add(imagePath);
+        }
     }
 }

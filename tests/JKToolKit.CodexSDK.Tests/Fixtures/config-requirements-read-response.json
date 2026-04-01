@@ -3,6 +3,11 @@
     "allowedApprovalPolicies": ["never", "on-request"],
     "allowedSandboxModes": ["read-only", "workspace-write"],
     "allowedWebSearchModes": ["disabled", "cached", "live"],
+    "featureRequirements": {
+      "apps": true,
+      "network": false,
+      "ignoreMe": "not-a-bool"
+    },
     "enforceResidency": "us",
     "network": {
       "enabled": true,
@@ -20,4 +25,3 @@
     "unknownTopLevelField": true
   }
 }
-

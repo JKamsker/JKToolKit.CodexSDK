@@ -1,10 +1,11 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
-internal static class AppServerNotificationMapper
+internal static partial class AppServerNotificationMapper
 {
     public static AppServerNotification Map(string method, JsonElement? @params)
     {
@@ -27,6 +28,7 @@ internal static class AppServerNotificationMapper
 
             "thread/started" => new ThreadStartedNotification(
                 Thread: GetAny(p, "thread"),
+                ThreadSummary: CodexAppServerClientThreadParsers.ParseThreadSummary(GetAny(p, "thread"), p),
                 Params: p),
 
             "thread/name/updated" => new ThreadNameUpdatedNotification(
@@ -57,30 +59,25 @@ internal static class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
-            "thread/realtime/started" => new ThreadRealtimeStartedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                SessionId: GetStringOrNull(p, "sessionId"),
-                Params: p),
+            "thread/realtime/started" => (AppServerNotification?)TryMapThreadRealtimeStarted(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/itemAdded" => new ThreadRealtimeItemAddedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Item: GetAny(p, "item"),
-                Params: p),
+            "thread/realtime/itemAdded" => (AppServerNotification?)TryMapThreadRealtimeItemAdded(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/outputAudio/delta" => new ThreadRealtimeOutputAudioDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Audio: GetAny(p, "audio"),
-                Params: p),
+            "thread/realtime/transcriptUpdated" when
+                TryGetRequiredString(p, "threadId", out var transcriptThreadId) &&
+                TryGetRequiredString(p, "role", out var transcriptRole) &&
+                TryGetRequiredString(p, "text", out var transcriptText)
+                => new ThreadRealtimeTranscriptUpdatedNotification(
+                    ThreadId: transcriptThreadId,
+                    Role: transcriptRole,
+                    Text: transcriptText,
+                    Params: p),
 
-            "thread/realtime/error" => new ThreadRealtimeErrorNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Message: GetString(p, "message") ?? string.Empty,
-                Params: p),
+            "thread/realtime/outputAudio/delta" => (AppServerNotification?)TryMapThreadRealtimeOutputAudioDelta(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/closed" => new ThreadRealtimeClosedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Reason: GetStringOrNull(p, "reason"),
-                Params: p),
+            "thread/realtime/error" => (AppServerNotification?)TryMapThreadRealtimeError(p) ?? new UnknownNotification(method, p),
+
+            "thread/realtime/closed" => (AppServerNotification?)TryMapThreadRealtimeClosed(p) ?? new UnknownNotification(method, p),
 
             "model/rerouted" => new ModelReroutedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -94,6 +91,10 @@ internal static class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Turn: GetAny(p, "turn"),
                 Params: p),
+
+            "hook/started" => (AppServerNotification?)TryMapHookStarted(p) ?? new UnknownNotification(method, p),
+
+            "hook/completed" => (AppServerNotification?)TryMapHookCompleted(p) ?? new UnknownNotification(method, p),
 
             "item/agentMessage/delta" => new AgentMessageDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -139,18 +140,25 @@ internal static class AppServerNotificationMapper
                 Delta: GetString(p, "delta") ?? string.Empty,
                 Params: p),
 
+            "command/exec/outputDelta" when
+                TryGetRequiredString(p, "processId", out var processId) &&
+                TryGetRequiredString(p, "stream", out var stream) &&
+                TryGetRequiredString(p, "deltaBase64", out var deltaBase64) &&
+                TryGetRequiredBool(p, "capReached", out var capReached)
+                => new CommandExecOutputDeltaNotification(
+                    ProcessId: processId,
+                    Stream: stream,
+                    DeltaBase64: deltaBase64,
+                    CapReached: capReached,
+                    Params: p),
+
             "rawResponseItem/completed" => new RawResponseItemCompletedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 Item: GetAny(p, "item"),
                 Params: p),
 
-            "item/commandExecution/outputDelta" => new CommandExecutionOutputDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
-                Params: p),
+            "item/commandExecution/outputDelta" => (AppServerNotification?)TryMapCommandExecutionOutputDelta(p) ?? new UnknownNotification(method, p),
 
             "item/commandExecution/terminalInteraction" => new TerminalInteractionNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -180,41 +188,53 @@ internal static class AppServerNotificationMapper
                 Error: GetStringOrNull(p, "error"),
                 Params: p),
 
-            "account/updated" => new AccountUpdatedNotification(
-                AuthMode: GetStringOrNull(p, "authMode"),
-                Params: p),
+            "mcpServer/startupStatus/updated" => (AppServerNotification?)TryMapMcpServerStartupStatusUpdated(p) ?? new UnknownNotification(method, p),
+
+            "account/updated" => (AppServerNotification?)TryMapAccountUpdated(p) ?? new UnknownNotification(method, p),
 
             "account/rateLimits/updated" => new AccountRateLimitsUpdatedNotification(
                 RateLimits: GetAny(p, "rateLimits"),
                 Params: p),
 
             "app/list/updated" => new AppListUpdatedNotification(
-                apps: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
+                apps: AppServerNotificationParsing.ParseAppsList(p),
+                data: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
                 @params: p),
+
+            "skills/changed" => new SkillsChangedNotification(
+                @params: p),
+
+            "serverRequest/resolved" => (AppServerNotification?)TryMapServerRequestResolved(p) ?? new UnknownNotification(method, p),
+
+            "fs/changed" => (AppServerNotification?)TryMapFsChanged(p) ?? new UnknownNotification(method, p),
 
             "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
                 query: GetString(p, "query") ?? string.Empty,
-                files: ParseFuzzyFileSearchResults(p),
+                files: AppServerNotificationParsing.ParseFuzzyFileSearchResults(p),
                 @params: p),
 
             "fuzzyFileSearch/sessionCompleted" => new FuzzyFileSearchSessionCompletedNotification(
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
                 @params: p),
 
+            "item/autoApprovalReview/started" => (AppServerNotification?)TryMapAutoApprovalReviewStarted(p) ?? new UnknownNotification(method, p),
+
+            "item/autoApprovalReview/completed" => (AppServerNotification?)TryMapAutoApprovalReviewCompleted(p) ?? new UnknownNotification(method, p),
+
             "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 ItemId: GetString(p, "itemId") ?? string.Empty,
                 Delta: GetString(p, "delta") ?? string.Empty,
-                SummaryIndex: GetInt32(p, "summaryIndex"),
+                SummaryIndex: GetInt64(p, "summaryIndex"),
                 Params: p),
 
             "item/reasoning/summaryPartAdded" => new ReasoningSummaryPartAddedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 ItemId: GetString(p, "itemId") ?? string.Empty,
-                SummaryIndex: GetInt32(p, "summaryIndex"),
+                SummaryIndex: GetInt64(p, "summaryIndex"),
                 Params: p),
 
             "item/reasoning/textDelta" => new ReasoningTextDeltaNotification(
@@ -222,7 +242,7 @@ internal static class AppServerNotificationMapper
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 ItemId: GetString(p, "itemId") ?? string.Empty,
                 Delta: GetString(p, "delta") ?? string.Empty,
-                ContentIndex: GetInt32(p, "contentIndex"),
+                ContentIndex: GetInt64(p, "contentIndex"),
                 Params: p),
 
             "thread/compacted" => new ContextCompactedNotification(
@@ -260,26 +280,6 @@ internal static class AppServerNotificationMapper
                 Error: GetStringOrNull(p, "error"),
                 Params: p),
 
-            "authStatusChange" => new AuthStatusChangeNotification(
-                AuthMethod: GetStringOrNull(p, "authMethod"),
-                Params: p),
-
-            "loginChatGptComplete" => new LoginChatGptCompleteNotification(
-                LoginId: GetString(p, "loginId") ?? string.Empty,
-                Success: GetBool(p, "success"),
-                Error: GetStringOrNull(p, "error"),
-                Params: p),
-
-            "sessionConfigured" => new SessionConfiguredNotification(
-                SessionId: GetString(p, "sessionId") ?? string.Empty,
-                Model: GetString(p, "model") ?? string.Empty,
-                ReasoningEffort: GetStringOrNull(p, "reasoningEffort"),
-                HistoryLogId: GetInt64(p, "historyLogId"),
-                HistoryEntryCount: GetInt32(p, "historyEntryCount"),
-                InitialMessages: GetOptionalAny(p, "initialMessages"),
-                RolloutPath: GetStringOrNull(p, "rolloutPath"),
-                Params: p),
-
             _ => new UnknownNotification(method, p)
         };
     }
@@ -288,6 +288,43 @@ internal static class AppServerNotificationMapper
         obj.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String
             ? prop.GetString()
             : null;
+
+    private static bool TryGetRequiredString(JsonElement obj, string propertyName, out string value)
+    {
+        value = string.Empty;
+
+        if (!obj.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        value = prop.GetString() ?? string.Empty;
+        return true;
+    }
+
+    private static bool TryGetRequiredBool(JsonElement obj, string propertyName, out bool value)
+    {
+        value = default;
+
+        if (!obj.TryGetProperty(propertyName, out var prop))
+        {
+            return false;
+        }
+
+        if (prop.ValueKind == JsonValueKind.True)
+        {
+            value = true;
+            return true;
+        }
+
+        if (prop.ValueKind == JsonValueKind.False)
+        {
+            value = false;
+            return true;
+        }
+
+        return false;
+    }
 
     private static string? GetStringOrNull(JsonElement obj, string propertyName) =>
         obj.TryGetProperty(propertyName, out var prop) && prop.ValueKind is JsonValueKind.String
@@ -374,61 +411,6 @@ internal static class AppServerNotificationMapper
             list.Add(new TurnPlanStep(
                 Step: GetString(el, "step") ?? string.Empty,
                 Status: GetString(el, "status") ?? string.Empty));
-        }
-
-        return list;
-    }
-
-    private static IReadOnlyList<FuzzyFileSearchResult> ParseFuzzyFileSearchResults(JsonElement obj)
-    {
-        if (!obj.TryGetProperty("files", out var filesProp) || filesProp.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<FuzzyFileSearchResult>();
-        }
-
-        var list = new List<FuzzyFileSearchResult>();
-        foreach (var item in filesProp.EnumerateArray())
-        {
-            if (item.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            var root = GetString(item, "root") ?? string.Empty;
-            var path = GetString(item, "path") ?? string.Empty;
-            var fileName = GetString(item, "fileName") ?? GetString(item, "file_name") ?? string.Empty;
-
-            uint score = 0;
-            if (item.TryGetProperty("score", out var scoreProp) &&
-                scoreProp.ValueKind == JsonValueKind.Number &&
-                scoreProp.TryGetUInt32(out var s))
-            {
-                score = s;
-            }
-
-            IReadOnlyList<uint>? indices = null;
-            if (item.TryGetProperty("indices", out var indicesProp) && indicesProp.ValueKind == JsonValueKind.Array)
-            {
-                var idx = new List<uint>();
-                foreach (var i in indicesProp.EnumerateArray())
-                {
-                    if (i.ValueKind == JsonValueKind.Number && i.TryGetUInt32(out var n))
-                    {
-                        idx.Add(n);
-                    }
-                }
-
-                indices = idx;
-            }
-
-            list.Add(new FuzzyFileSearchResult
-            {
-                Root = root,
-                Path = path,
-                FileName = fileName,
-                Score = score,
-                Indices = indices
-            });
         }
 
         return list;

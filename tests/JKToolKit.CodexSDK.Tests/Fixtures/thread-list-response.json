@@ -1,27 +1,58 @@
 {
-  "threads": [
+  "data": [
     {
-      "threadId": "t_1",
+      "id": "t_1",
       "name": "One",
-      "archived": false,
-      "createdAt": "2026-02-01T00:00:00Z",
+      "preview": "Preview One",
+      "createdAt": 1770000000,
+      "updatedAt": 1770000600,
       "cwd": "C:\\repo",
-      "model": "gpt-5",
+      "path": "C:\\repo\\.codex\\sessions\\rollout-t_1.jsonl",
+      "cliVersion": "0.2.3",
+      "modelProvider": "openai",
+      "status": {
+        "type": "active",
+        "activeFlags": ["waitingOnUserInput"]
+      },
+      "ephemeral": false,
+      "source": "cli",
+      "turns": [{ "id": "turn_1" }],
       "unknownField": { "x": 1 }
     },
     {
-      "thread": {
-        "id": "t_2",
-        "threadName": "Two",
-        "archived": true,
-        "createdAt": 1700000000,
-        "cwd": "/tmp",
-        "model": "gpt-5"
+      "id": "t_2",
+      "name": "Two",
+      "preview": "Preview Two",
+      "createdAt": 1700000000,
+      "updatedAt": 1700000100,
+      "cwd": "/tmp",
+      "path": "/tmp/.codex/sessions/rollout-t_2.jsonl",
+      "cliVersion": "0.2.3",
+      "modelProvider": "openai",
+      "status": {
+        "type": "idle"
       },
+      "ephemeral": true,
+      "source": {
+        "subAgent": {
+          "thread_spawn": {
+            "parentThreadId": "t_parent",
+            "depth": 1,
+            "agentNickname": "beta",
+            "agentRole": "reviewer"
+          }
+        }
+      },
+      "agentNickname": "beta",
+      "agentRole": "reviewer",
+      "gitInfo": {
+        "sha": "abcdef",
+        "branch": "main",
+        "originUrl": "https://example.com/repo.git"
+      },
+      "turns": [],
       "wrapperUnknown": "ok"
     }
   ],
-  "nextCursor": "cursor_2",
-  "topUnknown": { "y": 2 }
+  "nextCursor": "cursor_2"
 }
-

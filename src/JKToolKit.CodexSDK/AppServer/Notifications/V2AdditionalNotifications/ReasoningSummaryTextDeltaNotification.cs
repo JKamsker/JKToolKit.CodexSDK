@@ -30,7 +30,7 @@ public sealed record class ReasoningSummaryTextDeltaNotification : AppServerNoti
     /// <summary>
     /// Gets the summary index that identifies the current summary section.
     /// </summary>
-    public int SummaryIndex { get; }
+    public long SummaryIndex { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="ReasoningSummaryTextDeltaNotification"/>.
@@ -40,7 +40,7 @@ public sealed record class ReasoningSummaryTextDeltaNotification : AppServerNoti
         string TurnId,
         string ItemId,
         string Delta,
-        int SummaryIndex,
+        long SummaryIndex,
         JsonElement Params)
         : base("item/reasoning/summaryTextDelta", Params)
     {

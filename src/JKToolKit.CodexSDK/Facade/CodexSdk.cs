@@ -82,28 +82,34 @@ public sealed class CodexSdk : IAsyncDisposable
         Exec.ReviewAsync(options, ct);
 
     /// <summary>
-    /// Starts an app-server review (<c>review/start</c>) by creating a thread and returning a running turn.
+    /// Starts an app-server review (<c>review/start</c>) using either a new or existing source thread and returns a running turn.
     /// </summary>
     public async Task<CodexSdkAppServerReviewSession> ReviewAppServerAsync(CodexSdkAppServerReviewOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(options.Thread);
         ArgumentNullException.ThrowIfNull(options.Target);
+        ValidateReviewSource(options);
 
         CodexAppServerClient? client = null;
         try
         {
             client = await AppServer.StartAsync(ct);
 
-            var thread = await client.StartThreadAsync(options.Thread, ct);
+            var bootstrapThread = await ResolveReviewSourceThreadAsync(client, options, ct);
             var review = await client.StartReviewAsync(new ReviewStartOptions
             {
-                ThreadId = thread.Id,
+                ThreadId = bootstrapThread.Id,
                 Delivery = options.Delivery,
                 Target = options.Target
             }, ct);
 
-            return new CodexSdkAppServerReviewSession(client, thread, review);
+            var reviewThread = bootstrapThread;
+            if (!string.Equals(review.ReviewThreadId, bootstrapThread.Id, StringComparison.Ordinal))
+            {
+                reviewThread = await client.ResumeThreadAsync(review.ReviewThreadId, ct);
+            }
+
+            return new CodexSdkAppServerReviewSession(client, reviewThread, bootstrapThread, review);
         }
         catch
         {
@@ -113,6 +119,35 @@ public sealed class CodexSdk : IAsyncDisposable
             }
 
             throw;
+        }
+    }
+
+    private static Task<CodexThread> ResolveReviewSourceThreadAsync(
+        CodexAppServerClient client,
+        CodexSdkAppServerReviewOptions options,
+        CancellationToken ct)
+    {
+        var hasThreadStart = options.Thread is not null;
+        var hasExistingThreadId = !string.IsNullOrWhiteSpace(options.ExistingThreadId);
+
+        if (hasThreadStart)
+        {
+            return client.StartThreadAsync(options.Thread!, ct);
+        }
+
+        return client.ResumeThreadAsync(options.ExistingThreadId!, ct);
+    }
+
+    private static void ValidateReviewSource(CodexSdkAppServerReviewOptions options)
+    {
+        var hasThreadStart = options.Thread is not null;
+        var hasExistingThreadId = !string.IsNullOrWhiteSpace(options.ExistingThreadId);
+
+        if (hasThreadStart == hasExistingThreadId)
+        {
+            throw new ArgumentException(
+                $"Exactly one of {nameof(CodexSdkAppServerReviewOptions.Thread)} or {nameof(CodexSdkAppServerReviewOptions.ExistingThreadId)} must be provided.",
+                nameof(options));
         }
     }
 

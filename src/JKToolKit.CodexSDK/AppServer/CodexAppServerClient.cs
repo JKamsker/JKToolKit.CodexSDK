@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using JKToolKit.CodexSDK.AppServer.Internal;
@@ -26,12 +27,13 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerSkillsAppsClient _skillsAppsClient;
     private readonly CodexAppServerConfigClient _configClient;
     private readonly CodexAppServerMcpClient _mcpClient;
+    private readonly CodexAppServerPluginsClient _pluginsClient;
+    private readonly CodexAppServerCommandExecClient _commandExecClient;
+    private readonly CodexAppServerFilesystemClient _filesystemClient;
     private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
     private readonly CodexAppServerTurnsClient _turnsClient;
     private readonly CodexAppServerCollaborationModesClient _collaborationModesClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
-
-    private bool ExperimentalApiEnabled => _core.ExperimentalApiEnabled;
 
     internal static bool TryParseExperimentalApiRequiredMessage(string? message, out string descriptor)
     {
@@ -135,6 +137,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _skillsAppsClient = new CodexAppServerSkillsAppsClient(_core.SendRequestAsync);
         _configClient = new CodexAppServerConfigClient(_core.SendRequestAsync, experimentalApiEnabled, logger);
         _mcpClient = new CodexAppServerMcpClient(_core.SendRequestAsync);
+        _pluginsClient = new CodexAppServerPluginsClient(_core.SendRequestAsync);
+        _commandExecClient = new CodexAppServerCommandExecClient(_core.SendRequestAsync);
+        _filesystemClient = new CodexAppServerFilesystemClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _collaborationModesClient = new CodexAppServerCollaborationModesClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
@@ -304,6 +309,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.ReadThreadAsync(threadId, ct);
 
     /// <summary>
+    /// Reads a thread by ID with additional options.
+    /// </summary>
+    public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, ThreadReadOptions options, CancellationToken ct = default) =>
+        _threadsClient.ReadThreadAsync(threadId, options, ct);
+
+    /// <summary>
     /// Lists identifiers of threads currently loaded in memory by the app-server.
     /// </summary>
     public Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct = default) =>
@@ -345,7 +356,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Archives a thread.
     /// </summary>
-    public Task<CodexThread> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
+    public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         _threadsClient.ArchiveThreadAsync(threadId, ct);
 
     /// <summary>
@@ -393,26 +404,20 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// <summary>
     /// Writes skills configuration.
     /// </summary>
+    public Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(SkillsConfigWriteOptions options, CancellationToken ct = default) =>
+        _configClient.WriteSkillsConfigAsync(options, ct);
+
+    /// <summary>
+    /// Writes skills configuration using a path-based selector.
+    /// </summary>
     public Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default) =>
-        _configClient.WriteSkillsConfigAsync(enabled, path, ct);
-
-    /// <summary>
-    /// Starts a fuzzy file search session (experimental).
-    /// </summary>
-    public Task StartFuzzyFileSearchSessionAsync(string sessionId, IReadOnlyList<string> roots, CancellationToken ct = default) =>
-        _fuzzyFileSearchClient.StartFuzzyFileSearchSessionAsync(sessionId, roots, ct);
-
-    /// <summary>
-    /// Updates a fuzzy file search session query (experimental).
-    /// </summary>
-    public Task UpdateFuzzyFileSearchSessionAsync(string sessionId, string query, CancellationToken ct = default) =>
-        _fuzzyFileSearchClient.UpdateFuzzyFileSearchSessionAsync(sessionId, query, ct);
-
-    /// <summary>
-    /// Stops a fuzzy file search session (experimental).
-    /// </summary>
-    public Task StopFuzzyFileSearchSessionAsync(string sessionId, CancellationToken ct = default) =>
-        _fuzzyFileSearchClient.StopFuzzyFileSearchSessionAsync(sessionId, ct);
+        _configClient.WriteSkillsConfigAsync(
+            new SkillsConfigWriteOptions
+            {
+                Enabled = enabled,
+                Path = path
+            },
+            ct);
 
     /// <summary>
     /// Starts a new turn within the specified thread.
@@ -454,27 +459,6 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// </remarks>
     public Task<ReviewStartResult> ReviewAsync(ReviewStartOptions options, CancellationToken ct = default) =>
         _turnsClient.StartReviewAsync(options, ct);
-
-    internal static TurnSteerParams BuildTurnSteerParams(TurnSteerOptions options) =>
-        new()
-        {
-            ThreadId = options.ThreadId,
-            ExpectedTurnId = options.ExpectedTurnId,
-            Input = options.Input.Select(i => i.Wire).ToArray()
-        };
-
-    internal static ReviewStartParams BuildReviewStartParams(ReviewStartOptions options) =>
-        new()
-        {
-            ThreadId = options.ThreadId,
-            Target = options.Target.ToWire(),
-            Delivery = options.Delivery switch
-            {
-                ReviewDelivery.Inline => "inline",
-                ReviewDelivery.Detached => "detached",
-                _ => null
-            }
-        };
 
     /// <summary>
     /// Disposes the underlying app-server connection and terminates the process.

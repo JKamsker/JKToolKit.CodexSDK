@@ -30,6 +30,12 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     public string TurnId { get; }
 
     /// <summary>
+    /// Gets the raw JSON response returned by <c>turn/start</c>.
+    /// Contains the full upstream <c>Turn</c> payload including <c>status</c> and <c>error</c>.
+    /// </summary>
+    public JsonElement? RawStartResponse { get; }
+
+    /// <summary>
     /// Gets a task that completes when the server reports the turn completion.
     /// </summary>
     public Task<TurnCompletedNotification> Completion => CompletionTcs.Task;
@@ -41,10 +47,12 @@ public sealed class CodexTurnHandle : IAsyncDisposable
         Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<string>>? steer,
         Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<TurnSteerResult>>? steerRaw,
         Action onDispose,
-        int bufferCapacity)
+        int bufferCapacity,
+        JsonElement? rawStartResponse = null)
     {
         ThreadId = threadId;
         TurnId = turnId;
+        RawStartResponse = rawStartResponse;
         _interrupt = interrupt;
         _steer = steer;
         _steerRaw = steerRaw;

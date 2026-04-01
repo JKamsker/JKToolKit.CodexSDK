@@ -9,12 +9,6 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 public sealed record class ThreadArchiveResponse
 {
     /// <summary>
-    /// Gets the archived thread object when present (raw).
-    /// </summary>
-    [JsonPropertyName("thread")]
-    public JsonElement? Thread { get; init; }
-
-    /// <summary>
     /// Gets additional unmodeled properties for forward compatibility.
     /// </summary>
     [JsonExtensionData]

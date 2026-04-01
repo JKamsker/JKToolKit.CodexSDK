@@ -21,5 +21,25 @@ public sealed class ThreadSummaryParsingTests
         summary.Should().NotBeNull();
         summary!.Archived.Should().BeTrue();
     }
-}
 
+    [Fact]
+    public void ParseThreadSummary_UsesEnvelopeFallbacks_ForListAndLifecycleShapes()
+    {
+        using var doc = JsonDocument.Parse("""
+        {
+          "model": "gpt-5",
+          "serviceTier": "fast",
+          "thread": {
+            "id": "t2",
+            "name": "hello"
+          }
+        }
+        """);
+
+        var summary = CodexAppServerClientThreadParsers.ParseThreadSummary(doc.RootElement.GetProperty("thread"), doc.RootElement);
+
+        summary.Should().NotBeNull();
+        summary!.Model.Should().Be("gpt-5");
+        summary.ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Fast);
+    }
+}

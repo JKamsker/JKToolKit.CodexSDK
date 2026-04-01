@@ -10,14 +10,19 @@ public static class CodexSandboxPolicyBuilder
     /// <summary>
     /// Creates a <see cref="SandboxPolicy.ReadOnly"/> policy with no explicit read-only access override.
     /// </summary>
-    public static SandboxPolicy.ReadOnly ReadOnly() => new();
+    public static SandboxPolicy.ReadOnly ReadOnly(bool? networkAccess = null) =>
+        new()
+        {
+            NetworkAccess = networkAccess
+        };
 
     /// <summary>
     /// Creates a <see cref="SandboxPolicy.ReadOnly"/> policy with full read access override (upstream feature).
     /// </summary>
-    public static SandboxPolicy.ReadOnly ReadOnlyFullAccess() =>
+    public static SandboxPolicy.ReadOnly ReadOnlyFullAccess(bool? networkAccess = null) =>
         new()
         {
+            NetworkAccess = networkAccess,
             Access = new ReadOnlyAccess.FullAccess()
         };
 
@@ -26,14 +31,28 @@ public static class CodexSandboxPolicyBuilder
     /// </summary>
     public static SandboxPolicy.ReadOnly ReadOnlyRestricted(
         IEnumerable<string> readableRoots,
-        bool includePlatformDefaults = true) =>
+        bool includePlatformDefaults = true,
+        bool? networkAccess = null) =>
         new()
         {
+            NetworkAccess = networkAccess,
             Access = new ReadOnlyAccess.Restricted
             {
                 IncludePlatformDefaults = includePlatformDefaults,
                 ReadableRoots = readableRoots?.ToArray() ?? throw new ArgumentNullException(nameof(readableRoots))
             }
+        };
+
+    /// <summary>
+    /// Creates a <see cref="SandboxPolicy.ExternalSandbox"/> policy.
+    /// </summary>
+    /// <param name="networkAccess">
+    /// Optional outbound network access override. When <see langword="null"/>, the server default (<c>restricted</c>) is used.
+    /// </param>
+    public static SandboxPolicy.ExternalSandbox ExternalSandbox(SandboxNetworkAccess? networkAccess = null) =>
+        new()
+        {
+            NetworkAccess = networkAccess
         };
 
     /// <summary>
@@ -54,4 +73,3 @@ public static class CodexSandboxPolicyBuilder
             ReadOnlyAccess = readOnlyAccess
         };
 }
-

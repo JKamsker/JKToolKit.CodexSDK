@@ -11,14 +11,14 @@ public sealed record CollabAgentInteractionEndEvent : CodexEvent
     public required string CallId { get; init; }
 
     /// <summary>
-    /// Gets the sender thread id, when provided.
+    /// Gets the sender thread id.
     /// </summary>
-    public string? SenderThreadId { get; init; }
+    public required string SenderThreadId { get; init; }
 
     /// <summary>
-    /// Gets the receiver thread id, when provided.
+    /// Gets the receiver thread id.
     /// </summary>
-    public string? ReceiverThreadId { get; init; }
+    public required string ReceiverThreadId { get; init; }
 
     /// <summary>
     /// Gets the receiver agent nickname, when provided.
@@ -31,12 +31,17 @@ public sealed record CollabAgentInteractionEndEvent : CodexEvent
     public string? ReceiverAgentRole { get; init; }
 
     /// <summary>
-    /// Gets the prompt that was sent, when provided.
+    /// Gets the prompt that was sent.
     /// </summary>
-    public string? Prompt { get; init; }
+    public required string Prompt { get; init; }
 
     /// <summary>
-    /// Gets the last known receiver status reported to the sender, when provided.
+    /// Gets the last known receiver status reported to the sender.
     /// </summary>
-    public string? Status { get; init; }
+    public required string Status { get; init; }
+
+    /// <summary>
+    /// Gets parsed status details, including any payload text/metadata carried by the union.
+    /// </summary>
+    public CollabAgentStatusInfo? StatusInfo { get; init; }
 }

@@ -12,4 +12,10 @@ public sealed record class ThreadReadParams
     /// </summary>
     [JsonPropertyName("threadId")]
     public required string ThreadId { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether turns should be included in the raw response.
+    /// </summary>
+    [JsonPropertyName("includeTurns")]
+    public bool? IncludeTurns { get; init; }
 }

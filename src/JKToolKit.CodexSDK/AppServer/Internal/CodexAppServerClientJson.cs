@@ -123,10 +123,26 @@ internal static class CodexAppServerClientJson
             ? p
             : null;
 
+    public static JsonElement? TryGetElement(JsonElement obj, string propertyName) =>
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p)
+            ? p.Clone()
+            : null;
+
     public static string? GetStringOrNull(JsonElement obj, string propertyName) =>
         obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var p) && p.ValueKind == JsonValueKind.String
             ? p.GetString()
             : null;
+
+    public static string GetRequiredString(JsonElement obj, string propertyName, string? context = null)
+    {
+        var value = GetStringOrNull(obj, propertyName);
+        if (value is null)
+        {
+            throw new InvalidOperationException(FormatMissingPropertyMessage(propertyName, context));
+        }
+
+        return value;
+    }
 
     public static int? GetInt32OrNull(JsonElement obj, string propertyName)
     {
@@ -148,6 +164,19 @@ internal static class CodexAppServerClientJson
         return null;
     }
 
+    public static int GetRequiredInt32(JsonElement obj, string propertyName, string? context = null)
+    {
+        if (obj.ValueKind != JsonValueKind.Object ||
+            !obj.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.Number ||
+            !property.TryGetInt32(out var value))
+        {
+            throw new InvalidOperationException(FormatMissingPropertyMessage(propertyName, context));
+        }
+
+        return value;
+    }
+
     public static bool? GetBoolOrNull(JsonElement obj, string propertyName)
     {
         if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
@@ -161,6 +190,17 @@ internal static class CodexAppServerClientJson
             JsonValueKind.False => false,
             _ => null
         };
+    }
+
+    public static bool GetRequiredBool(JsonElement obj, string propertyName, string? context = null)
+    {
+        var value = GetBoolOrNull(obj, propertyName);
+        if (!value.HasValue)
+        {
+            throw new InvalidOperationException(FormatMissingPropertyMessage(propertyName, context));
+        }
+
+        return value.Value;
     }
 
     public static IReadOnlyList<string>? GetOptionalStringArray(JsonElement obj, string propertyName)
@@ -192,6 +232,39 @@ internal static class CodexAppServerClientJson
         return list;
     }
 
+    public static long? GetInt64OrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt64(out var value))
+        {
+            return value;
+        }
+
+        if (p.ValueKind == JsonValueKind.String && long.TryParse(p.GetString(), out value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    public static long GetRequiredInt64(JsonElement obj, string propertyName, string? context = null)
+    {
+        if (obj.ValueKind != JsonValueKind.Object ||
+            !obj.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.Number ||
+            !property.TryGetInt64(out var value))
+        {
+            throw new InvalidOperationException(FormatMissingPropertyMessage(propertyName, context));
+        }
+
+        return value;
+    }
+
     public static DateTimeOffset? GetDateTimeOffsetOrNull(JsonElement obj, string propertyName)
     {
         if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
@@ -218,6 +291,12 @@ internal static class CodexAppServerClientJson
         }
 
         return null;
+    }
+
+    private static string FormatMissingPropertyMessage(string propertyName, string? context)
+    {
+        var target = context is null ? "payload" : context;
+        return $"Missing required property '{propertyName}' on {target}.";
     }
 }
 

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.IO;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -9,6 +10,8 @@ public abstract partial record class SandboxPolicy
     /// </summary>
     public sealed record class WorkspaceWrite : SandboxPolicy
     {
+        private IReadOnlyList<string> _writableRoots = Array.Empty<string>();
+
         /// <inheritdoc />
         public override string Type => "workspaceWrite";
 
@@ -24,7 +27,11 @@ public abstract partial record class SandboxPolicy
         /// </para>
         /// </remarks>
         [JsonPropertyName("writableRoots")]
-        public IReadOnlyList<string> WritableRoots { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> WritableRoots
+        {
+            get => _writableRoots;
+            init => _writableRoots = ValidateAbsolutePaths(value, nameof(WritableRoots));
+        }
 
         /// <summary>
         /// Gets a value indicating whether network access is allowed while this policy is active.
@@ -54,5 +61,24 @@ public abstract partial record class SandboxPolicy
         [JsonPropertyName("readOnlyAccess")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ReadOnlyAccess? ReadOnlyAccess { get; init; }
+
+        private static IReadOnlyList<string> ValidateAbsolutePaths(IReadOnlyList<string>? paths, string parameterName)
+        {
+            if (paths is null)
+            {
+                return Array.Empty<string>();
+            }
+
+            foreach (var path in paths)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    throw new ArgumentException("Writable roots cannot contain null, empty, or whitespace paths.", parameterName);
+
+                if (!Path.IsPathFullyQualified(path))
+                    throw new ArgumentException($"Writable root '{path}' must be an absolute path.", parameterName);
+            }
+
+            return paths;
+        }
     }
 }

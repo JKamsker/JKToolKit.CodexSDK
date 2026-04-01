@@ -60,7 +60,7 @@ internal partial class CommandExecParams
     /// <br/>When omitted, the server default applies. Cannot be combined with `disableOutputCap`.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("outputBytesCap")]
-    public int? OutputBytesCap { get; set; } = default!;
+    public long? OutputBytesCap { get; set; } = default!;
 
     /// <summary>
     /// Optional client-supplied, connection-scoped process id.

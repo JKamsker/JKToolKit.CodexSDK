@@ -14,11 +14,11 @@ public sealed class AppServerThreadArchiveCommand : AsyncCommand<AppServerThread
                 return 1;
             }
 
-            var thread = await codex.ArchiveThreadAsync(settings.ThreadId, ct);
-            Console.WriteLine($"Archived thread: {thread.Id}");
+            var result = await codex.ArchiveThreadAsync(settings.ThreadId, ct);
+            Console.WriteLine($"Archived thread: {settings.ThreadId}");
             if (settings.Json)
             {
-                AppServerThreadCommandHelpers.PrintJson(thread.Raw);
+                AppServerThreadCommandHelpers.PrintJson(result.Raw);
             }
             return 0;
         });

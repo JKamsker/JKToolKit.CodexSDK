@@ -13,9 +13,9 @@ public sealed record class ReviewStartResult
     public required CodexTurnHandle Turn { get; init; }
 
     /// <summary>
-    /// Gets the detached review thread id, when detached delivery is used and provided by the server.
+    /// Gets the review thread id returned by the server.
     /// </summary>
-    public string? ReviewThreadId { get; init; }
+    public required string ReviewThreadId { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the response.

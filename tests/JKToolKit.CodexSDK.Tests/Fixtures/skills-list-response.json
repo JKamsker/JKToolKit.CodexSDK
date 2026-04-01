@@ -26,8 +26,12 @@
       "skills": [
         {
           "id": "fallback-id",
-          "description": null,
-          "path": null
+          "name": "fallback-id",
+          "description": "Fallback description",
+          "shortDescription": "Fallback skill",
+          "path": "C:\\skills\\fallback",
+          "scope": "repo",
+          "enabled": false
         }
       ],
       "errors": []

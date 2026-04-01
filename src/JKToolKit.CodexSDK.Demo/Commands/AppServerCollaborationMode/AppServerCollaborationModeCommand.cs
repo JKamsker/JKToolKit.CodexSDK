@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
@@ -50,7 +48,12 @@ public sealed class AppServerCollaborationModeCommand : AsyncCommand<AppServerCo
     {
         Console.WriteLine("Phase 1: stable-only guard (expected failure)...");
 
-        var collab = BuildCollaborationModeJson(mode: "plan", model: CodexModel.Gpt52Codex.Value, effort: null, developerInstructions: null);
+        var collab = AppServerCollaborationModePayloadBuilder.BuildCollaborationModeJson(new CollaborationModeMaskProjection
+        {
+            Mode = "plan",
+            Model = CodexModel.Gpt52Codex.Value,
+            IncludesDeveloperInstructions = true
+        });
 
         await using var sdk = CodexSdk.Create(builder =>
         {
@@ -107,14 +110,14 @@ public sealed class AppServerCollaborationModeCommand : AsyncCommand<AppServerCo
         await using var codex = await sdk.AppServer.StartAsync(ct);
 
         var list = await codex.CallAsync("collaborationMode/list", new { }, ct);
-        if (!TryGetFirstMask(list, out var mode, out var model, out var effort, out var developerInstructions))
+        if (!AppServerCollaborationModePayloadBuilder.TryGetFirstMask(list, out var mask))
         {
             throw new InvalidOperationException($"Unexpected collaborationMode/list result shape: {list}");
         }
 
-        Console.WriteLine($"Preset: mode={mode}, model={model}, effort={effort ?? "n/a"}");
+        Console.WriteLine($"Preset: mode={mask.Mode}, model={mask.Model}, effort={mask.ReasoningEffort ?? "n/a"}");
 
-        var collab = BuildCollaborationModeJson(mode, model, effort, developerInstructions);
+        var collab = AppServerCollaborationModePayloadBuilder.BuildCollaborationModeJson(mask);
 
         var thread = await codex.StartThreadAsync(new ThreadStartOptions
         {
@@ -146,78 +149,4 @@ public sealed class AppServerCollaborationModeCommand : AsyncCommand<AppServerCo
         Console.WriteLine($"\nDone: {completed.Status}");
     }
 
-    private static JsonElement BuildCollaborationModeJson(string mode, string model, string? effort, string? developerInstructions)
-    {
-        var settings = new JsonObject
-        {
-            ["model"] = model
-        };
-
-        if (!string.IsNullOrWhiteSpace(effort))
-        {
-            settings["reasoning_effort"] = effort;
-        }
-
-        if (developerInstructions is not null)
-        {
-            settings["developer_instructions"] = developerInstructions;
-        }
-
-        var collab = new JsonObject
-        {
-            ["mode"] = mode,
-            ["settings"] = settings
-        };
-
-        return JsonDocument.Parse(collab.ToJsonString()).RootElement.Clone();
-    }
-
-    private static bool TryGetFirstMask(
-        JsonElement result,
-        out string mode,
-        out string model,
-        out string? effort,
-        out string? developerInstructions)
-    {
-        mode = "default";
-        model = CodexModel.Gpt52Codex.Value;
-        effort = null;
-        developerInstructions = null;
-
-        if (result.ValueKind != JsonValueKind.Object ||
-            !result.TryGetProperty("data", out var data) ||
-            data.ValueKind != JsonValueKind.Array)
-        {
-            return false;
-        }
-
-        var e = data.EnumerateArray();
-        if (!e.MoveNext() || e.Current.ValueKind != JsonValueKind.Object)
-        {
-            return false;
-        }
-
-        var first = e.Current;
-
-        mode = TryGetString(first, "mode") ?? mode;
-        model = TryGetString(first, "model") ?? model;
-        effort = TryGetString(first, "reasoning_effort") ?? TryGetString(first, "reasoningEffort");
-        developerInstructions = TryGetString(first, "developer_instructions") ?? TryGetString(first, "developerInstructions");
-        return true;
-    }
-
-    private static string? TryGetString(JsonElement obj, string name)
-    {
-        if (obj.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        if (!obj.TryGetProperty(name, out var prop) || prop.ValueKind != JsonValueKind.String)
-        {
-            return null;
-        }
-
-        return prop.GetString();
-    }
 }

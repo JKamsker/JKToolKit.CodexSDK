@@ -26,4 +26,14 @@ public sealed class ThreadStartParamsSerializationTests
 
         json.Should().Contain("\"experimentalRawEvents\":true");
     }
+
+    [Fact]
+    public void Serialize_WritesApprovalsReviewer_AsClosedEnum()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadStartParams { ApprovalsReviewer = CodexApprovalsReviewer.GuardianSubagent },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"approvalsReviewer\":\"guardian_subagent\"");
+    }
 }

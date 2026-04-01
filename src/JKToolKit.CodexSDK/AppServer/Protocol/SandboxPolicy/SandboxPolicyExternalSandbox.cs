@@ -17,9 +17,14 @@ public abstract partial record class SandboxPolicy
         public override string Type => "externalSandbox";
 
         /// <summary>
-        /// Gets the outbound network access state (<c>restricted</c> or <c>enabled</c>).
+        /// Gets the optional outbound network access override (<c>restricted</c> or <c>enabled</c>).
         /// </summary>
+        /// <remarks>
+        /// When omitted, the server default is <c>restricted</c>.
+        /// </remarks>
         [JsonPropertyName("networkAccess")]
-        public required string NetworkAccess { get; init; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonConverter(typeof(SandboxNetworkAccessJsonConverter))]
+        public SandboxNetworkAccess? NetworkAccess { get; init; }
     }
 }

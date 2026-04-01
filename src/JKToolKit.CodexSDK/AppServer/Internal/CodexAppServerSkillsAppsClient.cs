@@ -28,13 +28,35 @@ internal sealed class CodexAppServerSkillsAppsClient
         }
 
         UpstreamV2.SkillsListExtraRootsForCwd[]? perCwd = null;
-        if (options.ExtraRootsForCwd is { Count: > 0 })
+        if (options.PerCwdExtraUserRoots is { Count: > 0 })
+        {
+            perCwd = options.PerCwdExtraUserRoots.Select(entry =>
+            {
+                if (entry is null)
+                {
+                    throw new ArgumentException("PerCwdExtraUserRoots entries must not be null.", nameof(options));
+                }
+
+                CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(
+                    entry.ExtraUserRoots ?? Array.Empty<string>(),
+                    nameof(options),
+                    "PerCwdExtraUserRoots[].ExtraUserRoots");
+
+                return new UpstreamV2.SkillsListExtraRootsForCwd
+                {
+                    Cwd = entry.Cwd,
+                    ExtraUserRoots = (entry.ExtraUserRoots ?? Array.Empty<string>()).ToArray()
+                };
+            }).ToArray();
+        }
+        else if (options.ExtraRootsForCwd is { Count: > 0 })
         {
             var cwd = options.Cwd ?? (cwds is { Count: 1 } ? cwds[0] : null);
             if (string.IsNullOrWhiteSpace(cwd))
             {
                 throw new ArgumentException("ExtraRootsForCwd requires a single Cwd scope.", nameof(options));
             }
+            CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(options.ExtraRootsForCwd, nameof(options), "ExtraRootsForCwd");
 
             perCwd =
             [
@@ -69,6 +91,15 @@ internal sealed class CodexAppServerSkillsAppsClient
     public async Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (!string.IsNullOrWhiteSpace(options.Cwd))
+        {
+            throw new ArgumentException("app/list does not support Cwd scoping on this upstream build. Use ThreadId instead.", nameof(options));
+        }
+
+        if (options.Limit < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.Limit, "Limit cannot be negative.");
+        }
 
         var result = await _sendRequestAsync(
             "app/list",

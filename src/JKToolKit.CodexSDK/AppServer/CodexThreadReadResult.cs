@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.ThreadRead;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -16,5 +17,10 @@ public sealed record class CodexThreadReadResult
     /// Gets the raw JSON payload for the response.
     /// </summary>
     public required JsonElement Raw { get; init; }
+
+    /// <summary>
+    /// Gets the parsed turn information included when turns are requested.
+    /// </summary>
+    public IReadOnlyList<CodexTurn>? Turns { get; init; }
 }
 

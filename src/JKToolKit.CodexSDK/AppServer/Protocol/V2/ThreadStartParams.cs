@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -27,6 +27,12 @@ public sealed record class ThreadStartParams
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets an optional service tier override for the thread.
+    /// </summary>
+    [JsonPropertyName("serviceTier")]
+    public JsonElement? ServiceTier { get; init; }
+
+    /// <summary>
     /// Gets an optional service name identifier.
     /// </summary>
     [JsonPropertyName("serviceName")]
@@ -41,6 +47,12 @@ public sealed record class ThreadStartParams
     /// </remarks>
     [JsonPropertyName("approvalPolicy")]
     public object? ApprovalPolicy { get; init; }
+
+    /// <summary>
+    /// Gets an optional approval reviewer routing override.
+    /// </summary>
+    [JsonPropertyName("approvalsReviewer")]
+    public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets an optional sandbox mode override for the thread (wire value).

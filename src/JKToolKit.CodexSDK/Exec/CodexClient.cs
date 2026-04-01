@@ -57,6 +57,21 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
         return await _sessionRunner.ResumeSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Attaches to an existing session selected by resume-target semantics such as thread name or <c>--last</c>.
+    /// </summary>
+    /// <param name="target">Resume target selection to resolve against recorded sessions.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A read-only session handle for the resolved session log.</returns>
+    public async Task<ICodexSessionHandle> ResumeSessionAsync(CodexResumeTarget target, CancellationToken cancellationToken = default)
+    {
+        var workingDirectory = target.IncludeAllSessions
+            ? null
+            : Directory.GetCurrentDirectory();
+
+        return await _sessionRunner.ResumeSessionAsync(target, workingDirectory, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public async Task<ICodexSessionHandle> AttachToLogAsync(string logFilePath, CancellationToken cancellationToken = default)
     {
@@ -147,7 +162,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
 
         _pathProvider = pathProvider ?? new DefaultCodexPathProvider(fileSystem, _loggerFactory.CreateLogger<DefaultCodexPathProvider>());
         _processLauncher = processLauncher ?? new CodexProcessLauncher(_pathProvider, _loggerFactory.CreateLogger<CodexProcessLauncher>());
-        _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>());
+        _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>(), _clientOptions.CodexHomeDirectory);
         _tailer = tailer ?? new JsonlTailer(fileSystem, _loggerFactory.CreateLogger<JsonlTailer>(), Options.Create(_clientOptions));
         _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>(), options);
         _sessionRunner = new CodexSessionRunner(_clientOptions, _processLauncher, _sessionLocator, _tailer, _parser, _pathProvider, _loggerFactory, _logger);
@@ -174,6 +189,21 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     )
     {
         return await _sessionRunner.ResumeSessionAsync(sessionId, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Launches <c>codex exec resume</c> using a selector token or <c>--last</c>.
+    /// </summary>
+    /// <param name="target">Resume target selection to pass to the CLI.</param>
+    /// <param name="options">Session options controlling working directory, prompt, model, and flags.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A live session handle connected to the resumed Codex process.</returns>
+    public async Task<ICodexSessionHandle> ResumeSessionAsync(
+        CodexResumeTarget target,
+        CodexSessionOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        return await _sessionRunner.ResumeSessionAsync(target, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

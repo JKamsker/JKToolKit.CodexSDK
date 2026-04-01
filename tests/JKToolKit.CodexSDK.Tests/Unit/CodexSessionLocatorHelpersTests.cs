@@ -1,4 +1,5 @@
 using FluentAssertions;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -36,6 +37,90 @@ public sealed class CodexSessionLocatorHelpersTests
 
         extracted.Should().NotBeNull();
         extracted!.Value.Value.Should().Be("22222222-2222-2222-2222-222222222222");
+    }
+
+    [Fact]
+    public async Task ParseSessionInfoAsync_CapturesHumanLabel_FromSessionMetaName()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = Path.Combine(Path.GetTempPath(), "sessions", "named.jsonl");
+        var sessionJson =
+            """{"type":"session_meta","timestamp":"2026-04-01T10:00:00Z","payload":{"id":"named-session","cwd":"C:\\repo","name":"Friendly Thread"}}""";
+        fileSystem.AddFile(filePath, sessionJson);
+
+        var session = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(
+            fileSystem,
+            NullLogger.Instance,
+            filePath,
+            creationTimeUtc: null,
+            CancellationToken.None);
+
+        session.Should().NotBeNull();
+        session!.HumanLabel.Should().Be("Friendly Thread");
+    }
+
+    [Fact]
+    public async Task ParseSessionInfoAsync_PrefersLatestTurnContext_ForCwdAndModel()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = Path.Combine(Path.GetTempPath(), "sessions", "turn-context.jsonl");
+        fileSystem.AddFile(
+            filePath,
+            string.Join(
+                Environment.NewLine,
+                """{"type":"session_meta","timestamp":"2026-04-01T10:00:00Z","payload":{"id":"turn-context-session","timestamp":"2026-04-01T09:59:59Z","cwd":"C:\\stale","name":"Thread"}}""",
+                """{"type":"turn_context","timestamp":"2026-04-01T10:01:00Z","payload":{"cwd":"C:\\latest","model":"gpt-5"}}""",
+                """{"type":"turn_context","timestamp":"2026-04-01T10:02:00Z","payload":{"cwd":"D:\\latest-2","model":"gpt-5-codex"}}"""
+            ));
+
+        var session = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(
+            fileSystem,
+            NullLogger.Instance,
+            filePath,
+            creationTimeUtc: null,
+            CancellationToken.None);
+
+        session.Should().NotBeNull();
+        session!.WorkingDirectory.Should().Be("D:\\latest-2");
+        session.Model.Should().Be(JKToolKit.CodexSDK.Models.CodexModel.Parse("gpt-5-codex"));
+        session.CreatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T10:00:00Z"));
+        session.UpdatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T10:02:00Z"));
+    }
+
+    [Fact]
+    public async Task ParseSessionInfoAsync_DoesNotInferModel_FromSessionMetaOnly()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = Path.Combine(Path.GetTempPath(), "sessions", "session-meta-only.jsonl");
+        fileSystem.AddFile(
+            filePath,
+            """{"type":"session_meta","payload":{"id":"session-meta-only","timestamp":"2026-04-01T09:59:59Z","cwd":"C:\\repo","model":"gpt-5"}}""");
+
+        var session = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(
+            fileSystem,
+            NullLogger.Instance,
+            filePath,
+            creationTimeUtc: null,
+            CancellationToken.None);
+
+        session.Should().NotBeNull();
+        session!.Model.Should().BeNull();
+        session.CreatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T09:59:59Z"));
+        session.UpdatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T09:59:59Z"));
+    }
+
+    [Theory]
+    [InlineData("/repo", "/repo", true)]
+    [InlineData("/repo/", "/repo", true)]
+    [InlineData("/repo", "/repo/", true)]
+    [InlineData("/repo/sub/..", "/repo", true)]
+    [InlineData("/repo", "/other", false)]
+    [InlineData(null, null, true)]
+    [InlineData("/repo", null, false)]
+    [InlineData(null, "/repo", false)]
+    public void NormalizedPathEquals_HandlesVariousPathForms(string? a, string? b, bool expected)
+    {
+        CodexSessionLocatorHelpers.NormalizedPathEquals(a, b).Should().Be(expected);
     }
 }
 

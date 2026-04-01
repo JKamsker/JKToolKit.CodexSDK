@@ -14,7 +14,7 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, ExecSettings settings, CancellationToken cancellationToken)
     {
-        var prompt = ResolvePrompt(settings);
+        var input = ResolveInput(settings);
         var workingDirectory = settings.WorkingDirectory ?? Directory.GetCurrentDirectory();
         var sessionsRoot =
             settings.SessionsRoot ??
@@ -35,7 +35,7 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
         var followStream = !settings.NoFollow;
 
         PrintBanner();
-        PrintConfig(workingDirectory, prompt, sessionsRoot, settings.CodexExecutablePath, model, reasoning, followStream);
+        PrintConfig(workingDirectory, input, sessionsRoot, settings.CodexExecutablePath, model, reasoning, followStream);
 
         using var shutdownCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         Console.CancelKeyPress += (_, eventArgs) =>
@@ -68,11 +68,7 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
             await RefreshRateLimitsAsync(sdk.Exec, workingDirectory, model, reasoning, ct);
             await ShowRateLimitsAsync(sdk.Exec, noCache: true, ct);
 
-            var sessionOptions = new CodexSessionOptions(workingDirectory, prompt)
-            {
-                Model = model,
-                ReasoningEffort = reasoning
-            };
+            var sessionOptions = CreateSessionOptions(workingDirectory, input, model, reasoning);
 
             Console.WriteLine("Starting Codex session...");
             var startSw = Stopwatch.StartNew();
@@ -97,7 +93,15 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
 
             Console.WriteLine("\nResuming the session with follow-up: \"how are you\" ...\n");
             var followUpOptions = sessionOptions.Clone();
-            followUpOptions.Prompt = "how are you";
+            if (!string.IsNullOrWhiteSpace(followUpOptions.PromptArgument))
+            {
+                followUpOptions.PromptArgument = "how are you";
+                followUpOptions.StdinPayload = null;
+            }
+            else
+            {
+                followUpOptions.Prompt = "how are you";
+            }
             await using var resumed = await sdk.Exec.ResumeSessionAsync(session.Info.Id, followUpOptions, ct);
 
             await foreach (var evt in resumed.GetEventsAsync(EventStreamOptions.Default with { Follow = true }, ct))
@@ -121,14 +125,31 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
         }
     }
 
-    private static string ResolvePrompt(ExecSettings settings)
+    private static SessionInput ResolveInput(ExecSettings settings)
     {
+        if (!string.IsNullOrWhiteSpace(settings.PromptArgument))
+        {
+            if (!string.IsNullOrWhiteSpace(settings.PromptOption) || settings.Prompt.Length > 0)
+            {
+                throw new InvalidOperationException("Use either --prompt-arg or legacy prompt input, not both.");
+            }
+
+            var stdinPayload = ResolveOptionalStdinPayload(settings.StdinPayload);
+            return SessionInput.ForPromptArgument(settings.PromptArgument, stdinPayload);
+        }
+
         var prompt = settings.PromptOption;
         if (string.IsNullOrWhiteSpace(prompt) && settings.Prompt.Length > 0)
         {
             prompt = string.Join(" ", settings.Prompt);
         }
 
+        prompt = ResolveLegacyPrompt(prompt);
+        return SessionInput.ForLegacyPrompt(prompt);
+    }
+
+    private static string ResolveLegacyPrompt(string? prompt)
+    {
         if (string.Equals(prompt, "-", StringComparison.Ordinal))
         {
             return Console.In.ReadToEnd();
@@ -137,6 +158,44 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
         return string.IsNullOrWhiteSpace(prompt)
             ? "Summarize this repository in three concise bullet points."
             : prompt;
+    }
+
+    private static string? ResolveOptionalStdinPayload(string? payload)
+    {
+        if (payload is null)
+        {
+            return null;
+        }
+
+        return string.Equals(payload, "-", StringComparison.Ordinal)
+            ? Console.In.ReadToEnd()
+            : payload;
+    }
+
+    private static CodexSessionOptions CreateSessionOptions(
+        string workingDirectory,
+        SessionInput input,
+        CodexModel model,
+        CodexReasoningEffort reasoning)
+    {
+        CodexSessionOptions sessionOptions;
+        if (input.PromptArgument is not null)
+        {
+            sessionOptions = new CodexSessionOptions
+            {
+                WorkingDirectory = workingDirectory,
+                PromptArgument = input.PromptArgument,
+                StdinPayload = input.StdinPayload
+            };
+        }
+        else
+        {
+            sessionOptions = new CodexSessionOptions(workingDirectory, input.Prompt!);
+        }
+
+        sessionOptions.Model = model;
+        sessionOptions.ReasoningEffort = reasoning;
+        return sessionOptions;
     }
 
     private static string DefaultSessionsRoot() =>
@@ -154,7 +213,7 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
 
     private static void PrintConfig(
         string workingDirectory,
-        string prompt,
+        SessionInput input,
         string sessionsRoot,
         string? codexExecutablePath,
         CodexModel model,
@@ -162,7 +221,15 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
         bool followStream)
     {
         Console.WriteLine($"Working directory : {workingDirectory}");
-        Console.WriteLine($"Prompt            : {prompt}");
+        if (input.PromptArgument is not null)
+        {
+            Console.WriteLine($"Prompt arg        : {input.PromptArgument}");
+            Console.WriteLine($"Stdin payload     : {(input.StdinPayload is null ? "none" : $"{input.StdinPayload.Length} chars")}");
+        }
+        else
+        {
+            Console.WriteLine($"Prompt            : {input.Prompt}");
+        }
         Console.WriteLine($"Sessions root     : {sessionsRoot}");
         Console.WriteLine($"Model             : {model.Value}");
         Console.WriteLine($"Reasoning effort  : {reasoning.Value}");
@@ -325,5 +392,25 @@ public sealed class ExecCommand : AsyncCommand<ExecSettings>
         }
 
         await Task.CompletedTask;
+    }
+
+    private sealed class SessionInput
+    {
+        private SessionInput(string? prompt, string? promptArgument, string? stdinPayload)
+        {
+            Prompt = prompt;
+            PromptArgument = promptArgument;
+            StdinPayload = stdinPayload;
+        }
+
+        public string? Prompt { get; }
+
+        public string? PromptArgument { get; }
+
+        public string? StdinPayload { get; }
+
+        public static SessionInput ForLegacyPrompt(string prompt) => new(prompt, promptArgument: null, stdinPayload: null);
+
+        public static SessionInput ForPromptArgument(string promptArgument, string? stdinPayload) => new(prompt: null, promptArgument, stdinPayload);
     }
 }

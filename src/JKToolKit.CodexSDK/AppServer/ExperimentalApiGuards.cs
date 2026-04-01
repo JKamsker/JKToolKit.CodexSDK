@@ -6,6 +6,11 @@ internal static class ExperimentalApiGuards
     {
         if (!experimentalApiEnabled)
         {
+            if (options.AskForApproval is { Granular: not null })
+            {
+                throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+            }
+
             if (options.ExperimentalRawEvents)
             {
                 throw new CodexExperimentalApiRequiredException("thread/start.experimentalRawEvents");
@@ -27,6 +32,11 @@ internal static class ExperimentalApiGuards
     {
         if (!experimentalApiEnabled)
         {
+            if (options.AskForApproval is { Granular: not null })
+            {
+                throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+            }
+
             if (options.History is not null)
             {
                 throw new CodexExperimentalApiRequiredException("thread/resume.history");
@@ -54,14 +64,14 @@ internal static class ExperimentalApiGuards
             throw new ArgumentException("Either ThreadId or Path must be specified.", nameof(options));
         }
 
-        if (hasThreadId && hasPath)
-        {
-            throw new ArgumentException("Specify either ThreadId or Path, not both.", nameof(options));
-        }
-
         if (!experimentalApiEnabled && hasPath)
         {
             throw new CodexExperimentalApiRequiredException("thread/fork.path");
+        }
+
+        if (!experimentalApiEnabled && options.AskForApproval is { Granular: not null })
+        {
+            throw new CodexExperimentalApiRequiredException("askForApproval.granular");
         }
 
         if (!experimentalApiEnabled && options.PersistExtendedHistory)
@@ -72,6 +82,11 @@ internal static class ExperimentalApiGuards
 
     internal static void ValidateTurnStart(TurnStartOptions options, bool experimentalApiEnabled)
     {
+        if (!experimentalApiEnabled && options.AskForApproval is { Granular: not null })
+        {
+            throw new CodexExperimentalApiRequiredException("askForApproval.granular");
+        }
+
         if (!experimentalApiEnabled && options.CollaborationMode is not null)
         {
             throw new CodexExperimentalApiRequiredException("turn/start.collaborationMode");

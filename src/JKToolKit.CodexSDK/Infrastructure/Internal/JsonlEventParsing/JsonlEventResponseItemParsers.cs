@@ -8,7 +8,7 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 
 using static JsonlEventJson;
 
-internal static class JsonlEventResponseItemParsers
+internal static partial class JsonlEventResponseItemParsers
 {
     public static ResponseItemEvent? ParseResponseItemEvent(
         JsonElement root,
@@ -114,11 +114,13 @@ internal static class JsonlEventResponseItemParsers
             }
 
             var encrypted = TryGetString(payload, "encrypted_content");
+            var content = ParseReasoningContent(payload);
 
             return new ReasoningResponseItemPayload
             {
                 PayloadType = payloadType,
                 SummaryTexts = summaries,
+                Content = content,
                 EncryptedContent = encrypted
             };
         }
@@ -126,11 +128,14 @@ internal static class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "message", StringComparison.OrdinalIgnoreCase))
         {
             var role = TryGetString(payload, "role");
+            var phase = TryGetString(payload, "phase");
             var parts = ParseMessageContent(payload);
             return new MessageResponseItemPayload
             {
                 PayloadType = payloadType,
                 Role = role,
+                Phase = phase,
+                EndTurn = ParseNullableBoolean(payload, "end_turn"),
                 Content = parts
             };
         }
@@ -143,9 +148,11 @@ internal static class JsonlEventResponseItemParsers
             string? workingDirectory = null;
             IReadOnlyDictionary<string, string>? env = null;
             string? user = null;
+            JsonElement? actionJson = null;
 
             if (payload.TryGetProperty("action", out var actionEl) && actionEl.ValueKind == JsonValueKind.Object)
             {
+                actionJson = actionEl.Clone();
                 actionType = TryGetString(actionEl, "type");
 
                 if (string.Equals(actionType, "exec", StringComparison.OrdinalIgnoreCase))
@@ -153,9 +160,9 @@ internal static class JsonlEventResponseItemParsers
                     if (actionEl.TryGetProperty("command", out var cmdEl) && cmdEl.ValueKind == JsonValueKind.Array)
                     {
                         command = cmdEl.EnumerateArray()
-                            .Select(s => s.ValueKind == JsonValueKind.String ? s.GetString() : null)
-                            .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .Cast<string>()
+                            .Select(s => s.ValueKind == JsonValueKind.String
+                                ? (s.GetString() ?? string.Empty)
+                                : s.GetRawText())
                             .ToArray();
                     }
 
@@ -198,7 +205,8 @@ internal static class JsonlEventResponseItemParsers
                 TimeoutMs = timeoutMs,
                 WorkingDirectory = workingDirectory,
                 Env = env,
-                User = user
+                User = user,
+                ActionJson = actionJson
             };
         }
 
@@ -206,11 +214,17 @@ internal static class JsonlEventResponseItemParsers
         {
             var name = TryGetString(payload, "name");
             string? argsJson = null;
+            JsonElement? arguments = null;
             if (payload.TryGetProperty("arguments", out var argsEl))
             {
                 argsJson = argsEl.ValueKind == JsonValueKind.String
                     ? argsEl.GetString()
                     : argsEl.GetRawText();
+
+                if (argsEl.ValueKind != JsonValueKind.String)
+                {
+                    arguments = argsEl.Clone();
+                }
             }
             var callId = TryGetString(payload, "call_id");
 
@@ -218,7 +232,9 @@ internal static class JsonlEventResponseItemParsers
             {
                 PayloadType = payloadType,
                 Name = name,
+                Namespace = TryGetString(payload, "namespace"),
                 ArgumentsJson = argsJson,
+                Arguments = arguments,
                 CallId = callId
             };
         }
@@ -226,39 +242,95 @@ internal static class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "function_call_output", StringComparison.OrdinalIgnoreCase))
         {
             var callId = TryGetString(payload, "call_id");
-            string? output = null;
-            if (payload.TryGetProperty("output", out var outputEl))
-            {
-                output = outputEl.ValueKind == JsonValueKind.String ? outputEl.GetString() : outputEl.GetRawText();
-            }
+            var (output, outputJson) = ParseStringOrStructured(payload, "output");
+            var outputContent = ParseFunctionToolOutputContent(outputJson);
 
             return new FunctionCallOutputResponseItemPayload
             {
                 PayloadType = payloadType,
                 CallId = callId,
-                Output = output
+                Output = output,
+                OutputJson = outputJson,
+                OutputContent = outputContent
             };
         }
 
         if (string.Equals(payloadType, "custom_tool_call", StringComparison.OrdinalIgnoreCase))
         {
+            var (input, inputJson) = ParseStringOrStructured(payload, "input");
             return new CustomToolCallResponseItemPayload
             {
                 PayloadType = payloadType,
                 Status = TryGetString(payload, "status"),
                 CallId = TryGetString(payload, "call_id"),
                 Name = TryGetString(payload, "name"),
-                Input = TryGetString(payload, "input")
+                Input = input,
+                InputJson = inputJson
             };
         }
 
         if (string.Equals(payloadType, "custom_tool_call_output", StringComparison.OrdinalIgnoreCase))
         {
+            var (output, outputJson) = ParseStringOrStructured(payload, "output");
+            var outputContent = ParseFunctionToolOutputContent(outputJson);
             return new CustomToolCallOutputResponseItemPayload
             {
                 PayloadType = payloadType,
                 CallId = TryGetString(payload, "call_id"),
-                Output = TryGetString(payload, "output")
+                Name = TryGetString(payload, "name"),
+                Output = output,
+                OutputJson = outputJson,
+                OutputContent = outputContent
+            };
+        }
+
+        if (string.Equals(payloadType, "tool_search_call", StringComparison.OrdinalIgnoreCase))
+        {
+            JsonElement? arguments = null;
+            if (payload.TryGetProperty("arguments", out var argumentsEl))
+            {
+                arguments = argumentsEl.Clone();
+            }
+
+            return new ToolSearchCallResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Status = TryGetString(payload, "status"),
+                CallId = TryGetString(payload, "call_id"),
+                Execution = TryGetString(payload, "execution"),
+                Arguments = arguments
+            };
+        }
+
+        if (string.Equals(payloadType, "tool_search_output", StringComparison.OrdinalIgnoreCase))
+        {
+            var tools = Array.Empty<JsonElement>();
+            if (payload.TryGetProperty("tools", out var toolsEl) && toolsEl.ValueKind == JsonValueKind.Array)
+            {
+                tools = toolsEl.EnumerateArray()
+                    .Select(tool => tool.Clone())
+                    .ToArray();
+            }
+
+            return new ToolSearchOutputResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Status = TryGetString(payload, "status"),
+                CallId = TryGetString(payload, "call_id"),
+                Execution = TryGetString(payload, "execution"),
+                Tools = tools
+            };
+        }
+
+        if (string.Equals(payloadType, "image_generation_call", StringComparison.OrdinalIgnoreCase))
+        {
+            return new ImageGenerationCallResponseItemPayload
+            {
+                PayloadType = payloadType,
+                Id = TryGetString(payload, "id"),
+                Status = TryGetString(payload, "status"),
+                RevisedPrompt = TryGetString(payload, "revised_prompt"),
+                Result = TryGetString(payload, "result")
             };
         }
 
@@ -334,60 +406,4 @@ internal static class JsonlEventResponseItemParsers
         };
     }
 
-    private static IReadOnlyList<ResponseMessageContentPart> ParseMessageContent(JsonElement payload)
-    {
-        if (!payload.TryGetProperty("content", out var contentArray) || contentArray.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<ResponseMessageContentPart>();
-        }
-
-        var parts = new List<ResponseMessageContentPart>();
-        foreach (var c in contentArray.EnumerateArray())
-        {
-            if (c.ValueKind != JsonValueKind.Object)
-                continue;
-
-            var contentType = TryGetString(c, "type");
-            if (string.IsNullOrWhiteSpace(contentType))
-                continue;
-
-            if (string.Equals(contentType, "output_text", StringComparison.OrdinalIgnoreCase))
-            {
-                parts.Add(new ResponseMessageOutputTextPart
-                {
-                    ContentType = contentType,
-                    Text = TryGetString(c, "text") ?? string.Empty
-                });
-                continue;
-            }
-
-            if (string.Equals(contentType, "input_text", StringComparison.OrdinalIgnoreCase))
-            {
-                parts.Add(new ResponseMessageInputTextPart
-                {
-                    ContentType = contentType,
-                    Text = TryGetString(c, "text") ?? string.Empty
-                });
-                continue;
-            }
-
-            if (string.Equals(contentType, "input_image", StringComparison.OrdinalIgnoreCase))
-            {
-                parts.Add(new ResponseMessageInputImagePart
-                {
-                    ContentType = contentType,
-                    ImageUrl = TryGetString(c, "image_url") ?? string.Empty
-                });
-                continue;
-            }
-
-            parts.Add(new UnknownResponseMessageContentPart
-            {
-                ContentType = contentType,
-                Raw = c.Clone()
-            });
-        }
-
-        return parts;
-    }
 }

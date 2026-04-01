@@ -1,6 +1,5 @@
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
@@ -32,7 +31,14 @@ public sealed class AppServerExperimentalApiFlowsTests
 
             threadId = thread.Id;
 
-            rolloutPath = await WaitForRolloutPathAsync(client, cts.Token);
+            await using var turn = await client.StartTurnAsync(threadId, new TurnStartOptions
+            {
+                Input = [TurnInputItem.Text("Reply only with: ok.")]
+            }, cts.Token);
+
+            _ = await turn.Completion.WaitAsync(cts.Token);
+
+            rolloutPath = await WaitForRolloutPathAsync(threadId, cts.Token);
         }
 
         await using var client2 = await CodexAppServerClient.StartAsync(options, cts.Token);
@@ -46,21 +52,41 @@ public sealed class AppServerExperimentalApiFlowsTests
         resumed.Id.Should().NotBeNullOrWhiteSpace();
     }
 
-    private static async Task<string> WaitForRolloutPathAsync(CodexAppServerClient client, CancellationToken ct)
+    private static async Task<string> WaitForRolloutPathAsync(string threadId, CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
-        await foreach (var ev in client.Notifications(cts.Token))
+        var sessionsRoot = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".codex",
+            "sessions");
+
+        while (!cts.IsCancellationRequested)
         {
-            if (ev is SessionConfiguredNotification configured &&
-                !string.IsNullOrWhiteSpace(configured.RolloutPath))
+            if (Directory.Exists(sessionsRoot))
             {
-                return configured.RolloutPath!;
+                var match = Directory
+                    .EnumerateFiles(sessionsRoot, $"rollout-*{threadId}.jsonl", SearchOption.AllDirectories)
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(match))
+                {
+                    return match;
+                }
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(250), cts.Token);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                break;
             }
         }
 
-        throw new TimeoutException("Timed out waiting for SessionConfiguredNotification.rolloutPath.");
+        throw new TimeoutException($"Timed out waiting for rollout path for thread '{threadId}'.");
     }
 }
-

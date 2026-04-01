@@ -1,3 +1,4 @@
+using FluentAssertions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Models;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using System.Linq;
+using System.Text.Json;
 using Xunit;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;
@@ -109,6 +111,27 @@ public sealed class CodexClientListSessionsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task ListSessionsAsync_OrdersByLatestObservedActivity()
+    {
+        var olderCreatedButLaterUpdated = SessionId.Parse("older-created");
+        var newerCreated = SessionId.Parse("newer-created");
+        var olderCreatedTime = new DateTimeOffset(2025, 11, 20, 9, 0, 0, TimeSpan.Zero);
+        var newerCreatedTime = new DateTimeOffset(2025, 11, 20, 10, 0, 0, TimeSpan.Zero);
+
+        CreateSessionLog(olderCreatedButLaterUpdated, olderCreatedTime, @"C:\repos\alpha", "gpt-5.1-codex", lastActivityAt: olderCreatedTime.AddHours(2));
+        CreateSessionLog(newerCreated, newerCreatedTime, @"C:\repos\alpha", "gpt-5.1-codex", lastActivityAt: newerCreatedTime.AddMinutes(30));
+
+        await using var client = CreateClient();
+
+        var sessions = await client.ListSessionsAsync().ToListAsync();
+
+        sessions.Should().HaveCount(2);
+        sessions[0].Id.Should().Be(olderCreatedButLaterUpdated);
+        sessions[0].UpdatedAt.Should().Be(olderCreatedTime.AddHours(2).AddSeconds(1));
+        sessions[1].Id.Should().Be(newerCreated);
+    }
+
+    [Fact]
     public async Task ListSessionsAsync_ReturnsEmptyWhenDirectoryIsEmpty()
     {
         // Arrange
@@ -139,21 +162,36 @@ public sealed class CodexClientListSessionsTests : IAsyncDisposable
             loggerFactory: LoggerFactory);
     }
 
-    private string CreateSessionLog(SessionId sessionId, DateTimeOffset timestamp, string workingDirectory, string? model)
+    private string CreateSessionLog(
+        SessionId sessionId,
+        DateTimeOffset timestamp,
+        string workingDirectory,
+        string? model,
+        DateTimeOffset? lastActivityAt = null)
     {
-        var datePath = Path.Combine(
-            _sessionsRoot,
-            timestamp.Year.ToString("D4"),
-            timestamp.Month.ToString("D2"),
-            timestamp.Day.ToString("D2"));
+        var filePath = SessionLogPathTestHelper.BuildNestedRolloutPath(_sessionsRoot, timestamp, sessionId);
+        var datePath = Path.GetDirectoryName(filePath)!;
 
         Directory.CreateDirectory(datePath);
+        var latestActivity = lastActivityAt ?? timestamp;
 
-        var filePath = Path.Combine(datePath, $"rollout-{timestamp:HHmmss}-{sessionId.Value}.jsonl");
         var lines = new[]
         {
             TestJsonlGenerator.GenerateSessionMeta(sessionId, workingDirectory, timestamp, model),
-            TestJsonlGenerator.GenerateUserMessage("hello", timestamp.AddSeconds(1))
+            JsonSerializer.Serialize(new
+            {
+                type = "turn_context",
+                timestamp = latestActivity.ToString("o"),
+                payload = new
+                {
+                    approval_policy = "never",
+                    sandbox_policy_type = "workspace-write",
+                    cwd = workingDirectory,
+                    model,
+                    summary = "session metadata"
+                }
+            }),
+            TestJsonlGenerator.GenerateUserMessage("hello", latestActivity.AddSeconds(1))
         };
 
         File.WriteAllLines(filePath, lines);

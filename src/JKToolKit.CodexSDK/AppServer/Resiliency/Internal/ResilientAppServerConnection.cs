@@ -1,4 +1,5 @@
 using System.Runtime.ExceptionServices;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,8 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     private volatile Exception? _fault;
     private CodexAppServerDisconnectedException? _lastDisconnect;
     private Task? _exitMonitorTask;
+    private readonly TaskCompletionSource _exitTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private static readonly AppServerNotificationDropStats EmptyDropStats = new(0, 0, 0, 0, 0, 0);
 
     public ResilientAppServerConnection(
         Func<CancellationToken, Task<ICodexAppServerClientAdapter>> startInner,
@@ -37,6 +40,12 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     public CodexAppServerRestartEvent? LastRestart { get; private set; }
 
     public int RestartCount => Volatile.Read(ref _restartCount);
+
+    public AppServerInitializeResult? InitializeResult => _inner?.InitializeResult;
+
+    public AppServerNotificationDropStats NotificationDropStats => _inner?.NotificationDropStats ?? EmptyDropStats;
+
+    public Task ExitTask => _exitTcs.Task;
 
     public CancellationToken DisposeToken => _disposeCts.Token;
 
@@ -116,10 +125,10 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     public async Task RestartAsync(CancellationToken ct = default)
     {
         var version = Volatile.Read(ref _innerVersion);
-        await EnsureRestartedAsync(version, trigger: null, reason: "manual-restart", ct).ConfigureAwait(false);
+        await EnsureRestartedAsync(version, trigger: null, reason: "manual-restart", ct, forceRestart: true).ConfigureAwait(false);
     }
 
-    public async Task EnsureRestartedAsync(long expectedVersion, Exception? trigger, string? reason, CancellationToken ct)
+    public async Task EnsureRestartedAsync(long expectedVersion, Exception? trigger, string? reason, CancellationToken ct, bool forceRestart = false)
     {
         ThrowIfFaultedOrDisposed();
         ct.ThrowIfCancellationRequested();
@@ -134,9 +143,20 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
                 return;
             }
 
-            if (!_options.AutoRestart)
+            if (!_options.AutoRestart && !forceRestart)
             {
-                return;
+                _inner = null;
+
+                var disconnect = trigger as CodexAppServerDisconnectedException ??
+                                 _lastDisconnect ??
+                                 new CodexAppServerDisconnectedException(
+                                     message: "Codex app-server exited and auto-restart is disabled.",
+                                     processId: null,
+                                     exitCode: null,
+                                     stderrTail: Array.Empty<string>());
+
+                Fault(disconnect);
+                throw disconnect;
             }
 
             _state = CodexAppServerConnectionState.Restarting;
@@ -271,6 +291,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     {
         _state = CodexAppServerConnectionState.Disposed;
         _disposeCts.Cancel();
+        CompleteExitTask(null);
 
         ICodexAppServerClientAdapter? inner;
         Task? exitMonitorTask;
@@ -348,6 +369,19 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     {
         _fault = ex;
         _state = CodexAppServerConnectionState.Faulted;
+        CompleteExitTask(ex);
+    }
+
+    private void CompleteExitTask(Exception? error)
+    {
+        if (error is null)
+        {
+            _exitTcs.TrySetResult();
+        }
+        else
+        {
+            _exitTcs.TrySetException(error);
+        }
     }
 
     private static TimeSpan ComputeBackoff(CodexAppServerRestartPolicy policy, int windowAttempt)

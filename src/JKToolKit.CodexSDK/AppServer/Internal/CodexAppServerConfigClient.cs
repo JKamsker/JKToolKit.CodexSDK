@@ -3,14 +3,14 @@ using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using Microsoft.Extensions.Logging;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
-internal sealed class CodexAppServerConfigClient
+internal sealed partial class CodexAppServerConfigClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;
-    private readonly ILogger _logger;
 
     public CodexAppServerConfigClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
@@ -19,7 +19,7 @@ internal sealed class CodexAppServerConfigClient
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _ = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
@@ -50,6 +50,64 @@ internal sealed class CodexAppServerConfigClient
             ct);
 
         return CodexAppServerClientConfigReadParsers.ParseConfigReadResult(result);
+    }
+
+    public async Task<AccountReadResult> ReadAccountAsync(AccountReadOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "account/read",
+            new
+            {
+                refreshToken = options.RefreshToken
+            },
+            ct);
+
+        var account = CodexAppServerClientJson.TryGetObject(result, "account");
+
+        return new AccountReadResult
+        {
+            Account = account.HasValue ? account.Value.Clone() : null,
+            AccountInfo = CodexAppServerAccountParsers.ParseAccountOrNull(result, "account", "account/read response"),
+            RequiresOpenaiAuth = CodexAppServerClientJson.GetRequiredBool(result, "requiresOpenaiAuth", "account/read response"),
+            Raw = result
+        };
+    }
+
+    public async Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default)
+    {
+        var result = await _sendRequestAsync(
+            "account/rateLimits/read",
+            null,
+            ct);
+
+        var rateLimits = CodexAppServerClientJson.TryGetObject(result, "rateLimits");
+
+        IReadOnlyDictionary<string, JsonElement>? rateLimitsByLimitId = null;
+        var byLimitId = CodexAppServerClientJson.TryGetObject(result, "rateLimitsByLimitId");
+        if (byLimitId.HasValue)
+        {
+            var parsed = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+            foreach (var property in byLimitId.Value.EnumerateObject())
+            {
+                if (property.Value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+                {
+                    continue;
+                }
+
+                parsed[property.Name] = property.Value.Clone();
+            }
+
+            rateLimitsByLimitId = parsed;
+        }
+
+        return new AccountRateLimitsReadResult
+        {
+            RateLimits = rateLimits.HasValue ? rateLimits.Value.Clone() : EmptyObject(),
+            RateLimitsByLimitId = rateLimitsByLimitId,
+            Raw = result
+        };
     }
 
     public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
@@ -108,17 +166,29 @@ internal sealed class CodexAppServerConfigClient
         };
     }
 
-    public async Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(bool enabled, string path, CancellationToken ct = default)
+    public async Task<SkillsConfigWriteResult> WriteSkillsConfigAsync(SkillsConfigWriteOptions options, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            throw new ArgumentException("Path cannot be empty or whitespace.", nameof(path));
+        ArgumentNullException.ThrowIfNull(options);
+
+        var hasPath = !string.IsNullOrWhiteSpace(options.Path);
+        var hasName = !string.IsNullOrWhiteSpace(options.Name);
+        if (hasPath == hasName)
+        {
+            throw new ArgumentException("Exactly one of Path or Name must be provided.", nameof(options));
+        }
+
+        if (hasPath)
+        {
+            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.Path, nameof(options), "Path");
+        }
 
         var result = await _sendRequestAsync(
             "skills/config/write",
             new SkillsConfigWriteParams
             {
-                Enabled = enabled,
-                Path = path
+                Enabled = options.Enabled,
+                Path = hasPath ? options.Path : null,
+                Name = hasName ? options.Name : null
             },
             ct);
 
@@ -127,6 +197,38 @@ internal sealed class CodexAppServerConfigClient
             EffectiveEnabled = CodexAppServerClientJson.GetBoolOrNull(result, "effectiveEnabled"),
             Raw = result
         };
+    }
+
+    public async Task<AccountLoginStartResult> StartAccountLoginAsync(AccountLoginStartOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options is AccountLoginStartOptions.ChatGptAuthTokens && !_experimentalApiEnabled())
+        {
+            throw new CodexExperimentalApiRequiredException("account/login/start.chatgptAuthTokens");
+        }
+
+        var result = await _sendRequestAsync(
+            "account/login/start",
+            CodexAppServerAccountLoginParsers.BuildStartParams(options),
+            ct);
+
+        return CodexAppServerAccountLoginParsers.ParseStartResult(result);
+    }
+
+    public async Task<AccountLoginCancelResult> CancelAccountLoginAsync(string loginId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(loginId))
+            throw new ArgumentException("LoginId cannot be empty or whitespace.", nameof(loginId));
+
+        var result = await _sendRequestAsync(
+            "account/login/cancel",
+            new UpstreamV2.CancelLoginAccountParams
+            {
+                LoginId = loginId
+            },
+            ct);
+
+        return CodexAppServerAccountLoginParsers.ParseCancelResult(result);
     }
 
     public async Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct = default)
@@ -138,56 +240,36 @@ internal sealed class CodexAppServerConfigClient
             options,
             ct);
 
-        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items");
-        if (itemsArray is null)
-        {
-            return new ExternalAgentConfigDetectResult
-            {
-                Items = Array.Empty<ExternalAgentConfigMigrationItem>(),
-                Raw = result
-            };
-        }
+        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items")
+            ?? throw new InvalidOperationException("Missing required property 'items' on externalAgentConfig/detect response.");
 
         var items = new List<ExternalAgentConfigMigrationItem>();
         var i = 0;
-        foreach (var item in itemsArray.Value.EnumerateArray())
+        foreach (var item in itemsArray.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object)
             {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug(
-                        "externalAgentConfig/detect: skipping items[{Index}] because it is not an object. valueKind={ValueKind} raw={Raw}",
-                        i,
-                        item.ValueKind,
-                        item.GetRawText());
-                }
-
-                i++;
-                continue;
+                throw new InvalidOperationException(
+                    $"externalAgentConfig/detect items[{i}] must be an object. valueKind={item.ValueKind}");
             }
 
             var description = CodexAppServerClientJson.GetStringOrNull(item, "description");
-            var itemType = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
-            if (string.IsNullOrWhiteSpace(description) || string.IsNullOrWhiteSpace(itemType))
+            if (string.IsNullOrWhiteSpace(description))
             {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug(
-                        "externalAgentConfig/detect: skipping items[{Index}] due to missing/invalid required fields. description={Description} itemType={ItemType} raw={Raw}",
-                        i,
-                        description,
-                        itemType,
-                        item.GetRawText());
-                }
+                throw new InvalidOperationException(
+                    $"externalAgentConfig/detect items[{i}] missing required string property 'description'.");
+            }
 
-                i++;
-                continue;
+            var itemTypeRaw = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
+            if (!ExternalAgentConfigMigrationItemTypeExtensions.TryParseWireValue(itemTypeRaw, out var itemType))
+            {
+                throw new InvalidOperationException(
+                    $"externalAgentConfig/detect items[{i}] has unknown required itemType '{itemTypeRaw ?? "<null>"}'.");
             }
 
             items.Add(new ExternalAgentConfigMigrationItem
             {
-                Cwd = CodexAppServerClientJson.GetStringOrNull(item, "cwd"),
+                Cwd = ParseOptionalStringProperty(item, "cwd", $"externalAgentConfig/detect items[{i}]"),
                 Description = description,
                 ItemType = itemType
             });
@@ -205,20 +287,12 @@ internal sealed class CodexAppServerConfigClient
     public async Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(migrationItems);
-        if (migrationItems.Count == 0)
-            throw new ArgumentException("Migration items cannot be empty.", nameof(migrationItems));
 
         for (var i = 0; i < migrationItems.Count; i++)
         {
             var item = migrationItems[i];
             if (item is null)
                 throw new ArgumentException($"Migration item at index {i} cannot be null.", nameof(migrationItems));
-
-            if (string.IsNullOrWhiteSpace(item.Description))
-                throw new ArgumentException($"Migration item at index {i} must have a non-empty Description.", nameof(migrationItems));
-
-            if (string.IsNullOrWhiteSpace(item.ItemType))
-                throw new ArgumentException($"Migration item at index {i} must have a non-empty ItemType.", nameof(migrationItems));
         }
 
         _ = await _sendRequestAsync(
@@ -227,14 +301,24 @@ internal sealed class CodexAppServerConfigClient
             ct);
     }
 
-    public async Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default)
+    public Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default) =>
+        StartWindowsSandboxSetupAsync(
+            new WindowsSandboxSetupStartOptions(WindowsSandboxSetupMode.Parse(mode)),
+            ct);
+
+    public async Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(mode))
-            throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(mode));
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.Mode.Value))
+            throw new ArgumentException("Mode cannot be empty or whitespace.", nameof(options));
 
         var result = await _sendRequestAsync(
             "windowsSandbox/setupStart",
-            new { mode },
+            new
+            {
+                mode = options.Mode.Value,
+                cwd = options.Cwd
+            },
             ct);
 
         var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
@@ -245,6 +329,28 @@ internal sealed class CodexAppServerConfigClient
         }
 
         return started.Value;
+    }
+
+    private static JsonElement EmptyObject()
+    {
+        using var emptyDoc = JsonDocument.Parse("{}");
+        return emptyDoc.RootElement.Clone();
+    }
+
+    private static string? ParseOptionalStringProperty(JsonElement obj, string propertyName, string context)
+    {
+        var value = CodexAppServerClientJson.TryGetElement(obj, propertyName);
+        if (value is null || value.Value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (value.Value.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidOperationException($"{context} property '{propertyName}' must be a string or null.");
+        }
+
+        return value.Value.GetString();
     }
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)

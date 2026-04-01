@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.IO;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -31,6 +32,8 @@ public abstract record class ReadOnlyAccess
     /// </summary>
     public sealed record class Restricted : ReadOnlyAccess
     {
+        private IReadOnlyList<string> _readableRoots = Array.Empty<string>();
+
         /// <inheritdoc />
         public override string Type => "restricted";
 
@@ -44,6 +47,29 @@ public abstract record class ReadOnlyAccess
         /// Gets the explicitly readable roots.
         /// </summary>
         [JsonPropertyName("readableRoots")]
-        public IReadOnlyList<string> ReadableRoots { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> ReadableRoots
+        {
+            get => _readableRoots;
+            init => _readableRoots = ValidateAbsolutePaths(value, nameof(ReadableRoots));
+        }
+
+        private static IReadOnlyList<string> ValidateAbsolutePaths(IReadOnlyList<string>? paths, string parameterName)
+        {
+            if (paths is null)
+            {
+                return Array.Empty<string>();
+            }
+
+            foreach (var path in paths)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    throw new ArgumentException("Readable roots cannot contain null, empty, or whitespace paths.", parameterName);
+
+                if (!Path.IsPathFullyQualified(path))
+                    throw new ArgumentException($"Readable root '{path}' must be an absolute path.", parameterName);
+            }
+
+            return paths;
+        }
     }
 }

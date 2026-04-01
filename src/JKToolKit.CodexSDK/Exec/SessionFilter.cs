@@ -26,12 +26,16 @@ namespace JKToolKit.CodexSDK.Exec;
 /// Optional session ID pattern for filtering. Supports wildcard matching or regex patterns
 /// depending on implementation.
 /// </param>
+/// <param name="ModelProvider">
+/// Optional model provider identifier to filter sessions.
+/// </param>
 public sealed record SessionFilter(
     DateTimeOffset? FromDate = null,
     DateTimeOffset? ToDate = null,
     string? WorkingDirectory = null,
     CodexModel? Model = null,
-    string? SessionIdPattern = null)
+    string? SessionIdPattern = null,
+    string? ModelProvider = null)
 {
     /// <summary>
     /// Gets the optional start date for filtering sessions.
@@ -74,6 +78,11 @@ public sealed record SessionFilter(
     /// Gets the optional session ID pattern for filtering.
     /// </summary>
     public string? SessionIdPattern { get; init; } = SessionIdPattern;
+
+    /// <summary>
+    /// Gets the optional model provider identifier to filter sessions.
+    /// </summary>
+    public string? ModelProvider { get; init; } = ModelProvider;
 
     /// <summary>
     /// Creates an empty SessionFilter with no criteria applied.

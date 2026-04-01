@@ -7,88 +7,8 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 
 using static JsonlEventJson;
 
-internal static class JsonlEventBasicParsers
+internal static partial class JsonlEventBasicParsers
 {
-    public static SessionMetaEvent? ParseSessionMetaEvent(
-        JsonElement root,
-        DateTimeOffset timestamp,
-        string type,
-        JsonElement rawPayload,
-        in JsonlEventParserContext ctx)
-    {
-        if (!root.TryGetProperty("payload", out var payload))
-        {
-            ctx.Logger.LogWarning("session_meta event missing 'payload' field");
-            return null;
-        }
-
-        if (payload.ValueKind != JsonValueKind.Object)
-        {
-            ctx.Logger.LogWarning("session_meta event has non-object 'payload' field");
-            return null;
-        }
-
-        if (!payload.TryGetProperty("id", out var idElement))
-        {
-            ctx.Logger.LogWarning("session_meta event missing 'payload.id' field");
-            return null;
-        }
-
-        var idString = idElement.ValueKind switch
-        {
-            JsonValueKind.String => idElement.GetString(),
-            JsonValueKind.Null => null,
-            _ => idElement.GetRawText()
-        };
-        if (string.IsNullOrWhiteSpace(idString))
-        {
-            ctx.Logger.LogWarning("session_meta event has empty 'payload.id' field");
-            return null;
-        }
-
-        if (!SessionId.TryParse(idString, out var sessionId))
-        {
-            ctx.Logger.LogWarning("session_meta event has invalid 'payload.id' field");
-            return null;
-        }
-
-        var cwd = TryGetString(payload, "cwd");
-        var cliVersion = TryGetString(payload, "cli_version");
-        var originator = TryGetString(payload, "originator");
-        string? source = null;
-        string? sourceSubagent = null;
-        if (payload.TryGetProperty("source", out var sourceEl))
-        {
-            if (sourceEl.ValueKind == JsonValueKind.String)
-            {
-                source = sourceEl.GetString();
-            }
-            else if (sourceEl.ValueKind == JsonValueKind.Object)
-            {
-                var subagent = TryGetString(sourceEl, "subagent");
-                if (!string.IsNullOrWhiteSpace(subagent))
-                {
-                    source = "subagent";
-                    sourceSubagent = subagent;
-                }
-            }
-        }
-        var modelProvider = TryGetString(payload, "model_provider");
-
-        return new SessionMetaEvent
-        {
-            Timestamp = timestamp,
-            Type = type,
-            RawPayload = rawPayload,
-            SessionId = sessionId,
-            Cwd = cwd,
-            CliVersion = cliVersion,
-            Originator = originator,
-            Source = source,
-            SourceSubagent = sourceSubagent,
-            ModelProvider = modelProvider
-        };
-    }
 
     public static UserMessageEvent? ParseUserMessageEvent(
         JsonElement root,
@@ -98,10 +18,9 @@ internal static class JsonlEventBasicParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        var msgString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
-        if (string.IsNullOrWhiteSpace(msgString))
+        if (!TryGetMessageOrText(payload, out var msgString))
         {
-            ctx.Logger.LogWarning("user_message event has empty message/text field");
+            ctx.Logger.LogWarning("user_message event missing message/text field");
             return null;
         }
 
@@ -110,7 +29,7 @@ internal static class JsonlEventBasicParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            Text = msgString
+            Text = msgString ?? string.Empty
         };
     }
 
@@ -122,11 +41,9 @@ internal static class JsonlEventBasicParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        var msgString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
-
-        if (string.IsNullOrWhiteSpace(msgString))
+        if (!TryGetMessageOrText(payload, out var msgString))
         {
-            ctx.Logger.LogWarning("agent_message event has empty message/text field");
+            ctx.Logger.LogWarning("agent_message event missing message/text field");
             return null;
         }
 
@@ -135,7 +52,7 @@ internal static class JsonlEventBasicParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            Text = msgString
+            Text = msgString ?? string.Empty
         };
     }
 
@@ -147,11 +64,9 @@ internal static class JsonlEventBasicParsers
         in JsonlEventParserContext ctx)
     {
         var payload = GetEventBody(root);
-        var reasoningString = TryGetString(payload, "message") ?? TryGetString(payload, "text");
-
-        if (string.IsNullOrWhiteSpace(reasoningString))
+        if (!TryGetMessageOrText(payload, out var reasoningString))
         {
-            ctx.Logger.LogWarning("agent_reasoning event has empty message/text field");
+            ctx.Logger.LogWarning("agent_reasoning event missing message/text field");
             return null;
         }
 
@@ -160,7 +75,7 @@ internal static class JsonlEventBasicParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            Text = reasoningString
+            Text = reasoningString ?? string.Empty
         };
     }
 
@@ -250,57 +165,6 @@ internal static class JsonlEventBasicParsers
             LastTokenUsage = lastTokenUsage,
             TotalTokenUsage = totalTokenUsage,
             ModelContextWindow = modelContextWindow
-        };
-    }
-
-    public static TurnContextEvent? ParseTurnContextEvent(
-        JsonElement root,
-        DateTimeOffset timestamp,
-        string type,
-        JsonElement rawPayload,
-        in JsonlEventParserContext ctx)
-    {
-        string? approvalPolicy = null;
-        string? sandboxPolicyType = null;
-        bool? networkAccess = null;
-
-        if (root.TryGetProperty("payload", out var payload))
-        {
-            if (payload.TryGetProperty("approval_policy", out var approvalElement))
-            {
-                approvalPolicy = approvalElement.ValueKind switch
-                {
-                    JsonValueKind.Null => null,
-                    JsonValueKind.String => approvalElement.GetString(),
-                    _ => approvalElement.GetRawText()
-                };
-            }
-
-            // Codex has produced both `sandbox_policy_type: string` and `sandbox_policy: { type, network_access }`.
-            if (payload.TryGetProperty("sandbox_policy_type", out var sandboxElement) && sandboxElement.ValueKind == JsonValueKind.String)
-                sandboxPolicyType = sandboxElement.GetString();
-
-            if (payload.TryGetProperty("sandbox_policy", out var sandboxPolicy) && sandboxPolicy.ValueKind == JsonValueKind.Object)
-            {
-                if (sandboxPolicy.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
-                    sandboxPolicyType = typeEl.GetString();
-
-                if (sandboxPolicy.TryGetProperty("network_access", out var netEl) &&
-                    (netEl.ValueKind == JsonValueKind.True || netEl.ValueKind == JsonValueKind.False))
-                {
-                    networkAccess = netEl.GetBoolean();
-                }
-            }
-        }
-
-        return new TurnContextEvent
-        {
-            Timestamp = timestamp,
-            Type = type,
-            RawPayload = rawPayload,
-            ApprovalPolicy = approvalPolicy,
-            SandboxPolicyType = sandboxPolicyType,
-            NetworkAccess = networkAccess
         };
     }
 
@@ -481,4 +345,23 @@ internal static class JsonlEventBasicParsers
 
         return new RateLimits(primary, secondary, credits);
     }
+
+    private static bool TryGetMessageOrText(JsonElement payload, out string? value)
+    {
+        if (payload.TryGetProperty("message", out var messageEl) && messageEl.ValueKind == JsonValueKind.String)
+        {
+            value = messageEl.GetString();
+            return true;
+        }
+
+        if (payload.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+        {
+            value = textEl.GetString();
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
 }

@@ -11,9 +11,9 @@ public sealed record CollabAgentSpawnEndEvent : CodexEvent
     public required string CallId { get; init; }
 
     /// <summary>
-    /// Gets the sender thread id, when provided.
+    /// Gets the sender thread id.
     /// </summary>
-    public string? SenderThreadId { get; init; }
+    public required string SenderThreadId { get; init; }
 
     /// <summary>
     /// Gets the new thread id, when provided.
@@ -31,12 +31,27 @@ public sealed record CollabAgentSpawnEndEvent : CodexEvent
     public string? NewAgentRole { get; init; }
 
     /// <summary>
-    /// Gets the initial prompt that was sent to the new agent, when provided.
+    /// Gets the initial prompt that was sent to the new agent.
     /// </summary>
-    public string? Prompt { get; init; }
+    public required string Prompt { get; init; }
 
     /// <summary>
-    /// Gets the last known new-agent status reported to the sender, when provided.
+    /// Gets the effective model used by the spawned agent.
     /// </summary>
-    public string? Status { get; init; }
+    public required string Model { get; init; }
+
+    /// <summary>
+    /// Gets the effective reasoning effort used by the spawned agent.
+    /// </summary>
+    public required string ReasoningEffort { get; init; }
+
+    /// <summary>
+    /// Gets the last known new-agent status reported to the sender.
+    /// </summary>
+    public required string Status { get; init; }
+
+    /// <summary>
+    /// Gets parsed status details, including any payload text/metadata carried by the union.
+    /// </summary>
+    public CollabAgentStatusInfo? StatusInfo { get; init; }
 }

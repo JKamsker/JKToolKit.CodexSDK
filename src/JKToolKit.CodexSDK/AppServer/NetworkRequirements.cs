@@ -33,9 +33,28 @@ public sealed record class NetworkRequirements
     public bool? DangerouslyAllowNonLoopbackProxy { get; init; }
 
     /// <summary>
-    /// Gets whether non-loopback admin access is allowed, when present (dangerous).
+    /// Gets whether non-loopback admin access is allowed.
     /// </summary>
+    /// <remarks>
+    /// This legacy field is no longer projected from upstream requirements payloads.
+    /// </remarks>
+    [Obsolete("This legacy field is no longer projected from app-server network requirements.")]
     public bool? DangerouslyAllowNonLoopbackAdmin { get; init; }
+
+    /// <summary>
+    /// Gets whether all unix sockets are allowed, when present (dangerous).
+    /// </summary>
+    public bool? DangerouslyAllowAllUnixSockets { get; init; }
+
+    /// <summary>
+    /// Gets the canonical managed domain permission map, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, NetworkDomainPermission>? Domains { get; init; }
+
+    /// <summary>
+    /// Gets whether only managed allowed domains should be honored, when present.
+    /// </summary>
+    public bool? ManagedAllowedDomainsOnly { get; init; }
 
     /// <summary>
     /// Gets an allow-list of domains, when present.
@@ -53,6 +72,11 @@ public sealed record class NetworkRequirements
     public IReadOnlyList<string>? AllowUnixSockets { get; init; }
 
     /// <summary>
+    /// Gets the canonical managed unix-socket permission map, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, NetworkUnixSocketPermission>? UnixSockets { get; init; }
+
+    /// <summary>
     /// Gets whether local binding is allowed, when present.
     /// </summary>
     public bool? AllowLocalBinding { get; init; }
@@ -62,4 +86,3 @@ public sealed record class NetworkRequirements
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-

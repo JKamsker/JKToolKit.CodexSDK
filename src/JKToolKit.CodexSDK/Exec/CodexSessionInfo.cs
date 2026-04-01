@@ -33,13 +33,22 @@ namespace JKToolKit.CodexSDK.Exec;
 /// Optional human-readable label or description for the session.
 /// Can be used to provide context or categorize sessions for easier identification.
 /// </param>
+/// <param name="UpdatedAt">
+/// Optional timestamp of the most recent activity observed for the session.
+/// When unavailable, consumers should fall back to <see cref="CreatedAt"/>.
+/// </param>
+/// <param name="ModelProvider">
+/// Optional model provider identifier recorded for the session.
+/// </param>
 public sealed record CodexSessionInfo(
     SessionId Id,
     string LogPath,
     DateTimeOffset CreatedAt,
     string? WorkingDirectory = null,
     CodexModel? Model = null,
-    string? HumanLabel = null)
+    string? HumanLabel = null,
+    DateTimeOffset? UpdatedAt = null,
+    string? ModelProvider = null)
 {
     /// <summary>
     /// Gets the unique identifier for the session.
@@ -88,6 +97,16 @@ public sealed record CodexSessionInfo(
     public string? HumanLabel { get; init; } = HumanLabel;
 
     /// <summary>
+    /// Gets the optional timestamp of the most recent activity observed for the session.
+    /// </summary>
+    public DateTimeOffset? UpdatedAt { get; init; } = UpdatedAt;
+
+    /// <summary>
+    /// Gets the optional model provider identifier recorded for the session.
+    /// </summary>
+    public string? ModelProvider { get; init; } = ModelProvider;
+
+    /// <summary>
     /// Returns a string representation of the session info.
     /// </summary>
     /// <returns>
@@ -96,7 +115,9 @@ public sealed record CodexSessionInfo(
     public override string ToString()
     {
         var modelInfo = Model.HasValue ? $", Model: {Model.Value}" : string.Empty;
+        var providerInfo = !string.IsNullOrWhiteSpace(ModelProvider) ? $", Provider: {ModelProvider}" : string.Empty;
         var labelInfo = !string.IsNullOrWhiteSpace(HumanLabel) ? $", Label: {HumanLabel}" : string.Empty;
-        return $"Session {Id} (Created: {CreatedAt:yyyy-MM-dd HH:mm:ss}{modelInfo}{labelInfo})";
+        var updatedAtInfo = UpdatedAt is { } updatedAt ? $", Updated: {updatedAt:yyyy-MM-dd HH:mm:ss}" : string.Empty;
+        return $"Session {Id} (Created: {CreatedAt:yyyy-MM-dd HH:mm:ss}{updatedAtInfo}{modelInfo}{providerInfo}{labelInfo})";
     }
 }

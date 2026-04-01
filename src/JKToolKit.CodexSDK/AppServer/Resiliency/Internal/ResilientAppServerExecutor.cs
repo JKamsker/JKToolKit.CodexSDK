@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 namespace JKToolKit.CodexSDK.AppServer.Resiliency.Internal;
 
@@ -16,9 +18,28 @@ internal sealed class ResilientAppServerExecutor
     }
 
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct = default) =>
-        NotificationsImpl(ct);
+        NotificationStreamWithRestart(
+            streamFactory: (inner, token) => inner.Notifications(token),
+            restartMarkerFactory: _options.EmitRestartMarkerNotifications
+                ? static e => new ClientRestartedNotification(
+                    restartCount: e.RestartCount,
+                    previousExitCode: e.PreviousExitCode,
+                    timestamp: e.Timestamp,
+                    reason: e.Reason,
+                    previousStderrTail: e.PreviousStderrTail)
+                : null,
+            ct);
 
-    private async IAsyncEnumerable<AppServerNotification> NotificationsImpl([EnumeratorCancellation] CancellationToken ct)
+    public IAsyncEnumerable<AppServerRpcNotification> NotificationsRaw(CancellationToken ct = default) =>
+        NotificationStreamWithRestart(
+            streamFactory: (inner, token) => inner.NotificationsRaw(token),
+            restartMarkerFactory: null,
+            ct);
+
+    private async IAsyncEnumerable<TResult> NotificationStreamWithRestart<TResult>(
+        Func<ICodexAppServerClientAdapter, CancellationToken, IAsyncEnumerable<TResult>> streamFactory,
+        Func<CodexAppServerRestartEvent, TResult?>? restartMarkerFactory,
+        [EnumeratorCancellation] CancellationToken ct)
     {
         _connection.ThrowIfFaultedOrDisposed();
 
@@ -32,7 +53,7 @@ internal sealed class ResilientAppServerExecutor
             var (inner, version) = await _connection.EnsureConnectedWithVersionAsync(linkedToken).ConfigureAwait(false);
 
             Exception? terminal = null;
-            var enumerator = inner.Notifications(linkedToken).GetAsyncEnumerator(linkedToken);
+            var enumerator = streamFactory(inner, linkedToken).GetAsyncEnumerator(linkedToken);
             try
             {
                 while (true)
@@ -89,15 +110,13 @@ internal sealed class ResilientAppServerExecutor
 
             await _connection.EnsureRestartedAsync(version, terminal, reason: "notifications-disconnected", linkedToken).ConfigureAwait(false);
 
-            if (_options.EmitRestartMarkerNotifications && _connection.LastRestart is not null)
+            if (restartMarkerFactory is not null && _connection.LastRestart is not null)
             {
-                var e = _connection.LastRestart;
-                yield return new ClientRestartedNotification(
-                    restartCount: e.RestartCount,
-                    previousExitCode: e.PreviousExitCode,
-                    timestamp: e.Timestamp,
-                    reason: e.Reason,
-                    previousStderrTail: e.PreviousStderrTail);
+                var marker = restartMarkerFactory(_connection.LastRestart);
+                if (marker is not null)
+                {
+                    yield return marker;
+                }
             }
         }
     }
@@ -124,24 +143,31 @@ internal sealed class ResilientAppServerExecutor
             {
                 return await op(inner, linkedToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ResilientAppServerConnection.IsDisconnect(ex))
+            catch (Exception ex) when (TryHandleRetryableFailure(ex, out var isDisconnect, out var decisionException))
             {
-                _connection.RememberDisconnect(ex);
-
-                if (_options.AutoRestart)
+                if (isDisconnect)
                 {
-                    await _connection.EnsureRestartedAsync(version, ex, reason: kind.ToString(), linkedToken).ConfigureAwait(false);
+                    _connection.RememberDisconnect(ex);
+
+                    if (_options.AutoRestart)
+                    {
+                        await _connection.EnsureRestartedAsync(version, ex, reason: kind.ToString(), linkedToken).ConfigureAwait(false);
+                    }
                 }
 
                 _connection.ThrowIfFaultedOrDisposed();
+
+                var ensureRestartedAsync = isDisconnect
+                    ? new Func<CancellationToken, Task>(c => _connection.EnsureRestartedAsync(version, ex, reason: "policy-ensure-restarted", c, forceRestart: true))
+                    : static _ => Task.CompletedTask;
 
                 var decision = await _options.RetryPolicy(new CodexAppServerRetryContext
                 {
                     OperationKind = kind,
                     Attempt = attempt,
-                    Exception = ex,
+                    Exception = decisionException,
                     CancellationToken = linkedToken,
-                    EnsureRestartedAsync = c => _connection.EnsureRestartedAsync(version, ex, reason: "policy-ensure-restarted", c)
+                    EnsureRestartedAsync = ensureRestartedAsync
                 }).ConfigureAwait(false);
 
                 if (!decision.ShouldRetry)
@@ -160,6 +186,139 @@ internal sealed class ResilientAppServerExecutor
                 }
             }
         }
+    }
+
+    private static bool TryHandleRetryableFailure(Exception ex, out bool isDisconnect, out Exception decisionException)
+    {
+        isDisconnect = ResilientAppServerConnection.IsDisconnect(ex);
+        decisionException = ex;
+
+        if (isDisconnect)
+        {
+            return true;
+        }
+
+        if (ex is JsonRpcRemoteException rpc && IsServerOverloaded(rpc))
+        {
+            decisionException = rpc;
+            return true;
+        }
+
+        if (ex is CodexAppServerRequestFailedException requestFailed && IsServerOverloaded(requestFailed))
+        {
+            decisionException = requestFailed;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsServerOverloaded(JsonRpcRemoteException rpc)
+    {
+        if (rpc.Error.Code == -32001)
+        {
+            return true;
+        }
+
+        if (MessageIndicatesOverload(rpc.Error.Message))
+        {
+            return true;
+        }
+
+        if (rpc.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } data)
+        {
+            return ContainsRetryToken(data);
+        }
+
+        return false;
+    }
+
+    private static bool IsServerOverloaded(CodexAppServerRequestFailedException requestFailed)
+    {
+        if (MessageIndicatesOverload(requestFailed.ErrorMessage))
+        {
+            return true;
+        }
+
+        if (requestFailed.ErrorData is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } data &&
+            ContainsRetryToken(data))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool MessageIndicatesOverload(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        var normalized = message.ToLowerInvariant();
+        return normalized.Contains("server overloaded") ||
+               normalized.Contains("overload") ||
+               normalized.Contains("backpressure") ||
+               normalized.Contains("retry later") ||
+               normalized.Contains("retry limit") ||
+               normalized.Contains("too many failed attempts");
+    }
+
+    private static bool ContainsRetryToken(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (IsRetryToken(property.Name))
+                    {
+                        return true;
+                    }
+
+                    if (ContainsRetryToken(property.Value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                {
+                    if (ContainsRetryToken(item))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+
+            case JsonValueKind.String:
+                return IsRetryToken(element.GetString());
+
+            default:
+                return false;
+        }
+    }
+
+    private static bool IsRetryToken(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var normalized = value.Replace("_", string.Empty)
+            .Replace("-", string.Empty)
+            .Replace(" ", string.Empty)
+            .ToLowerInvariant();
+
+        return normalized.Contains("serveroverloaded") ||
+               normalized.Contains("responsetoomanyfailedattempts") ||
+               normalized.Contains("backpressure");
     }
 }
 

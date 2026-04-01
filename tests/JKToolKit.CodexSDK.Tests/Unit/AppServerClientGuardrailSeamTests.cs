@@ -144,7 +144,7 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
-    public async Task ResumeThread_WithPathOnly_AllowsNullThreadId_WhenExperimentalEnabled()
+    public async Task ResumeThread_WithPathOnly_SendsPlaceholderThreadId_WhenExperimentalEnabled()
     {
         using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
         var rpc = new RecordingRpc { Result = doc.RootElement };
@@ -165,7 +165,33 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.RequestCount.Should().Be(1);
         rpc.LastMethod.Should().Be("thread/resume");
         rpc.LastParams.Should().BeOfType<ThreadResumeParams>();
-        ((ThreadResumeParams)rpc.LastParams!).ThreadId.Should().BeNull();
+        ((ThreadResumeParams)rpc.LastParams!).ThreadId.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ForkThread_WithPathAndThreadId_IgnoresThreadId_WhenExperimentalEnabled()
+    {
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr_1"}}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var thread = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            Path = "/tmp/rollout"
+        });
+
+        thread.Id.Should().Be("thr_1");
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/fork");
+        rpc.LastParams.Should().BeOfType<ThreadForkParams>();
+        ((ThreadForkParams)rpc.LastParams!).ThreadId.Should().BeEmpty();
     }
 
     [Fact]
@@ -202,6 +228,31 @@ public sealed class AppServerClientGuardrailSeamTests
         var p = (ThreadStartParams)rpc.LastParams!;
         p.DynamicTools.Should().BeEquivalentTo(new[] { tool });
         p.PersistExtendedHistory.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task StartTurn_WithApprovalsReviewer_SendsTypedReviewerValue()
+    {
+        using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var turn = await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            ApprovalsReviewer = CodexApprovalsReviewer.GuardianSubagent
+        });
+
+        turn.TurnId.Should().Be("turn_1");
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("turn/start");
+        rpc.LastParams.Should().BeOfType<TurnStartParams>();
+        ((TurnStartParams)rpc.LastParams!).ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
     }
 
     [Fact]
@@ -306,6 +357,25 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task StartThreadRealtime_WhenPromptIsWhitespace_PreservesWireValue()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StartThreadRealtimeAsync("thr_1", "   ", sessionId: null);
+
+        rpc.LastMethod.Should().Be("thread/realtime/start");
+        ((ThreadRealtimeStartParams)rpc.LastParams!).Prompt.Should().Be("   ");
+    }
+
+    [Fact]
     public async Task ListCollaborationModes_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
     {
         var rpc = new FakeRpc();
@@ -363,6 +433,7 @@ public sealed class AppServerClientGuardrailSeamTests
         var audio = new ThreadRealtimeAudioChunk
         {
             Data = "AA==",
+            ItemId = "item_1",
             NumChannels = 1,
             SampleRate = 16000,
             SamplesPerChannel = 160
@@ -401,6 +472,25 @@ public sealed class AppServerClientGuardrailSeamTests
         var p = (ThreadRealtimeAppendTextParams)rpc.LastParams!;
         p.ThreadId.Should().Be("thr_1");
         p.Text.Should().Be("hello");
+    }
+
+    [Fact]
+    public async Task AppendThreadRealtimeText_WhenTextIsWhitespace_PreservesWireValue()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.AppendThreadRealtimeTextAsync("thr_1", "   ");
+
+        rpc.LastMethod.Should().Be("thread/realtime/appendText");
+        ((ThreadRealtimeAppendTextParams)rpc.LastParams!).Text.Should().Be("   ");
     }
 
     [Fact]

@@ -28,6 +28,60 @@ public enum CodexAppServerOperationKind
     /// <summary>
     /// The internal notifications pump that bridges <c>Notifications()</c> across restarts.
     /// </summary>
-    NotificationsPump = 4
-}
+    NotificationsPump = 4,
 
+    /// <summary>
+    /// A user-initiated thread management request other than thread start/resume.
+    /// </summary>
+    ThreadManagement = 5,
+
+    /// <summary>
+    /// A user-initiated configuration or account request.
+    /// </summary>
+    Configuration = 6,
+
+    /// <summary>
+    /// A user-initiated MCP request.
+    /// </summary>
+    Mcp = 7,
+
+    /// <summary>
+    /// A user-initiated skills or apps request.
+    /// </summary>
+    SkillsAndApps = 8,
+
+    /// <summary>
+    /// A user-initiated fuzzy file search request.
+    /// </summary>
+    FuzzyFileSearch = 9,
+
+    /// <summary>
+    /// A user-initiated turn control request other than turn start.
+    /// </summary>
+    TurnControl = 10,
+
+    /// <summary>
+    /// A user-initiated plugin request.
+    /// </summary>
+    Plugins = 11,
+
+    /// <summary>
+    /// A user-initiated standalone command execution request.
+    /// </summary>
+    CommandExecution = 12,
+
+    /// <summary>
+    /// A user-initiated filesystem watcher request.
+    /// </summary>
+    Filesystem = 13,
+
+    /// <summary>
+    /// A user-initiated collaboration mode request.
+    /// </summary>
+    CollaborationModes = 14,
+
+    /// <summary>
+    /// A user-initiated thread realtime request.
+    /// </summary>
+    ThreadRealtime = 15
+}

@@ -1,6 +1,7 @@
 namespace JKToolKit.CodexSDK.Exec.Notifications;
 
 using JKToolKit.CodexSDK.Exec.Protocol;
+using System.Text.Json;
 
 /// <summary>
 /// Represents a session metadata event containing session configuration and context.
@@ -25,6 +26,11 @@ public record SessionMetaEvent : CodexEvent
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets the canonical session timestamp embedded in the session metadata payload when provided.
+    /// </summary>
+    public DateTimeOffset? SessionTimestamp { get; init; }
+
+    /// <summary>
     /// Gets the Codex CLI version when provided.
     /// </summary>
     public string? CliVersion { get; init; }
@@ -40,12 +46,57 @@ public record SessionMetaEvent : CodexEvent
     public string? Source { get; init; }
 
     /// <summary>
+    /// Gets the structured source payload when provided.
+    /// </summary>
+    public JsonElement? SourceJson { get; init; }
+
+    /// <summary>
     /// Gets the subagent name when this session was emitted by a subagent source (e.g. <c>review</c>).
     /// </summary>
     public string? SourceSubagent { get; init; }
 
     /// <summary>
+    /// Gets the parent/forked session id when provided.
+    /// </summary>
+    public SessionId? ForkedFromSessionId { get; init; }
+
+    /// <summary>
+    /// Gets the optional agent nickname assigned to this session.
+    /// </summary>
+    public string? AgentNickname { get; init; }
+
+    /// <summary>
+    /// Gets the optional agent role assigned to this session.
+    /// </summary>
+    public string? AgentRole { get; init; }
+
+    /// <summary>
+    /// Gets the optional canonical agent path assigned to this session.
+    /// </summary>
+    public string? AgentPath { get; init; }
+
+    /// <summary>
     /// Gets the model provider when provided.
     /// </summary>
     public string? ModelProvider { get; init; }
+
+    /// <summary>
+    /// Gets the optional base instructions payload when provided.
+    /// </summary>
+    public JsonElement? BaseInstructions { get; init; }
+
+    /// <summary>
+    /// Gets the optional dynamic tools payload when provided.
+    /// </summary>
+    public JsonElement? DynamicTools { get; init; }
+
+    /// <summary>
+    /// Gets the optional git metadata payload when provided.
+    /// </summary>
+    public JsonElement? Git { get; init; }
+
+    /// <summary>
+    /// Gets the optional memory mode when provided.
+    /// </summary>
+    public string? MemoryMode { get; init; }
 }

@@ -14,8 +14,16 @@ public sealed record class SkillsConfigWriteParams
     public required bool Enabled { get; init; }
 
     /// <summary>
-    /// Gets the skills configuration path.
+    /// Gets the optional path-based selector.
     /// </summary>
     [JsonPropertyName("path")]
-    public required string Path { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Path { get; init; }
+
+    /// <summary>
+    /// Gets the optional name-based selector.
+    /// </summary>
+    [JsonPropertyName("name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; init; }
 }

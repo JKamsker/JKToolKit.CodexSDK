@@ -13,11 +13,7 @@ internal static class CodexProcessLauncherIo
     {
         try
         {
-            await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
-            await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
-            process.StandardInput.Close();
-
-            logger.LogDebug("Wrote prompt to process {ProcessId} and closed stdin", process.Id);
+            await WriteExactTextAndCloseStdinAsync(process, prompt, logger, "prompt", cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -38,14 +34,7 @@ internal static class CodexProcessLauncherIo
     {
         try
         {
-            if (!string.IsNullOrWhiteSpace(prompt))
-            {
-                await process.StandardInput.WriteLineAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            process.StandardInput.Close();
-            logger.LogTrace("Closed stdin for process {ProcessId}", process.Id);
+            await WriteExactTextAndCloseStdinAsync(process, prompt, logger, "optional prompt", cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -55,6 +44,27 @@ internal static class CodexProcessLauncherIo
         {
             logger.LogError(ex, "Error writing optional prompt to process {ProcessId}", process.Id);
             throw new InvalidOperationException("Failed to write optional prompt to Codex process stdin.", ex);
+        }
+    }
+
+    internal static async Task WriteOptionalStdinPayloadAndCloseStdinAsync(
+        Process process,
+        string? payload,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await WriteExactTextAndCloseStdinAsync(process, payload, logger, "stdin payload", cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error writing stdin payload to process {ProcessId}", process.Id);
+            throw new InvalidOperationException("Failed to write stdin payload to Codex process stdin.", ex);
         }
     }
 
@@ -80,6 +90,23 @@ internal static class CodexProcessLauncherIo
         }
 
         return null;
+    }
+
+    private static async Task WriteExactTextAndCloseStdinAsync(
+        Process process,
+        string? text,
+        ILogger logger,
+        string contentDescription,
+        CancellationToken cancellationToken)
+    {
+        if (text is not null)
+        {
+            await process.StandardInput.WriteAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        process.StandardInput.Close();
+        logger.LogTrace("Wrote {ContentDescription} to process {ProcessId} and closed stdin", contentDescription, process.Id);
     }
 }
 

@@ -8,6 +8,7 @@ namespace JKToolKit.CodexSDK.AppServer;
 /// <remarks>
 /// This handler is invoked for server request methods including (but not limited to):
 /// <c>item/commandExecution/requestApproval</c>, <c>item/fileChange/requestApproval</c>,
+/// <c>item/permissions/requestApproval</c>, <c>mcpServer/elicitation/request</c>,
 /// <c>execCommandApproval</c>, <c>applyPatchApproval</c>, <c>item/tool/requestUserInput</c>,
 /// <c>item/tool/call</c>, and <c>account/chatgptAuthTokens/refresh</c>.
 /// </remarks>

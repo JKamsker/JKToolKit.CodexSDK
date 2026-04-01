@@ -23,7 +23,9 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "thread/realtime/closed",
         "model/rerouted",
         "turn/started",
+        "hook/started",
         "turn/completed",
+        "hook/completed",
         "turn/diff/updated",
         "turn/plan/updated",
         "item/started",
@@ -31,27 +33,32 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         "rawResponseItem/completed",
         "item/agentMessage/delta",
         "item/plan/delta",
+        "command/exec/outputDelta",
         "item/commandExecution/outputDelta",
         "item/commandExecution/terminalInteraction",
         "item/fileChange/outputDelta",
         "item/mcpToolCall/progress",
         "mcpServer/oauthLogin/completed",
+        "mcpServer/startupStatus/updated",
         "account/updated",
         "account/rateLimits/updated",
+        "skills/changed",
+        "serverRequest/resolved",
+        "fs/changed",
         "item/reasoning/summaryTextDelta",
         "item/reasoning/summaryPartAdded",
         "item/reasoning/textDelta",
+        "item/autoApprovalReview/started",
+        "item/autoApprovalReview/completed",
         "thread/compacted",
         "deprecationNotice",
         "configWarning",
         "windows/worldWritableWarning",
         "account/login/completed",
-        "authStatusChange",
-        "loginChatGptComplete",
-        "sessionConfigured",
         "app/list/updated",
         "fuzzyFileSearch/sessionUpdated",
-        "fuzzyFileSearch/sessionCompleted"
+        "fuzzyFileSearch/sessionCompleted",
+        "thread/realtime/transcriptUpdated"
     ];
 
     public static IEnumerable<object[]> BogusParams()
@@ -89,6 +96,43 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
             act.Should().NotThrow();
             AppServerNotificationMapper.Map(method, @params: null).Should().BeOfType<UnknownNotification>();
         }
+    }
+
+    [Fact]
+    public void Map_FsChanged_WithRelativePath_ReturnsUnknown()
+    {
+        var payload = Parse("""{"watchId":"watch-1","changedPaths":["relative\\file.txt"]}""");
+
+        AppServerNotificationMapper.Map("fs/changed", payload)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
+    public void Map_ServerRequestResolved_WithNonScalarRequestId_ReturnsUnknown()
+    {
+        var payload = Parse("""{"threadId":"thread-1","requestId":{"nested":true}}""");
+
+        AppServerNotificationMapper.Map("serverRequest/resolved", payload)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Theory]
+    [InlineData("thread/realtime/started", """{"threadId":"t","version":123}""")]
+    [InlineData("thread/realtime/itemAdded", """{"threadId":"t"}""")]
+    [InlineData("thread/realtime/outputAudio/delta", """{"threadId":"t","audio":{"data":"abc","numChannels":"2","sampleRate":24000}}""")]
+    [InlineData("thread/realtime/error", """{"threadId":"t"}""")]
+    [InlineData("thread/realtime/closed", """{"threadId":{}}""")]
+    [InlineData("hook/started", """{"threadId":"t","run":{"id":"r1","status":"running"}}""")]
+    [InlineData("hook/completed", """{"threadId":"t","run":{"id":"r1","status":"completed"}}""")]
+    [InlineData("item/commandExecution/outputDelta", """{"threadId":"t","turnId":"u","itemId":"i"}""")]
+    [InlineData("item/autoApprovalReview/started", """{"threadId":"t","turnId":"u","targetItemId":"i","review":{"riskScore":"5"}}""")]
+    [InlineData("item/autoApprovalReview/completed", """{"threadId":"t","turnId":"u","targetItemId":"i","review":{"status":"approved","riskScore":"5"}}""")]
+    public void Map_StrictNotificationPayloadFailures_ReturnUnknown(string method, string payloadJson)
+    {
+        var payload = Parse(payloadJson);
+
+        AppServerNotificationMapper.Map(method, payload)
+            .Should().BeOfType<UnknownNotification>();
     }
 
     private static JsonElement Parse(string json)

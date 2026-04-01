@@ -18,6 +18,11 @@ public sealed record class ThreadRealtimeOutputAudioDeltaNotification : AppServe
     public JsonElement Audio { get; }
 
     /// <summary>
+    /// Gets the related realtime item identifier, when present.
+    /// </summary>
+    public string? ItemId { get; }
+
+    /// <summary>
     /// Gets the audio data chunk (typically base64-encoded), if present in <see cref="Audio"/>.
     /// </summary>
     public string? Data { get; }
@@ -45,6 +50,7 @@ public sealed record class ThreadRealtimeOutputAudioDeltaNotification : AppServe
     {
         this.ThreadId = ThreadId;
         this.Audio = Audio;
+        ItemId = TryGetString(Audio, "itemId");
         Data = TryGetString(Audio, "data");
         SampleRate = TryGetInt32(Audio, "sampleRate");
         NumChannels = TryGetInt32(Audio, "numChannels");

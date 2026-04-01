@@ -5,6 +5,7 @@ using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -28,6 +29,7 @@ public class CodexClientStartSessionTests
 
         var sessionId = SessionId.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
         var escapedWorkingDirectory = workingDirectory.Replace("\\", "\\\\");
+        var rolloutTimestamp = DateTimeOffset.Parse("2025-11-20T22:00:00Z");
         var lines = new[]
         {
             $"{{\"timestamp\":\"2025-11-20T22:00:00Z\",\"type\":\"session_meta\",\"payload\":{{\"id\":\"{sessionId}\",\"cwd\":\"{escapedWorkingDirectory}\"}}}}",
@@ -40,7 +42,7 @@ public class CodexClientStartSessionTests
         using var process = FakeProcessLauncher.CreateLongLivedProcess(sessionId.Value);
 
         var launcher = new FakeProcessLauncher(process);
-        var locator = new FakeSessionLocator($"C:\\sessions\\rollout-{sessionId}.jsonl");
+        var locator = new FakeSessionLocator(SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", rolloutTimestamp, sessionId));
         var tailer = new FakeTailer(lines);
         var parser = new JKToolKit.CodexSDK.Infrastructure.JsonlEventParser(LoggerFactory.CreateLogger<JKToolKit.CodexSDK.Infrastructure.JsonlEventParser>());
         var pathProvider = new FakePathProvider("C:\\sessions");
@@ -89,7 +91,11 @@ public class CodexClientStartSessionTests
         using var process = FakeProcessLauncher.CreateShortProcess(); // exits almost immediately
 
         var launcher = new FakeProcessLauncher(process);
-        var locator = new FakeSessionLocator("C:\\sessions\\rollout-session-123.jsonl");
+        var locator = new FakeSessionLocator(
+            SessionLogPathTestHelper.BuildNestedRolloutPath(
+                "C:\\sessions",
+                DateTimeOffset.Parse("2025-11-20T22:15:00Z"),
+                SessionId.Parse("session-123")));
         var tailer = new FakeTailer(Array.Empty<string>()); // no session_meta
         var parser = new JKToolKit.CodexSDK.Infrastructure.JsonlEventParser(LoggerFactory.CreateLogger<JKToolKit.CodexSDK.Infrastructure.JsonlEventParser>());
         var pathProvider = new FakePathProvider("C:\\sessions");
@@ -308,6 +314,9 @@ public class CodexClientStartSessionTests
             overrideDirectory ?? _sessionsRoot;
 
         public string ResolveSessionLogPath(SessionId sessionId, string? sessionsRoot) =>
-            Path.Combine(sessionsRoot ?? _sessionsRoot, $"rollout-{sessionId}.jsonl");
+            SessionLogPathTestHelper.BuildNestedRolloutPath(
+                sessionsRoot ?? _sessionsRoot,
+                DateTimeOffset.Parse("2025-11-20T22:00:00Z"),
+                sessionId);
     }
 }

@@ -14,6 +14,11 @@ public sealed record class ConfigRequirements
     public IReadOnlyList<CodexApprovalPolicy>? AllowedApprovalPolicies { get; init; }
 
     /// <summary>
+    /// Gets the allow-list of approval policies expressed as <c>AskForApproval</c> union values, when present.
+    /// </summary>
+    public IReadOnlyList<CodexAskForApproval>? AllowedAskForApproval { get; init; }
+
+    /// <summary>
     /// Gets the allow-list of sandbox modes, when present.
     /// </summary>
     public IReadOnlyList<CodexSandboxMode>? AllowedSandboxModes { get; init; }
@@ -22,6 +27,11 @@ public sealed record class ConfigRequirements
     /// Gets the allow-list of web search modes, when present.
     /// </summary>
     public IReadOnlyList<CodexWebSearchMode>? AllowedWebSearchModes { get; init; }
+
+    /// <summary>
+    /// Gets feature-gating requirements by feature name, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? FeatureRequirements { get; init; }
 
     /// <summary>
     /// Gets the enforced residency requirement, when present.
@@ -41,4 +51,3 @@ public sealed record class ConfigRequirements
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-
