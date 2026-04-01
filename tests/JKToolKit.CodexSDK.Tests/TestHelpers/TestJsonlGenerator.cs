@@ -164,7 +164,10 @@ public static class TestJsonlGenerator
             payload = new
             {
                 approval_policy = approvalPolicy,
-                sandbox_policy_type = sandboxPolicyType
+                sandbox_policy_type = sandboxPolicyType,
+                cwd = "/workspace",
+                model = "gpt-5",
+                summary = "auto"
             }
         };
 

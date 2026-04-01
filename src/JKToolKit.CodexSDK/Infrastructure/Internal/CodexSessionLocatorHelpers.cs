@@ -29,7 +29,8 @@ internal static class CodexSessionLocatorHelpers
     {
         SessionId? sessionId = null;
         DateTimeOffset? createdAt = null;
-        string? workingDirectory = null;
+        string? sessionMetaWorkingDirectory = null;
+        string? latestTurnContextWorkingDirectory = null;
         CodexModel? model = null;
         string? humanLabel = null;
 
@@ -49,50 +50,53 @@ internal static class CodexSessionLocatorHelpers
                 using var doc = JsonDocument.Parse(line);
                 var root = doc.RootElement;
 
-                if (root.TryGetProperty("type", out var typeElement) &&
-                    typeElement.GetString() == "session_meta")
+                if (RolloutLineParsing.TryGetPayloadObject(root, "session_meta", out var payload))
                 {
-                    if (root.TryGetProperty("timestamp", out var timestampElement))
+                    createdAt ??= RolloutLineParsing.GetTopLevelTimestampOrNull(root) ??
+                                  RolloutLineParsing.GetPayloadTimestampOrNull(payload);
+
+                    if (payload.TryGetProperty("id", out var idElement))
                     {
-                        createdAt = timestampElement.GetDateTimeOffset();
+                        var idString = idElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(idString) &&
+                            SessionId.TryParse(idString, out var parsed))
+                        {
+                            sessionId = parsed;
+                        }
                     }
 
-                    if (root.TryGetProperty("payload", out var payload))
+                    if (payload.TryGetProperty("cwd", out var cwdElement) &&
+                        cwdElement.ValueKind == JsonValueKind.String)
                     {
-                        if (payload.TryGetProperty("id", out var idElement))
-                        {
-                            var idString = idElement.GetString();
-                            if (!string.IsNullOrWhiteSpace(idString))
-                            {
-                                if (SessionId.TryParse(idString, out var parsed))
-                                {
-                                    sessionId = parsed;
-                                }
-                            }
-                        }
-
-                        if (payload.TryGetProperty("cwd", out var cwdElement))
-                        {
-                            workingDirectory = cwdElement.GetString();
-                        }
-
-                        if (payload.TryGetProperty("model", out var modelElement))
-                        {
-                            var modelString = modelElement.GetString();
-                            if (!string.IsNullOrWhiteSpace(modelString) &&
-                                CodexModel.TryParse(modelString, out var parsedModel))
-                            {
-                                model = parsedModel;
-                            }
-                        }
-
-                        humanLabel =
-                            TryGetOptionalString(payload, "thread_name") ??
-                            TryGetOptionalString(payload, "name") ??
-                            TryGetOptionalString(payload, "label");
+                        sessionMetaWorkingDirectory = cwdElement.GetString();
                     }
 
-                    break;
+                    humanLabel ??=
+                        TryGetOptionalString(payload, "thread_name") ??
+                        TryGetOptionalString(payload, "name") ??
+                        TryGetOptionalString(payload, "label");
+
+                    continue;
+                }
+
+                if (RolloutLineParsing.TryGetPayloadObject(root, "turn_context", out payload))
+                {
+                    if (payload.TryGetProperty("cwd", out var cwdElement) &&
+                        cwdElement.ValueKind == JsonValueKind.String)
+                    {
+                        latestTurnContextWorkingDirectory = cwdElement.GetString();
+                    }
+
+                    if (payload.TryGetProperty("model", out var modelElement) &&
+                        modelElement.ValueKind == JsonValueKind.String)
+                    {
+                        var modelString = modelElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(modelString) &&
+                            CodexModel.TryParse(modelString, out var parsedModel))
+                        {
+                            model = parsedModel;
+                        }
+                    }
                 }
             }
             catch (JsonException ex)
@@ -120,7 +124,7 @@ internal static class CodexSessionLocatorHelpers
             Id: sessionId.Value,
             LogPath: filePath,
             CreatedAt: effectiveCreatedAt,
-            WorkingDirectory: workingDirectory,
+            WorkingDirectory: latestTurnContextWorkingDirectory ?? sessionMetaWorkingDirectory,
             Model: model,
             HumanLabel: humanLabel);
     }

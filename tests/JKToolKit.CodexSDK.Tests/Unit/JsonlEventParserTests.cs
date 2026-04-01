@@ -82,6 +82,7 @@ public class JsonlEventParserTests
             ""timestamp"": ""{timestamp:o}"",
             ""payload"": {{
                 ""id"": ""019d45db-8fab-7781-8fc6-9415a9169898"",
+                ""timestamp"": ""2026-04-01T10:00:01Z"",
                 ""forked_from_id"": ""019d45db-8fab-7781-8fc6-9415a9169800"",
                 ""cwd"": ""C:\\\\repo"",
                 ""originator"": ""codex_cli_rs"",
@@ -121,6 +122,22 @@ public class JsonlEventParserTests
         evt.DynamicTools.HasValue.Should().BeTrue();
         evt.Git.HasValue.Should().BeTrue();
         evt.MemoryMode.Should().Be("project");
+        evt.SessionTimestamp.Should().Be(DateTimeOffset.Parse("2026-04-01T10:00:01Z"));
+    }
+
+    [Fact]
+    public async Task ParseAsync_TurnContextEvent_WithoutObjectPayload_IsSkipped()
+    {
+        var timestamp = DateTimeOffset.UtcNow;
+        var json = $@"{{
+            ""type"": ""turn_context"",
+            ""timestamp"": ""{timestamp:o}"",
+            ""payload"": 123
+        }}";
+
+        var events = await _parser.ParseAsync(AsyncEnumerable.Repeat(json, 1)).ToListAsync();
+
+        events.Should().BeEmpty();
     }
 
     [Fact]
@@ -247,7 +264,10 @@ public class JsonlEventParserTests
                 ""sandbox_policy"": {{
                     ""type"": ""workspace-write"",
                     ""network_access"": false
-                }}
+                }},
+                ""cwd"": ""C:\\\\repo"",
+                ""model"": ""gpt-5"",
+                ""summary"": ""auto""
             }}
         }}";
 
@@ -275,7 +295,10 @@ public class JsonlEventParserTests
                     ""external_sandbox"": {{
                         ""network_access"": ""enabled""
                     }}
-                }}
+                }},
+                ""cwd"": ""C:\\\\repo"",
+                ""model"": ""gpt-5"",
+                ""summary"": ""auto""
             }}
         }}";
 

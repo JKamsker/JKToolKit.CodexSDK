@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 
@@ -16,6 +17,12 @@ internal static partial class JsonlEventBasicParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
+        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        {
+            ctx.Logger.LogWarning("turn_context event missing object 'payload' field");
+            return null;
+        }
+
         string? approvalPolicy = null;
         string? sandboxPolicyType = null;
         bool? networkAccess = null;
@@ -39,17 +46,9 @@ internal static partial class JsonlEventBasicParsers
         JsonElement? truncationPolicy = null;
         TurnContextNetwork? network = null;
 
-        if (root.TryGetProperty("payload", out var payload))
+        if (payload.ValueKind == JsonValueKind.Object)
         {
-            if (payload.TryGetProperty("approval_policy", out var approvalElement))
-            {
-                approvalPolicy = approvalElement.ValueKind switch
-                {
-                    JsonValueKind.Null => null,
-                    JsonValueKind.String => approvalElement.GetString(),
-                    _ => approvalElement.GetRawText()
-                };
-            }
+            approvalPolicy = TryGetString(payload, "approval_policy");
 
             if (payload.TryGetProperty("sandbox_policy_type", out var sandboxElement) && sandboxElement.ValueKind == JsonValueKind.String)
             {
@@ -131,6 +130,16 @@ internal static partial class JsonlEventBasicParsers
             {
                 network = ParseTurnContextNetwork(networkEl);
             }
+        }
+
+        if (string.IsNullOrWhiteSpace(approvalPolicy) ||
+            string.IsNullOrWhiteSpace(sandboxPolicyType) ||
+            string.IsNullOrWhiteSpace(cwd) ||
+            model is null ||
+            reasoningSummary is null)
+        {
+            ctx.Logger.LogWarning("turn_context event missing required upstream fields");
+            return null;
         }
 
         return new TurnContextEvent

@@ -28,6 +28,8 @@ internal static partial class JsonlEventBasicParsers
             return null;
         }
 
+        var sessionTimestamp = RolloutLineParsing.GetPayloadTimestampOrNull(payload);
+
         if (!payload.TryGetProperty("id", out var idElement))
         {
             ctx.Logger.LogWarning("session_meta event missing 'payload.id' field");
@@ -82,6 +84,7 @@ internal static partial class JsonlEventBasicParsers
             RawPayload = rawPayload,
             SessionId = sessionId,
             Cwd = cwd,
+            SessionTimestamp = sessionTimestamp,
             CliVersion = cliVersion,
             Originator = originator,
             Source = source,

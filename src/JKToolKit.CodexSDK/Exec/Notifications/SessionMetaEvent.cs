@@ -26,6 +26,11 @@ public record SessionMetaEvent : CodexEvent
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets the canonical session timestamp embedded in the session metadata payload when provided.
+    /// </summary>
+    public DateTimeOffset? SessionTimestamp { get; init; }
+
+    /// <summary>
     /// Gets the Codex CLI version when provided.
     /// </summary>
     public string? CliVersion { get; init; }

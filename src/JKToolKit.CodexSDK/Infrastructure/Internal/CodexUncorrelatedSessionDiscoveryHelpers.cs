@@ -237,11 +237,10 @@ internal static class CodexUncorrelatedSessionDiscoveryHelpers
                 using var doc = JsonDocument.Parse(line);
                 var root = doc.RootElement;
 
-                if (root.TryGetProperty("type", out var typeElement) &&
-                    typeElement.GetString() == "session_meta" &&
-                    root.TryGetProperty("timestamp", out var timestampElement))
+                if (RolloutLineParsing.TryGetPayloadObject(root, "session_meta", out var payload))
                 {
-                    return timestampElement.GetDateTimeOffset();
+                    return RolloutLineParsing.GetTopLevelTimestampOrNull(root) ??
+                           RolloutLineParsing.GetPayloadTimestampOrNull(payload);
                 }
             }
         }
