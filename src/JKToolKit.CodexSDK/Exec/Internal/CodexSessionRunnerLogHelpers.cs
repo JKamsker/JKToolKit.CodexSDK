@@ -35,7 +35,8 @@ internal static class CodexSessionRunnerLogHelpers
             LogPath: logPath,
             CreatedAt: meta.Timestamp,
             WorkingDirectory: meta.Cwd,
-            Model: null);
+            Model: null,
+            ModelProvider: meta.ModelProvider);
 
         return new CodexSessionHandle(
             sessionInfo,

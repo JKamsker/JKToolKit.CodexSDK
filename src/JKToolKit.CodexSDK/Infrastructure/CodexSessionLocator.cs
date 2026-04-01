@@ -21,6 +21,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
 {
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<CodexSessionLocator> _logger;
+    private readonly string? _codexHomeDirectory;
 
     // Poll interval for waiting for new session files
     private static readonly TimeSpan DefaultPollInterval = TimeSpan.FromMilliseconds(100);
@@ -32,15 +33,18 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
     /// </summary>
     /// <param name="fileSystem">The file system abstraction.</param>
     /// <param name="logger">The logger instance.</param>
+    /// <param name="codexHomeDirectory">Optional explicit Codex home used for auxiliary lookup files such as <c>session_index.jsonl</c>.</param>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="fileSystem"/> or <paramref name="logger"/> is null.
     /// </exception>
     public CodexSessionLocator(
         IFileSystem fileSystem,
-        ILogger<CodexSessionLocator> logger)
+        ILogger<CodexSessionLocator> logger,
+        string? codexHomeDirectory = null)
     {
         _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _codexHomeDirectory = codexHomeDirectory;
     }
 
     /// <inheritdoc />
@@ -384,6 +388,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             sessionsRoot,
             filter?.ToString() ?? "none");
 
+        var indexedThreadNames = CodexSessionThreadNameIndex.LoadLatestThreadNames(sessionsRoot, _codexHomeDirectory);
         var matchedSessions = new List<CodexSessionInfo>();
 
         foreach (var entry in CodexSessionLocatorHelpers.EnumerateSessionFiles(_fileSystem, _logger, sessionsRoot, SessionFilePattern))
@@ -432,6 +437,12 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             {
                 _logger.LogTrace("No valid session info found in file: {FilePath}, skipping", filePath);
                 continue;
+            }
+
+            if (indexedThreadNames.TryGetValue(sessionInfo.Id.Value, out var indexedThreadName) &&
+                !string.IsNullOrWhiteSpace(indexedThreadName))
+            {
+                sessionInfo = sessionInfo with { HumanLabel = indexedThreadName };
             }
 
             // Apply filter if provided

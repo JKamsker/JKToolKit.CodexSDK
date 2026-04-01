@@ -20,6 +20,7 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.MostRecent(),
             workingDirectory: "C:\\repo",
+            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(newer);
@@ -48,6 +49,7 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.MostRecent(),
             workingDirectory: "C:\\repo",
+            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(olderCreatedButLatestUpdated);
@@ -65,6 +67,7 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.BySelector("shared"),
             workingDirectory: "C:\\repo",
+            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(idMatch);
@@ -81,10 +84,59 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.BySelector("remote-thread", includeAllSessions: true),
             workingDirectory: "C:\\repo",
+            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(outsideCwd);
         locator.LastFilter.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task TryResolveAsync_DoesNotTreatThreadNamesAsCaseInsensitive()
+    {
+        var exactCase = CreateSession("id-1", "CaseSensitive", "C:\\repo", DateTimeOffset.Parse("2026-04-01T09:00:00Z"));
+        var locator = new RecordingSessionLocator(exactCase);
+
+        var resolved = await CodexResumeTargetResolver.TryResolveAsync(
+            locator,
+            "C:\\sessions",
+            CodexResumeTarget.BySelector("casesensitive"),
+            workingDirectory: "C:\\repo",
+            modelProvider: null,
+            CancellationToken.None);
+
+        resolved.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task TryResolveAsync_FiltersMostRecentByModelProvider()
+    {
+        var openAi = CreateSession(
+            "id-openai",
+            "openai",
+            "C:\\repo",
+            DateTimeOffset.Parse("2026-04-01T09:00:00Z"),
+            updatedAt: DateTimeOffset.Parse("2026-04-01T09:00:00Z"),
+            modelProvider: "openai");
+        var custom = CreateSession(
+            "id-custom",
+            "custom",
+            "C:\\repo",
+            DateTimeOffset.Parse("2026-04-01T10:00:00Z"),
+            updatedAt: DateTimeOffset.Parse("2026-04-01T10:00:00Z"),
+            modelProvider: "custom");
+        var locator = new RecordingSessionLocator(custom, openAi);
+
+        var resolved = await CodexResumeTargetResolver.TryResolveAsync(
+            locator,
+            "C:\\sessions",
+            CodexResumeTarget.MostRecent(),
+            workingDirectory: "C:\\repo",
+            modelProvider: "openai",
+            CancellationToken.None);
+
+        resolved.Should().Be(openAi);
+        locator.LastFilter?.ModelProvider.Should().Be("openai");
     }
 
     private static CodexSessionInfo CreateSession(
@@ -92,8 +144,9 @@ public sealed class CodexResumeTargetResolverTests
         string label,
         string cwd,
         DateTimeOffset createdAt,
-        DateTimeOffset? updatedAt = null) =>
-        new(SessionId.Parse(id), $"C:\\sessions\\{id}.jsonl", createdAt, cwd, Model: null, HumanLabel: label, UpdatedAt: updatedAt);
+        DateTimeOffset? updatedAt = null,
+        string? modelProvider = null) =>
+        new(SessionId.Parse(id), $"C:\\sessions\\{id}.jsonl", createdAt, cwd, Model: null, HumanLabel: label, UpdatedAt: updatedAt, ModelProvider: modelProvider);
 
     private sealed class RecordingSessionLocator(params CodexSessionInfo[] sessions) : ICodexSessionLocator
     {
@@ -130,6 +183,13 @@ public sealed class CodexResumeTargetResolverTests
                 if (filter is not null &&
                     !string.IsNullOrWhiteSpace(filter.WorkingDirectory) &&
                     !string.Equals(filter.WorkingDirectory, session.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (filter is not null &&
+                    !string.IsNullOrWhiteSpace(filter.ModelProvider) &&
+                    !string.Equals(filter.ModelProvider, session.ModelProvider, StringComparison.Ordinal))
                 {
                     continue;
                 }

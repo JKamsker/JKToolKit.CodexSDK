@@ -9,6 +9,7 @@ internal static class CodexResumeTargetResolver
         string sessionsRoot,
         CodexResumeTarget target,
         string? workingDirectory,
+        string? modelProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionLocator);
@@ -17,7 +18,7 @@ internal static class CodexResumeTargetResolver
 
         target.Validate();
 
-        var filter = BuildFilter(target, workingDirectory);
+        var filter = BuildFilter(target, workingDirectory, modelProvider);
         if (target.UseMostRecent)
         {
             await foreach (var session in sessionLocator.ListSessionsAsync(sessionsRoot, filter, cancellationToken).ConfigureAwait(false))
@@ -38,7 +39,7 @@ internal static class CodexResumeTargetResolver
 
             if (humanLabelMatch is null &&
                 !string.IsNullOrWhiteSpace(session.HumanLabel) &&
-                string.Equals(session.HumanLabel, target.Selector, StringComparison.OrdinalIgnoreCase))
+                string.Equals(session.HumanLabel, target.Selector, StringComparison.Ordinal))
             {
                 humanLabelMatch = session;
             }
@@ -47,13 +48,19 @@ internal static class CodexResumeTargetResolver
         return humanLabelMatch;
     }
 
-    private static SessionFilter? BuildFilter(CodexResumeTarget target, string? workingDirectory)
+    private static SessionFilter? BuildFilter(CodexResumeTarget target, string? workingDirectory, string? modelProvider)
     {
-        if (target.IncludeAllSessions || string.IsNullOrWhiteSpace(workingDirectory))
+        var effectiveWorkingDirectory = target.IncludeAllSessions ? null : workingDirectory;
+        var effectiveModelProvider = target.UseMostRecent ? modelProvider : null;
+
+        if (string.IsNullOrWhiteSpace(effectiveWorkingDirectory) &&
+            string.IsNullOrWhiteSpace(effectiveModelProvider))
         {
             return null;
         }
 
-        return new SessionFilter(WorkingDirectory: workingDirectory);
+        return new SessionFilter(
+            WorkingDirectory: effectiveWorkingDirectory,
+            ModelProvider: effectiveModelProvider);
     }
 }

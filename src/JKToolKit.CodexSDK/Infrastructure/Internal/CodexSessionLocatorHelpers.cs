@@ -33,6 +33,7 @@ internal static class CodexSessionLocatorHelpers
         string? sessionMetaWorkingDirectory = null;
         string? latestTurnContextWorkingDirectory = null;
         CodexModel? model = null;
+        string? modelProvider = null;
         string? humanLabel = null;
 
         using var stream = fileSystem.OpenRead(filePath);
@@ -73,6 +74,8 @@ internal static class CodexSessionLocatorHelpers
                     {
                         sessionMetaWorkingDirectory = cwdElement.GetString();
                     }
+
+                    modelProvider = TryGetOptionalString(payload, "model_provider") ?? modelProvider;
 
                     humanLabel ??=
                         TryGetOptionalString(payload, "thread_name") ??
@@ -131,7 +134,8 @@ internal static class CodexSessionLocatorHelpers
             WorkingDirectory: latestTurnContextWorkingDirectory ?? sessionMetaWorkingDirectory,
             Model: model,
             HumanLabel: humanLabel,
-            UpdatedAt: updatedAt ?? effectiveCreatedAt);
+            UpdatedAt: updatedAt ?? effectiveCreatedAt,
+            ModelProvider: modelProvider);
 
         void UpdateLatestTimestamp(DateTimeOffset? candidate)
         {
@@ -184,6 +188,12 @@ internal static class CodexSessionLocatorHelpers
             {
                 return false;
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.ModelProvider) &&
+            !string.Equals(sessionInfo.ModelProvider, filter.ModelProvider, StringComparison.Ordinal))
+        {
+            return false;
         }
 
         return true;

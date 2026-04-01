@@ -54,11 +54,13 @@ internal sealed class CodexSessionRunner
         _clientOptions.Validate();
 
         var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
+        var modelProvider = CodexModelProviderConfigResolver.ResolveActiveModelProvider(_clientOptions, sessionsRoot);
         var selectedSession = await CodexResumeTargetResolver.TryResolveAsync(
             _sessionLocator,
             sessionsRoot,
             target,
             workingDirectory,
+            modelProvider,
             cancellationToken).ConfigureAwait(false);
 
         if (selectedSession is null)
@@ -280,7 +282,8 @@ internal sealed class CodexSessionRunner
                 LogPath: logPath,
                 CreatedAt: sessionMeta.Timestamp,
                 WorkingDirectory: sessionMeta.Cwd,
-                Model: null);
+                Model: null,
+                ModelProvider: sessionMeta.ModelProvider);
 
             return new CodexSessionHandle(
                 sessionInfo,
@@ -332,12 +335,17 @@ internal sealed class CodexSessionRunner
         effectiveOptions.ResumeTargetOverride = target;
 
         var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
+        var modelProvider = CodexModelProviderConfigResolver.ResolveActiveModelProvider(_clientOptions, sessionsRoot);
         var selectedSession = await CodexResumeTargetResolver.TryResolveAsync(
             _sessionLocator,
             sessionsRoot,
             target,
             options.WorkingDirectory,
+            modelProvider,
             cancellationToken).ConfigureAwait(false);
+        var selectedLogBaselineLength = selectedSession is null
+            ? 0L
+            : CodexResumeBootstrapMonitor.TryGetFileLength(selectedSession.LogPath);
 
         Process? process = null;
         try
@@ -376,6 +384,18 @@ internal sealed class CodexSessionRunner
                 target,
                 cancellationToken).ConfigureAwait(false);
 
+            if (selectedSession is not null &&
+                string.Equals(logPath, selectedSession.LogPath, StringComparison.OrdinalIgnoreCase))
+            {
+                await CodexResumeBootstrapMonitor.WaitForLogAdvanceAsync(
+                    process,
+                    logPath,
+                    selectedLogBaselineLength,
+                    _clientOptions.StartTimeout,
+                    _logger,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
             var sessionMeta = await ReadSessionMetaAsync(logPath, cancellationToken).ConfigureAwait(false);
 
             var sessionInfo = new CodexSessionInfo(
@@ -383,7 +403,8 @@ internal sealed class CodexSessionRunner
                 LogPath: logPath,
                 CreatedAt: sessionMeta.Timestamp,
                 WorkingDirectory: sessionMeta.Cwd,
-                Model: null);
+                Model: null,
+                ModelProvider: sessionMeta.ModelProvider);
 
             return new CodexSessionHandle(
                 sessionInfo,

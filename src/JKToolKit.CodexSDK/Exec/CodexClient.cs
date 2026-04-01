@@ -65,7 +65,11 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     /// <returns>A read-only session handle for the resolved session log.</returns>
     public async Task<ICodexSessionHandle> ResumeSessionAsync(CodexResumeTarget target, CancellationToken cancellationToken = default)
     {
-        return await _sessionRunner.ResumeSessionAsync(target, workingDirectory: null, cancellationToken).ConfigureAwait(false);
+        var workingDirectory = target.IncludeAllSessions
+            ? null
+            : Directory.GetCurrentDirectory();
+
+        return await _sessionRunner.ResumeSessionAsync(target, workingDirectory, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -158,7 +162,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
 
         _pathProvider = pathProvider ?? new DefaultCodexPathProvider(fileSystem, _loggerFactory.CreateLogger<DefaultCodexPathProvider>());
         _processLauncher = processLauncher ?? new CodexProcessLauncher(_pathProvider, _loggerFactory.CreateLogger<CodexProcessLauncher>());
-        _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>());
+        _sessionLocator = sessionLocator ?? new CodexSessionLocator(fileSystem, _loggerFactory.CreateLogger<CodexSessionLocator>(), _clientOptions.CodexHomeDirectory);
         _tailer = tailer ?? new JsonlTailer(fileSystem, _loggerFactory.CreateLogger<JsonlTailer>(), Options.Create(_clientOptions));
         _parser = parser ?? new JsonlEventParser(_loggerFactory.CreateLogger<JsonlEventParser>(), options);
         _sessionRunner = new CodexSessionRunner(_clientOptions, _processLauncher, _sessionLocator, _tailer, _parser, _pathProvider, _loggerFactory, _logger);
