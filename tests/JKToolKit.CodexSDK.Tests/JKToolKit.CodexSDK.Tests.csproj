@@ -35,6 +35,7 @@
     <None Update="Fixtures\\config-requirements-read-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-list-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-read-response.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\\thread-read-rich-items-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-start-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-resume-response.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\\thread-fork-response.json" CopyToOutputDirectory="PreserveNewest" />

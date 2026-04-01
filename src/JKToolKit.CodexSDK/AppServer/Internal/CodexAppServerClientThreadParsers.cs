@@ -206,6 +206,27 @@ internal static class CodexAppServerClientThreadParsers
             return kind;
         }
 
+        if (TryGetObject(so, "subAgent") is { } subAgent)
+        {
+            if (TryGetObject(subAgent, "review") is not null)
+            {
+                return "subAgentReview";
+            }
+
+            if (TryGetObject(subAgent, "compact") is not null)
+            {
+                return "subAgentCompact";
+            }
+
+            if (TryGetObject(subAgent, "threadSpawn") is not null ||
+                TryGetObject(subAgent, "thread_spawn") is not null)
+            {
+                return "subAgentThreadSpawn";
+            }
+
+            return "subAgentOther";
+        }
+
         foreach (var property in so.EnumerateObject())
         {
             var name = property.Name;

@@ -3,6 +3,7 @@ using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.AppServer.ThreadRead;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
@@ -30,7 +31,7 @@ public sealed class ThreadApiParsingTests
         threads[0].Status.ActiveFlags.Should().Contain("waitingOnUserInput");
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
         threads[1].Path.Should().Contain("rollout-t_2");
-        threads[1].SourceKind.Should().Be("subagent");
+        threads[1].SourceKind.Should().Be("subAgentThreadSpawn");
         threads[1].AgentNickname.Should().Be("beta");
         threads[1].AgentRole.Should().Be("reviewer");
         threads[1].ServiceTier.Should().BeNull();
@@ -137,6 +138,90 @@ public sealed class ThreadApiParsingTests
         result.Thread.Turns.Should().BeEmpty();
         result.Turns.Should().NotBeNull();
         result.Turns.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ParseReadResult_ParsesRichThreadItemVariants()
+    {
+        var raw = JsonFixtures.Load("thread-read-rich-items-response.json");
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseReadResult(raw, "fallback");
+        var items = result.Turns.Should().ContainSingle().Subject.Items;
+
+        items.Should().Contain(x => x is CodexThreadItemUserMessage);
+        items.Should().Contain(x => x is CodexThreadItemHookPrompt);
+        items.Should().Contain(x => x is CodexThreadItemPlan);
+        items.Should().Contain(x => x is CodexThreadItemReasoning);
+        items.Should().Contain(x => x is CodexThreadItemAgentMessage);
+        items.Should().Contain(x => x is CodexThreadItemMcpToolCall);
+        items.Should().Contain(x => x is CodexThreadItemDynamicToolCall);
+        items.Should().Contain(x => x is CodexThreadItemCollabAgentToolCall);
+        items.Should().Contain(x => x is CodexThreadItemImageView);
+        items.Should().Contain(x => x is CodexThreadItemImageGeneration);
+        items.Should().Contain(x => x is CodexThreadItemEnteredReviewMode);
+        items.Should().Contain(x => x is CodexThreadItemExitedReviewMode);
+        items.Should().Contain(x => x is CodexThreadItemContextCompaction);
+
+        var command = items.OfType<CodexThreadItemCommandExecution>().Should().ContainSingle().Subject;
+        command.Source.Should().Be(CodexCommandExecutionSource.UserShell);
+        command.WorkingDirectory.Should().Be("C:\\repo");
+        command.CommandActions.Should().ContainSingle().Which.Type.Should().Be("listFiles");
+
+        var fileChange = items.OfType<CodexThreadItemFileChange>().Should().ContainSingle().Subject;
+        fileChange.Changes[0].Kind.Type.Should().Be(CodexPatchChangeKindType.Add);
+        fileChange.Changes[1].Kind.Type.Should().Be(CodexPatchChangeKindType.Update);
+        fileChange.Changes[1].Kind.MovePath.Should().Be("c.txt");
+
+        var collab = items.OfType<CodexThreadItemCollabAgentToolCall>().Should().ContainSingle().Subject;
+        collab.ReasoningEffort.Should().Be(CodexReasoningEffort.High);
+        collab.AgentsStates.Should().ContainKey("child");
+
+        var search = items.OfType<CodexThreadItemWebSearch>().Should().ContainSingle().Subject;
+        search.Action.Should().NotBeNull();
+        search.Action!.Kind.Should().Be(CodexWebSearchActionKind.FindInPage);
+        search.Action.Url.Should().Be("https://example.com");
+        search.Action.Pattern.Should().Be("cli");
+    }
+
+    [Fact]
+    public void ParseReadResult_MalformedKnownThreadItem_FallsBackToUnknown()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "thread": {
+                "id": "t_bad",
+                "turns": [
+                  {
+                    "id": "turn_bad",
+                    "status": "completed",
+                    "items": [
+                      {
+                        "id": "file_bad",
+                        "type": "fileChange",
+                        "status": "completed",
+                        "changes": [
+                          {
+                            "path": "a.txt",
+                            "kind": {
+                              "movePath": "b.txt"
+                            },
+                            "diff": "+++ a.txt"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+            """);
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseReadResult(doc.RootElement, "fallback");
+
+        result.Turns.Should().ContainSingle()
+            .Which.Items.Should().ContainSingle()
+            .Which.Should().BeOfType<CodexThreadItemUnknown>();
     }
 
     [Fact]

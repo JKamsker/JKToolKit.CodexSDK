@@ -1,0 +1,188 @@
+{
+  "thread": {
+    "id": "t_items",
+    "turns": [
+      {
+        "id": "turn_items",
+        "status": "completed",
+        "items": [
+          {
+            "id": "user_1",
+            "type": "userMessage",
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ]
+          },
+          {
+            "id": "hook_1",
+            "type": "hookPrompt",
+            "fragments": [
+              {
+                "text": "run tests",
+                "hookRunId": "hook-1"
+              }
+            ]
+          },
+          {
+            "id": "plan_1",
+            "type": "plan",
+            "text": "Plan text"
+          },
+          {
+            "id": "reason_1",
+            "type": "reasoning",
+            "summary": [
+              "Step 1"
+            ],
+            "content": [
+              "raw reasoning"
+            ]
+          },
+          {
+            "id": "msg_1",
+            "type": "agentMessage",
+            "text": "done",
+            "phase": "analysis",
+            "memoryCitation": {
+              "kind": "memory"
+            }
+          },
+          {
+            "id": "cmd_1",
+            "type": "commandExecution",
+            "command": "git status",
+            "cwd": "C:\\repo",
+            "processId": "123",
+            "source": "userShell",
+            "status": "completed",
+            "commandActions": [
+              {
+                "type": "listFiles",
+                "command": "git status",
+                "path": "C:\\repo"
+              }
+            ],
+            "aggregatedOutput": "clean",
+            "exitCode": 0,
+            "durationMs": 15
+          },
+          {
+            "id": "file_1",
+            "type": "fileChange",
+            "status": "completed",
+            "changes": [
+              {
+                "path": "a.txt",
+                "kind": {
+                  "type": "add"
+                },
+                "diff": "+++ a.txt"
+              },
+              {
+                "path": "b.txt",
+                "kind": {
+                  "type": "update",
+                  "movePath": "c.txt"
+                },
+                "diff": "@@ -1 +1 @@"
+              }
+            ]
+          },
+          {
+            "id": "mcp_1",
+            "type": "mcpToolCall",
+            "server": "github",
+            "tool": "search",
+            "status": "completed",
+            "arguments": {
+              "q": "codex"
+            },
+            "result": {
+              "content": []
+            },
+            "error": {
+              "message": "ignored"
+            },
+            "durationMs": 21
+          },
+          {
+            "id": "dyn_1",
+            "type": "dynamicToolCall",
+            "tool": "request_user_input",
+            "arguments": {
+              "question": "Pick"
+            },
+            "status": "completed",
+            "contentItems": [
+              {
+                "type": "input_text",
+                "text": "answer"
+              }
+            ],
+            "success": true,
+            "durationMs": 9
+          },
+          {
+            "id": "collab_1",
+            "type": "collabAgentToolCall",
+            "tool": "spawnAgent",
+            "status": "completed",
+            "senderThreadId": "t_parent",
+            "receiverThreadIds": [
+              "t_child"
+            ],
+            "prompt": "review it",
+            "model": "gpt-5",
+            "reasoningEffort": "high",
+            "agentsStates": {
+              "child": {
+                "status": "completed",
+                "message": "done"
+              }
+            }
+          },
+          {
+            "id": "search_1",
+            "type": "webSearch",
+            "query": "codex cli",
+            "action": {
+              "type": "findInPage",
+              "url": "https://example.com",
+              "pattern": "cli"
+            }
+          },
+          {
+            "id": "img_view_1",
+            "type": "imageView",
+            "path": "C:\\img.png"
+          },
+          {
+            "id": "img_gen_1",
+            "type": "imageGeneration",
+            "status": "completed",
+            "revisedPrompt": "improved",
+            "result": "ok",
+            "savedPath": "C:\\out.png"
+          },
+          {
+            "id": "enter_review_1",
+            "type": "enteredReviewMode",
+            "review": "rev-1"
+          },
+          {
+            "id": "exit_review_1",
+            "type": "exitedReviewMode",
+            "review": "rev-1"
+          },
+          {
+            "id": "compact_1",
+            "type": "contextCompaction"
+          }
+        ]
+      }
+    ]
+  }
+}
