@@ -14,6 +14,22 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct);
 
+    Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct);
+
+    Task<ModelListResult> ListModelsAsync(CancellationToken ct);
+
+    Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(ExperimentalFeatureListOptions options, CancellationToken ct);
+
+    Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(CancellationToken ct);
+
+    Task<ConfigWriteResult> WriteConfigValueAsync(ConfigValueWriteOptions options, CancellationToken ct);
+
+    Task<ConfigWriteResult> WriteConfigBatchAsync(ConfigBatchWriteOptions options, CancellationToken ct);
+
+    Task<AccountLogoutResult> LogoutAccountAsync(CancellationToken ct);
+
+    Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct);
+
     Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct);
 
     Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupMode mode, string? cwd, CancellationToken ct);
@@ -44,6 +60,22 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<AccountReadResult> ReadAccountAsync(CancellationToken ct) => _inner.ReadAccountAsync(ct);
 
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) => _inner.ReadAccountRateLimitsAsync(ct);
+
+    public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) => _inner.ListModelsAsync(options, ct);
+
+    public Task<ModelListResult> ListModelsAsync(CancellationToken ct) => _inner.ListModelsAsync(ct);
+
+    public Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(ExperimentalFeatureListOptions options, CancellationToken ct) => _inner.ListExperimentalFeaturesAsync(options, ct);
+
+    public Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(CancellationToken ct) => _inner.ListExperimentalFeaturesAsync(ct);
+
+    public Task<ConfigWriteResult> WriteConfigValueAsync(ConfigValueWriteOptions options, CancellationToken ct) => _inner.WriteConfigValueAsync(options, ct);
+
+    public Task<ConfigWriteResult> WriteConfigBatchAsync(ConfigBatchWriteOptions options, CancellationToken ct) => _inner.WriteConfigBatchAsync(options, ct);
+
+    public Task<AccountLogoutResult> LogoutAccountAsync(CancellationToken ct) => _inner.LogoutAccountAsync(ct);
+
+    public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct) => _inner.UploadFeedbackAsync(options, ct);
 
     public Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct) => _inner.StartWindowsSandboxSetupAsync(options, ct);
 

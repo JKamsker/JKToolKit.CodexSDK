@@ -7,7 +7,7 @@ using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
-internal sealed class CodexAppServerConfigClient
+internal sealed partial class CodexAppServerConfigClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;

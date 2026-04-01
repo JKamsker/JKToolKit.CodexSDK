@@ -44,6 +44,12 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ImportExternalAgentConfigAsync),
         nameof(CodexAppServerClient.ReadAccountAsync),
         nameof(CodexAppServerClient.ReadAccountRateLimitsAsync),
+        nameof(CodexAppServerClient.ListModelsAsync),
+        nameof(CodexAppServerClient.ListExperimentalFeaturesAsync),
+        nameof(CodexAppServerClient.WriteConfigValueAsync),
+        nameof(CodexAppServerClient.WriteConfigBatchAsync),
+        nameof(CodexAppServerClient.LogoutAccountAsync),
+        nameof(CodexAppServerClient.UploadFeedbackAsync),
         nameof(CodexAppServerClient.StartWindowsSandboxSetupAsync),
         nameof(CodexAppServerClient.ReloadMcpServersAsync),
         nameof(CodexAppServerClient.ListMcpServerStatusAsync),
@@ -772,6 +778,30 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) =>
             NotSupported<AccountRateLimitsReadResult>();
+
+        public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) =>
+            NotSupported<ModelListResult>();
+
+        public Task<ModelListResult> ListModelsAsync(CancellationToken ct) =>
+            NotSupported<ModelListResult>();
+
+        public Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(ExperimentalFeatureListOptions options, CancellationToken ct) =>
+            NotSupported<ExperimentalFeatureListResult>();
+
+        public Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(CancellationToken ct) =>
+            NotSupported<ExperimentalFeatureListResult>();
+
+        public Task<ConfigWriteResult> WriteConfigValueAsync(ConfigValueWriteOptions options, CancellationToken ct) =>
+            NotSupported<ConfigWriteResult>();
+
+        public Task<ConfigWriteResult> WriteConfigBatchAsync(ConfigBatchWriteOptions options, CancellationToken ct) =>
+            NotSupported<ConfigWriteResult>();
+
+        public Task<AccountLogoutResult> LogoutAccountAsync(CancellationToken ct) =>
+            NotSupported<AccountLogoutResult>();
+
+        public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct) =>
+            NotSupported<FeedbackUploadResult>();
 
         public Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct) =>
             NotSupported<bool>();

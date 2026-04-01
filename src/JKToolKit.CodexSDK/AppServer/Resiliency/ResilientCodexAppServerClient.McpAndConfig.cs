@@ -22,6 +22,30 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountRateLimitsAsync(token), ct);
 
+    public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ListModelsAsync(options, token), ct);
+
+    public Task<ModelListResult> ListModelsAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ListModelsAsync(token), ct);
+
+    public Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(ExperimentalFeatureListOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ListExperimentalFeaturesAsync(options, token), ct);
+
+    public Task<ExperimentalFeatureListResult> ListExperimentalFeaturesAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ListExperimentalFeaturesAsync(token), ct);
+
+    public Task<ConfigWriteResult> WriteConfigValueAsync(ConfigValueWriteOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.WriteConfigValueAsync(options, token), ct);
+
+    public Task<ConfigWriteResult> WriteConfigBatchAsync(ConfigBatchWriteOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.WriteConfigBatchAsync(options, token), ct);
+
+    public Task<AccountLogoutResult> LogoutAccountAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.LogoutAccountAsync(token), ct);
+
+    public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.UploadFeedbackAsync(options, token), ct);
+
     public Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.StartWindowsSandboxSetupAsync(options, token), ct);
 

@@ -84,6 +84,239 @@ public sealed class AuthAccountConfigWrappersTests
     }
 
     [Fact]
+    public async Task ListModelsAsync_CallsExpectedMethod_AndParsesResponse()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            data = new object[]
+            {
+                new
+                {
+                    id = "m1",
+                    model = "gpt-5.1-codex",
+                    displayName = "GPT-5.1 Codex",
+                    description = "Code model",
+                    hidden = false,
+                    isDefault = true,
+                    supportsPersonality = true,
+                    defaultReasoningEffort = "medium",
+                    inputModalities = new[] { "text" },
+                    supportedReasoningEfforts = new[]
+                    {
+                        new { reasoningEffort = "low", description = "Fast" },
+                        new { reasoningEffort = "medium", description = "Balanced" }
+                    },
+                    availabilityNux = new { message = "Available" },
+                    upgrade = "gpt-5.2-codex",
+                    upgradeInfo = new
+                    {
+                        model = "gpt-5.2-codex",
+                        upgradeCopy = "Upgrade",
+                        modelLink = "https://example.test/model",
+                        migrationMarkdown = "Use the newer model."
+                    }
+                }
+            },
+            nextCursor = "cursor-2"
+        });
+
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "model/list",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("includeHidden").GetBoolean().Should().BeTrue();
+                json.GetProperty("limit").GetInt32().Should().Be(25);
+                json.GetProperty("cursor").GetString().Should().Be("cursor-1");
+            },
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ListModelsAsync(new ModelListOptions
+        {
+            IncludeHidden = true,
+            Limit = 25,
+            Cursor = "cursor-1"
+        });
+
+        result.NextCursor.Should().Be("cursor-2");
+        result.Data.Should().ContainSingle();
+        result.Data[0].Id.Should().Be("m1");
+        result.Data[0].SupportedReasoningEfforts.Should().HaveCount(2);
+        result.Data[0].UpgradeInfo!.Model.Should().Be("gpt-5.2-codex");
+    }
+
+    [Fact]
+    public async Task ListExperimentalFeaturesAsync_RequiresExperimentalApi()
+    {
+        var rpc = new FakeRpc
+        {
+            Result = JsonSerializer.SerializeToElement(new { data = Array.Empty<object>() })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ListExperimentalFeaturesAsync(new ExperimentalFeatureListOptions());
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>()
+            .WithMessage("*experimentalFeature/list*");
+        rpc.SendRequestCallCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ListExperimentalFeaturesAsync_CallsExpectedMethod_AndParsesResponse()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "experimentalFeature/list",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("limit").GetInt32().Should().Be(10);
+            },
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                data = new object[]
+                {
+                    new
+                    {
+                        name = "apps",
+                        stage = "beta",
+                        displayName = "Apps",
+                        description = "Connectors",
+                        announcement = "Try it",
+                        enabled = true,
+                        defaultEnabled = false
+                    }
+                },
+                nextCursor = "cursor-3"
+            })
+        };
+
+        await using var client = CreateClient(rpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+
+        var result = await client.ListExperimentalFeaturesAsync(new ExperimentalFeatureListOptions { Limit = 10 });
+
+        result.NextCursor.Should().Be("cursor-3");
+        result.Data.Should().ContainSingle();
+        result.Data[0].Name.Should().Be("apps");
+        result.Data[0].Stage.Should().Be("beta");
+    }
+
+    [Fact]
+    public async Task WriteConfigValueAsync_CallsExpectedMethod()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "config/value/write",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("keyPath").GetString().Should().Be("model");
+                json.GetProperty("mergeStrategy").GetString().Should().Be("replace");
+                json.GetProperty("value").GetString().Should().Be("gpt-5.1-codex");
+                json.GetProperty("expectedVersion").GetString().Should().Be("v1");
+            },
+            Result = JsonSerializer.SerializeToElement(new { })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.WriteConfigValueAsync(new ConfigValueWriteOptions
+        {
+            KeyPath = "model",
+            MergeStrategy = ConfigMergeStrategy.Replace,
+            Value = JsonSerializer.SerializeToElement("gpt-5.1-codex"),
+            ExpectedVersion = "v1"
+        });
+    }
+
+    [Fact]
+    public async Task WriteConfigBatchAsync_CallsExpectedMethod()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "config/batchWrite",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("reloadUserConfig").GetBoolean().Should().BeTrue();
+                json.GetProperty("edits").GetArrayLength().Should().Be(2);
+                json.GetProperty("edits")[1].GetProperty("mergeStrategy").GetString().Should().Be("replace");
+            },
+            Result = JsonSerializer.SerializeToElement(new { })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.WriteConfigBatchAsync(new ConfigBatchWriteOptions
+        {
+            ReloadUserConfig = true,
+            Edits =
+            [
+                new ConfigEditOperation
+                {
+                    KeyPath = "model",
+                    MergeStrategy = ConfigMergeStrategy.Upsert,
+                    Value = JsonSerializer.SerializeToElement("gpt-5.1-codex")
+                },
+                new ConfigEditOperation
+                {
+                    KeyPath = "model_provider",
+                    MergeStrategy = ConfigMergeStrategy.Replace,
+                    Value = JsonSerializer.SerializeToElement("openai")
+                }
+            ]
+        });
+    }
+
+    [Fact]
+    public async Task LogoutAccountAsync_CallsExpectedMethod()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/logout",
+            AssertParams = p => p.Should().BeNull(),
+            Result = JsonSerializer.SerializeToElement(new { })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.LogoutAccountAsync();
+    }
+
+    [Fact]
+    public async Task UploadFeedbackAsync_CallsExpectedMethod_AndParsesThreadId()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "feedback/upload",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("classification").GetString().Should().Be("bug");
+                json.GetProperty("includeLogs").GetBoolean().Should().BeTrue();
+                json.GetProperty("extraLogFiles").GetArrayLength().Should().Be(1);
+            },
+            Result = JsonSerializer.SerializeToElement(new { threadId = "feedback-thread-1" })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.UploadFeedbackAsync(new FeedbackUploadOptions
+        {
+            Classification = "bug",
+            IncludeLogs = true,
+            ExtraLogFiles = ["C:/logs/app.log"]
+        });
+
+        result.ThreadId.Should().Be("feedback-thread-1");
+    }
+
+    [Fact]
     public async Task StartWindowsSandboxSetupAsync_TypedModeAndCwd_CallsExpectedMethod()
     {
         var rpc = new FakeRpc
