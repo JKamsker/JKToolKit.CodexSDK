@@ -11,7 +11,6 @@ internal sealed partial class CodexAppServerConfigClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;
-    private readonly ILogger _logger;
 
     public CodexAppServerConfigClient(
         Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync,
@@ -20,7 +19,7 @@ internal sealed partial class CodexAppServerConfigClient
     {
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _ = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default)
@@ -240,56 +239,36 @@ internal sealed partial class CodexAppServerConfigClient
             options,
             ct);
 
-        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items");
-        if (itemsArray is null)
-        {
-            return new ExternalAgentConfigDetectResult
-            {
-                Items = Array.Empty<ExternalAgentConfigMigrationItem>(),
-                Raw = result
-            };
-        }
+        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items")
+            ?? throw new InvalidOperationException("Missing required property 'items' on externalAgentConfig/detect response.");
 
         var items = new List<ExternalAgentConfigMigrationItem>();
         var i = 0;
-        foreach (var item in itemsArray.Value.EnumerateArray())
+        foreach (var item in itemsArray.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object)
             {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug(
-                        "externalAgentConfig/detect: skipping items[{Index}] because it is not an object. valueKind={ValueKind} raw={Raw}",
-                        i,
-                        item.ValueKind,
-                        item.GetRawText());
-                }
-
-                i++;
-                continue;
+                throw new InvalidOperationException(
+                    $"externalAgentConfig/detect items[{i}] must be an object. valueKind={item.ValueKind}");
             }
 
             var description = CodexAppServerClientJson.GetStringOrNull(item, "description");
-            var itemType = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
-            if (string.IsNullOrWhiteSpace(description) || string.IsNullOrWhiteSpace(itemType))
+            if (string.IsNullOrWhiteSpace(description))
             {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug(
-                        "externalAgentConfig/detect: skipping items[{Index}] due to missing/invalid required fields. description={Description} itemType={ItemType} raw={Raw}",
-                        i,
-                        description,
-                        itemType,
-                        item.GetRawText());
-                }
+                throw new InvalidOperationException(
+                    $"externalAgentConfig/detect items[{i}] missing required string property 'description'.");
+            }
 
-                i++;
-                continue;
+            var itemTypeRaw = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
+            if (!ExternalAgentConfigMigrationItemTypeExtensions.TryParseWireValue(itemTypeRaw, out var itemType))
+            {
+                throw new InvalidOperationException(
+                    $"externalAgentConfig/detect items[{i}] has unknown required itemType '{itemTypeRaw ?? "<null>"}'.");
             }
 
             items.Add(new ExternalAgentConfigMigrationItem
             {
-                Cwd = CodexAppServerClientJson.GetStringOrNull(item, "cwd"),
+                Cwd = ParseOptionalStringProperty(item, "cwd", $"externalAgentConfig/detect items[{i}]"),
                 Description = description,
                 ItemType = itemType
             });
@@ -307,8 +286,6 @@ internal sealed partial class CodexAppServerConfigClient
     public async Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(migrationItems);
-        if (migrationItems.Count == 0)
-            throw new ArgumentException("Migration items cannot be empty.", nameof(migrationItems));
 
         for (var i = 0; i < migrationItems.Count; i++)
         {
@@ -318,9 +295,6 @@ internal sealed partial class CodexAppServerConfigClient
 
             if (string.IsNullOrWhiteSpace(item.Description))
                 throw new ArgumentException($"Migration item at index {i} must have a non-empty Description.", nameof(migrationItems));
-
-            if (string.IsNullOrWhiteSpace(item.ItemType))
-                throw new ArgumentException($"Migration item at index {i} must have a non-empty ItemType.", nameof(migrationItems));
         }
 
         _ = await _sendRequestAsync(
@@ -363,6 +337,22 @@ internal sealed partial class CodexAppServerConfigClient
     {
         using var emptyDoc = JsonDocument.Parse("{}");
         return emptyDoc.RootElement.Clone();
+    }
+
+    private static string? ParseOptionalStringProperty(JsonElement obj, string propertyName, string context)
+    {
+        var value = CodexAppServerClientJson.TryGetElement(obj, propertyName);
+        if (value is null || value.Value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (value.Value.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidOperationException($"{context} property '{propertyName}' must be a string or null.");
+        }
+
+        return value.Value.GetString();
     }
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)
