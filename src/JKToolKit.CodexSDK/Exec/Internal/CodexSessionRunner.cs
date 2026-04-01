@@ -343,6 +343,15 @@ internal sealed class CodexSessionRunner
             options.WorkingDirectory,
             modelProvider,
             cancellationToken).ConfigureAwait(false);
+        var resumeStartTime = DateTimeOffset.UtcNow;
+        var newSessionFileTask = CodexSessionRunnerLogHelpers.StartResumeFallbackDiscoveryIfNeeded(
+            _sessionLocator,
+            selectedSession,
+            sessionsRoot,
+            resumeStartTime,
+            _clientOptions,
+            _logger,
+            cancellationToken);
         var selectedLogBaselineLength = selectedSession is null
             ? 0L
             : CodexResumeBootstrapMonitor.TryGetFileLength(selectedSession.LogPath);
@@ -381,7 +390,10 @@ internal sealed class CodexSessionRunner
                 selectedSession,
                 capturedId,
                 sessionsRoot,
+                newSessionFileTask,
+                _clientOptions.StartTimeout,
                 target,
+                _logger,
                 cancellationToken).ConfigureAwait(false);
 
             if (selectedSession is not null &&

@@ -55,15 +55,39 @@ internal static class CodexSessionRunnerLogHelpers
         CodexSessionInfo? selectedSession,
         SessionId? capturedId,
         string sessionsRoot,
+        Task<string>? newSessionFileTask,
+        TimeSpan startTimeout,
         CodexResumeTarget target,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionLocator);
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(logger);
 
         if (capturedId is { } resolvedId)
         {
-            return await sessionLocator.FindSessionLogAsync(resolvedId, sessionsRoot, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await sessionLocator.WaitForSessionLogByIdAsync(
+                        resolvedId,
+                        sessionsRoot,
+                        startTimeout,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (newSessionFileTask is not null)
+            {
+                logger.LogDebug(
+                    ex,
+                    "Failed to resolve captured resume session id {SessionId} by id; falling back to uncorrelated session file discovery.",
+                    resolvedId);
+                return await newSessionFileTask.ConfigureAwait(false);
+            }
         }
 
         if (selectedSession is not null)
@@ -71,8 +95,51 @@ internal static class CodexSessionRunnerLogHelpers
             return await sessionLocator.ValidateLogFileAsync(selectedSession.LogPath, cancellationToken).ConfigureAwait(false);
         }
 
+        if (newSessionFileTask is not null)
+        {
+            return await newSessionFileTask.ConfigureAwait(false);
+        }
+
         throw new InvalidOperationException(
             $"Failed to resolve a persisted session log for resume target '{target.Description}'. Codex did not emit a resumable session id.");
+    }
+
+    internal static Task<string>? StartResumeFallbackDiscoveryIfNeeded(
+        ICodexSessionLocator sessionLocator,
+        CodexSessionInfo? selectedSession,
+        string sessionsRoot,
+        DateTimeOffset startTime,
+        CodexClientOptions clientOptions,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionLocator);
+        ArgumentNullException.ThrowIfNull(clientOptions);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        if (selectedSession is not null || !clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
+        {
+            return null;
+        }
+
+        try
+        {
+            var newSessionFileTask = sessionLocator.WaitForNewSessionFileAsync(
+                sessionsRoot,
+                startTime,
+                clientOptions.StartTimeout,
+                cancellationToken);
+
+            _ = newSessionFileTask.ContinueWith(
+                t => { _ = t.Exception; },
+                TaskContinuationOptions.OnlyOnFaulted);
+            return newSessionFileTask;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Failed to start uncorrelated resume session file discovery.");
+            return Task.FromException<string>(ex);
+        }
     }
 
     internal static (CodexSessionOptions Effective, List<string> TempFiles) MaterializeOutputSchemaIfNeeded(CodexSessionOptions options)

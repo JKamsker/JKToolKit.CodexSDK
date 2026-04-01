@@ -37,7 +37,7 @@ public sealed class CodexClientLiveResumeBootstrapTests
                 StartTimeout = TimeSpan.FromMilliseconds(500)
             }),
             new StubProcessLauncher(process),
-            new StubSessionLocator(selectedSession),
+            new StubSessionLocator([selectedSession]),
             new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, Options.Create(new CodexClientOptions())),
             new JsonlEventParser(NullLogger<JsonlEventParser>.Instance),
             new StubPathProvider(fixture.SessionsRoot),
@@ -49,6 +49,87 @@ public sealed class CodexClientLiveResumeBootstrapTests
             client.ResumeSessionAsync(CodexResumeTarget.BySelector(sessionId.Value), options));
 
         Assert.Contains("rollout log advanced", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ResumeSessionAsync_WhenTargetFallsBackToThreadStart_UsesUncorrelatedDiscovery()
+    {
+        using var fixture = new ResumeFixture();
+        var newSessionId = SessionId.Parse("22222222-2222-2222-2222-222222222222");
+        var newLogPath = fixture.WriteNewLog(
+            newSessionId,
+            "2026-04-01T12:05:00Z",
+            """
+            {"timestamp":"2026-04-01T12:05:00Z","type":"session_meta","payload":{"id":"22222222-2222-2222-2222-222222222222","cwd":"C:\\repo"}}
+            {"timestamp":"2026-04-01T12:05:01Z","type":"agent_message","payload":{"message":"started fresh"}}
+            """
+        );
+
+        using var process = SilentProcessFactory.CreateLongLivedSilentProcess();
+        using var client = new CodexClient(
+            Options.Create(new CodexClientOptions
+            {
+                SessionsRootDirectory = fixture.SessionsRoot,
+                StartTimeout = TimeSpan.FromMilliseconds(500),
+                EnableUncorrelatedNewSessionFileDiscovery = true
+            }),
+            new StubProcessLauncher(process),
+            new StubSessionLocator(
+                sessions: Array.Empty<CodexSessionInfo>(),
+                newSessionFilePath: newLogPath),
+            new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, Options.Create(new CodexClientOptions())),
+            new JsonlEventParser(NullLogger<JsonlEventParser>.Instance),
+            new StubPathProvider(fixture.SessionsRoot),
+            NullLogger<CodexClient>.Instance,
+            NullLoggerFactory.Instance);
+
+        var options = new CodexSessionOptions(fixture.WorkingDirectory, "resume prompt");
+        await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent(), options);
+
+        Assert.Equal(newSessionId, handle.Info.Id);
+        Assert.Equal(newLogPath, handle.Info.LogPath);
+        Assert.Contains("started fresh", File.ReadAllText(newLogPath));
+    }
+
+    [Fact]
+    public async Task ResumeSessionAsync_WhenCapturedIdCannotBeResolved_FallsBackToUncorrelatedDiscovery()
+    {
+        using var fixture = new ResumeFixture();
+        var newSessionId = SessionId.Parse("33333333-3333-3333-3333-333333333333");
+        var newLogPath = fixture.WriteNewLog(
+            newSessionId,
+            "2026-04-01T12:10:00Z",
+            """
+            {"timestamp":"2026-04-01T12:10:00Z","type":"session_meta","payload":{"id":"33333333-3333-3333-3333-333333333333","cwd":"C:\\repo"}}
+            {"timestamp":"2026-04-01T12:10:01Z","type":"agent_message","payload":{"message":"captured then recovered"}}
+            """
+        );
+
+        using var process = SilentProcessFactory.CreateLongLivedProcessWithSessionId(newSessionId.Value);
+        using var client = new CodexClient(
+            Options.Create(new CodexClientOptions
+            {
+                SessionsRootDirectory = fixture.SessionsRoot,
+                StartTimeout = TimeSpan.FromMilliseconds(800),
+                EnableUncorrelatedNewSessionFileDiscovery = true
+            }),
+            new StubProcessLauncher(process),
+            new StubSessionLocator(
+                sessions: Array.Empty<CodexSessionInfo>(),
+                newSessionFilePath: newLogPath,
+                throwOnWaitById: true),
+            new JsonlTailer(new RealFileSystem(), NullLogger<JsonlTailer>.Instance, Options.Create(new CodexClientOptions())),
+            new JsonlEventParser(NullLogger<JsonlEventParser>.Instance),
+            new StubPathProvider(fixture.SessionsRoot),
+            NullLogger<CodexClient>.Instance,
+            NullLoggerFactory.Instance);
+
+        var options = new CodexSessionOptions(fixture.WorkingDirectory, "resume prompt");
+        await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent(), options);
+
+        Assert.Equal(newSessionId, handle.Info.Id);
+        Assert.Equal(newLogPath, handle.Info.LogPath);
+        Assert.Contains("captured then recovered", File.ReadAllText(newLogPath));
     }
 
     private sealed class ResumeFixture : IDisposable
@@ -72,14 +153,22 @@ public sealed class CodexClientLiveResumeBootstrapTests
 
         public void WriteExistingLog(SessionId sessionId, string contents)
         {
-            LogPath = Path.Combine(
+            LogPath = WriteNewLog(sessionId, "2026-04-01T12:00:00Z", contents);
+        }
+
+        public string WriteNewLog(SessionId sessionId, string timestamp, string contents)
+        {
+            var parsedTimestamp = DateTimeOffset.Parse(timestamp);
+            var logPath = Path.Combine(
                 SessionsRoot,
-                "2026",
-                "04",
-                "01",
-                $"rollout-2026-04-01T12-00-00-{sessionId.Value}.jsonl");
-            Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
-            File.WriteAllText(LogPath, contents + Environment.NewLine);
+                parsedTimestamp.ToString("yyyy"),
+                parsedTimestamp.ToString("MM"),
+                parsedTimestamp.ToString("dd"),
+                $"rollout-{parsedTimestamp:yyyy-MM-ddTHH-mm-ss}-{sessionId.Value}.jsonl");
+            Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+            File.WriteAllText(logPath, contents + Environment.NewLine);
+            LogPath = logPath;
+            return logPath;
         }
 
         public void Dispose()
@@ -120,16 +209,23 @@ public sealed class CodexClientLiveResumeBootstrapTests
         }
     }
 
-    private sealed class StubSessionLocator(CodexSessionInfo session) : ICodexSessionLocator
+    private sealed class StubSessionLocator(
+        IReadOnlyList<CodexSessionInfo> sessions,
+        string? newSessionFilePath = null,
+        bool throwOnWaitById = false) : ICodexSessionLocator
     {
         public Task<string> WaitForNewSessionFileAsync(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
+            newSessionFilePath is null
+                ? throw new TimeoutException("No fallback session file was discovered.")
+                : Task.FromResult(newSessionFilePath);
 
         public Task<string> FindSessionLogAsync(SessionId sessionId, string sessionsRoot, CancellationToken cancellationToken) =>
-            Task.FromResult(session.LogPath);
+            Task.FromResult(ResolveSessionLogPath(sessionId));
 
         public Task<string> WaitForSessionLogByIdAsync(SessionId sessionId, string sessionsRoot, TimeSpan timeout, CancellationToken cancellationToken) =>
-            Task.FromResult(session.LogPath);
+            throwOnWaitById
+                ? throw new TimeoutException("Timed out locating session log by captured id.")
+                : Task.FromResult(ResolveSessionLogPath(sessionId));
 
         public Task<string> ValidateLogFileAsync(string logFilePath, CancellationToken cancellationToken) =>
             Task.FromResult(logFilePath);
@@ -139,8 +235,27 @@ public sealed class CodexClientLiveResumeBootstrapTests
             SessionFilter? filter,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            yield return session;
-            await Task.CompletedTask;
+            foreach (var session in sessions)
+            {
+                yield return session;
+                await Task.CompletedTask;
+            }
+        }
+
+        private string ResolveSessionLogPath(SessionId sessionId)
+        {
+            var session = sessions.FirstOrDefault(candidate => candidate.Id.Equals(sessionId));
+            if (session is not null)
+            {
+                return session.LogPath;
+            }
+
+            if (newSessionFilePath is not null)
+            {
+                return newSessionFilePath;
+            }
+
+            throw new FileNotFoundException("Session log not found.", sessionId.Value);
         }
     }
 
@@ -173,6 +288,60 @@ public sealed class CodexClientLiveResumeBootstrapTests
                 {
                     FileName = "/bin/bash",
                     Arguments = "-lc \"exit 0\"",
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+            return Process.Start(startInfo)!;
+        }
+
+        public static Process CreateLongLivedSilentProcess()
+        {
+            var startInfo = OperatingSystem.IsWindows()
+                ? new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c ping -n 30 127.0.0.1 >NUL",
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+                : new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = "-lc \"sleep 30\"",
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+            return Process.Start(startInfo)!;
+        }
+
+        public static Process CreateLongLivedProcessWithSessionId(string sessionId)
+        {
+            var startInfo = OperatingSystem.IsWindows()
+                ? new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c ping -n 2 127.0.0.1 >NUL & echo session id: {sessionId} & ping -n 30 127.0.0.1 >NUL",
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+                : new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-lc \"sleep 0.2; echo \\\"session id: {sessionId}\\\"; sleep 30\"",
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
