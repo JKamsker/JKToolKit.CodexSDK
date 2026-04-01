@@ -183,7 +183,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
                 IsAccessible = GetBoolOrNull(item, "isAccessible"),
                 IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
                 Title = GetStringOrNull(item, "title"),
-                PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames"),
+                PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames") ?? Array.Empty<string>(),
                 Labels = ParseStringMap(item, "labels"),
                 DisabledReason = GetStringOrNull(item, "disabledReason"),
                 Raw = item

@@ -115,12 +115,12 @@ public sealed record class PluginInstallResult
     /// <summary>
     /// Gets the auth policy returned by the install request.
     /// </summary>
-    public string? AuthPolicy { get; init; }
+    public required string AuthPolicy { get; init; }
 
     /// <summary>
     /// Gets the typed auth policy returned by the install request.
     /// </summary>
-    public PluginAuthPolicy? AuthPolicyValue { get; init; }
+    public required PluginAuthPolicy AuthPolicyValue { get; init; }
 
     /// <summary>
     /// Gets the raw plugin install payload.

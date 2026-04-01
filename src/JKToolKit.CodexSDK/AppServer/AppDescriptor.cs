@@ -70,7 +70,7 @@ public sealed record class AppDescriptor
     /// <summary>
     /// Gets plugin display names associated with the app, when present.
     /// </summary>
-    public IReadOnlyList<string>? PluginDisplayNames { get; init; }
+    public required IReadOnlyList<string> PluginDisplayNames { get; init; }
 
     /// <summary>
     /// Gets optional app labels by key, when present.

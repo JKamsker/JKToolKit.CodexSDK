@@ -46,22 +46,22 @@ public sealed record class PluginSummaryDescriptor
     /// <summary>
     /// Gets the plugin auth policy when the marketplace provides one.
     /// </summary>
-    public string? AuthPolicy { get; init; }
+    public required string AuthPolicy { get; init; }
 
     /// <summary>
     /// Gets the typed plugin auth policy when the marketplace provides one.
     /// </summary>
-    public PluginAuthPolicy? AuthPolicyValue { get; init; }
+    public required PluginAuthPolicy AuthPolicyValue { get; init; }
 
     /// <summary>
     /// Gets the plugin install policy when the marketplace provides one.
     /// </summary>
-    public string? InstallPolicy { get; init; }
+    public required string InstallPolicy { get; init; }
 
     /// <summary>
     /// Gets the typed plugin install policy when the marketplace provides one.
     /// </summary>
-    public PluginInstallPolicy? InstallPolicyValue { get; init; }
+    public required PluginInstallPolicy InstallPolicyValue { get; init; }
 
     /// <summary>
     /// Gets typed plugin interface metadata when the marketplace provides it.
@@ -71,12 +71,12 @@ public sealed record class PluginSummaryDescriptor
     /// <summary>
     /// Gets the raw source payload when the marketplace provides one.
     /// </summary>
-    public JsonElement? Source { get; init; }
+    public required JsonElement Source { get; init; }
 
     /// <summary>
     /// Gets typed source metadata when the marketplace provides it.
     /// </summary>
-    public PluginSourceDescriptor? SourceInfo { get; init; }
+    public required PluginSourceDescriptor SourceInfo { get; init; }
 
     /// <summary>
     /// Gets the raw plugin summary payload.

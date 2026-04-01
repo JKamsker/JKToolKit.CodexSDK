@@ -70,23 +70,27 @@ internal static class CodexAppServerClientPluginParsers
 
     public static PluginInstallResult ParsePluginInstallResult(JsonElement result)
     {
+        var appsArray = CodexAppServerClientJson.TryGetArray(result, "appsNeedingAuth")
+            ?? throw new InvalidOperationException("plugin/install returned no appsNeedingAuth array.");
+
         var apps = new List<PluginAppDescriptor>();
-        if (CodexAppServerClientJson.TryGetArray(result, "appsNeedingAuth") is { } appsArray)
+        foreach (var item in appsArray.EnumerateArray())
         {
-            foreach (var item in appsArray.EnumerateArray())
+            if (item.ValueKind != JsonValueKind.Object)
             {
-                if (item.ValueKind == JsonValueKind.Object)
-                {
-                    apps.Add(ParsePluginApp(item));
-                }
+                throw new InvalidOperationException("plugin/install appsNeedingAuth[] entries must be objects.");
             }
+
+            apps.Add(ParsePluginApp(item));
         }
+
+        var authPolicy = CodexAppServerClientJson.GetRequiredString(result, "authPolicy", "plugin/install response");
 
         return new PluginInstallResult
         {
             AppsNeedingAuth = apps,
-            AuthPolicy = CodexAppServerClientJson.GetStringOrNull(result, "authPolicy"),
-            AuthPolicyValue = ParsePluginAuthPolicy(result, "authPolicy"),
+            AuthPolicy = authPolicy,
+            AuthPolicyValue = ParseRequiredPluginAuthPolicy(result, "authPolicy", "plugin/install response"),
             Raw = result
         };
     }
@@ -113,7 +117,7 @@ internal static class CodexAppServerClientPluginParsers
 
         return new PluginMarketplace
         {
-            Name = CodexAppServerClientJson.GetStringOrNull(item, "name") ?? string.Empty,
+            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin/list marketplaces[]"),
             Path = CodexAppServerPathValidation.RequireAbsolutePayloadPath(
                 CodexAppServerClientJson.GetStringOrNull(item, "path"),
                 "path",
@@ -157,7 +161,7 @@ internal static class CodexAppServerClientPluginParsers
         {
             Summary = ParsePluginSummary(summary),
             Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
-            MarketplaceName = CodexAppServerClientJson.GetStringOrNull(item, "marketplaceName") ?? string.Empty,
+            MarketplaceName = CodexAppServerClientJson.GetRequiredString(item, "marketplaceName", "plugin/read plugin"),
             MarketplacePath = CodexAppServerPathValidation.RequireAbsolutePayloadPath(
                 CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath"),
                 "marketplacePath",
@@ -173,17 +177,17 @@ internal static class CodexAppServerClientPluginParsers
     {
         return new PluginSummaryDescriptor
         {
-            Id = CodexAppServerClientJson.GetStringOrNull(item, "id") ?? string.Empty,
-            Name = CodexAppServerClientJson.GetStringOrNull(item, "name") ?? string.Empty,
-            Installed = CodexAppServerClientJson.GetBoolOrNull(item, "installed") == true,
-            Enabled = CodexAppServerClientJson.GetBoolOrNull(item, "enabled") == true,
-            AuthPolicy = CodexAppServerClientJson.GetStringOrNull(item, "authPolicy"),
-            AuthPolicyValue = ParsePluginAuthPolicy(item, "authPolicy"),
-            InstallPolicy = CodexAppServerClientJson.GetStringOrNull(item, "installPolicy"),
-            InstallPolicyValue = ParsePluginInstallPolicy(item, "installPolicy"),
+            Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin summary"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin summary"),
+            Installed = CodexAppServerClientJson.GetRequiredBool(item, "installed", "plugin summary"),
+            Enabled = CodexAppServerClientJson.GetRequiredBool(item, "enabled", "plugin summary"),
+            AuthPolicy = CodexAppServerClientJson.GetRequiredString(item, "authPolicy", "plugin summary"),
+            AuthPolicyValue = ParseRequiredPluginAuthPolicy(item, "authPolicy", "plugin summary"),
+            InstallPolicy = CodexAppServerClientJson.GetRequiredString(item, "installPolicy", "plugin summary"),
+            InstallPolicyValue = ParseRequiredPluginInstallPolicy(item, "installPolicy", "plugin summary"),
             Interface = ParsePluginInterface(item),
-            Source = ClonePropertyOrNull(item, "source"),
-            SourceInfo = ParsePluginSource(item),
+            Source = GetRequiredProperty(item, "source", "plugin summary"),
+            SourceInfo = ParseRequiredPluginSource(item, "plugin summary"),
             Raw = item.Clone()
         };
     }
@@ -206,9 +210,9 @@ internal static class CodexAppServerClientPluginParsers
     {
         return new PluginAppDescriptor
         {
-            Id = CodexAppServerClientJson.GetStringOrNull(item, "id") ?? string.Empty,
-            Name = CodexAppServerClientJson.GetStringOrNull(item, "name") ?? string.Empty,
-            NeedsAuth = CodexAppServerClientJson.GetBoolOrNull(item, "needsAuth") == true,
+            Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin app"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin app"),
+            NeedsAuth = CodexAppServerClientJson.GetRequiredBool(item, "needsAuth", "plugin app"),
             Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
             InstallUrl = CodexAppServerClientJson.GetStringOrNull(item, "installUrl"),
             Raw = item.Clone()
@@ -286,16 +290,16 @@ internal static class CodexAppServerClientPluginParsers
         };
     }
 
-    private static PluginSourceDescriptor? ParsePluginSource(JsonElement item)
+    private static PluginSourceDescriptor ParseRequiredPluginSource(JsonElement item, string context)
     {
         if (CodexAppServerClientJson.TryGetObject(item, "source") is not { } sourceObject)
         {
-            return null;
+            throw new InvalidOperationException($"{context} is missing required object property 'source'.");
         }
 
         return new PluginSourceDescriptor
         {
-            Type = ParsePluginSourceType(sourceObject, "type"),
+            Type = ParseRequiredPluginSourceType(sourceObject, "type", "plugin source"),
             Path = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
                 CodexAppServerClientJson.GetStringOrNull(sourceObject, "path"),
                 "path",
@@ -304,20 +308,40 @@ internal static class CodexAppServerClientPluginParsers
         };
     }
 
-    private static PluginAuthPolicy? ParsePluginAuthPolicy(JsonElement item, string propertyName) =>
-        ParseTypedValue<PluginAuthPolicy>(item, propertyName, PluginAuthPolicy.TryParse);
+    private static PluginAuthPolicy ParseRequiredPluginAuthPolicy(JsonElement item, string propertyName, string context) =>
+        ParseRequiredTypedValue<PluginAuthPolicy>(item, propertyName, context, PluginAuthPolicy.TryParse);
 
-    private static PluginInstallPolicy? ParsePluginInstallPolicy(JsonElement item, string propertyName) =>
-        ParseTypedValue<PluginInstallPolicy>(item, propertyName, PluginInstallPolicy.TryParse);
+    private static PluginInstallPolicy ParseRequiredPluginInstallPolicy(JsonElement item, string propertyName, string context) =>
+        ParseRequiredTypedValue<PluginInstallPolicy>(item, propertyName, context, PluginInstallPolicy.TryParse);
 
-    private static PluginSourceType? ParsePluginSourceType(JsonElement item, string propertyName) =>
-        ParseTypedValue<PluginSourceType>(item, propertyName, PluginSourceType.TryParse);
+    private static PluginSourceType ParseRequiredPluginSourceType(JsonElement item, string propertyName, string context) =>
+        ParseRequiredTypedValue<PluginSourceType>(item, propertyName, context, PluginSourceType.TryParse);
 
-    private static T? ParseTypedValue<T>(JsonElement item, string propertyName, TryParseDelegate<T> tryParse)
+    private static T ParseRequiredTypedValue<T>(JsonElement item, string propertyName, string context, TryParseDelegate<T> tryParse)
         where T : struct
     {
         var value = CodexAppServerClientJson.GetStringOrNull(item, propertyName);
-        return tryParse(value, out var parsed) ? parsed : null;
+        if (tryParse(value, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new InvalidOperationException($"{context} property '{propertyName}' is missing or invalid.");
+    }
+
+    private static JsonElement GetRequiredProperty(JsonElement item, string propertyName, string context)
+    {
+        if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"{context} is missing required property '{propertyName}'.");
+        }
+
+        if (property.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            throw new InvalidOperationException($"{context} property '{propertyName}' cannot be null.");
+        }
+
+        return property.Clone();
     }
 
     private static JsonElement? ClonePropertyOrNull(JsonElement item, string propertyName)

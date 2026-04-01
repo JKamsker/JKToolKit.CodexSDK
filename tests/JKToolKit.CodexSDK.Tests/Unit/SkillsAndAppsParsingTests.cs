@@ -43,5 +43,16 @@ public sealed class SkillsAndAppsParsingTests
         labels.ContainsKey("ignored").Should().BeFalse();
         apps[1].Raw.TryGetProperty("unknown", out _).Should().BeTrue();
     }
+
+    [Fact]
+    public void ParseAppsListApps_DefaultsMissingPluginDisplayNamesToEmpty()
+    {
+        using var doc = JsonDocument.Parse("""{"data":[{"id":"app_1","name":"Calendar","isEnabled":true}]}""");
+
+        var apps = CodexAppServerClient.ParseAppsListApps(doc.RootElement);
+
+        apps.Should().ContainSingle();
+        apps[0].PluginDisplayNames.Should().BeEmpty();
+    }
 }
 

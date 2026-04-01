@@ -77,8 +77,7 @@ public sealed class PluginClientTests
         result.Marketplaces[0].Plugins[0].SourceInfo.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].SourceInfo!.Type.Should().Be(PluginSourceType.Local);
         result.Marketplaces[0].Plugins[0].SourceInfo!.Path.Should().Be("C:\\plugins\\plug-1");
-        result.Marketplaces[0].Plugins[0].Source.Should().NotBeNull();
-        result.Marketplaces[0].Plugins[0].Source!.Value.TryGetProperty("path", out var sourcePath).Should().BeTrue();
+        result.Marketplaces[0].Plugins[0].Source.TryGetProperty("path", out var sourcePath).Should().BeTrue();
         sourcePath.GetString().Should().Be("C:\\plugins\\plug-1");
         rpc.LastMethod.Should().Be("plugin/list");
     }
@@ -129,6 +128,10 @@ public sealed class PluginClientTests
                   "enabled": true,
                   "authPolicy": "ON_USE",
                   "installPolicy": "INSTALLED_BY_DEFAULT",
+                  "source": {
+                    "type": "local",
+                    "path": "C:\\plugins\\plug-1"
+                  },
                   "interface": {
                     "displayName": "Plugin One Display"
                   }
@@ -162,7 +165,7 @@ public sealed class PluginClientTests
     [Fact]
     public async Task InstallPluginAsync_ParsesTypedAuthPolicyAndDefaultsAppsNeedingAuth()
     {
-        using var doc = JsonDocument.Parse("""{"authPolicy":"ON_INSTALL"}""");
+        using var doc = JsonDocument.Parse("""{"authPolicy":"ON_INSTALL","appsNeedingAuth":[]}""");
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
@@ -176,6 +179,92 @@ public sealed class PluginClientTests
         result.AuthPolicyValue.Should().Be(PluginAuthPolicy.OnInstall);
         result.AppsNeedingAuth.Should().BeEmpty();
         rpc.LastMethod.Should().Be("plugin/install");
+    }
+
+    [Fact]
+    public async Task ListPluginsAsync_MissingRequiredPluginFields_Throws()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "marketplaces": [
+                {
+                  "name": "official",
+                  "path": "C:\\market",
+                  "plugins": [
+                    {
+                      "id": "plug-1",
+                      "name": "Plugin One",
+                      "installed": true,
+                      "enabled": true,
+                      "authPolicy": "ON_INSTALL",
+                      "installPolicy": "AVAILABLE"
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ListPluginsAsync(new PluginListOptions());
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*source*");
+    }
+
+    [Fact]
+    public async Task ReadPluginAsync_MissingMarketplaceName_Throws()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "plugin": {
+                "marketplacePath": "C:\\market",
+                "summary": {
+                  "id": "plug-1",
+                  "name": "Plugin One",
+                  "installed": true,
+                  "enabled": true,
+                  "authPolicy": "ON_USE",
+                  "installPolicy": "INSTALLED_BY_DEFAULT",
+                  "source": {
+                    "type": "local",
+                    "path": "C:\\plugins\\plug-1"
+                  }
+                }
+              }
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ReadPluginAsync(new PluginReadOptions
+        {
+            MarketplacePath = "C:\\market",
+            PluginName = "plugin-one"
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*marketplaceName*");
+    }
+
+    [Fact]
+    public async Task InstallPluginAsync_MissingRequiredFields_Throws()
+    {
+        using var doc = JsonDocument.Parse("""{"appsNeedingAuth":[]}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.InstallPluginAsync(new PluginInstallOptions
+        {
+            MarketplacePath = "C:\\market",
+            PluginName = "plugin-one"
+        });
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*authPolicy*");
     }
 
     [Fact]
