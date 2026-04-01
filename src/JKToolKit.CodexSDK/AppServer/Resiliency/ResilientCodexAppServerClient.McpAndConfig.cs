@@ -4,6 +4,18 @@ namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 
 public sealed partial class ResilientCodexAppServerClient
 {
+    public Task<ConversationSummaryResult> GetConversationSummaryAsync(ConversationSummaryOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.GetConversationSummaryAsync(options, token), ct);
+
+    public Task<GitDiffToRemoteResult> GetGitDiffToRemoteAsync(GitDiffToRemoteOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.GetGitDiffToRemoteAsync(options, token), ct);
+
+    public Task<AuthStatusReadResult> GetAuthStatusAsync(AuthStatusOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.GetAuthStatusAsync(options, token), ct);
+
+    public Task<AuthStatusReadResult> GetAuthStatusAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.GetAuthStatusAsync(token), ct);
+
     public Task<ConfigReadResult> ReadConfigAsync(ConfigReadOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadConfigAsync(options, token), ct);
 

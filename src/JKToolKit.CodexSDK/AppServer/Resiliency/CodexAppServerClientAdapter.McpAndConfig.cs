@@ -2,6 +2,14 @@ namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 
 internal partial interface ICodexAppServerClientAdapter
 {
+    Task<ConversationSummaryResult> GetConversationSummaryAsync(ConversationSummaryOptions options, CancellationToken ct);
+
+    Task<GitDiffToRemoteResult> GetGitDiffToRemoteAsync(GitDiffToRemoteOptions options, CancellationToken ct);
+
+    Task<AuthStatusReadResult> GetAuthStatusAsync(AuthStatusOptions options, CancellationToken ct);
+
+    Task<AuthStatusReadResult> GetAuthStatusAsync(CancellationToken ct);
+
     Task<ConfigReadResult> ReadConfigAsync(ConfigReadOptions options, CancellationToken ct);
 
     Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct);
@@ -49,6 +57,14 @@ internal partial interface ICodexAppServerClientAdapter
 
 internal sealed partial class CodexAppServerClientAdapter
 {
+    public Task<ConversationSummaryResult> GetConversationSummaryAsync(ConversationSummaryOptions options, CancellationToken ct) => _inner.GetConversationSummaryAsync(options, ct);
+
+    public Task<GitDiffToRemoteResult> GetGitDiffToRemoteAsync(GitDiffToRemoteOptions options, CancellationToken ct) => _inner.GetGitDiffToRemoteAsync(options, ct);
+
+    public Task<AuthStatusReadResult> GetAuthStatusAsync(AuthStatusOptions options, CancellationToken ct) => _inner.GetAuthStatusAsync(options, ct);
+
+    public Task<AuthStatusReadResult> GetAuthStatusAsync(CancellationToken ct) => _inner.GetAuthStatusAsync(ct);
+
     public Task<ConfigReadResult> ReadConfigAsync(ConfigReadOptions options, CancellationToken ct) => _inner.ReadConfigAsync(options, ct);
 
     public Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct) => _inner.DetectExternalAgentConfigAsync(options, ct);

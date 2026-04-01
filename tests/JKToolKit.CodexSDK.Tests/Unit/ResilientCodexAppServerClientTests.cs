@@ -20,6 +20,9 @@ public sealed class ResilientCodexAppServerClientTests
     private static readonly string[] StableParityMethodNames =
     [
         nameof(CodexAppServerClient.CallAsync),
+        nameof(CodexAppServerClient.GetConversationSummaryAsync),
+        nameof(CodexAppServerClient.GetGitDiffToRemoteAsync),
+        nameof(CodexAppServerClient.GetAuthStatusAsync),
         nameof(CodexAppServerClient.StartThreadAsync),
         nameof(CodexAppServerClient.ResumeThreadAsync),
         nameof(CodexAppServerClient.ListThreadsAsync),
@@ -999,6 +1002,18 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<ConfigReadResult> ReadConfigAsync(ConfigReadOptions options, CancellationToken ct) =>
             NotSupported<ConfigReadResult>();
+
+        public Task<ConversationSummaryResult> GetConversationSummaryAsync(ConversationSummaryOptions options, CancellationToken ct) =>
+            NotSupported<ConversationSummaryResult>();
+
+        public Task<GitDiffToRemoteResult> GetGitDiffToRemoteAsync(GitDiffToRemoteOptions options, CancellationToken ct) =>
+            NotSupported<GitDiffToRemoteResult>();
+
+        public Task<AuthStatusReadResult> GetAuthStatusAsync(AuthStatusOptions options, CancellationToken ct) =>
+            NotSupported<AuthStatusReadResult>();
+
+        public Task<AuthStatusReadResult> GetAuthStatusAsync(CancellationToken ct) =>
+            NotSupported<AuthStatusReadResult>();
 
         public Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct) =>
             NotSupported<ExternalAgentConfigDetectResult>();

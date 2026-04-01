@@ -11,6 +11,130 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AuthAccountConfigWrappersTests
 {
     [Fact]
+    public async Task GetConversationSummaryAsync_CallsExpectedMethod_AndParsesResponse()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "getConversationSummary",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("conversationId").GetString().Should().Be("thr-123");
+            },
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                summary = new
+                {
+                    conversationId = "thr-123",
+                    path = "C:/codex/home/sessions/2026/04/01/rollout.jsonl",
+                    preview = "hello",
+                    timestamp = "2026-04-01T10:00:00Z",
+                    updatedAt = "2026-04-01T10:01:00Z",
+                    modelProvider = "openai",
+                    cwd = "C:/repo",
+                    cliVersion = "0.118.0",
+                    source = "exec",
+                    gitInfo = new
+                    {
+                        sha = "abc123",
+                        branch = "main",
+                        originUrl = "https://example.test/repo.git"
+                    }
+                }
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.GetConversationSummaryAsync(new ConversationSummaryOptions
+        {
+            ConversationId = "thr-123"
+        });
+
+        result.Summary.ConversationId.Should().Be("thr-123");
+        result.Summary.Path.Should().Be("C:/codex/home/sessions/2026/04/01/rollout.jsonl");
+        result.Summary.GitInfo.Should().NotBeNull();
+        result.Summary.GitInfo!.Sha.Should().Be("abc123");
+    }
+
+    [Fact]
+    public async Task GetConversationSummaryAsync_RequiresExactlyOneSelector()
+    {
+        await using var client = CreateClient(new FakeRpc());
+
+        var act = async () => await client.GetConversationSummaryAsync(new ConversationSummaryOptions
+        {
+            ConversationId = "thr-123",
+            RolloutPath = "C:/codex/home/rollout.jsonl"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Exactly one of ConversationId or RolloutPath*");
+    }
+
+    [Fact]
+    public async Task GetGitDiffToRemoteAsync_CallsExpectedMethod_AndParsesResponse()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "gitDiffToRemote",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("cwd").GetString().Should().Be("C:/repo");
+            },
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                sha = "deadbeef",
+                diff = "diff --git a/a.txt b/a.txt"
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.GetGitDiffToRemoteAsync(new GitDiffToRemoteOptions
+        {
+            Cwd = "C:/repo"
+        });
+
+        result.Sha.Should().Be("deadbeef");
+        result.Diff.Should().Contain("diff --git");
+    }
+
+    [Fact]
+    public async Task GetAuthStatusAsync_CallsExpectedMethod_AndParsesResponse()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "getAuthStatus",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("includeToken").GetBoolean().Should().BeTrue();
+                json.GetProperty("refreshToken").GetBoolean().Should().BeFalse();
+            },
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                authMethod = "chatgpt",
+                authToken = "secret-token",
+                requiresOpenaiAuth = false
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.GetAuthStatusAsync(new AuthStatusOptions
+        {
+            IncludeToken = true,
+            RefreshToken = false
+        });
+
+        result.AuthMethod.Should().Be(CodexAuthMode.ChatGpt);
+        result.AuthToken.Should().Be("secret-token");
+        result.RequiresOpenaiAuth.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task ReadAccountAsync_CallsExpectedMethod_AndParsesResponse()
     {
         var rawResult = JsonSerializer.SerializeToElement(new
