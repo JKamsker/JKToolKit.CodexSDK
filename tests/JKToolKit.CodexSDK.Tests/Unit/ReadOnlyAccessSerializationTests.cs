@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -24,13 +25,13 @@ public sealed class ReadOnlyAccessSerializationTests
             new ReadOnlyAccess.Restricted
             {
                 IncludePlatformDefaults = true,
-                ReadableRoots = ["C:\\repo"]
+                ReadableRoots = [XPaths.Abs("repo")]
             },
             CodexAppServerClient.CreateDefaultSerializerOptions());
 
         json.Should().Contain("\"type\":\"restricted\"");
         json.Should().Contain("\"includePlatformDefaults\":true");
-        json.Should().Contain("\"readableRoots\":[\"C:\\\\repo\"]");
+        json.Should().Contain($"\"readableRoots\":[\"{XPaths.JsonEsc("repo")}\"]");
     }
 
     [Fact]

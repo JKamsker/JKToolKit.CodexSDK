@@ -5,6 +5,7 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -22,7 +23,7 @@ public sealed class AppServerCommandAndFilesystemTests
         var result = await client.CommandExecAsync(new CommandExecOptions
         {
             Command = ["git", "status"],
-            Cwd = "C:\\repo",
+            Cwd = XPaths.Abs("repo"),
             ProcessId = "proc-1",
             StreamStdoutStderr = true,
             Tty = true,
@@ -327,15 +328,15 @@ public sealed class AppServerCommandAndFilesystemTests
     [Fact]
     public async Task FsWatchAsync_SendsExpectedParams_AndParsesResult()
     {
-        using var doc = JsonDocument.Parse("""{"path":"C:\\repo","watchId":"watch-1"}""");
+        using var doc = JsonDocument.Parse($"{{\"path\":\"{XPaths.JsonEsc("repo")}\",\"watchId\":\"watch-1\"}}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
 
         await using var client = CreateClient(rpc);
 
-        var result = await client.FsWatchAsync(new FsWatchOptions { Path = "C:\\repo" });
+        var result = await client.FsWatchAsync(new FsWatchOptions { Path = XPaths.Abs("repo") });
 
         result.WatchId.Should().Be("watch-1");
-        result.Path.Should().Be("C:\\repo");
+        result.Path.Should().Be(XPaths.Abs("repo"));
         rpc.LastMethod.Should().Be("fs/watch");
     }
 
@@ -355,7 +356,7 @@ public sealed class AppServerCommandAndFilesystemTests
     {
         await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
 
-        var act = async () => await client.FsReadFileAsync(new FsReadFileOptions { Path = "C:\\repo\\a.txt" });
+        var act = async () => await client.FsReadFileAsync(new FsReadFileOptions { Path = XPaths.Abs("repo/a.txt") });
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*fs/readFile response*");
@@ -371,7 +372,7 @@ public sealed class AppServerCommandAndFilesystemTests
 
         _ = await client.FsWriteFileAsync(new FsWriteFileOptions
         {
-            Path = "C:\\repo\\empty.txt",
+            Path = XPaths.Abs("repo/empty.txt"),
             DataBase64 = string.Empty
         });
 
@@ -393,26 +394,26 @@ public sealed class AppServerCommandAndFilesystemTests
             JsonDocument.Parse("""{}""").RootElement
         ]));
 
-        var read = await client.FsReadFileAsync(new FsReadFileOptions { Path = "C:\\repo\\a.txt" });
+        var read = await client.FsReadFileAsync(new FsReadFileOptions { Path = XPaths.Abs("repo/a.txt") });
         read.DataBase64.Should().Be("aGVsbG8=");
         Encoding.UTF8.GetString(Convert.FromBase64String(read.DataBase64)).Should().Be("hello");
 
-        _ = await client.FsWriteFileAsync(new FsWriteFileOptions { Path = "C:\\repo\\a.txt", DataBase64 = "aGVsbG8=" });
-        _ = await client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = "C:\\repo\\dir", Recursive = true });
+        _ = await client.FsWriteFileAsync(new FsWriteFileOptions { Path = XPaths.Abs("repo/a.txt"), DataBase64 = "aGVsbG8=" });
+        _ = await client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = XPaths.Abs("repo/dir"), Recursive = true });
 
-        var metadata = await client.FsGetMetadataAsync(new FsGetMetadataOptions { Path = "C:\\repo\\a.txt" });
+        var metadata = await client.FsGetMetadataAsync(new FsGetMetadataOptions { Path = XPaths.Abs("repo/a.txt") });
         metadata.IsFile.Should().BeTrue();
         metadata.IsDirectory.Should().BeFalse();
         metadata.CreatedAtMs.Should().Be(123);
         metadata.ModifiedAtMs.Should().Be(456);
 
-        var directory = await client.FsReadDirectoryAsync(new FsReadDirectoryOptions { Path = "C:\\repo" });
+        var directory = await client.FsReadDirectoryAsync(new FsReadDirectoryOptions { Path = XPaths.Abs("repo") });
         directory.Entries.Should().ContainSingle();
         directory.Entries[0].FileName.Should().Be("a.txt");
         directory.Entries[0].IsFile.Should().BeTrue();
 
-        _ = await client.FsCopyAsync(new FsCopyOptions { SourcePath = "C:\\repo\\a.txt", DestinationPath = "C:\\repo\\b.txt" });
-        _ = await client.FsRemoveAsync(new FsRemoveOptions { Path = "C:\\repo\\b.txt", Force = true });
+        _ = await client.FsCopyAsync(new FsCopyOptions { SourcePath = XPaths.Abs("repo/a.txt"), DestinationPath = XPaths.Abs("repo/b.txt") });
+        _ = await client.FsRemoveAsync(new FsRemoveOptions { Path = XPaths.Abs("repo/b.txt"), Force = true });
     }
 
     [Fact]
@@ -423,7 +424,7 @@ public sealed class AppServerCommandAndFilesystemTests
 
         await using var client = CreateClient(rpc);
 
-        var act = async () => await client.FsGetMetadataAsync(new FsGetMetadataOptions { Path = "C:\\repo\\a.txt" });
+        var act = async () => await client.FsGetMetadataAsync(new FsGetMetadataOptions { Path = XPaths.Abs("repo/a.txt") });
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*createdAtMs*");
@@ -437,7 +438,7 @@ public sealed class AppServerCommandAndFilesystemTests
 
         await using var client = CreateClient(rpc);
 
-        var act = async () => await client.FsReadDirectoryAsync(new FsReadDirectoryOptions { Path = "C:\\repo" });
+        var act = async () => await client.FsReadDirectoryAsync(new FsReadDirectoryOptions { Path = XPaths.Abs("repo") });
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*entries[]*objects*");
@@ -476,10 +477,10 @@ public sealed class AppServerCommandAndFilesystemTests
 
         Func<Task> act = method switch
         {
-            "fs/writeFile" => () => client.FsWriteFileAsync(new FsWriteFileOptions { Path = "C:\\repo\\a.txt", DataBase64 = string.Empty }),
-            "fs/createDirectory" => () => client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = "C:\\repo\\dir" }),
-            "fs/remove" => () => client.FsRemoveAsync(new FsRemoveOptions { Path = "C:\\repo\\a.txt" }),
-            "fs/copy" => () => client.FsCopyAsync(new FsCopyOptions { SourcePath = "C:\\repo\\a.txt", DestinationPath = "C:\\repo\\b.txt" }),
+            "fs/writeFile" => () => client.FsWriteFileAsync(new FsWriteFileOptions { Path = XPaths.Abs("repo/a.txt"), DataBase64 = string.Empty }),
+            "fs/createDirectory" => () => client.FsCreateDirectoryAsync(new FsCreateDirectoryOptions { Path = XPaths.Abs("repo/dir") }),
+            "fs/remove" => () => client.FsRemoveAsync(new FsRemoveOptions { Path = XPaths.Abs("repo/a.txt") }),
+            "fs/copy" => () => client.FsCopyAsync(new FsCopyOptions { SourcePath = XPaths.Abs("repo/a.txt"), DestinationPath = XPaths.Abs("repo/b.txt") }),
             "fs/unwatch" => () => client.FsUnwatchAsync(new FsUnwatchOptions { WatchId = "watch-1" }),
             "command/exec/write" => () => client.CommandExecWriteAsync(new CommandExecWriteOptions { ProcessId = "proc-1", DeltaBase64 = string.Empty }),
             "command/exec/resize" => () => client.CommandExecResizeAsync(new CommandExecResizeOptions

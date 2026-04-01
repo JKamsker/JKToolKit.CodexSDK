@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -174,7 +175,7 @@ public sealed class PluginClientTests
 
         var result = await client.ReadPluginAsync(new PluginReadOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
@@ -230,7 +231,7 @@ public sealed class PluginClientTests
 
         var act = async () => await client.ReadPluginAsync(new PluginReadOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
@@ -267,7 +268,7 @@ public sealed class PluginClientTests
 
         var act = async () => await client.ReadPluginAsync(new PluginReadOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
@@ -310,7 +311,7 @@ public sealed class PluginClientTests
 
         var act = async () => await client.ReadPluginAsync(new PluginReadOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
@@ -327,7 +328,7 @@ public sealed class PluginClientTests
 
         var result = await client.InstallPluginAsync(new PluginInstallOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
@@ -401,7 +402,7 @@ public sealed class PluginClientTests
 
         var act = async () => await client.ReadPluginAsync(new PluginReadOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
@@ -418,7 +419,7 @@ public sealed class PluginClientTests
 
         var act = async () => await client.InstallPluginAsync(new PluginInstallOptions
         {
-            MarketplacePath = "C:\\market",
+            MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 

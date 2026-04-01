@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -10,7 +11,7 @@ public sealed class CodexSandboxPolicyBuilderTests
     public void ReadOnlyRestricted_BuildsAccessOverrideShape()
     {
         var policy = CodexSandboxPolicyBuilder.ReadOnlyRestricted(
-            readableRoots: [@"C:\repo"],
+            readableRoots: [XPaths.Abs("repo")],
             includePlatformDefaults: false);
 
         var text = JsonSerializer.Serialize(policy, CodexAppServerClient.CreateDefaultSerializerOptions());
@@ -20,7 +21,7 @@ public sealed class CodexSandboxPolicyBuilderTests
         json.GetProperty("type").GetString().Should().Be("readOnly");
         json.GetProperty("access").GetProperty("type").GetString().Should().Be("restricted");
         json.GetProperty("access").GetProperty("includePlatformDefaults").GetBoolean().Should().BeFalse();
-        json.GetProperty("access").GetProperty("readableRoots").EnumerateArray().Select(x => x.GetString()).Should().Equal(@"C:\repo");
+        json.GetProperty("access").GetProperty("readableRoots").EnumerateArray().Select(x => x.GetString()).Should().Equal(XPaths.Abs("repo"));
     }
 
     [Fact]
@@ -67,7 +68,7 @@ public sealed class CodexSandboxPolicyBuilderTests
     public void WorkspaceWrite_WithReadOnlyAccess_BuildsShape()
     {
         var policy = CodexSandboxPolicyBuilder.WorkspaceWrite(
-            writableRoots: [@"C:\repo"],
+            writableRoots: [XPaths.Abs("repo")],
             networkAccess: true,
             readOnlyAccess: new JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy.ReadOnlyAccess.FullAccess());
 
@@ -77,7 +78,7 @@ public sealed class CodexSandboxPolicyBuilderTests
 
         json.GetProperty("type").GetString().Should().Be("workspaceWrite");
         json.GetProperty("networkAccess").GetBoolean().Should().BeTrue();
-        json.GetProperty("writableRoots").EnumerateArray().Select(x => x.GetString()).Should().Equal(@"C:\repo");
+        json.GetProperty("writableRoots").EnumerateArray().Select(x => x.GetString()).Should().Equal(XPaths.Abs("repo"));
         json.GetProperty("readOnlyAccess").GetProperty("type").GetString().Should().Be("fullAccess");
     }
 }

@@ -6,6 +6,7 @@ using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
@@ -25,10 +26,10 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 var entries = typed.PerCwdExtraUserRoots.ToArray();
                 entries.Should().HaveCount(2);
 
-                entries[0].Cwd.Should().Be("C:\\cwd-1");
-                entries[0].ExtraUserRoots.Should().Equal(new[] { "C:\\root-a" });
-                entries[1].Cwd.Should().Be("D:\\cwd-2");
-                entries[1].ExtraUserRoots.Should().Equal(new[] { "D:\\root-b", "D:\\root-c" });
+                entries[0].Cwd.Should().Be(XPaths.Abs("cwd-1"));
+                entries[0].ExtraUserRoots.Should().Equal(new[] { XPaths.Abs("root-a") });
+                entries[1].Cwd.Should().Be(XPaths.Abs("cwd-2"));
+                entries[1].ExtraUserRoots.Should().Equal(new[] { XPaths.Abs("root-b"), XPaths.Abs("root-c") });
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -42,13 +43,13 @@ public sealed class CodexAppServerSkillsAppsClientTests
             {
                 new SkillsListExtraRootsForCwdEntry
                 {
-                    Cwd = "C:\\cwd-1",
-                    ExtraUserRoots = new[] { "C:\\root-a" }
+                    Cwd = XPaths.Abs("cwd-1"),
+                    ExtraUserRoots = new[] { XPaths.Abs("root-a") }
                 },
                 new SkillsListExtraRootsForCwdEntry
                 {
-                    Cwd = "D:\\cwd-2",
-                    ExtraUserRoots = new[] { "D:\\root-b", "D:\\root-c" }
+                    Cwd = XPaths.Abs("cwd-2"),
+                    ExtraUserRoots = new[] { XPaths.Abs("root-b"), XPaths.Abs("root-c") }
                 }
             }
         };
@@ -68,8 +69,8 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 var entries = typed.PerCwdExtraUserRoots.ToArray();
                 entries.Should().HaveCount(1);
 
-                entries[0].Cwd.Should().Be("C:\\cwd-main");
-                entries[0].ExtraUserRoots.Should().Equal(new[] { "C:\\extra" });
+                entries[0].Cwd.Should().Be(XPaths.Abs("cwd-main"));
+                entries[0].ExtraUserRoots.Should().Equal(new[] { XPaths.Abs("extra") });
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -79,8 +80,8 @@ public sealed class CodexAppServerSkillsAppsClientTests
 
         var options = new SkillsListOptions
         {
-            Cwds = new[] { "C:\\cwd-main" },
-            ExtraRootsForCwd = new[] { "C:\\extra" }
+            Cwds = new[] { XPaths.Abs("cwd-main") },
+            ExtraRootsForCwd = new[] { XPaths.Abs("extra") }
         };
 
         await client.ListSkillsAsync(options);
@@ -121,7 +122,7 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 typed.Cwds.Should().Equal("relative\\cwd", ".\\second");
                 typed.PerCwdExtraUserRoots.Should().ContainSingle();
                 typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be("relative\\cwd");
-                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal("C:\\extra-root");
+                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal(XPaths.Abs("extra-root"));
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -137,7 +138,7 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 new SkillsListExtraRootsForCwdEntry
                 {
                     Cwd = "relative\\cwd",
-                    ExtraUserRoots = ["C:\\extra-root"]
+                    ExtraUserRoots = [XPaths.Abs("extra-root")]
                 }
             ]
         });
@@ -156,7 +157,7 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 typed.Cwds.Should().Equal(".\\repo");
                 typed.PerCwdExtraUserRoots.Should().ContainSingle();
                 typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be(".\\repo");
-                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal("C:\\extra-root");
+                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal(XPaths.Abs("extra-root"));
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -167,7 +168,7 @@ public sealed class CodexAppServerSkillsAppsClientTests
         await client.ListSkillsAsync(new SkillsListOptions
         {
             Cwd = ".\\repo",
-            ExtraRootsForCwd = ["C:\\extra-root"]
+            ExtraRootsForCwd = [XPaths.Abs("extra-root")]
         });
     }
 

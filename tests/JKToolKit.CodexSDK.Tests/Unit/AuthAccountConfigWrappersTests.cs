@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -81,7 +82,7 @@ public sealed class AuthAccountConfigWrappersTests
             AssertParams = p =>
             {
                 var json = JsonSerializer.SerializeToElement(p);
-                json.GetProperty("cwd").GetString().Should().Be("C:/repo");
+                json.GetProperty("cwd").GetString().Should().Be(XPaths.Abs("repo"));
             },
             Result = JsonSerializer.SerializeToElement(new
             {
@@ -94,7 +95,7 @@ public sealed class AuthAccountConfigWrappersTests
 
         var result = await client.GetGitDiffToRemoteAsync(new GitDiffToRemoteOptions
         {
-            Cwd = "C:/repo"
+            Cwd = XPaths.Abs("repo")
         });
 
         result.Sha.Should().Be("deadbeef");
@@ -551,14 +552,14 @@ public sealed class AuthAccountConfigWrappersTests
             {
                 var json = JsonSerializer.SerializeToElement(p);
                 json.GetProperty("mode").GetString().Should().Be("elevated");
-                json.GetProperty("cwd").GetString().Should().Be("C:/repo");
+                json.GetProperty("cwd").GetString().Should().Be(XPaths.Abs("repo"));
             },
             Result = JsonSerializer.SerializeToElement(new { started = true })
         };
 
         await using var client = CreateClient(rpc);
 
-        var started = await client.StartWindowsSandboxSetupAsync(WindowsSandboxSetupMode.Elevated, cwd: "C:/repo");
+        var started = await client.StartWindowsSandboxSetupAsync(WindowsSandboxSetupMode.Elevated, cwd: XPaths.Abs("repo"));
 
         started.Should().BeTrue();
     }
