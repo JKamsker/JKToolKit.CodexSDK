@@ -212,11 +212,7 @@ internal static class AppServerNotificationMapper
                 Error: GetStringOrNull(p, "error"),
                 Params: p),
 
-            "mcpServer/startupStatus/updated" => new McpServerStartupStatusUpdatedNotification(
-                Name: GetString(p, "name") ?? string.Empty,
-                Status: GetString(p, "status") ?? string.Empty,
-                Error: GetStringOrNull(p, "error"),
-                Params: p),
+            "mcpServer/startupStatus/updated" => (AppServerNotification?)TryMapMcpServerStartupStatusUpdated(p) ?? new UnknownNotification(method, p),
 
             "account/updated" => new AccountUpdatedNotification(
                 AuthMode: GetStringOrNull(p, "authMode"),
@@ -240,10 +236,7 @@ internal static class AppServerNotificationMapper
                 requestIdValue: AppServerNotificationParsing.GetScalarText(p, "requestId"),
                 @params: p),
 
-            "fs/changed" => new FsChangedNotification(
-                WatchId: GetString(p, "watchId") ?? string.Empty,
-                ChangedPaths: GetStringArray(p, "changedPaths"),
-                Params: p),
+            "fs/changed" => (AppServerNotification?)TryMapFsChanged(p) ?? new UnknownNotification(method, p),
 
             "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
@@ -416,6 +409,82 @@ internal static class AppServerNotificationMapper
         }
 
         return list;
+    }
+
+    private static FsChangedNotification? TryMapFsChanged(JsonElement p)
+    {
+        var watchId = GetString(p, "watchId");
+        if (string.IsNullOrWhiteSpace(watchId) ||
+            !p.TryGetProperty("changedPaths", out var changedPathsElement) ||
+            changedPathsElement.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var changedPaths = new List<string>();
+        foreach (var item in changedPathsElement.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            try
+            {
+                changedPaths.Add(CodexAppServerPathValidation.RequireAbsolutePayloadPath(
+                    item.GetString(),
+                    "changedPaths",
+                    "fs/changed"));
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
+        return new FsChangedNotification(
+            WatchId: watchId,
+            ChangedPaths: changedPaths,
+            Params: p);
+    }
+
+    private static McpServerStartupStatusUpdatedNotification? TryMapMcpServerStartupStatusUpdated(JsonElement p)
+    {
+        var name = GetString(p, "name");
+        var status = GetString(p, "status");
+        if (string.IsNullOrWhiteSpace(name) ||
+            !TryParseMcpServerStartupState(status, out var parsedStatus))
+        {
+            return null;
+        }
+
+        return new McpServerStartupStatusUpdatedNotification(
+            Name: name,
+            Status: parsedStatus,
+            Error: GetStringOrNull(p, "error"),
+            Params: p);
+    }
+
+    private static bool TryParseMcpServerStartupState(string? value, out McpServerStartupState status)
+    {
+        switch (value)
+        {
+            case "starting":
+                status = McpServerStartupState.Starting;
+                return true;
+            case "ready":
+                status = McpServerStartupState.Ready;
+                return true;
+            case "failed":
+                status = McpServerStartupState.Failed;
+                return true;
+            case "cancelled":
+                status = McpServerStartupState.Cancelled;
+                return true;
+            default:
+                status = default;
+                return false;
+        }
     }
 
     private static IReadOnlyList<TurnPlanStep> ParsePlan(JsonElement obj)

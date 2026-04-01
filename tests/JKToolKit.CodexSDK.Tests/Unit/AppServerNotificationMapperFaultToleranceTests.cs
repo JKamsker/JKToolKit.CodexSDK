@@ -98,6 +98,15 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
         }
     }
 
+    [Fact]
+    public void Map_FsChanged_WithRelativePath_ReturnsUnknown()
+    {
+        var payload = Parse("""{"watchId":"watch-1","changedPaths":["relative\\file.txt"]}""");
+
+        AppServerNotificationMapper.Map("fs/changed", payload)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
     private static JsonElement Parse(string json)
     {
         using var doc = JsonDocument.Parse(json);

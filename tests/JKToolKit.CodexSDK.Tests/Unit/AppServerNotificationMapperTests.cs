@@ -121,7 +121,7 @@ public sealed class AppServerNotificationMapperTests
         var startupStatus = JsonDocument.Parse("""{"name":"server-1","status":"ready","error":null}""").RootElement;
         AppServerNotificationMapper.Map("mcpServer/startupStatus/updated", startupStatus)
             .Should().BeOfType<McpServerStartupStatusUpdatedNotification>()
-            .Which.Status.Should().Be("ready");
+            .Which.Status.Should().Be(McpServerStartupState.Ready);
 
         AppServerNotificationMapper.Map("skills/changed", JsonDocument.Parse("""{}""").RootElement)
             .Should().BeOfType<SkillsChangedNotification>();

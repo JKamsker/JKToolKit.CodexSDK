@@ -15,7 +15,7 @@ public sealed record class McpServerStartupStatusUpdatedNotification : AppServer
     /// <summary>
     /// Gets the startup status value.
     /// </summary>
-    public string Status { get; }
+    public McpServerStartupState Status { get; }
 
     /// <summary>
     /// Gets an optional startup error when status indicates failure.
@@ -25,7 +25,7 @@ public sealed record class McpServerStartupStatusUpdatedNotification : AppServer
     /// <summary>
     /// Initializes a new instance of <see cref="McpServerStartupStatusUpdatedNotification"/>.
     /// </summary>
-    public McpServerStartupStatusUpdatedNotification(string Name, string Status, string? Error, JsonElement Params)
+    public McpServerStartupStatusUpdatedNotification(string Name, McpServerStartupState Status, string? Error, JsonElement Params)
         : base("mcpServer/startupStatus/updated", Params)
     {
         this.Name = Name;
