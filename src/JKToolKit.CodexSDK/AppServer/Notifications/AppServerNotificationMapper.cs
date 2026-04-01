@@ -59,16 +59,9 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
-            "thread/realtime/started" => new ThreadRealtimeStartedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                SessionId: GetStringOrNull(p, "sessionId"),
-                Version: GetString(p, "version") ?? string.Empty,
-                Params: p),
+            "thread/realtime/started" => (AppServerNotification?)TryMapThreadRealtimeStarted(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/itemAdded" => new ThreadRealtimeItemAddedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Item: GetAny(p, "item"),
-                Params: p),
+            "thread/realtime/itemAdded" => (AppServerNotification?)TryMapThreadRealtimeItemAdded(p) ?? new UnknownNotification(method, p),
 
             "thread/realtime/transcriptUpdated" when
                 TryGetRequiredString(p, "threadId", out var transcriptThreadId) &&
@@ -80,20 +73,11 @@ internal static partial class AppServerNotificationMapper
                     Text: transcriptText,
                     Params: p),
 
-            "thread/realtime/outputAudio/delta" => new ThreadRealtimeOutputAudioDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Audio: GetAny(p, "audio"),
-                Params: p),
+            "thread/realtime/outputAudio/delta" => (AppServerNotification?)TryMapThreadRealtimeOutputAudioDelta(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/error" => new ThreadRealtimeErrorNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Message: GetString(p, "message") ?? string.Empty,
-                Params: p),
+            "thread/realtime/error" => (AppServerNotification?)TryMapThreadRealtimeError(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/closed" => new ThreadRealtimeClosedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Reason: GetStringOrNull(p, "reason"),
-                Params: p),
+            "thread/realtime/closed" => (AppServerNotification?)TryMapThreadRealtimeClosed(p) ?? new UnknownNotification(method, p),
 
             "model/rerouted" => new ModelReroutedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -108,17 +92,9 @@ internal static partial class AppServerNotificationMapper
                 Turn: GetAny(p, "turn"),
                 Params: p),
 
-            "hook/started" => new HookStartedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetStringOrNull(p, "turnId"),
-                Run: GetAny(p, "run"),
-                Params: p),
+            "hook/started" => (AppServerNotification?)TryMapHookStarted(p) ?? new UnknownNotification(method, p),
 
-            "hook/completed" => new HookCompletedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetStringOrNull(p, "turnId"),
-                Run: GetAny(p, "run"),
-                Params: p),
+            "hook/completed" => (AppServerNotification?)TryMapHookCompleted(p) ?? new UnknownNotification(method, p),
 
             "item/agentMessage/delta" => new AgentMessageDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -182,12 +158,7 @@ internal static partial class AppServerNotificationMapper
                 Item: GetAny(p, "item"),
                 Params: p),
 
-            "item/commandExecution/outputDelta" => new CommandExecutionOutputDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
-                Params: p),
+            "item/commandExecution/outputDelta" => (AppServerNotification?)TryMapCommandExecutionOutputDelta(p) ?? new UnknownNotification(method, p),
 
             "item/commandExecution/terminalInteraction" => new TerminalInteractionNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -247,21 +218,9 @@ internal static partial class AppServerNotificationMapper
                 sessionId: GetString(p, "sessionId") ?? string.Empty,
                 @params: p),
 
-            "item/autoApprovalReview/started" => new ItemAutoApprovalReviewStartedNotification(
-                threadId: GetString(p, "threadId") ?? string.Empty,
-                turnId: GetString(p, "turnId") ?? string.Empty,
-                targetItemId: GetString(p, "targetItemId") ?? string.Empty,
-                action: AppServerNotificationParsing.GetAny(p, "action"),
-                review: AppServerNotificationParsing.ParseGuardianApprovalReviewInfo(p, "review"),
-                @params: p),
+            "item/autoApprovalReview/started" => (AppServerNotification?)TryMapAutoApprovalReviewStarted(p) ?? new UnknownNotification(method, p),
 
-            "item/autoApprovalReview/completed" => new ItemAutoApprovalReviewCompletedNotification(
-                threadId: GetString(p, "threadId") ?? string.Empty,
-                turnId: GetString(p, "turnId") ?? string.Empty,
-                targetItemId: GetString(p, "targetItemId") ?? string.Empty,
-                action: AppServerNotificationParsing.GetAny(p, "action"),
-                review: AppServerNotificationParsing.ParseGuardianApprovalReviewInfo(p, "review"),
-                @params: p),
+            "item/autoApprovalReview/completed" => (AppServerNotification?)TryMapAutoApprovalReviewCompleted(p) ?? new UnknownNotification(method, p),
 
             "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,

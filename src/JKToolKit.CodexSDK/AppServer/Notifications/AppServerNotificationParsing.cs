@@ -3,7 +3,7 @@ using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
-internal static class AppServerNotificationParsing
+internal static partial class AppServerNotificationParsing
 {
     public static IReadOnlyList<AppDescriptor> ParseAppsList(JsonElement obj) =>
         Internal.CodexAppServerClientSkillsAppsParsers.ParseAppsListApps(obj);
@@ -37,23 +37,6 @@ internal static class AppServerNotificationParsing
         }
 
         return results;
-    }
-
-    public static GuardianApprovalReviewInfo ParseGuardianApprovalReviewInfo(JsonElement obj, string propertyName)
-    {
-        var review = TryGetObject(obj, propertyName, out var parsedReview)
-            ? parsedReview
-            : EmptyObject();
-        var statusValue = GetString(review, "status");
-
-        return new GuardianApprovalReviewInfo
-        {
-            Status = ParseGuardianApprovalReviewStatus(statusValue),
-            StatusValue = statusValue,
-            Rationale = GetString(review, "rationale"),
-            RiskScore = GetInt32OrNull(review, "riskScore"),
-            Raw = review
-        };
     }
 
     public static JsonElement GetAny(JsonElement obj, string propertyName) =>
@@ -147,26 +130,6 @@ internal static class AppServerNotificationParsing
         }
 
         return default;
-    }
-
-    private static int? GetInt32OrNull(JsonElement obj, string propertyName)
-    {
-        if (!TryGetProperty(obj, propertyName, out var property))
-        {
-            return null;
-        }
-
-        if (property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var number))
-        {
-            return number;
-        }
-
-        if (property.ValueKind == JsonValueKind.String && int.TryParse(property.GetString(), out number))
-        {
-            return number;
-        }
-
-        return null;
     }
 
     private static string? GetString(JsonElement obj, string propertyName) =>

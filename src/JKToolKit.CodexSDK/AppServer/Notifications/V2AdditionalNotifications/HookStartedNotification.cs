@@ -23,13 +23,19 @@ public sealed record class HookStartedNotification : AppServerNotification
     public JsonElement Run { get; }
 
     /// <summary>
+    /// Gets the typed hook run summary.
+    /// </summary>
+    public HookRunSummaryInfo RunInfo { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="HookStartedNotification"/>.
     /// </summary>
-    public HookStartedNotification(string ThreadId, string? TurnId, JsonElement Run, JsonElement Params)
+    public HookStartedNotification(string ThreadId, string? TurnId, JsonElement Run, HookRunSummaryInfo RunInfo, JsonElement Params)
         : base("hook/started", Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;
         this.Run = Run;
+        this.RunInfo = RunInfo;
     }
 }

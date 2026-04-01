@@ -108,15 +108,22 @@ public sealed class AppServerNotificationMapperTests
             .Should().BeOfType<FsChangedNotification>()
             .Which.ChangedPaths.Should().HaveCount(2);
 
-        var hookStarted = JsonDocument.Parse("""{"threadId":"t","turnId":"u","run":{"id":"r1","status":"running"}}""").RootElement;
-        AppServerNotificationMapper.Map("hook/started", hookStarted)
+        var hookStarted = JsonDocument.Parse("""{"threadId":"t","turnId":"u","run":{"id":"r1","eventName":"preTool","handlerType":"command","executionMode":"foreground","scope":"turn","sourcePath":"C:/repo/.codex/hooks/pre-tool.ps1","displayOrder":1,"status":"running","startedAt":123,"entries":[{"kind":"warning","text":"heads up"}]}}""").RootElement;
+        var hookStartedNotification = AppServerNotificationMapper.Map("hook/started", hookStarted)
             .Should().BeOfType<HookStartedNotification>()
-            .Which.ThreadId.Should().Be("t");
+            .Which;
 
-        var hookCompleted = JsonDocument.Parse("""{"threadId":"t","run":{"id":"r1","status":"completed"}}""").RootElement;
-        AppServerNotificationMapper.Map("hook/completed", hookCompleted)
+        hookStartedNotification.ThreadId.Should().Be("t");
+        hookStartedNotification.RunInfo.Status.Should().Be("running");
+        hookStartedNotification.RunInfo.Entries.Should().ContainSingle();
+
+        var hookCompleted = JsonDocument.Parse("""{"threadId":"t","run":{"id":"r1","eventName":"preTool","handlerType":"command","executionMode":"foreground","scope":"turn","sourcePath":"C:/repo/.codex/hooks/pre-tool.ps1","displayOrder":1,"status":"completed","startedAt":123,"completedAt":150,"durationMs":27,"entries":[{"kind":"feedback","text":"done"}]}}""").RootElement;
+        var hookCompletedNotification = AppServerNotificationMapper.Map("hook/completed", hookCompleted)
             .Should().BeOfType<HookCompletedNotification>()
-            .Which.TurnId.Should().BeNull();
+            .Which;
+
+        hookCompletedNotification.TurnId.Should().BeNull();
+        hookCompletedNotification.RunInfo.CompletedAt.Should().Be(150);
 
         var startupStatus = JsonDocument.Parse("""{"name":"server-1","status":"ready","error":null}""").RootElement;
         AppServerNotificationMapper.Map("mcpServer/startupStatus/updated", startupStatus)
@@ -213,7 +220,7 @@ public sealed class AppServerNotificationMapperTests
     [Fact]
     public void Map_AutoApprovalReviewNotifications_ToTypedRecords()
     {
-        var started = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"inProgress","rationale":"checking","riskScore":4}}""").RootElement;
+        var started = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"inProgress","rationale":"checking","riskScore":4,"riskLevel":"medium"}}""").RootElement;
         var startedNotification = AppServerNotificationMapper.Map("item/autoApprovalReview/started", started)
             .Should().BeOfType<ItemAutoApprovalReviewStartedNotification>()
             .Which;
@@ -221,14 +228,62 @@ public sealed class AppServerNotificationMapperTests
         startedNotification.TargetItemId.Should().Be("item-1");
         startedNotification.Review.Status.Should().Be(GuardianApprovalReviewStatus.InProgress);
         startedNotification.Review.Rationale.Should().Be("checking");
+        startedNotification.Review.RiskLevel.Should().Be(GuardianRiskLevel.Medium);
 
-        var completed = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"approved","riskScore":"5"}}""").RootElement;
+        var completed = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"approved","riskScore":5,"riskLevel":"high"}}""").RootElement;
         var completedNotification = AppServerNotificationMapper.Map("item/autoApprovalReview/completed", completed)
             .Should().BeOfType<ItemAutoApprovalReviewCompletedNotification>()
             .Which;
 
         completedNotification.Review.Status.Should().Be(GuardianApprovalReviewStatus.Approved);
         completedNotification.Review.RiskScore.Should().Be(5);
+        completedNotification.Review.RiskLevel.Should().Be(GuardianRiskLevel.High);
+    }
+
+    [Fact]
+    public void Map_ThreadRealtimeStrictPayloadFailures_ReturnUnknown()
+    {
+        AppServerNotificationMapper.Map(
+                "thread/realtime/started",
+                JsonDocument.Parse("""{"threadId":"t"}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+
+        AppServerNotificationMapper.Map(
+                "thread/realtime/outputAudio/delta",
+                JsonDocument.Parse("""{"threadId":"t","audio":{"data":"abc","numChannels":"2","sampleRate":24000}}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
+    public void Map_HookNotifications_WithMalformedRun_ReturnUnknown()
+    {
+        AppServerNotificationMapper.Map(
+                "hook/started",
+                JsonDocument.Parse("""{"threadId":"t","run":{"id":"r1","status":"running"}}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+
+        AppServerNotificationMapper.Map(
+                "hook/completed",
+                JsonDocument.Parse("""{"threadId":"t","run":{"id":"r1","eventName":"preTool","handlerType":"command","executionMode":"foreground","scope":"turn","sourcePath":"C:/repo/.codex/hooks/pre-tool.ps1","displayOrder":1,"status":"completed","startedAt":123,"entries":[{"kind":"feedback"}]}}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
+    public void Map_CommandExecutionOutputDelta_WithMalformedPayload_ReturnsUnknown()
+    {
+        AppServerNotificationMapper.Map(
+                "item/commandExecution/outputDelta",
+                JsonDocument.Parse("""{"threadId":"t","turnId":"u","itemId":"i"}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
+    public void Map_AutoApprovalReview_WithMalformedReview_ReturnsUnknown()
+    {
+        AppServerNotificationMapper.Map(
+                "item/autoApprovalReview/started",
+                JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","review":{"riskScore":"5"}}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
     }
 
     [Fact]

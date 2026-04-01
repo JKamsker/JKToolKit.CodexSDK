@@ -34,6 +34,32 @@ public enum GuardianApprovalReviewStatus
 }
 
 /// <summary>
+/// Known guardian risk levels.
+/// </summary>
+public enum GuardianRiskLevel
+{
+    /// <summary>
+    /// The upstream risk level was absent or unrecognized.
+    /// </summary>
+    Unknown = 0,
+
+    /// <summary>
+    /// Low risk.
+    /// </summary>
+    Low = 1,
+
+    /// <summary>
+    /// Medium risk.
+    /// </summary>
+    Medium = 2,
+
+    /// <summary>
+    /// High risk.
+    /// </summary>
+    High = 3
+}
+
+/// <summary>
 /// Parsed guardian auto-approval review details.
 /// </summary>
 public sealed record class GuardianApprovalReviewInfo
@@ -57,6 +83,11 @@ public sealed record class GuardianApprovalReviewInfo
     /// Gets the risk score when present.
     /// </summary>
     public int? RiskScore { get; init; }
+
+    /// <summary>
+    /// Gets the parsed risk level when present.
+    /// </summary>
+    public GuardianRiskLevel? RiskLevel { get; init; }
 
     /// <summary>
     /// Gets the raw review payload.

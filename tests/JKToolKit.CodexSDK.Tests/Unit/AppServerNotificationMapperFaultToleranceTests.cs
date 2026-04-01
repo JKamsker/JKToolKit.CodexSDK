@@ -116,6 +116,25 @@ public sealed class AppServerNotificationMapperFaultToleranceTests
             .Should().BeOfType<UnknownNotification>();
     }
 
+    [Theory]
+    [InlineData("thread/realtime/started", """{"threadId":"t","version":123}""")]
+    [InlineData("thread/realtime/itemAdded", """{"threadId":"t"}""")]
+    [InlineData("thread/realtime/outputAudio/delta", """{"threadId":"t","audio":{"data":"abc","numChannels":"2","sampleRate":24000}}""")]
+    [InlineData("thread/realtime/error", """{"threadId":"t"}""")]
+    [InlineData("thread/realtime/closed", """{"threadId":{}}""")]
+    [InlineData("hook/started", """{"threadId":"t","run":{"id":"r1","status":"running"}}""")]
+    [InlineData("hook/completed", """{"threadId":"t","run":{"id":"r1","status":"completed"}}""")]
+    [InlineData("item/commandExecution/outputDelta", """{"threadId":"t","turnId":"u","itemId":"i"}""")]
+    [InlineData("item/autoApprovalReview/started", """{"threadId":"t","turnId":"u","targetItemId":"i","review":{"riskScore":"5"}}""")]
+    [InlineData("item/autoApprovalReview/completed", """{"threadId":"t","turnId":"u","targetItemId":"i","review":{"status":"approved","riskScore":"5"}}""")]
+    public void Map_StrictNotificationPayloadFailures_ReturnUnknown(string method, string payloadJson)
+    {
+        var payload = Parse(payloadJson);
+
+        AppServerNotificationMapper.Map(method, payload)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
     private static JsonElement Parse(string json)
     {
         using var doc = JsonDocument.Parse(json);
