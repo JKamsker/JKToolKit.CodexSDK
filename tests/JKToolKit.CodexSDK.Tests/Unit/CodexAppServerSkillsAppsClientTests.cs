@@ -171,6 +171,68 @@ public sealed class CodexAppServerSkillsAppsClientTests
         });
     }
 
+    [Fact]
+    public async Task ListSkillsAsync_AllowsBlankPerCwdScopes_AndEmptyExtraRoots_ToPassThrough()
+    {
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("skills/list");
+                var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
+
+                typed.PerCwdExtraUserRoots.Should().ContainSingle();
+                typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be("");
+                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().BeEmpty();
+
+                return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        await client.ListSkillsAsync(new SkillsListOptions
+        {
+            PerCwdExtraUserRoots =
+            [
+                new SkillsListExtraRootsForCwdEntry
+                {
+                    Cwd = string.Empty,
+                    ExtraUserRoots = Array.Empty<string>()
+                }
+            ]
+        });
+    }
+
+    [Fact]
+    public async Task ListAppsAsync_RejectsCwdScoping()
+    {
+        var client = new CodexAppServerSkillsAppsClient((_, _, _) =>
+            Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone()));
+
+        var act = async () => await client.ListAppsAsync(new AppsListOptions
+        {
+            Cwd = "C:\\repo"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*ThreadId*");
+    }
+
+    [Fact]
+    public async Task ListAppsAsync_RejectsNegativeLimit()
+    {
+        var client = new CodexAppServerSkillsAppsClient((_, _, _) =>
+            Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone()));
+
+        var act = async () => await client.ListAppsAsync(new AppsListOptions
+        {
+            Limit = -1
+        });
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
     private sealed class FakeRpc
     {
         public Func<string, object?, CancellationToken, Task<JsonElement>>? SendRequestAsyncImpl { get; set; }

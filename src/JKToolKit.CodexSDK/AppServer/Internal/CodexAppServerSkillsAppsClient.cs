@@ -37,25 +37,15 @@ internal sealed class CodexAppServerSkillsAppsClient
                     throw new ArgumentException("PerCwdExtraUserRoots entries must not be null.", nameof(options));
                 }
 
-                if (string.IsNullOrWhiteSpace(entry.Cwd))
-                {
-                    throw new ArgumentException("PerCwdExtraUserRoots entries require a non-empty Cwd.", nameof(options));
-                }
-
-                if (entry.ExtraUserRoots is not { Count: > 0 })
-                {
-                    throw new ArgumentException("PerCwdExtraUserRoots entries require at least one extra root.", nameof(options));
-                }
-
                 CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(
-                    entry.ExtraUserRoots,
+                    entry.ExtraUserRoots ?? Array.Empty<string>(),
                     nameof(options),
                     "PerCwdExtraUserRoots[].ExtraUserRoots");
 
                 return new UpstreamV2.SkillsListExtraRootsForCwd
                 {
                     Cwd = entry.Cwd,
-                    ExtraUserRoots = entry.ExtraUserRoots.ToArray()
+                    ExtraUserRoots = (entry.ExtraUserRoots ?? Array.Empty<string>()).ToArray()
                 };
             }).ToArray();
         }
@@ -101,6 +91,15 @@ internal sealed class CodexAppServerSkillsAppsClient
     public async Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (!string.IsNullOrWhiteSpace(options.Cwd))
+        {
+            throw new ArgumentException("app/list does not support Cwd scoping on this upstream build. Use ThreadId instead.", nameof(options));
+        }
+
+        if (options.Limit < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.Limit, "Limit cannot be negative.");
+        }
 
         var result = await _sendRequestAsync(
             "app/list",
