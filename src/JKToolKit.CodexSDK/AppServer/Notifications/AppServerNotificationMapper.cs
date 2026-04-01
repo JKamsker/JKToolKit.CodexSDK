@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
@@ -27,6 +28,7 @@ internal static class AppServerNotificationMapper
 
             "thread/started" => new ThreadStartedNotification(
                 Thread: GetAny(p, "thread"),
+                ThreadSummary: CodexAppServerClientThreadParsers.ParseThreadSummary(GetAny(p, "thread"), p),
                 Params: p),
 
             "thread/name/updated" => new ThreadNameUpdatedNotification(
@@ -68,11 +70,15 @@ internal static class AppServerNotificationMapper
                 Item: GetAny(p, "item"),
                 Params: p),
 
-            "thread/realtime/transcriptUpdated" => new ThreadRealtimeTranscriptUpdatedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Role: GetString(p, "role") ?? string.Empty,
-                Text: GetString(p, "text") ?? string.Empty,
-                Params: p),
+            "thread/realtime/transcriptUpdated" when
+                TryGetRequiredString(p, "threadId", out var transcriptThreadId) &&
+                TryGetRequiredString(p, "role", out var transcriptRole) &&
+                TryGetRequiredString(p, "text", out var transcriptText)
+                => new ThreadRealtimeTranscriptUpdatedNotification(
+                    ThreadId: transcriptThreadId,
+                    Role: transcriptRole,
+                    Text: transcriptText,
+                    Params: p),
 
             "thread/realtime/outputAudio/delta" => new ThreadRealtimeOutputAudioDeltaNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -331,6 +337,19 @@ internal static class AppServerNotificationMapper
         obj.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String
             ? prop.GetString()
             : null;
+
+    private static bool TryGetRequiredString(JsonElement obj, string propertyName, out string value)
+    {
+        value = string.Empty;
+
+        if (!obj.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        value = prop.GetString() ?? string.Empty;
+        return true;
+    }
 
     private static string? GetStringOrNull(JsonElement obj, string propertyName) =>
         obj.TryGetProperty(propertyName, out var prop) && prop.ValueKind is JsonValueKind.String

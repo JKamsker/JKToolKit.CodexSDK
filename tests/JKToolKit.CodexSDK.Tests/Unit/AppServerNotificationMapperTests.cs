@@ -57,6 +57,41 @@ public sealed class AppServerNotificationMapperTests
     }
 
     [Fact]
+    public void Map_ThreadStarted_SurfacesTypedThreadSummary()
+    {
+        var started = JsonDocument.Parse("""
+        {
+          "thread": {
+            "id": "thread-1",
+            "name": "Review",
+            "cwd": "C:\\repo",
+            "source": "cli"
+          }
+        }
+        """).RootElement;
+
+        var mapped = AppServerNotificationMapper.Map("thread/started", started)
+            .Should().BeOfType<ThreadStartedNotification>()
+            .Which;
+
+        mapped.ThreadId.Should().Be("thread-1");
+        mapped.ThreadSummary.Should().NotBeNull();
+        mapped.ThreadSummary!.Name.Should().Be("Review");
+        mapped.ThreadSummary.Cwd.Should().Be("C:\\repo");
+        mapped.ThreadSummary.SourceKind.Should().Be("cli");
+    }
+
+    [Fact]
+    public void Map_ThreadRealtimeTranscriptUpdated_RequiresStructuredFields()
+    {
+        var invalid = JsonDocument.Parse("""{"threadId":"t","role":123}""").RootElement;
+
+        var mapped = AppServerNotificationMapper.Map("thread/realtime/transcriptUpdated", invalid);
+
+        mapped.Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
     public void Map_NewlyTypedNotificationMethods_ToTypedRecords()
     {
         var commandExecDelta = JsonDocument.Parse("""{"processId":"p1","stream":"stdout","deltaBase64":"aGVsbG8=","capReached":false}""").RootElement;
