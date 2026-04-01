@@ -57,7 +57,7 @@ internal static class CodexAppServerClientThreadResponseParsers
         return new CodexThreadReadResult
         {
             Thread = summary,
-            Turns = CodexAppServerClientThreadTurnParsers.ParseTurns(result),
+            Turns = summary.Turns,
             Raw = result
         };
     }

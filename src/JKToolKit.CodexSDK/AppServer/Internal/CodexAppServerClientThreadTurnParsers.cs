@@ -10,13 +10,30 @@ internal static class CodexAppServerClientThreadTurnParsers
 {
     public static IReadOnlyList<CodexTurn>? ParseTurns(JsonElement envelope)
     {
-        var thread = TryGetObject(envelope, "thread");
-        if (thread is null)
+        var thread = TryGetObject(envelope, "thread") ?? (envelope.ValueKind == JsonValueKind.Object ? envelope : (JsonElement?)null);
+        return thread is { } threadObject ? ParseTurnsFromThread(threadObject) : null;
+    }
+
+    public static IReadOnlyList<CodexTurn>? ParseTurns(JsonElement primary, JsonElement secondary)
+    {
+        if (primary.ValueKind == JsonValueKind.Object &&
+            TryGetArray(primary, "turns") is not null)
         {
-            return null;
+            return ParseTurnsFromThread(primary);
         }
 
-        var turns = TryGetArray(thread.Value, "turns");
+        if (secondary.ValueKind == JsonValueKind.Object &&
+            TryGetArray(secondary, "turns") is not null)
+        {
+            return ParseTurnsFromThread(secondary);
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<CodexTurn>? ParseTurnsFromThread(JsonElement thread)
+    {
+        var turns = TryGetArray(thread, "turns");
         if (turns is null)
         {
             return null;
@@ -32,6 +49,6 @@ internal static class CodexAppServerClientThreadTurnParsers
             }
         }
 
-        return parsed.Count == 0 ? null : parsed;
+        return parsed;
     }
 }

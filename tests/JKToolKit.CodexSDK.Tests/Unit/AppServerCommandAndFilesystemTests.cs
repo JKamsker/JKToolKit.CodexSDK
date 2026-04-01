@@ -179,7 +179,7 @@ public sealed class AppServerCommandAndFilesystemTests
     [Fact]
     public async Task UpdateThreadMetadataAsync_SendsPatchFlags_AndParsesThread()
     {
-        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1"}}""");
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1","gitInfo":{"branch":"main","originUrl":"https://example.invalid/repo.git","sha":"abc123"}}}""");
         var rpc = new RecordingRpc { Result = doc.RootElement };
 
         await using var client = CreateClient(rpc);
@@ -196,6 +196,10 @@ public sealed class AppServerCommandAndFilesystemTests
         });
 
         result.Thread.Id.Should().Be("thr-1");
+        result.Thread.Thread.GitInfo.Should().NotBeNull();
+        result.Thread.Thread.GitInfo!.Branch.Should().Be("main");
+        result.Thread.Thread.GitInfo.OriginUrl.Should().Be("https://example.invalid/repo.git");
+        result.Thread.Thread.GitInfo.Sha.Should().Be("abc123");
         rpc.LastMethod.Should().Be("thread/metadata/update");
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"branch\":\"main\"")

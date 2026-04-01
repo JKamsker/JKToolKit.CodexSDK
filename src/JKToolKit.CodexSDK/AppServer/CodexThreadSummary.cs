@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.ThreadRead;
 using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -96,6 +97,11 @@ public sealed record class CodexThreadSummary
     public string? SourceKind { get; init; }
 
     /// <summary>
+    /// Gets the Git metadata captured on the thread, when present.
+    /// </summary>
+    public CodexThreadGitInfo? GitInfo { get; init; }
+
+    /// <summary>
     /// Gets the CLI version that created the thread, when present.
     /// </summary>
     public string? CliVersion { get; init; }
@@ -114,6 +120,11 @@ public sealed record class CodexThreadSummary
     /// Gets the number of turns materialized on the thread payload, when present.
     /// </summary>
     public int? TurnCount { get; init; }
+
+    /// <summary>
+    /// Gets the materialized turns returned on the thread payload, when present.
+    /// </summary>
+    public IReadOnlyList<CodexTurn>? Turns { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the thread summary.

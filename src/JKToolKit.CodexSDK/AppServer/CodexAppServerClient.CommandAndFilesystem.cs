@@ -74,7 +74,7 @@ public sealed partial class CodexAppServerClient
 
         return new ThreadMetadataUpdateResult
         {
-            Thread = new CodexThread(ExtractThreadId(result) ?? options.ThreadId, result),
+            Thread = Internal.CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, options.ThreadId),
             Raw = result
         };
     }

@@ -125,6 +125,21 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
+    public void ParseReadResult_PreservesEmptyTurnsCollection()
+    {
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"t_empty","turns":[]}}""");
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseReadResult(doc.RootElement, "fallback");
+
+        result.Thread.ThreadId.Should().Be("t_empty");
+        result.Thread.TurnCount.Should().Be(0);
+        result.Thread.Turns.Should().NotBeNull();
+        result.Thread.Turns.Should().BeEmpty();
+        result.Turns.Should().NotBeNull();
+        result.Turns.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ThreadRollbackResponse_ExtractsThreadId_FromThreadObject()
     {
         var raw = JsonFixtures.Load("thread-rollback-response.json");

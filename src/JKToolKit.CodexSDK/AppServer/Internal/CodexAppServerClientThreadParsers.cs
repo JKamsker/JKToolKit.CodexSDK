@@ -81,10 +81,12 @@ internal static class CodexAppServerClientThreadParsers
             : (CodexServiceTier?)null;
         var ephemeral = GetBool(primary, secondary, "ephemeral");
         var sourceKind = GetSourceKind(primary, secondary);
+        var gitInfo = ParseGitInfo(primary, secondary);
         var cliVersion = GetString(primary, secondary, "cliVersion");
         var agentNickname = GetString(primary, secondary, "agentNickname");
         var agentRole = GetString(primary, secondary, "agentRole");
-        var turnCount = GetArrayCount(primary, secondary, "turns");
+        var turns = CodexAppServerClientThreadTurnParsers.ParseTurns(primary, secondary);
+        var turnCount = turns?.Count ?? GetArrayCount(primary, secondary, "turns");
 
         return new CodexThreadSummary
         {
@@ -103,10 +105,12 @@ internal static class CodexAppServerClientThreadParsers
             ServiceTier = serviceTier,
             Ephemeral = ephemeral,
             SourceKind = sourceKind,
+            GitInfo = gitInfo,
             CliVersion = cliVersion,
             AgentNickname = agentNickname,
             AgentRole = agentRole,
             TurnCount = turnCount,
+            Turns = turns,
             Raw = threadObject,
             Status = status
         };
@@ -212,6 +216,23 @@ internal static class CodexAppServerClientThreadParsers
         }
 
         return null;
+    }
+
+    private static CodexThreadGitInfo? ParseGitInfo(JsonElement primary, JsonElement secondary)
+    {
+        var gitInfo = TryGetObject(primary, "gitInfo") ?? TryGetObject(secondary, "gitInfo");
+        if (gitInfo is not { } raw)
+        {
+            return null;
+        }
+
+        return new CodexThreadGitInfo
+        {
+            Sha = GetStringOrNull(raw, "sha"),
+            Branch = GetStringOrNull(raw, "branch"),
+            OriginUrl = GetStringOrNull(raw, "originUrl"),
+            Raw = raw.Clone()
+        };
     }
 }
 

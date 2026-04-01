@@ -42,6 +42,9 @@ public sealed class ThreadLifecycleEnvelopeTests
 
         thread.Id.Should().Be("t_resumed");
         thread.Thread.TurnCount.Should().Be(2);
+        thread.Thread.Turns.Should().NotBeNull();
+        thread.Thread.Turns.Should().HaveCount(2);
+        thread.Thread.Turns![0].Id.Should().Be("turn_1");
         thread.ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
         thread.Sandbox.Should().Be(CodexSandboxMode.DangerFullAccess);
     }
