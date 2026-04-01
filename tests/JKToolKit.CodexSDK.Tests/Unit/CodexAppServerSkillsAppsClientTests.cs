@@ -108,6 +108,69 @@ public sealed class CodexAppServerSkillsAppsClientTests
             .WithMessage("*absolute paths*");
     }
 
+    [Fact]
+    public async Task ListSkillsAsync_AllowsRelativeCwdsAndPerCwdScopes_ToPassThrough()
+    {
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("skills/list");
+                var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
+
+                typed.Cwds.Should().Equal("relative\\cwd", ".\\second");
+                typed.PerCwdExtraUserRoots.Should().ContainSingle();
+                typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be("relative\\cwd");
+                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal("C:\\extra-root");
+
+                return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        await client.ListSkillsAsync(new SkillsListOptions
+        {
+            Cwds = ["relative\\cwd", ".\\second"],
+            PerCwdExtraUserRoots =
+            [
+                new SkillsListExtraRootsForCwdEntry
+                {
+                    Cwd = "relative\\cwd",
+                    ExtraUserRoots = ["C:\\extra-root"]
+                }
+            ]
+        });
+    }
+
+    [Fact]
+    public async Task ListSkillsAsync_AllowsRelativeSingleCwd_WhenUsingExtraRootsForCwd()
+    {
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("skills/list");
+                var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
+
+                typed.Cwds.Should().Equal(".\\repo");
+                typed.PerCwdExtraUserRoots.Should().ContainSingle();
+                typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be(".\\repo");
+                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal("C:\\extra-root");
+
+                return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        await client.ListSkillsAsync(new SkillsListOptions
+        {
+            Cwd = ".\\repo",
+            ExtraRootsForCwd = ["C:\\extra-root"]
+        });
+    }
+
     private sealed class FakeRpc
     {
         public Func<string, object?, CancellationToken, Task<JsonElement>>? SendRequestAsyncImpl { get; set; }
