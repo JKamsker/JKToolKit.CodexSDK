@@ -41,6 +41,7 @@ public sealed record class ExternalAgentConfigMigrationItem
     /// Null or empty means home-scoped migration; non-empty means repo-scoped migration.
     /// </remarks>
     [JsonPropertyName("cwd")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string? Cwd { get; init; }
 
     /// <summary>

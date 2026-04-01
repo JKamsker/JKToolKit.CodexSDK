@@ -138,6 +138,37 @@ public sealed class ExternalAgentConfigWrappersTests
         ]);
     }
 
+    [Fact]
+    public async Task ImportExternalAgentConfigAsync_AllowsEmptyDescription_AndSerializesNullHomeCwd()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "externalAgentConfig/import",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                var item = json.GetProperty("migrationItems")[0];
+                item.TryGetProperty("cwd", out var cwd).Should().BeTrue();
+                cwd.ValueKind.Should().Be(JsonValueKind.Null);
+                item.GetProperty("description").GetString().Should().BeEmpty();
+                item.GetProperty("itemType").GetString().Should().Be("CONFIG");
+            },
+            Result = JsonSerializer.SerializeToElement(new { })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        await client.ImportExternalAgentConfigAsync(
+        [
+            new ExternalAgentConfigMigrationItem
+            {
+                Cwd = null,
+                ItemType = ExternalAgentConfigMigrationItemType.Config,
+                Description = string.Empty
+            }
+        ]);
+    }
+
     private static CodexAppServerClient CreateClient(FakeRpc rpc) =>
         new(
             new CodexAppServerClientOptions(),

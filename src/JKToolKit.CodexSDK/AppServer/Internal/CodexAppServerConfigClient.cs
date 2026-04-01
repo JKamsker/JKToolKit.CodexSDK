@@ -292,9 +292,6 @@ internal sealed partial class CodexAppServerConfigClient
             var item = migrationItems[i];
             if (item is null)
                 throw new ArgumentException($"Migration item at index {i} cannot be null.", nameof(migrationItems));
-
-            if (string.IsNullOrWhiteSpace(item.Description))
-                throw new ArgumentException($"Migration item at index {i} must have a non-empty Description.", nameof(migrationItems));
         }
 
         _ = await _sendRequestAsync(
