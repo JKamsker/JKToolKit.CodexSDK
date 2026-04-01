@@ -95,15 +95,21 @@ public sealed class CodexSdk : IAsyncDisposable
         {
             client = await AppServer.StartAsync(ct);
 
-            var thread = await client.StartThreadAsync(options.Thread, ct);
+            var bootstrapThread = await client.StartThreadAsync(options.Thread, ct);
             var review = await client.StartReviewAsync(new ReviewStartOptions
             {
-                ThreadId = thread.Id,
+                ThreadId = bootstrapThread.Id,
                 Delivery = options.Delivery,
                 Target = options.Target
             }, ct);
 
-            return new CodexSdkAppServerReviewSession(client, thread, review);
+            var reviewThread = bootstrapThread;
+            if (!string.Equals(review.ReviewThreadId, bootstrapThread.Id, StringComparison.Ordinal))
+            {
+                reviewThread = await client.ResumeThreadAsync(review.ReviewThreadId, ct);
+            }
+
+            return new CodexSdkAppServerReviewSession(client, reviewThread, bootstrapThread, review);
         }
         catch
         {

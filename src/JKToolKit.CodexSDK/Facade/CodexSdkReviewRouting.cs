@@ -96,10 +96,15 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
 {
     private int _disposed;
 
-    internal CodexSdkAppServerReviewSession(CodexAppServerClient client, CodexThread thread, ReviewStartResult review)
+    internal CodexSdkAppServerReviewSession(
+        CodexAppServerClient client,
+        CodexThread thread,
+        CodexThread bootstrapThread,
+        ReviewStartResult review)
     {
         Client = client;
         Thread = thread;
+        BootstrapThread = bootstrapThread;
         Review = review;
     }
 
@@ -109,9 +114,15 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
     public CodexAppServerClient Client { get; }
 
     /// <summary>
-    /// Gets the thread created to host the review.
+    /// Gets the thread that currently hosts the review turn.
     /// </summary>
     public CodexThread Thread { get; }
+
+    /// <summary>
+    /// Gets the bootstrap thread originally created to submit the review.
+    /// For inline reviews this matches <see cref="Thread"/>; for detached reviews it is the source thread.
+    /// </summary>
+    public CodexThread BootstrapThread { get; }
 
     /// <summary>
     /// Gets the review start result, including the running review turn handle.
