@@ -111,7 +111,13 @@ internal static class CodexAppServerClientMcpParsers
                 continue;
             }
 
+            // inputSchema is required in the upstream Tool definition; skip malformed entries.
             var inputSchema = TryGetAny(p.Value, "inputSchema") ?? TryGetAny(p.Value, "input_schema");
+            if (inputSchema is null)
+            {
+                continue;
+            }
+
             var outputSchema = TryGetAny(p.Value, "outputSchema") ?? TryGetAny(p.Value, "output_schema");
 
             tools.Add(new McpServerToolInfo
