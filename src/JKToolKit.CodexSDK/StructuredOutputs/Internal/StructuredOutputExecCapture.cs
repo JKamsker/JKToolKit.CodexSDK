@@ -42,7 +42,15 @@ internal static class StructuredOutputExecCapture
 
             try
             {
-                await session.WaitForExitAsync(ct).ConfigureAwait(false);
+                var exitCode = await session.WaitForExitAsync(ct).ConfigureAwait(false);
+                if (exitCode != 0)
+                {
+                    throw new CodexStructuredOutputParseException(
+                        message: $"Codex exited with code {exitCode}, so no successful structured output is available to parse.",
+                        rawText: string.Empty,
+                        extractedJson: null,
+                        innerException: new InvalidOperationException($"Codex exited with code {exitCode}."));
+                }
             }
             finally
             {

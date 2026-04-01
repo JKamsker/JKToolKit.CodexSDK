@@ -75,6 +75,26 @@ public sealed class StructuredOutputExecCaptureTests
         raw.Should().Be(json);
     }
 
+    [Fact]
+    public async Task CaptureExecFinalTextAsync_RejectsLiveSession_WhenProcessExitsNonZero()
+    {
+        var session = new FakeSessionHandle(
+            isLive: true,
+            exitCode: 2,
+            events: new CodexEvent[]
+            {
+                CreateResponseItemAssistantMessage("{\"answer\":\"stale\"}")
+            });
+
+        var act = async () => await StructuredOutputExecCapture.CaptureExecFinalTextAsync(
+            session,
+            EventStreamOptions.Default,
+            ct: CancellationToken.None);
+
+        await act.Should().ThrowAsync<JKToolKit.CodexSDK.StructuredOutputs.CodexStructuredOutputParseException>()
+            .WithMessage("*exited with code 2*");
+    }
+
     private static ResponseItemEvent CreateResponseItemAssistantMessage(string text) =>
         new()
         {
@@ -106,10 +126,12 @@ public sealed class StructuredOutputExecCaptureTests
     private sealed class FakeSessionHandle : ICodexSessionHandle
     {
         private readonly IReadOnlyList<CodexEvent> _events;
+        private readonly int _exitCode;
 
-        public FakeSessionHandle(bool isLive, IReadOnlyList<CodexEvent> events)
+        public FakeSessionHandle(bool isLive, IReadOnlyList<CodexEvent> events, int exitCode = 0)
         {
             _events = events;
+            _exitCode = exitCode;
             IsLive = isLive;
         }
 
@@ -120,7 +142,7 @@ public sealed class StructuredOutputExecCaptureTests
         public IAsyncEnumerable<CodexEvent> GetEventsAsync(EventStreamOptions? options, CancellationToken cancellationToken) =>
             _events.ToAsyncEnumerable();
 
-        public Task<int> WaitForExitAsync(CancellationToken cancellationToken) => Task.FromResult(0);
+        public Task<int> WaitForExitAsync(CancellationToken cancellationToken) => Task.FromResult(_exitCode);
         public Task<int> ExitAsync(CancellationToken cancellationToken) => Task.FromResult(0);
         public IDisposable OnExit(Action<int> callback) => new Noop();
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

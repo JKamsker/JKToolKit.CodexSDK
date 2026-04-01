@@ -121,12 +121,12 @@ internal static class ProcessStartInfoBuilder
             startInfo.ArgumentList.Add(option);
         }
 
+        startInfo.ArgumentList.Add("resume");
         if (target.IncludeAllSessions)
         {
             startInfo.ArgumentList.Add("--all");
         }
 
-        startInfo.ArgumentList.Add("resume");
         if (target.UseMostRecent)
         {
             startInfo.ArgumentList.Add("--last");

@@ -260,8 +260,8 @@ public class ProcessStartInfoBuilderTests
                 "exec",
                 "--cd",
                 workingDirectory,
-                "--all",
                 "resume",
+                "--all",
                 "friendly-thread",
                 "-");
         }

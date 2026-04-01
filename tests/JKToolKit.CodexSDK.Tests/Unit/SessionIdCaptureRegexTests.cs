@@ -13,6 +13,8 @@ public sealed class SessionIdCaptureRegexTests
     [InlineData("sid: opaque_session_123", "opaque_session_123")]
     [InlineData("{\"session_id\":\"opaque-session-123\",\"ok\":true}", "opaque-session-123")]
     [InlineData("{\"sid\": \"opaque-session-123\"}", "opaque-session-123")]
+    [InlineData("{\"thread_id\":\"thread-123\"}", "thread-123")]
+    [InlineData("{\"threadId\":\"thread-456\"}", "thread-456")]
     public void SessionIdRegex_CapturesExpectedId(string text, string expectedId)
     {
         var match = CodexClientRegexes.SessionIdRegex().Match(text);
@@ -25,7 +27,7 @@ public sealed class SessionIdCaptureRegexTests
     [Fact]
     public void SessionIdRegex_DoesNotCaptureTrailingJsonPunctuation()
     {
-        var text = "{\"session_id\":\"opaque-session-123\", \"ok\":true}";
+        var text = "{\"thread_id\":\"opaque-session-123\", \"ok\":true}";
 
         var match = CodexClientRegexes.SessionIdRegex().Match(text);
 
