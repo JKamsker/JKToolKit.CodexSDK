@@ -164,7 +164,7 @@ internal static class CodexSessionLocatorHelpers
         }
 
         if (!string.IsNullOrWhiteSpace(filter.WorkingDirectory) &&
-            !string.Equals(sessionInfo.WorkingDirectory, filter.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
+            !NormalizedPathEquals(sessionInfo.WorkingDirectory, filter.WorkingDirectory))
         {
             return false;
         }
@@ -301,6 +301,33 @@ internal static class CodexSessionLocatorHelpers
             logger.LogTrace(ex, "Failed to extract session id from file name {FilePath}", filePath);
             return null;
         }
+    }
+
+    private static readonly char[] DirectorySeparators = ['/', '\\'];
+
+    /// <summary>
+    /// Compares two paths after normalizing with <see cref="Path.GetFullPath(string)"/>
+    /// and trimming trailing directory separators, matching the upstream
+    /// <c>AbsolutePathBuf</c> (path-absolutize) normalization semantics.
+    /// </summary>
+    internal static bool NormalizedPathEquals(string? a, string? b)
+    {
+        if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+        {
+            return string.IsNullOrWhiteSpace(a) && string.IsNullOrWhiteSpace(b);
+        }
+
+        try
+        {
+            a = Path.GetFullPath(a).TrimEnd(DirectorySeparators);
+            b = Path.GetFullPath(b).TrimEnd(DirectorySeparators);
+        }
+        catch
+        {
+            // If normalization fails (invalid chars, etc.) fall through to raw comparison.
+        }
+
+        return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? TryGetOptionalString(JsonElement payload, string propertyName) =>

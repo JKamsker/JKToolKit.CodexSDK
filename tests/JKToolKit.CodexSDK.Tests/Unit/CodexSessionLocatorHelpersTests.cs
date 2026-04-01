@@ -108,5 +108,19 @@ public sealed class CodexSessionLocatorHelpersTests
         session.CreatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T09:59:59Z"));
         session.UpdatedAt.Should().Be(DateTimeOffset.Parse("2026-04-01T09:59:59Z"));
     }
+
+    [Theory]
+    [InlineData(@"C:\repo", @"C:\repo", true)]
+    [InlineData(@"C:\repo\", @"C:\repo", true)]
+    [InlineData(@"C:\repo", @"C:\repo\", true)]
+    [InlineData(@"C:\repo\sub\..", @"C:\repo", true)]
+    [InlineData(@"C:\repo", @"D:\repo", false)]
+    [InlineData(null, null, true)]
+    [InlineData(@"C:\repo", null, false)]
+    [InlineData(null, @"C:\repo", false)]
+    public void NormalizedPathEquals_HandlesVariousPathForms(string? a, string? b, bool expected)
+    {
+        CodexSessionLocatorHelpers.NormalizedPathEquals(a, b).Should().Be(expected);
+    }
 }
 
