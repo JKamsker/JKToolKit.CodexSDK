@@ -82,7 +82,7 @@ internal partial class CommandExecParams
     /// Optional initial PTY size in character cells. Only valid when `tty` is true.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("size")]
-    public CommandExecTerminalSize? Size { get; set; } = default!;
+    public Size? Size { get; set; } = default!;
 
     /// <summary>
     /// Allow follow-up `command/exec/write` requests to write stdin bytes.

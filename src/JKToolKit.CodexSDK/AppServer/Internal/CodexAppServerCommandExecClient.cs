@@ -39,10 +39,13 @@ internal sealed class CodexAppServerCommandExecClient
                 Tty = options.Tty,
                 Size = options.Size is null
                     ? null
-                    : new UpstreamV2.CommandExecTerminalSize
+                    : new UpstreamV2.Size
                     {
-                        Cols = options.Size.Columns,
-                        Rows = options.Size.Rows
+                        AdditionalProperties =
+                        {
+                            ["cols"] = options.Size.Columns,
+                            ["rows"] = options.Size.Rows
+                        }
                     }
             },
             ct).ConfigureAwait(false);
