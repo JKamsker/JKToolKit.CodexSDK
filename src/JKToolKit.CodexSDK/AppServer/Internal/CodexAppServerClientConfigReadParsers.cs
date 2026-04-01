@@ -84,22 +84,28 @@ internal static class CodexAppServerClientConfigReadParsers
                 continue;
             }
 
-            var nameObj = TryGetObject(p.Value, "name");
-            var version = GetStringOrNull(p.Value, "version");
-            if (nameObj is null || string.IsNullOrWhiteSpace(version))
-            {
-                continue;
-            }
-
-            dict[p.Name] = new ConfigLayerMetadataInfo
-            {
-                Name = ParseLayerSource(nameObj.Value),
-                Version = version,
-                Raw = p.Value
-            };
+            dict[p.Name] = ParseConfigLayerMetadataInfo(p.Value, $"config/read origins['{p.Name}']");
         }
 
         return dict;
+    }
+
+    public static ConfigLayerMetadataInfo ParseConfigLayerMetadataInfo(JsonElement metadata, string context)
+    {
+        var nameObj = TryGetObject(metadata, "name")
+            ?? throw new InvalidOperationException($"Missing required object property 'name' on {context}.");
+        var version = GetStringOrNull(metadata, "version");
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            throw new InvalidOperationException($"Missing required string property 'version' on {context}.");
+        }
+
+        return new ConfigLayerMetadataInfo
+        {
+            Name = ParseLayerSource(nameObj),
+            Version = version,
+            Raw = metadata
+        };
     }
 
     private static IReadOnlyDictionary<string, McpServerConfigInfo>? ParseMcpServers(JsonElement config)

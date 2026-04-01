@@ -97,10 +97,72 @@ public sealed class ConfigBatchWriteOptions
 }
 
 /// <summary>
+/// Status returned by config write operations.
+/// </summary>
+public enum ConfigWriteStatus
+{
+    /// <summary>
+    /// The write succeeded without override warnings.
+    /// </summary>
+    Ok = 0,
+
+    /// <summary>
+    /// The write succeeded but the resulting value is overridden by a higher-priority layer.
+    /// </summary>
+    OkOverridden = 1
+}
+
+/// <summary>
+/// Additional override information returned when a config write is shadowed by another layer.
+/// </summary>
+public sealed record class ConfigWriteOverriddenMetadataInfo
+{
+    /// <summary>
+    /// Gets the user-facing override message.
+    /// </summary>
+    public required string Message { get; init; }
+
+    /// <summary>
+    /// Gets metadata for the layer that overrides the written value.
+    /// </summary>
+    public required ConfigLayerMetadataInfo OverridingLayer { get; init; }
+
+    /// <summary>
+    /// Gets the effective value after override resolution.
+    /// </summary>
+    public required JsonElement EffectiveValue { get; init; }
+
+    /// <summary>
+    /// Gets the raw JSON payload for forward compatibility.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
 /// Result returned by config write operations.
 /// </summary>
 public sealed record class ConfigWriteResult
 {
+    /// <summary>
+    /// Gets the write status.
+    /// </summary>
+    public required ConfigWriteStatus Status { get; init; }
+
+    /// <summary>
+    /// Gets the config version after the write.
+    /// </summary>
+    public required string Version { get; init; }
+
+    /// <summary>
+    /// Gets the canonical file path that was written.
+    /// </summary>
+    public required string FilePath { get; init; }
+
+    /// <summary>
+    /// Gets override metadata when the written value is shadowed by another layer.
+    /// </summary>
+    public ConfigWriteOverriddenMetadataInfo? OverriddenMetadata { get; init; }
+
     /// <summary>
     /// Gets the raw JSON payload.
     /// </summary>

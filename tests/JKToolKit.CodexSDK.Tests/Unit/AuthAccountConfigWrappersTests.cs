@@ -150,20 +150,26 @@ public sealed class AuthAccountConfigWrappersTests
     }
 
     [Fact]
-    public async Task ListExperimentalFeaturesAsync_RequiresExperimentalApi()
+    public async Task ListExperimentalFeaturesAsync_DoesNotRequireExperimentalApi()
     {
         var rpc = new FakeRpc
         {
+            AssertMethod = "experimentalFeature/list",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p);
+                json.GetProperty("limit").ValueKind.Should().Be(JsonValueKind.Null);
+                json.GetProperty("cursor").ValueKind.Should().Be(JsonValueKind.Null);
+            },
             Result = JsonSerializer.SerializeToElement(new { data = Array.Empty<object>() })
         };
 
         await using var client = CreateClient(rpc);
 
-        var act = async () => await client.ListExperimentalFeaturesAsync(new ExperimentalFeatureListOptions());
+        var result = await client.ListExperimentalFeaturesAsync(new ExperimentalFeatureListOptions());
 
-        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>()
-            .WithMessage("*experimentalFeature/list*");
-        rpc.SendRequestCallCount.Should().Be(0);
+        result.Data.Should().BeEmpty();
+        rpc.SendRequestCallCount.Should().Be(1);
     }
 
     [Fact]
@@ -196,7 +202,7 @@ public sealed class AuthAccountConfigWrappersTests
             })
         };
 
-        await using var client = CreateClient(rpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+        await using var client = CreateClient(rpc);
 
         var result = await client.ListExperimentalFeaturesAsync(new ExperimentalFeatureListOptions { Limit = 10 });
 
@@ -220,18 +226,39 @@ public sealed class AuthAccountConfigWrappersTests
                 json.GetProperty("value").GetString().Should().Be("gpt-5.1-codex");
                 json.GetProperty("expectedVersion").GetString().Should().Be("v1");
             },
-            Result = JsonSerializer.SerializeToElement(new { })
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                status = "okOverridden",
+                version = "v2",
+                filePath = "C:/repo/.codex/config.toml",
+                overriddenMetadata = new
+                {
+                    message = "Overridden by project config",
+                    overridingLayer = new
+                    {
+                        name = new { type = "project", file = "C:/repo/.codex/config.toml" },
+                        version = "layer-v1"
+                    },
+                    effectiveValue = "gpt-5.2-codex"
+                }
+            })
         };
 
         await using var client = CreateClient(rpc);
 
-        _ = await client.WriteConfigValueAsync(new ConfigValueWriteOptions
+        var result = await client.WriteConfigValueAsync(new ConfigValueWriteOptions
         {
             KeyPath = "model",
             MergeStrategy = ConfigMergeStrategy.Replace,
             Value = JsonSerializer.SerializeToElement("gpt-5.1-codex"),
             ExpectedVersion = "v1"
         });
+
+        result.Status.Should().Be(ConfigWriteStatus.OkOverridden);
+        result.Version.Should().Be("v2");
+        result.FilePath.Should().Be("C:/repo/.codex/config.toml");
+        result.OverriddenMetadata.Should().NotBeNull();
+        result.OverriddenMetadata!.Message.Should().Be("Overridden by project config");
     }
 
     [Fact]
@@ -247,12 +274,17 @@ public sealed class AuthAccountConfigWrappersTests
                 json.GetProperty("edits").GetArrayLength().Should().Be(2);
                 json.GetProperty("edits")[1].GetProperty("mergeStrategy").GetString().Should().Be("replace");
             },
-            Result = JsonSerializer.SerializeToElement(new { })
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                status = "ok",
+                version = "v3",
+                filePath = "C:/repo/.codex/config.toml"
+            })
         };
 
         await using var client = CreateClient(rpc);
 
-        _ = await client.WriteConfigBatchAsync(new ConfigBatchWriteOptions
+        var result = await client.WriteConfigBatchAsync(new ConfigBatchWriteOptions
         {
             ReloadUserConfig = true,
             Edits =
@@ -271,6 +303,10 @@ public sealed class AuthAccountConfigWrappersTests
                 }
             ]
         });
+
+        result.Status.Should().Be(ConfigWriteStatus.Ok);
+        result.Version.Should().Be("v3");
+        result.FilePath.Should().Be("C:/repo/.codex/config.toml");
     }
 
     [Fact]

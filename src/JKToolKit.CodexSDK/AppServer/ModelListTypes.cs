@@ -58,7 +58,7 @@ public sealed record class ModelListEntry
     public bool IsDefault { get; init; }
     public bool SupportsPersonality { get; init; }
     public string? Upgrade { get; init; }
-    public string? DefaultReasoningEffort { get; init; }
+    public required string DefaultReasoningEffort { get; init; }
     public string? AvailabilityNuxMessage { get; init; }
     public IReadOnlyList<string> InputModalities { get; init; } = Array.Empty<string>();
     public IReadOnlyList<ModelReasoningEffortOption> SupportedReasoningEfforts { get; init; } = Array.Empty<ModelReasoningEffortOption>();

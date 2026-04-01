@@ -26,7 +26,7 @@ public sealed class ExperimentalFeatureListOptions
 public sealed record class ExperimentalFeatureListEntry
 {
     public required string Name { get; init; }
-    public string? Stage { get; init; }
+    public required string Stage { get; init; }
     public string? DisplayName { get; init; }
     public string? Description { get; init; }
     public string? Announcement { get; init; }
