@@ -11,21 +11,36 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
 /// [UNSTABLE] Temporary notification payload for guardian automatic approval review. This shape is expected to change soon.
-/// <br/>
-/// <br/>TODO(ccunningham): Attach guardian review state to the reviewed tool item's lifecycle instead of sending separate standalone review notifications so the app-server API can persist and replay review state via `thread/read`.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class ItemGuardianApprovalReviewCompletedNotification
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("action")]
-    public object? Action { get; set; } = default!;
+    public Action Action { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("decisionSource")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AutoReviewDecisionSource>))]
+    public AutoReviewDecisionSource DecisionSource { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("review")]
     public GuardianApprovalReview Review { get; set; } = new GuardianApprovalReview();
 
+    /// <summary>
+    /// Stable identifier for this review.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("reviewId")]
+    public string ReviewId { get; set; } = default!;
+
+    /// <summary>
+    /// Identifier for the reviewed item or tool call when one exists.
+    /// <br/>
+    /// <br/>In most cases, one review maps to one target item. The exceptions are - execve reviews, where a single command may contain multiple execve calls to review (only possible when using the shell_zsh_fork feature) - network policy reviews, where there is no target item
+    /// <br/>
+    /// <br/>A network call is triggered by a CommandExecution item, so having a target_item_id set to the CommandExecution item would be misleading because the review is about the network call, not the command execution. Therefore, target_item_id is set to None for network policy reviews.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("targetItemId")]
-    public string TargetItemId { get; set; } = default!;
+    public string? TargetItemId { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

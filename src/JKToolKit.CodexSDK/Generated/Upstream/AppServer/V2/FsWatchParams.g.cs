@@ -19,6 +19,12 @@ internal partial class FsWatchParams
     [System.Text.Json.Serialization.JsonPropertyName("path")]
     public string Path { get; set; } = default!;
 
+    /// <summary>
+    /// Connection-scoped watch identifier used for `fs/unwatch` and `fs/changed`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("watchId")]
+    public string WatchId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

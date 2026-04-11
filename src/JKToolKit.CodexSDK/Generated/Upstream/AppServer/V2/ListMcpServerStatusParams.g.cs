@@ -20,6 +20,12 @@ internal partial class ListMcpServerStatusParams
     public string? Cursor { get; set; } = default!;
 
     /// <summary>
+    /// Controls how much MCP inventory data to fetch for each server. Defaults to `Full` when omitted.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("detail")]
+    public Detail? Detail { get; set; } = default!;
+
+    /// <summary>
     /// Optional page size; defaults to a server-defined value.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("limit")]

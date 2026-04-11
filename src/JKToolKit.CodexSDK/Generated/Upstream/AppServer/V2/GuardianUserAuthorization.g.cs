@@ -10,26 +10,26 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// [UNSTABLE] Risk level assigned by guardian approval review.
+/// [UNSTABLE] Authorization level assigned by guardian approval review.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum GuardianRiskLevel
+internal enum GuardianUserAuthorization
 {
 
+    [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
+    Unknown = 0,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"low")]
-    Low = 0,
+    Low = 1,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"medium")]
-    Medium = 1,
+    Medium = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"high")]
-    High = 2,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"critical")]
-    Critical = 3,
+    High = 3,
 
 
 }

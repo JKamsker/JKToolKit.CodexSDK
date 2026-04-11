@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class Model
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("additionalSpeedTiers")]
+    public System.Collections.Generic.ICollection<string>? AdditionalSpeedTiers { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("availabilityNux")]
     public AvailabilityNux? AvailabilityNux { get; set; } = default!;
 

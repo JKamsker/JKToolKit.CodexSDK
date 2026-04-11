@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class McpToolCallResult
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("_meta")]
+    public object? _meta { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("content")]
     public System.Collections.Generic.ICollection<object> Content { get; set; } = new System.Collections.ObjectModel.Collection<object>();
 

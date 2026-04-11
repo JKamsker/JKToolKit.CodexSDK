@@ -50,6 +50,12 @@ internal partial class Thread
     public bool Ephemeral { get; set; } = default!;
 
     /// <summary>
+    /// Source thread id when this thread was created by forking another thread.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("forkedFromId")]
+    public string? ForkedFromId { get; set; } = default!;
+
+    /// <summary>
     /// Optional Git metadata captured when the thread was created.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("gitInfo")]
