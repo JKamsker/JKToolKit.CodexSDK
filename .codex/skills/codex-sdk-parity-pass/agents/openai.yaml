@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex SDK Parity Pass"
+  short_description: "Audit and update Codex CLI parity"
+  default_prompt: "Use $codex-sdk-parity-pass to research the changes since the last parity pass and update JKToolKit.CodexSDK for the current vendored codex-cli version."
