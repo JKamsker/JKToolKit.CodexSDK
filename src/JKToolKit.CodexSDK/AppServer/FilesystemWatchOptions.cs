@@ -11,6 +11,15 @@ public sealed class FsWatchOptions
     /// Gets or sets the absolute path to watch.
     /// </summary>
     public required string Path { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional connection-scoped watch identifier.
+    /// </summary>
+    /// <remarks>
+    /// When omitted, the SDK generates an opaque identifier and returns it on
+    /// <see cref="FsWatchResult.WatchId"/>.
+    /// </remarks>
+    public string? WatchId { get; set; }
 }
 
 /// <summary>

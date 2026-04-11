@@ -36,6 +36,7 @@ internal sealed class CodexAppServerThreadsClient
                     options.ClearServiceTier,
                     nameof(ThreadStartOptions.ClearServiceTier)),
                 ServiceName = options.ServiceName,
+                SessionStartSource = options.SessionStartSource?.Value,
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 ApprovalsReviewer = options.ApprovalsReviewer,
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
@@ -224,10 +225,20 @@ internal sealed class CodexAppServerThreadsClient
     }
 
     public async Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId, CancellationToken ct = default)
+        => await StartThreadRealtimeAsync(
+            new ThreadRealtimeStartOptions
+            {
+                ThreadId = threadId,
+                PromptMode = ThreadRealtimePromptMode.Custom,
+                Prompt = prompt,
+                SessionId = sessionId
+            },
+            ct).ConfigureAwait(false);
+
+    public async Task StartThreadRealtimeAsync(ThreadRealtimeStartOptions options, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-        ArgumentNullException.ThrowIfNull(prompt);
+        ArgumentNullException.ThrowIfNull(options);
+        CodexAppServerThreadRealtimeStartWiring.ValidateOptions(options);
 
         if (!_experimentalApiEnabled())
         {
@@ -236,13 +247,8 @@ internal sealed class CodexAppServerThreadsClient
 
         _ = await _sendRequestAsync(
             "thread/realtime/start",
-            new ThreadRealtimeStartParams
-            {
-                ThreadId = threadId,
-                Prompt = prompt,
-                SessionId = sessionId
-            },
-            ct);
+            CodexAppServerThreadRealtimeStartWiring.BuildParams(options),
+            ct).ConfigureAwait(false);
     }
 
     public async Task AppendThreadRealtimeAudioAsync(string threadId, ThreadRealtimeAudioChunk audio, CancellationToken ct = default)

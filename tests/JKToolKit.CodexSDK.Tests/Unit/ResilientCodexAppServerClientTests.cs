@@ -56,6 +56,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.StartWindowsSandboxSetupAsync),
         nameof(CodexAppServerClient.ReloadMcpServersAsync),
         nameof(CodexAppServerClient.ListMcpServerStatusAsync),
+        nameof(CodexAppServerClient.ReadMcpResourceAsync),
         nameof(CodexAppServerClient.StartMcpServerOauthLoginAsync),
         nameof(CodexAppServerClient.StartAccountLoginAsync),
         nameof(CodexAppServerClient.CancelAccountLoginAsync),
@@ -869,6 +870,8 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Func<string, IReadOnlyList<string>, string?, CancellationToken, Task<IReadOnlyList<FuzzyFileSearchResult>>>? FuzzyFileSearchAsyncImpl { get; init; }
 
+        public Func<ThreadRealtimeStartOptions, CancellationToken, Task>? StartThreadRealtimeWithOptionsAsyncImpl { get; init; }
+
         public Func<string, string, string?, CancellationToken, Task>? StartThreadRealtimeAsyncImpl { get; init; }
 
         public Func<ThreadShellCommandOptions, CancellationToken, Task<ThreadShellCommandResult>>? ThreadShellCommandAsyncImpl { get; init; }
@@ -1069,6 +1072,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<McpServerStatusListPage> ListMcpServerStatusAsync(McpServerStatusListOptions options, CancellationToken ct) =>
             NotSupported<McpServerStatusListPage>();
 
+        public Task<McpResourceReadResult> ReadMcpResourceAsync(McpResourceReadOptions options, CancellationToken ct) =>
+            NotSupported<McpResourceReadResult>();
+
         public Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct) =>
             NotSupported<McpServerOauthLoginResult>();
 
@@ -1167,6 +1173,9 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<CollaborationModeListResult> ListCollaborationModesAsync(CancellationToken ct) =>
             NotSupported<CollaborationModeListResult>();
+
+        public Task StartThreadRealtimeAsync(ThreadRealtimeStartOptions options, CancellationToken ct) =>
+            StartThreadRealtimeWithOptionsAsyncImpl?.Invoke(options, ct) ?? NotSupported();
 
         public Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId, CancellationToken ct) =>
             StartThreadRealtimeAsyncImpl?.Invoke(threadId, prompt, sessionId, ct) ?? Task.CompletedTask;

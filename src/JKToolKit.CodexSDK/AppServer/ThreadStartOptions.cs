@@ -44,6 +44,16 @@ public sealed class ThreadStartOptions
     public string? ServiceName { get; set; }
 
     /// <summary>
+    /// Gets or sets why this thread session is being started.
+    /// </summary>
+    /// <remarks>
+    /// Use <see cref="ThreadSessionStartSource.Clear"/> when starting a replacement
+    /// thread after clearing the current session so upstream session-start hooks can
+    /// distinguish that flow from normal startup.
+    /// </remarks>
+    public ThreadSessionStartSource? SessionStartSource { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional approval policy.
     /// </summary>
     /// <remarks>

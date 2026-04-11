@@ -56,7 +56,54 @@ public enum GuardianRiskLevel
     /// <summary>
     /// High risk.
     /// </summary>
+    High = 3,
+
+    /// <summary>
+    /// Critical risk.
+    /// </summary>
+    Critical = 4
+}
+
+/// <summary>
+/// Known guardian user-authorization levels.
+/// </summary>
+public enum GuardianUserAuthorization
+{
+    /// <summary>
+    /// The upstream authorization level was absent or unrecognized.
+    /// </summary>
+    Unknown = 0,
+
+    /// <summary>
+    /// Low authorization.
+    /// </summary>
+    Low = 1,
+
+    /// <summary>
+    /// Medium authorization.
+    /// </summary>
+    Medium = 2,
+
+    /// <summary>
+    /// High authorization.
+    /// </summary>
     High = 3
+}
+
+/// <summary>
+/// Known sources for a completed guardian auto-approval decision.
+/// </summary>
+public enum AutoReviewDecisionSource
+{
+    /// <summary>
+    /// The upstream decision source was absent or unrecognized.
+    /// </summary>
+    Unknown = 0,
+
+    /// <summary>
+    /// The decision was produced by an agent workflow.
+    /// </summary>
+    Agent = 1
 }
 
 /// <summary>
@@ -88,6 +135,11 @@ public sealed record class GuardianApprovalReviewInfo
     /// Gets the parsed risk level when present.
     /// </summary>
     public GuardianRiskLevel? RiskLevel { get; init; }
+
+    /// <summary>
+    /// Gets the parsed user-authorization level when present.
+    /// </summary>
+    public GuardianUserAuthorization? UserAuthorization { get; init; }
 
     /// <summary>
     /// Gets the raw review payload.

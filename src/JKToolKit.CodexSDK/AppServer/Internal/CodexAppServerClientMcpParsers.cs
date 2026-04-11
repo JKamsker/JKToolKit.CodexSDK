@@ -69,6 +69,56 @@ internal static class CodexAppServerClientMcpParsers
         };
     }
 
+    public static McpResourceReadResult ParseMcpResourceReadResult(JsonElement result)
+    {
+        var contentsArray = TryGetArray(result, "contents");
+        if (contentsArray is null || contentsArray.Value.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException("mcpResource/read response must contain a contents array.");
+        }
+
+        var contents = new List<McpResourceContent>();
+        foreach (var item in contentsArray.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("mcpResource/read response contents[] must contain only objects.");
+            }
+
+            var uri = GetStringOrNull(item, "uri");
+            if (string.IsNullOrWhiteSpace(uri))
+            {
+                throw new InvalidOperationException("mcpResource/read response contents[] must contain a non-empty uri.");
+            }
+
+            var text = TryGetAny(item, "text");
+            var blob = TryGetAny(item, "blob");
+            var hasText = text is { ValueKind: JsonValueKind.String };
+            var hasBlob = blob is { ValueKind: JsonValueKind.String };
+
+            if (hasText == hasBlob)
+            {
+                throw new InvalidOperationException(
+                    "mcpResource/read response contents[] must contain exactly one of text or blob.");
+            }
+
+            contents.Add(new McpResourceContent
+            {
+                Uri = uri,
+                MimeType = GetStringOrNull(item, "mimeType") ?? GetStringOrNull(item, "mime_type"),
+                Text = hasText ? text!.Value.GetString() : null,
+                BlobBase64 = hasBlob ? blob!.Value.GetString() : null,
+                Raw = item.Clone()
+            });
+        }
+
+        return new McpResourceReadResult
+        {
+            Contents = contents,
+            Raw = result
+        };
+    }
+
     private static McpAuthStatus ParseAuthStatus(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))

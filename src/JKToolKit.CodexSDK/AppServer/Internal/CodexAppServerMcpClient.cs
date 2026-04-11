@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -29,11 +30,35 @@ internal sealed class CodexAppServerMcpClient
             new ListMcpServerStatusParams
             {
                 Cursor = options.Cursor,
-                Limit = options.Limit
+                Limit = options.Limit,
+                Detail = options.Detail?.Value
             },
             ct);
 
         return CodexAppServerClientMcpParsers.ParseMcpServerStatusListPage(result);
+    }
+
+    public async Task<McpResourceReadResult> ReadMcpResourceAsync(McpResourceReadOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.Server))
+            throw new ArgumentException("Server cannot be empty or whitespace.", nameof(options));
+        if (string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
+        if (string.IsNullOrWhiteSpace(options.Uri))
+            throw new ArgumentException("Uri cannot be empty or whitespace.", nameof(options));
+
+        var result = await _sendRequestAsync(
+            "mcpResource/read",
+            new UpstreamV2.McpResourceReadParams
+            {
+                Server = options.Server,
+                ThreadId = options.ThreadId,
+                Uri = options.Uri
+            },
+            ct);
+
+        return CodexAppServerClientMcpParsers.ParseMcpResourceReadResult(result);
     }
 
     public async Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct = default)

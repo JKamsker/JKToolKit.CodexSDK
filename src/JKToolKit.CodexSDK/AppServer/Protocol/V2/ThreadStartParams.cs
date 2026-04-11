@@ -39,6 +39,12 @@ public sealed record class ThreadStartParams
     public string? ServiceName { get; init; }
 
     /// <summary>
+    /// Gets the optional session-start source.
+    /// </summary>
+    [JsonPropertyName("sessionStartSource")]
+    public string? SessionStartSource { get; init; }
+
+    /// <summary>
     /// Gets an optional approval policy override for the thread.
     /// </summary>
     /// <remarks>

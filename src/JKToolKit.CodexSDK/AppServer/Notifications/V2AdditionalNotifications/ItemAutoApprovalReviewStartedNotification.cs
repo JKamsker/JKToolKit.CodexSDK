@@ -18,9 +18,14 @@ public sealed record class ItemAutoApprovalReviewStartedNotification : AppServer
     public string TurnId { get; }
 
     /// <summary>
+    /// Gets the stable review identifier.
+    /// </summary>
+    public string ReviewId { get; }
+
+    /// <summary>
     /// Gets the reviewed item identifier.
     /// </summary>
-    public string TargetItemId { get; }
+    public string? TargetItemId { get; }
 
     /// <summary>
     /// Gets the reviewed action payload.
@@ -38,7 +43,8 @@ public sealed record class ItemAutoApprovalReviewStartedNotification : AppServer
     public ItemAutoApprovalReviewStartedNotification(
         string threadId,
         string turnId,
-        string targetItemId,
+        string reviewId,
+        string? targetItemId,
         JsonElement action,
         GuardianApprovalReviewInfo review,
         JsonElement @params)
@@ -46,6 +52,7 @@ public sealed record class ItemAutoApprovalReviewStartedNotification : AppServer
     {
         ThreadId = threadId;
         TurnId = turnId;
+        ReviewId = reviewId;
         TargetItemId = targetItemId;
         Action = action;
         Review = review;

@@ -48,6 +48,17 @@ internal static partial class AppServerNotificationMapper
         return new ThreadRealtimeOutputAudioDeltaNotification(threadId, audio, p);
     }
 
+    private static ThreadRealtimeSdpNotification? TryMapThreadRealtimeSdp(JsonElement p)
+    {
+        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
+            !TryGetRequiredString(p, "sdp", out var sdp))
+        {
+            return null;
+        }
+
+        return new ThreadRealtimeSdpNotification(threadId, sdp, p);
+    }
+
     private static ThreadRealtimeErrorNotification? TryMapThreadRealtimeError(JsonElement p)
     {
         if (!TryGetRequiredString(p, "threadId", out var threadId) ||
@@ -111,7 +122,8 @@ internal static partial class AppServerNotificationMapper
     {
         if (!TryGetRequiredString(p, "threadId", out var threadId) ||
             !TryGetRequiredString(p, "turnId", out var turnId) ||
-            !TryGetRequiredString(p, "targetItemId", out var targetItemId) ||
+            !TryGetRequiredString(p, "reviewId", out var reviewId) ||
+            !TryGetOptionalString(p, "targetItemId", out var targetItemId) ||
             !AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(p, "review", out var review))
         {
             return null;
@@ -120,6 +132,7 @@ internal static partial class AppServerNotificationMapper
         return new ItemAutoApprovalReviewStartedNotification(
             threadId,
             turnId,
+            reviewId,
             targetItemId,
             GetOptionalAny(p, "action") ?? EmptyObject(),
             review,
@@ -130,7 +143,9 @@ internal static partial class AppServerNotificationMapper
     {
         if (!TryGetRequiredString(p, "threadId", out var threadId) ||
             !TryGetRequiredString(p, "turnId", out var turnId) ||
-            !TryGetRequiredString(p, "targetItemId", out var targetItemId) ||
+            !TryGetRequiredString(p, "reviewId", out var reviewId) ||
+            !TryGetOptionalString(p, "targetItemId", out var targetItemId) ||
+            !TryGetRequiredString(p, "decisionSource", out var decisionSourceValue) ||
             !AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(p, "review", out var review))
         {
             return null;
@@ -139,7 +154,9 @@ internal static partial class AppServerNotificationMapper
         return new ItemAutoApprovalReviewCompletedNotification(
             threadId,
             turnId,
+            reviewId,
             targetItemId,
+            AppServerNotificationParsing.ParseAutoReviewDecisionSource(decisionSourceValue),
             GetOptionalAny(p, "action") ?? EmptyObject(),
             review,
             p);

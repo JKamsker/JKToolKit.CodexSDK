@@ -4,6 +4,8 @@ namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 
 internal partial interface ICodexAppServerClientAdapter
 {
+    Task StartThreadRealtimeAsync(ThreadRealtimeStartOptions options, CancellationToken ct);
+
     Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId, CancellationToken ct);
 
     Task AppendThreadRealtimeAudioAsync(string threadId, ThreadRealtimeAudioChunk audio, CancellationToken ct);
@@ -15,6 +17,8 @@ internal partial interface ICodexAppServerClientAdapter
 
 internal sealed partial class CodexAppServerClientAdapter
 {
+    public Task StartThreadRealtimeAsync(ThreadRealtimeStartOptions options, CancellationToken ct) => _inner.StartThreadRealtimeAsync(options, ct);
+
     public Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId, CancellationToken ct) => _inner.StartThreadRealtimeAsync(threadId, prompt, sessionId, ct);
 
     public Task AppendThreadRealtimeAudioAsync(string threadId, ThreadRealtimeAudioChunk audio, CancellationToken ct) => _inner.AppendThreadRealtimeAudioAsync(threadId, audio, ct);

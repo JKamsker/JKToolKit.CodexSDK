@@ -46,6 +46,11 @@ public sealed class AppServerNotificationMapperTests
         mapped.Should().BeOfType<ThreadRealtimeOutputAudioDeltaNotification>()
             .Which.Data.Should().Be("abc");
 
+        var sdp = JsonDocument.Parse("""{"threadId":"t","sdp":"v=0\r\no=-"}""").RootElement;
+        AppServerNotificationMapper.Map("thread/realtime/sdp", sdp)
+            .Should().BeOfType<ThreadRealtimeSdpNotification>()
+            .Which.Sdp.Should().Be("v=0\r\no=-");
+
         var closed = JsonDocument.Parse("""{"threadId":"t","reason":"bye"}""").RootElement;
         AppServerNotificationMapper.Map("thread/realtime/closed", closed)
             .Should().BeOfType<ThreadRealtimeClosedNotification>()
@@ -221,24 +226,29 @@ public sealed class AppServerNotificationMapperTests
     [Fact]
     public void Map_AutoApprovalReviewNotifications_ToTypedRecords()
     {
-        var started = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"inProgress","rationale":"checking","riskScore":4,"riskLevel":"medium"}}""").RootElement;
+        var started = JsonDocument.Parse("""{"threadId":"t","turnId":"u","reviewId":"review-1","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"inProgress","rationale":"checking","riskScore":4,"riskLevel":"medium","userAuthorization":"high"}}""").RootElement;
         var startedNotification = AppServerNotificationMapper.Map("item/autoApprovalReview/started", started)
             .Should().BeOfType<ItemAutoApprovalReviewStartedNotification>()
             .Which;
 
+        startedNotification.ReviewId.Should().Be("review-1");
         startedNotification.TargetItemId.Should().Be("item-1");
         startedNotification.Review.Status.Should().Be(GuardianApprovalReviewStatus.InProgress);
         startedNotification.Review.Rationale.Should().Be("checking");
         startedNotification.Review.RiskLevel.Should().Be(GuardianRiskLevel.Medium);
+        startedNotification.Review.UserAuthorization.Should().Be(GuardianUserAuthorization.High);
 
-        var completed = JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","action":{"type":"exec"},"review":{"status":"approved","riskScore":5,"riskLevel":"high"}}""").RootElement;
+        var completed = JsonDocument.Parse("""{"threadId":"t","turnId":"u","reviewId":"review-2","targetItemId":null,"decisionSource":"agent","action":{"type":"exec"},"review":{"status":"approved","riskScore":5,"riskLevel":"critical"}}""").RootElement;
         var completedNotification = AppServerNotificationMapper.Map("item/autoApprovalReview/completed", completed)
             .Should().BeOfType<ItemAutoApprovalReviewCompletedNotification>()
             .Which;
 
+        completedNotification.ReviewId.Should().Be("review-2");
+        completedNotification.TargetItemId.Should().BeNull();
+        completedNotification.DecisionSource.Should().Be(AutoReviewDecisionSource.Agent);
         completedNotification.Review.Status.Should().Be(GuardianApprovalReviewStatus.Approved);
         completedNotification.Review.RiskScore.Should().Be(5);
-        completedNotification.Review.RiskLevel.Should().Be(GuardianRiskLevel.High);
+        completedNotification.Review.RiskLevel.Should().Be(GuardianRiskLevel.Critical);
     }
 
     [Fact]
@@ -252,6 +262,11 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map(
                 "thread/realtime/outputAudio/delta",
                 JsonDocument.Parse("""{"threadId":"t","audio":{"data":"abc","numChannels":"2","sampleRate":24000}}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+
+        AppServerNotificationMapper.Map(
+                "thread/realtime/sdp",
+                JsonDocument.Parse("""{"threadId":"t"}""").RootElement)
             .Should().BeOfType<UnknownNotification>();
     }
 
@@ -283,7 +298,7 @@ public sealed class AppServerNotificationMapperTests
     {
         AppServerNotificationMapper.Map(
                 "item/autoApprovalReview/started",
-                JsonDocument.Parse("""{"threadId":"t","turnId":"u","targetItemId":"item-1","review":{"riskScore":"5"}}""").RootElement)
+                JsonDocument.Parse("""{"threadId":"t","turnId":"u","reviewId":"review-1","targetItemId":"item-1","review":{"riskScore":"5"}}""").RootElement)
             .Should().BeOfType<UnknownNotification>();
     }
 

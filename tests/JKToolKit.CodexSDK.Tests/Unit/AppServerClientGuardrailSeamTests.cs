@@ -217,7 +217,8 @@ public sealed class AppServerClientGuardrailSeamTests
         var thread = await client.StartThreadAsync(new ThreadStartOptions
         {
             DynamicTools = new[] { tool },
-            PersistExtendedHistory = true
+            PersistExtendedHistory = true,
+            SessionStartSource = ThreadSessionStartSource.Clear
         });
 
         thread.Id.Should().Be("thr_1");
@@ -228,6 +229,7 @@ public sealed class AppServerClientGuardrailSeamTests
         var p = (ThreadStartParams)rpc.LastParams!;
         p.DynamicTools.Should().BeEquivalentTo(new[] { tool });
         p.PersistExtendedHistory.Should().BeTrue();
+        p.SessionStartSource.Should().Be("clear");
     }
 
     [Fact]
@@ -352,8 +354,9 @@ public sealed class AppServerClientGuardrailSeamTests
 
         var p = (ThreadRealtimeStartParams)rpc.LastParams!;
         p.ThreadId.Should().Be("thr_1");
-        p.Prompt.Should().Be("hello");
         p.SessionId.Should().Be("sess_1");
+        JsonSerializer.Serialize(p, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"prompt\":\"hello\"");
     }
 
     [Fact]
@@ -372,7 +375,61 @@ public sealed class AppServerClientGuardrailSeamTests
         await client.StartThreadRealtimeAsync("thr_1", "   ", sessionId: null);
 
         rpc.LastMethod.Should().Be("thread/realtime/start");
-        ((ThreadRealtimeStartParams)rpc.LastParams!).Prompt.Should().Be("   ");
+        JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"prompt\":\"   \"");
+    }
+
+    [Fact]
+    public async Task StartThreadRealtime_WithOptions_DefaultPrompt_OmitsPrompt_AndSendsTransportAndVoice()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions
+        {
+            ThreadId = "thr_1",
+            PromptMode = ThreadRealtimePromptMode.Default,
+            SessionId = "sess_1",
+            Voice = "marin",
+            Transport = ThreadRealtimeTransport.WebRtc("v=0\r\no=-")
+        });
+
+        var json = JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
+        json.Should().Contain("\"threadId\":\"thr_1\"")
+            .And.Contain("\"sessionId\":\"sess_1\"")
+            .And.Contain("\"voice\":\"marin\"")
+            .And.Contain("\"transport\":{\"type\":\"webrtc\",\"sdp\":\"v=0\\r\\no=-\"}");
+        json.Should().NotContain("\"prompt\"");
+    }
+
+    [Fact]
+    public async Task StartThreadRealtime_WithOptions_NonePrompt_SendsNullPrompt()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions
+        {
+            ThreadId = "thr_1",
+            PromptMode = ThreadRealtimePromptMode.None
+        });
+
+        JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"prompt\":null");
     }
 
     [Fact]

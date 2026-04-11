@@ -63,6 +63,7 @@ public sealed class McpServerWrappersTests
                 var typed = (ListMcpServerStatusParams)p!;
                 typed.Cursor.Should().Be("0");
                 typed.Limit.Should().Be(10);
+                typed.Detail.Should().Be("toolsAndAuthOnly");
             },
             Result = rawResult
         };
@@ -74,12 +75,74 @@ public sealed class McpServerWrappersTests
             NullLogger.Instance,
             startExitWatcher: false);
 
-        var page = await client.ListMcpServerStatusAsync(new McpServerStatusListOptions { Cursor = "0", Limit = 10 });
+        var page = await client.ListMcpServerStatusAsync(new McpServerStatusListOptions
+        {
+            Cursor = "0",
+            Limit = 10,
+            Detail = McpServerStatusDetail.ToolsAndAuthOnly
+        });
 
         page.Servers.Should().HaveCount(1);
         page.Servers[0].Name.Should().Be("docs");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
         page.Servers[0].Tools.Should().ContainSingle(t => t.Name == "search");
+    }
+
+    [Fact]
+    public async Task ReadMcpResourceAsync_CallsExpectedMethod_AndParsesContents()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            contents = new object[]
+            {
+                new
+                {
+                    uri = "resource://docs/readme",
+                    mimeType = "text/plain",
+                    text = "hello"
+                },
+                new
+                {
+                    uri = "resource://docs/blob",
+                    mimeType = "application/octet-stream",
+                    blob = "AQID"
+                }
+            }
+        });
+
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "mcpResource/read",
+            AssertParams = p =>
+            {
+                p.Should().NotBeNull();
+                JsonSerializer.Serialize(p, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                    .Should().Contain("\"server\":\"docs\"")
+                    .And.Contain("\"threadId\":\"thr_1\"")
+                    .And.Contain("\"uri\":\"resource://docs/readme\"");
+            },
+            Result = rawResult
+        };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var result = await client.ReadMcpResourceAsync(new McpResourceReadOptions
+        {
+            Server = "docs",
+            ThreadId = "thr_1",
+            Uri = "resource://docs/readme"
+        });
+
+        result.Contents.Should().HaveCount(2);
+        result.Contents[0].Text.Should().Be("hello");
+        result.Contents[0].BlobBase64.Should().BeNull();
+        result.Contents[1].BlobBase64.Should().Be("AQID");
+        result.Contents[1].Text.Should().BeNull();
     }
 
     [Fact]

@@ -93,6 +93,24 @@ internal static partial class AppServerNotificationParsing
             _ => GuardianApprovalReviewStatus.Unknown
         };
 
+    private static GuardianUserAuthorization? ParseGuardianUserAuthorization(string? value) =>
+        value?.Trim() switch
+        {
+            "unknown" => GuardianUserAuthorization.Unknown,
+            "low" => GuardianUserAuthorization.Low,
+            "medium" => GuardianUserAuthorization.Medium,
+            "high" => GuardianUserAuthorization.High,
+            null => null,
+            _ => GuardianUserAuthorization.Unknown
+        };
+
+    internal static AutoReviewDecisionSource ParseAutoReviewDecisionSource(string? value) =>
+        value?.Trim() switch
+        {
+            "agent" => AutoReviewDecisionSource.Agent,
+            _ => AutoReviewDecisionSource.Unknown
+        };
+
     private static IReadOnlyList<uint>? ParseIndices(JsonElement item)
     {
         if (!TryGetArray(item, "indices", out var indices))
