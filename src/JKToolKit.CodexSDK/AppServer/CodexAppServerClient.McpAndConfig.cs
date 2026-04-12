@@ -115,6 +115,15 @@ public sealed partial class CodexAppServerClient
         _mcpClient.ListMcpServerStatusAsync(options, ct);
 
     /// <summary>
+    /// Reads an MCP resource for the specified thread context.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>mcpResource/read</c>.
+    /// </remarks>
+    public Task<McpResourceReadResult> ReadMcpResourceAsync(McpResourceReadOptions options, CancellationToken ct = default) =>
+        _mcpClient.ReadMcpResourceAsync(options, ct);
+
+    /// <summary>
     /// Starts an OAuth login flow for a configured MCP server.
     /// </summary>
     /// <remarks>

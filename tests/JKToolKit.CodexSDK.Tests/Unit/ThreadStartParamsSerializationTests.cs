@@ -36,4 +36,14 @@ public sealed class ThreadStartParamsSerializationTests
 
         json.Should().Contain("\"approvalsReviewer\":\"guardian_subagent\"");
     }
+
+    [Fact]
+    public void Serialize_WritesSessionStartSource_WhenProvided()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadStartParams { SessionStartSource = ThreadSessionStartSource.Clear.Value },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"sessionStartSource\":\"clear\"");
+    }
 }

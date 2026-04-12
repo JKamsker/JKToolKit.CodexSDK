@@ -14,5 +14,10 @@ public sealed class McpServerStatusListOptions
     /// Gets or sets an optional page size.
     /// </summary>
     public int? Limit { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional response detail level.
+    /// </summary>
+    public McpServerStatusDetail? Detail { get; set; }
 }
 

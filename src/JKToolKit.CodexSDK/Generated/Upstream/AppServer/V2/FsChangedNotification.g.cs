@@ -23,7 +23,7 @@ internal partial class FsChangedNotification
     public System.Collections.Generic.ICollection<string> ChangedPaths { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
     /// <summary>
-    /// Watch identifier returned by `fs/watch`.
+    /// Watch identifier previously provided to `fs/watch`.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("watchId")]
     public string WatchId { get; set; } = default!;

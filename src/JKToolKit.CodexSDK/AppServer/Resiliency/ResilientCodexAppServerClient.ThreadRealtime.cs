@@ -6,6 +6,9 @@ namespace JKToolKit.CodexSDK.AppServer.Resiliency;
 
 public sealed partial class ResilientCodexAppServerClient
 {
+    public Task StartThreadRealtimeAsync(ThreadRealtimeStartOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadRealtime, (c, token) => c.StartThreadRealtimeAsync(options, token), ct);
+
     public Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId = null, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadRealtime, (c, token) => c.StartThreadRealtimeAsync(threadId, prompt, sessionId, token), ct);
 

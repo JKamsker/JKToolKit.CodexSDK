@@ -75,6 +75,8 @@ internal static partial class AppServerNotificationMapper
 
             "thread/realtime/outputAudio/delta" => (AppServerNotification?)TryMapThreadRealtimeOutputAudioDelta(p) ?? new UnknownNotification(method, p),
 
+            "thread/realtime/sdp" => (AppServerNotification?)TryMapThreadRealtimeSdp(p) ?? new UnknownNotification(method, p),
+
             "thread/realtime/error" => (AppServerNotification?)TryMapThreadRealtimeError(p) ?? new UnknownNotification(method, p),
 
             "thread/realtime/closed" => (AppServerNotification?)TryMapThreadRealtimeClosed(p) ?? new UnknownNotification(method, p),

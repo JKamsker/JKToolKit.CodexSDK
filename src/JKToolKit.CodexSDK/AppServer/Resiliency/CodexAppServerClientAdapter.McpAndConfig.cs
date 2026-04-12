@@ -48,6 +48,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<McpServerStatusListPage> ListMcpServerStatusAsync(McpServerStatusListOptions options, CancellationToken ct);
 
+    Task<McpResourceReadResult> ReadMcpResourceAsync(McpResourceReadOptions options, CancellationToken ct);
+
     Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct);
 
     Task<AccountLoginStartResult> StartAccountLoginAsync(AccountLoginStartOptions options, CancellationToken ct);
@@ -102,6 +104,8 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task ReloadMcpServersAsync(CancellationToken ct) => _inner.ReloadMcpServersAsync(ct);
 
     public Task<McpServerStatusListPage> ListMcpServerStatusAsync(McpServerStatusListOptions options, CancellationToken ct) => _inner.ListMcpServerStatusAsync(options, ct);
+
+    public Task<McpResourceReadResult> ReadMcpResourceAsync(McpResourceReadOptions options, CancellationToken ct) => _inner.ReadMcpResourceAsync(options, ct);
 
     public Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct) => _inner.StartMcpServerOauthLoginAsync(options, ct);
 

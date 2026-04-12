@@ -14,6 +14,18 @@ internal partial class Turn
 {
 
     /// <summary>
+    /// Unix timestamp (in seconds) when the turn completed.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("completedAt")]
+    public long? CompletedAt { get; set; } = default!;
+
+    /// <summary>
+    /// Duration between turn start and completion in milliseconds, if known.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("durationMs")]
+    public long? DurationMs { get; set; } = default!;
+
+    /// <summary>
     /// Only populated when the Turn's status is failed.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("error")]
@@ -27,6 +39,12 @@ internal partial class Turn
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("items")]
     public System.Collections.Generic.ICollection<Item> Items { get; set; } = new System.Collections.ObjectModel.Collection<Item>();
+
+    /// <summary>
+    /// Unix timestamp (in seconds) when the turn started.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("startedAt")]
+    public long? StartedAt { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<TurnStatus>))]

@@ -21,7 +21,8 @@ internal static partial class AppServerNotificationParsing
 
         if (!TryGetOptionalString(parsedReview, "rationale", out var rationale) ||
             !TryGetOptionalInt32(parsedReview, "riskScore", out var riskScore) ||
-            !TryGetOptionalString(parsedReview, "riskLevel", out var riskLevelValue))
+            !TryGetOptionalString(parsedReview, "riskLevel", out var riskLevelValue) ||
+            !TryGetOptionalString(parsedReview, "userAuthorization", out var userAuthorizationValue))
         {
             return false;
         }
@@ -33,6 +34,7 @@ internal static partial class AppServerNotificationParsing
             Rationale = rationale,
             RiskScore = riskScore,
             RiskLevel = ParseGuardianRiskLevel(riskLevelValue),
+            UserAuthorization = ParseGuardianUserAuthorization(userAuthorizationValue),
             Raw = parsedReview.Clone()
         };
         return true;
@@ -91,6 +93,7 @@ internal static partial class AppServerNotificationParsing
             "low" => GuardianRiskLevel.Low,
             "medium" => GuardianRiskLevel.Medium,
             "high" => GuardianRiskLevel.High,
+            "critical" => GuardianRiskLevel.Critical,
             null => null,
             _ => GuardianRiskLevel.Unknown
         };

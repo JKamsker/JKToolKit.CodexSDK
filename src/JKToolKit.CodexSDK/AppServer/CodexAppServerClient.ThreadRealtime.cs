@@ -10,6 +10,20 @@ public sealed partial class CodexAppServerClient
     /// <exception cref="CodexExperimentalApiRequiredException">
     /// Thrown when the client was not initialized with <c>experimentalApi</c> capability.
     /// </exception>
+    public Task StartThreadRealtimeAsync(ThreadRealtimeStartOptions options, CancellationToken ct = default) =>
+        _threadsClient.StartThreadRealtimeAsync(options, ct);
+
+    /// <summary>
+    /// Starts thread realtime (experimental).
+    /// </summary>
+    /// <remarks>
+    /// This compatibility overload sends the supplied prompt verbatim.
+    /// Use <see cref="StartThreadRealtimeAsync(ThreadRealtimeStartOptions,System.Threading.CancellationToken)"/>
+    /// to omit the prompt or explicitly send <c>prompt: null</c>.
+    /// </remarks>
+    /// <exception cref="CodexExperimentalApiRequiredException">
+    /// Thrown when the client was not initialized with <c>experimentalApi</c> capability.
+    /// </exception>
     public Task StartThreadRealtimeAsync(string threadId, string prompt, string? sessionId = null, CancellationToken ct = default) =>
         _threadsClient.StartThreadRealtimeAsync(threadId, prompt, sessionId, ct);
 

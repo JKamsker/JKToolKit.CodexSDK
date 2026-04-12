@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Created watch handle returned by `fs/watch`.
+/// Successful response for `fs/watch`.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class FsWatchResponse
@@ -18,12 +18,6 @@ internal partial class FsWatchResponse
 
     [System.Text.Json.Serialization.JsonPropertyName("path")]
     public string Path { get; set; } = default!;
-
-    /// <summary>
-    /// Connection-scoped watch identifier used for `fs/unwatch` and `fs/changed`.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("watchId")]
-    public string WatchId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

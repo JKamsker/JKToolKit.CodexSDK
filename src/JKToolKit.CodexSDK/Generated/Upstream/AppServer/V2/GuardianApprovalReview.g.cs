@@ -22,12 +22,12 @@ internal partial class GuardianApprovalReview
     [System.Text.Json.Serialization.JsonPropertyName("riskLevel")]
     public RiskLevel? RiskLevel { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("riskScore")]
-    public int? RiskScore { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GuardianApprovalReviewStatus>))]
     public GuardianApprovalReviewStatus Status { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("userAuthorization")]
+    public UserAuthorization? UserAuthorization { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

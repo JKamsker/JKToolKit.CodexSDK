@@ -73,6 +73,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<McpServerStatusListPage> ListMcpServerStatusAsync(McpServerStatusListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Mcp, (c, token) => c.ListMcpServerStatusAsync(options, token), ct);
 
+    public Task<McpResourceReadResult> ReadMcpResourceAsync(McpResourceReadOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Mcp, (c, token) => c.ReadMcpResourceAsync(options, token), ct);
+
     public Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Mcp, (c, token) => c.StartMcpServerOauthLoginAsync(options, token), ct);
 

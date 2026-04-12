@@ -157,19 +157,21 @@ internal sealed class CodexAppServerFilesystemClient
     {
         ArgumentNullException.ThrowIfNull(options);
         ValidatePath(options.Path, nameof(options));
+        var watchId = GetWatchId(options);
 
         var result = await _sendRequestAsync(
             "fs/watch",
             new UpstreamV2.FsWatchParams
             {
-                Path = options.Path
+                Path = options.Path,
+                WatchId = watchId
             },
             ct).ConfigureAwait(false);
 
         return new FsWatchResult
         {
             Path = GetRequiredResponsePath(result, "fs/watch response"),
-            WatchId = CodexAppServerClientJson.GetRequiredString(result, "watchId", "fs/watch response"),
+            WatchId = watchId,
             Raw = result
         };
     }
@@ -203,6 +205,21 @@ internal sealed class CodexAppServerFilesystemClient
         {
             throw new ArgumentException("Path must be absolute.", paramName);
         }
+    }
+
+    private static string GetWatchId(FsWatchOptions options)
+    {
+        if (options.WatchId is null)
+        {
+            return $"watch_{Guid.NewGuid():N}";
+        }
+
+        if (string.IsNullOrWhiteSpace(options.WatchId))
+        {
+            throw new ArgumentException("WatchId cannot be empty or whitespace when provided.", nameof(options));
+        }
+
+        return options.WatchId;
     }
 
     private static string GetRequiredResponsePath(JsonElement obj, string context)

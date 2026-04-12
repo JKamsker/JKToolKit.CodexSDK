@@ -28,4 +28,8 @@ internal enum GuardianRiskLevel
     High = 2,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"critical")]
+    Critical = 3,
+
+
 }

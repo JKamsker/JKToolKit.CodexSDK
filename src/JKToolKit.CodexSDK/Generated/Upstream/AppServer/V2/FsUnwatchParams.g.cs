@@ -17,7 +17,7 @@ internal partial class FsUnwatchParams
 {
 
     /// <summary>
-    /// Watch identifier returned by `fs/watch`.
+    /// Watch identifier previously provided to `fs/watch`.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("watchId")]
     public string WatchId { get; set; } = default!;

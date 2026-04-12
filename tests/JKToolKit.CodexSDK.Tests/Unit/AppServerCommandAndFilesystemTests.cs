@@ -328,16 +328,33 @@ public sealed class AppServerCommandAndFilesystemTests
     [Fact]
     public async Task FsWatchAsync_SendsExpectedParams_AndParsesResult()
     {
-        using var doc = JsonDocument.Parse($"{{\"path\":\"{XPaths.JsonEsc("repo")}\",\"watchId\":\"watch-1\"}}");
+        using var doc = JsonDocument.Parse($"{{\"path\":\"{XPaths.JsonEsc("repo")}\"}}");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.FsWatchAsync(new FsWatchOptions { Path = XPaths.Abs("repo"), WatchId = "watch-1" });
+
+        result.WatchId.Should().Be("watch-1");
+        result.Path.Should().Be(XPaths.Abs("repo"));
+        rpc.LastMethod.Should().Be("fs/watch");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"watchId\":\"watch-1\"");
+    }
+
+    [Fact]
+    public async Task FsWatchAsync_WhenWatchIdIsOmitted_GeneratesStableResultId()
+    {
+        using var doc = JsonDocument.Parse($"{{\"path\":\"{XPaths.JsonEsc("repo")}\"}}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
 
         await using var client = CreateClient(rpc);
 
         var result = await client.FsWatchAsync(new FsWatchOptions { Path = XPaths.Abs("repo") });
 
-        result.WatchId.Should().Be("watch-1");
-        result.Path.Should().Be(XPaths.Abs("repo"));
-        rpc.LastMethod.Should().Be("fs/watch");
+        result.WatchId.Should().StartWith("watch_");
+        var payload = JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        payload.Should().Contain($"\"watchId\":\"{result.WatchId}\"");
     }
 
     [Fact]

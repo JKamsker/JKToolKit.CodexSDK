@@ -18,9 +18,19 @@ public sealed record class ItemAutoApprovalReviewCompletedNotification : AppServ
     public string TurnId { get; }
 
     /// <summary>
+    /// Gets the stable review identifier.
+    /// </summary>
+    public string ReviewId { get; }
+
+    /// <summary>
     /// Gets the reviewed item identifier.
     /// </summary>
-    public string TargetItemId { get; }
+    public string? TargetItemId { get; }
+
+    /// <summary>
+    /// Gets the source that produced the terminal decision.
+    /// </summary>
+    public AutoReviewDecisionSource DecisionSource { get; }
 
     /// <summary>
     /// Gets the reviewed action payload.
@@ -38,7 +48,9 @@ public sealed record class ItemAutoApprovalReviewCompletedNotification : AppServ
     public ItemAutoApprovalReviewCompletedNotification(
         string threadId,
         string turnId,
-        string targetItemId,
+        string reviewId,
+        string? targetItemId,
+        AutoReviewDecisionSource decisionSource,
         JsonElement action,
         GuardianApprovalReviewInfo review,
         JsonElement @params)
@@ -46,7 +58,9 @@ public sealed record class ItemAutoApprovalReviewCompletedNotification : AppServ
     {
         ThreadId = threadId;
         TurnId = turnId;
+        ReviewId = reviewId;
         TargetItemId = targetItemId;
+        DecisionSource = decisionSource;
         Action = action;
         Review = review;
     }

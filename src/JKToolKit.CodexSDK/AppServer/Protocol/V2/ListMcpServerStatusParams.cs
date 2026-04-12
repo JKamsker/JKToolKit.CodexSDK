@@ -18,5 +18,11 @@ public sealed record class ListMcpServerStatusParams
     /// </summary>
     [JsonPropertyName("limit")]
     public int? Limit { get; init; }
+
+    /// <summary>
+    /// Gets the optional MCP inventory detail level.
+    /// </summary>
+    [JsonPropertyName("detail")]
+    public string? Detail { get; init; }
 }
 
