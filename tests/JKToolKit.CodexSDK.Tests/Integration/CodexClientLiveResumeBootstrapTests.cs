@@ -30,6 +30,9 @@ public sealed class CodexClientLiveResumeBootstrapTests
             fixture.WorkingDirectory);
 
         using var process = SilentProcessFactory.CreateShortLivedProcess();
+        Assert.True(
+            process.WaitForExit(1_000),
+            "Expected the short-lived resume process fixture to exit before bootstrap monitoring starts.");
         using var client = new CodexClient(
             Options.Create(new CodexClientOptions
             {
