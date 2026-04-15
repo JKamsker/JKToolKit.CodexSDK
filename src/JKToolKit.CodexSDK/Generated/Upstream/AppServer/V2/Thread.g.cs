@@ -37,9 +37,6 @@ internal partial class Thread
     [System.Text.Json.Serialization.JsonPropertyName("createdAt")]
     public long CreatedAt { get; set; } = default!;
 
-    /// <summary>
-    /// Working directory captured for the thread.
-    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;
 

@@ -10,24 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigMigrationItem
+internal partial class ThreadInjectItemsParams
 {
 
     /// <summary>
-    /// Null or empty means home-scoped migration; non-empty means repo-scoped migration.
+    /// Raw Responses API items to append to the thread's model-visible history.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
-    public string? Cwd { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("items")]
+    public System.Collections.Generic.ICollection<object> Items { get; set; } = new System.Collections.ObjectModel.Collection<object>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string Description { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("details")]
-    public Details? Details { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("itemType")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ExternalAgentConfigMigrationItemType>))]
-    public ExternalAgentConfigMigrationItemType ItemType { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

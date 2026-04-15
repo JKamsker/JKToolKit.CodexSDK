@@ -23,16 +23,22 @@ internal partial class FsGetMetadataResponse
     public long CreatedAtMs { get; set; } = default!;
 
     /// <summary>
-    /// Whether the path currently resolves to a directory.
+    /// Whether the path resolves to a directory.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("isDirectory")]
     public bool IsDirectory { get; set; } = default!;
 
     /// <summary>
-    /// Whether the path currently resolves to a regular file.
+    /// Whether the path resolves to a regular file.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("isFile")]
     public bool IsFile { get; set; } = default!;
+
+    /// <summary>
+    /// Whether the path itself is a symbolic link.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("isSymlink")]
+    public bool IsSymlink { get; set; } = default!;
 
     /// <summary>
     /// File modification time in Unix milliseconds when available, otherwise `0`.

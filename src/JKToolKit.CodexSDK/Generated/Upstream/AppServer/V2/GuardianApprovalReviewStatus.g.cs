@@ -28,8 +28,12 @@ internal enum GuardianApprovalReviewStatus
     Denied = 2,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"timedOut")]
+    TimedOut = 3,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"aborted")]
-    Aborted = 3,
+    Aborted = 4,
 
 
 }

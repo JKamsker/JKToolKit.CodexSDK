@@ -10,26 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class FeedbackUploadParams
+internal partial class McpServerToolCallParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("classification")]
-    public string Classification { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("_meta")]
+    public object? _meta { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("extraLogFiles")]
-    public System.Collections.Generic.ICollection<string>? ExtraLogFiles { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("arguments")]
+    public object? Arguments { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("includeLogs")]
-    public bool IncludeLogs { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("reason")]
-    public string? Reason { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("tags")]
-    public System.Collections.Generic.IDictionary<string, string>? Tags { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("server")]
+    public string Server { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string? ThreadId { get; set; } = default!;
+    public string ThreadId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("tool")]
+    public string Tool { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
