@@ -10,20 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadListResponse
+internal partial class ThreadTurnsListResponse
 {
 
     /// <summary>
-    /// Opaque cursor to pass as `cursor` when reversing `sortDirection`. This is only populated when the page contains at least one thread. Use it with the opposite `sortDirection`; for timestamp sorts it anchors at the start of the page timestamp so same-second updates are not skipped.
+    /// Opaque cursor to pass as `cursor` when reversing `sortDirection`. This is only populated when the page contains at least one turn. Use it with the opposite `sortDirection` to include the anchor turn again and catch updates to that turn.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("backwardsCursor")]
     public string? BackwardsCursor { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("data")]
-    public System.Collections.Generic.ICollection<Thread> Data { get; set; } = new System.Collections.ObjectModel.Collection<Thread>();
+    public System.Collections.Generic.ICollection<Turn> Data { get; set; } = new System.Collections.ObjectModel.Collection<Turn>();
 
     /// <summary>
-    /// Opaque cursor to pass to the next call to continue after the last item. if None, there are no more items to return.
+    /// Opaque cursor to pass to the next call to continue after the last turn. if None, there are no more turns to return.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("nextCursor")]
     public string? NextCursor { get; set; } = default!;

@@ -50,6 +50,12 @@ internal partial class ThreadListParams
     public string? SearchTerm { get; set; } = default!;
 
     /// <summary>
+    /// Optional sort direction; defaults to descending (newest first).
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
+    public SortDirection2? SortDirection { get; set; } = default!;
+
+    /// <summary>
     /// Optional sort key; defaults to created_at.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("sortKey")]
