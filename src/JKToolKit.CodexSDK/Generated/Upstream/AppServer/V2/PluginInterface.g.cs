@@ -22,8 +22,17 @@ internal partial class PluginInterface
     [System.Text.Json.Serialization.JsonPropertyName("category")]
     public string? Category { get; set; } = default!;
 
+    /// <summary>
+    /// Local composer icon path, resolved from the installed plugin package.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("composerIcon")]
     public ComposerIcon? ComposerIcon { get; set; } = default!;
+
+    /// <summary>
+    /// Remote composer icon URL from the plugin catalog.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("composerIconUrl")]
+    public string? ComposerIconUrl { get; set; } = default!;
 
     /// <summary>
     /// Starter prompts for the plugin. Capped at 3 entries with a maximum of 128 characters per entry.
@@ -37,8 +46,17 @@ internal partial class PluginInterface
     [System.Text.Json.Serialization.JsonPropertyName("displayName")]
     public string? DisplayName { get; set; } = default!;
 
+    /// <summary>
+    /// Local logo path, resolved from the installed plugin package.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("logo")]
     public Logo? Logo { get; set; } = default!;
+
+    /// <summary>
+    /// Remote logo URL from the plugin catalog.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("logoUrl")]
+    public string? LogoUrl { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("longDescription")]
     public string? LongDescription { get; set; } = default!;
@@ -46,6 +64,15 @@ internal partial class PluginInterface
     [System.Text.Json.Serialization.JsonPropertyName("privacyPolicyUrl")]
     public string? PrivacyPolicyUrl { get; set; } = default!;
 
+    /// <summary>
+    /// Remote screenshot URLs from the plugin catalog.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("screenshotUrls")]
+    public System.Collections.Generic.ICollection<string> ScreenshotUrls { get; set; } = new System.Collections.ObjectModel.Collection<string>();
+
+    /// <summary>
+    /// Local screenshot paths, resolved from the installed plugin package.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("screenshots")]
     public System.Collections.Generic.ICollection<string> Screenshots { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 

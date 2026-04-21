@@ -9,15 +9,16 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// [UNSTABLE] Source that produced a terminal approval auto-review decision.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum AutoReviewDecisionSource
+internal enum SortDirection
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"agent")]
-    Agent = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"asc")]
+    Asc = 0,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"desc")]
+    Desc = 1,
 
 
 }

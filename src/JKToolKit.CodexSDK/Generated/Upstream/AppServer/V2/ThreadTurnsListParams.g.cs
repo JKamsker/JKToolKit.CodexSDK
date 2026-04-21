@@ -10,23 +10,29 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class SkillsConfigWriteParams
+internal partial class ThreadTurnsListParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("enabled")]
-    public bool Enabled { get; set; } = default!;
+    /// <summary>
+    /// Opaque cursor to pass to the next call to continue after the last turn.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cursor")]
+    public string? Cursor { get; set; } = default!;
 
     /// <summary>
-    /// Name-based selector.
+    /// Optional turn page size.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string? Name { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("limit")]
+    public int? Limit { get; set; } = default!;
 
     /// <summary>
-    /// Path-based selector.
+    /// Optional turn pagination direction; defaults to descending.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("path")]
-    public Path2? Path { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
+    public SortDirection3? SortDirection { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

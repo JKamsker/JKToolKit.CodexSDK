@@ -10,17 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginInstallParams
+internal partial class WarningNotification
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
-    public MarketplacePath? MarketplacePath { get; set; } = default!;
+    /// <summary>
+    /// Concise warning message for the user.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("message")]
+    public string Message { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("pluginName")]
-    public string PluginName { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("remoteMarketplaceName")]
-    public string? RemoteMarketplaceName { get; set; } = default!;
+    /// <summary>
+    /// Optional thread target when the warning applies to a specific thread.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
