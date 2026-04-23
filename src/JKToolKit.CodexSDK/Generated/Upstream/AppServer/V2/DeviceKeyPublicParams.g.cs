@@ -9,24 +9,15 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Fetch a controller-local device key public key by id.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class DynamicToolSpec
+internal partial class DeviceKeyPublicParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("deferLoading")]
-    public bool? DeferLoading { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string Description { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("inputSchema")]
-    public object InputSchema { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("namespace")]
-    public string? Namespace { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("keyId")]
+    public string KeyId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

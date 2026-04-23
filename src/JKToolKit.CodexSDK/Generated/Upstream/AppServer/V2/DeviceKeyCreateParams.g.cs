@@ -9,24 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Create a controller-local device key with a random key id.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class DynamicToolSpec
+internal partial class DeviceKeyCreateParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("deferLoading")]
-    public bool? DeferLoading { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("accountUserId")]
+    public string AccountUserId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string Description { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("clientId")]
+    public string ClientId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("inputSchema")]
-    public object InputSchema { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string Name { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("namespace")]
-    public string? Namespace { get; set; } = default!;
+    /// <summary>
+    /// Defaults to `hardware_only` when omitted.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("protectionPolicy")]
+    public ProtectionPolicy? ProtectionPolicy { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
