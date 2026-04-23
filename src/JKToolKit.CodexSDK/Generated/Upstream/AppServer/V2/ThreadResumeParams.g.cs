@@ -50,6 +50,12 @@ internal partial class ThreadResumeParams
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string? ModelProvider { get; set; } = default!;
 
+    /// <summary>
+    /// Full permissions override for the resumed thread. Cannot be combined with `sandbox`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
+    public PermissionProfile5? PermissionProfile { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
     public Personality2? Personality { get; set; } = default!;
 

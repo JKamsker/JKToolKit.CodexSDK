@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Configures who approval requests are routed to for review. Examples include sandbox escapes, blocked network access, MCP approval prompts, and ARC escalations. Defaults to `user`. `guardian_subagent` uses a carefully prompted subagent to gather relevant context and apply a risk-based decision framework before approving or denying the request.
+/// Configures who approval requests are routed to for review. Examples include sandbox escapes, blocked network access, MCP approval prompts, and ARC escalations. Defaults to `user`. `auto_review` uses a carefully prompted subagent to gather relevant context and apply a risk-based decision framework before approving or denying the request. The legacy value `guardian_subagent` is accepted for compatibility.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal enum ApprovalsReviewer
@@ -20,8 +20,12 @@ internal enum ApprovalsReviewer
     User = 0,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"auto_review")]
+    Auto_review = 1,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"guardian_subagent")]
-    Guardian_subagent = 1,
+    Guardian_subagent = 2,
 
 
 }

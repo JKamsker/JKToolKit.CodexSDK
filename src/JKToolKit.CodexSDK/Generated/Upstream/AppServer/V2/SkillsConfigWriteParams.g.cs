@@ -26,7 +26,7 @@ internal partial class SkillsConfigWriteParams
     /// Path-based selector.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("path")]
-    public Path2? Path { get; set; } = default!;
+    public Path4? Path { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -14,7 +14,7 @@ internal partial class PluginReadParams
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
-    public MarketplacePath2? MarketplacePath { get; set; } = default!;
+    public MarketplacePath3? MarketplacePath { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("pluginName")]
     public string PluginName { get; set; } = default!;

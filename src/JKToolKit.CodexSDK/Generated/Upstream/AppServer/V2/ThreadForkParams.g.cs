@@ -53,6 +53,12 @@ internal partial class ThreadForkParams
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string? ModelProvider { get; set; } = default!;
 
+    /// <summary>
+    /// Full permissions override for the forked thread. Cannot be combined with `sandbox`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
+    public PermissionProfile3? PermissionProfile { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
     public Sandbox? Sandbox { get; set; } = default!;
 

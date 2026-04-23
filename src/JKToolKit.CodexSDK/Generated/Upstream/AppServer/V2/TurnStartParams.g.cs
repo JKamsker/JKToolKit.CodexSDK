@@ -53,6 +53,12 @@ internal partial class TurnStartParams
     public object? OutputSchema { get; set; } = default!;
 
     /// <summary>
+    /// Override the full permissions profile for this turn and subsequent turns. Cannot be combined with `sandboxPolicy`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
+    public PermissionProfile9? PermissionProfile { get; set; } = default!;
+
+    /// <summary>
     /// Override the personality for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
