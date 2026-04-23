@@ -26,10 +26,10 @@ internal partial class ThreadListParams
     public string? Cursor { get; set; } = default!;
 
     /// <summary>
-    /// Optional cwd filter; when set, only threads whose session cwd exactly matches this path are returned.
+    /// Optional cwd filter or filters; when set, only threads whose session cwd exactly matches one of these paths are returned.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
-    public string? Cwd { get; set; } = default!;
+    public Cwd? Cwd { get; set; } = default!;
 
     /// <summary>
     /// Optional page size; defaults to a reasonable server-side value.
@@ -67,6 +67,12 @@ internal partial class ThreadListParams
     [System.Text.Json.Serialization.JsonPropertyName("sourceKinds")]
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
     public System.Collections.Generic.ICollection<ThreadSourceKind>? SourceKinds { get; set; } = default!;
+
+    /// <summary>
+    /// If true, return from the state DB without scanning JSONL rollouts to repair thread metadata. Omitted or false preserves scan-and-repair behavior.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("useStateDbOnly")]
+    public bool? UseStateDbOnly { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

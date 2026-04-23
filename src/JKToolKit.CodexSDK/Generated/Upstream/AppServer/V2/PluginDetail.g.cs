@@ -23,7 +23,7 @@ internal partial class PluginDetail
     public string MarketplaceName { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
-    public string MarketplacePath { get; set; } = default!;
+    public MarketplacePath? MarketplacePath { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("mcpServers")]
     public System.Collections.Generic.ICollection<string> McpServers { get; set; } = new System.Collections.ObjectModel.Collection<string>();

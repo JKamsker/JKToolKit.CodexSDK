@@ -23,7 +23,7 @@ internal partial class PluginMarketplaceEntry
     /// Local marketplace file path when the marketplace is backed by a local file. Remote-only catalog marketplaces do not have a local path.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("path")]
-    public Path? Path { get; set; } = default!;
+    public Path2? Path { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("plugins")]
     public System.Collections.Generic.ICollection<PluginSummary> Plugins { get; set; } = new System.Collections.ObjectModel.Collection<PluginSummary>();

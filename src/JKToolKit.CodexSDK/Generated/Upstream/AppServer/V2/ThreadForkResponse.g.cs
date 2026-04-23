@@ -36,6 +36,12 @@ internal partial class ThreadForkResponse
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string ModelProvider { get; set; } = default!;
 
+    /// <summary>
+    /// Canonical active permissions view for this thread when representable. This is `null` for external sandbox policies because external enforcement cannot be round-tripped as a `PermissionProfile`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
+    public PermissionProfile4? PermissionProfile { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
     public ReasoningEffort2? ReasoningEffort { get; set; } = default!;
 
