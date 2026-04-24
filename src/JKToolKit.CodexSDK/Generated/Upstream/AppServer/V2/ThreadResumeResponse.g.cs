@@ -37,7 +37,7 @@ internal partial class ThreadResumeResponse
     public string ModelProvider { get; set; } = default!;
 
     /// <summary>
-    /// Canonical active permissions view for this thread when representable. This is `null` for external sandbox policies because external enforcement cannot be round-tripped as a `PermissionProfile`.
+    /// Canonical active permissions view for this thread.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
     public PermissionProfile6? PermissionProfile { get; set; } = default!;

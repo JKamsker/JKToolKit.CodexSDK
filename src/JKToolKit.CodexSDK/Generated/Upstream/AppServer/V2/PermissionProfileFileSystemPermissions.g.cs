@@ -13,12 +13,6 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PermissionProfileFileSystemPermissions
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("entries")]
-    public System.Collections.Generic.ICollection<FileSystemSandboxEntry> Entries { get; set; } = new System.Collections.ObjectModel.Collection<FileSystemSandboxEntry>();
-
-    [System.Text.Json.Serialization.JsonPropertyName("globScanMaxDepth")]
-    public int? GlobScanMaxDepth { get; set; } = default!;
-
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

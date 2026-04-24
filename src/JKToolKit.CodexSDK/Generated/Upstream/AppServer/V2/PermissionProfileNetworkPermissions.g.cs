@@ -14,7 +14,7 @@ internal partial class PermissionProfileNetworkPermissions
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
-    public bool? Enabled { get; set; } = default!;
+    public bool Enabled { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
