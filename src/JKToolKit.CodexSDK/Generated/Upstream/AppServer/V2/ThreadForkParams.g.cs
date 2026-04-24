@@ -45,6 +45,12 @@ internal partial class ThreadForkParams
     public bool? Ephemeral { get; set; } = default!;
 
     /// <summary>
+    /// When true, return only thread metadata and live fork state without populating `thread.turns`. This is useful when the client plans to call `thread/turns/list` immediately after forking.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("excludeTurns")]
+    public bool? ExcludeTurns { get; set; } = default!;
+
+    /// <summary>
     /// Configuration overrides for the forked thread, if any.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("model")]

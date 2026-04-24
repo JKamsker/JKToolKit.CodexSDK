@@ -10,14 +10,14 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RequestPermissionProfile
+internal partial class MarketplaceUpgradeErrorInfo
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("fileSystem")]
-    public FileSystem2? FileSystem { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaceName")]
+    public string MarketplaceName { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("network")]
-    public Network? Network { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("message")]
+    public string Message { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

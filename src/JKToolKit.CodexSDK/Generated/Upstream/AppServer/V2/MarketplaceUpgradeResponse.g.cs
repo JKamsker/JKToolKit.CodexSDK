@@ -10,8 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class Network2
+internal partial class MarketplaceUpgradeResponse
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("errors")]
+    public System.Collections.Generic.ICollection<MarketplaceUpgradeErrorInfo> Errors { get; set; } = new System.Collections.ObjectModel.Collection<MarketplaceUpgradeErrorInfo>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("selectedMarketplaces")]
+    public System.Collections.Generic.ICollection<string> SelectedMarketplaces { get; set; } = new System.Collections.ObjectModel.Collection<string>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("upgradedRoots")]
+    public System.Collections.Generic.ICollection<string> UpgradedRoots { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
