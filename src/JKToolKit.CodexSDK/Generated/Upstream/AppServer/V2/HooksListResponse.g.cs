@@ -10,8 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PermissionProfile8
+internal partial class HooksListResponse
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("data")]
+    public System.Collections.Generic.ICollection<HooksListEntry> Data { get; set; } = new System.Collections.ObjectModel.Collection<HooksListEntry>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -13,8 +13,23 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class MigrationDetails
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("commands")]
+    public System.Collections.Generic.ICollection<CommandMigration>? Commands { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("hooks")]
+    public System.Collections.Generic.ICollection<HookMigration>? Hooks { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("mcpServers")]
+    public System.Collections.Generic.ICollection<McpServerMigration>? McpServers { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("plugins")]
-    public System.Collections.Generic.ICollection<PluginsMigration> Plugins { get; set; } = new System.Collections.ObjectModel.Collection<PluginsMigration>();
+    public System.Collections.Generic.ICollection<PluginsMigration>? Plugins { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("sessions")]
+    public System.Collections.Generic.ICollection<SessionMigration>? Sessions { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("subagents")]
+    public System.Collections.Generic.ICollection<SubagentMigration>? Subagents { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

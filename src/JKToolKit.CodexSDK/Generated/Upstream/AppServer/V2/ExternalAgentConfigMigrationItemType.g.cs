@@ -33,4 +33,20 @@ internal enum ExternalAgentConfigMigrationItemType
     MCP_SERVER_CONFIG = 4,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"SUBAGENTS")]
+    SUBAGENTS = 5,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"HOOKS")]
+    HOOKS = 6,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"COMMANDS")]
+    COMMANDS = 7,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"SESSIONS")]
+    SESSIONS = 8,
+
+
 }

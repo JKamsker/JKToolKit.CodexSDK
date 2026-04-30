@@ -10,8 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PermissionProfile2
+internal partial class ThreadGoalUpdatedNotification
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("goal")]
+    public ThreadGoal Goal { get; set; } = new ThreadGoal();
+
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("turnId")]
+    public string? TurnId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

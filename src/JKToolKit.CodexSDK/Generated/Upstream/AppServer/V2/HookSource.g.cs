@@ -33,16 +33,24 @@ internal enum HookSource
     SessionFlags = 4,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"plugin")]
+    Plugin = 5,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"cloudRequirements")]
+    CloudRequirements = 6,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"legacyManagedConfigFile")]
-    LegacyManagedConfigFile = 5,
+    LegacyManagedConfigFile = 7,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"legacyManagedConfigMdm")]
-    LegacyManagedConfigMdm = 6,
+    LegacyManagedConfigMdm = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 7,
+    Unknown = 9,
 
 
 }
