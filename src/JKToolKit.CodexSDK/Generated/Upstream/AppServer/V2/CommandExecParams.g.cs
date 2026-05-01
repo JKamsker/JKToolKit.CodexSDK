@@ -63,14 +63,6 @@ internal partial class CommandExecParams
     public long? OutputBytesCap { get; set; } = default!;
 
     /// <summary>
-    /// Optional full permissions profile for this command.
-    /// <br/>
-    /// <br/>Defaults to the user's configured permissions when omitted. Cannot be combined with `sandboxPolicy`.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
-    public PermissionProfile2? PermissionProfile { get; set; } = default!;
-
-    /// <summary>
     /// Optional client-supplied, connection-scoped process id.
     /// <br/>
     /// <br/>Required for `tty`, `streamStdin`, `streamStdoutStderr`, and follow-up `command/exec/write`, `command/exec/resize`, and `command/exec/terminate` calls. When omitted, buffered execution gets an internal id that is not exposed to the client.

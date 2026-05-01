@@ -10,8 +10,14 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PermissionProfile7
+internal partial class HooksListParams
 {
+
+    /// <summary>
+    /// When empty, defaults to the current session working directory.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cwds")]
+    public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

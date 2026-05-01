@@ -36,12 +36,6 @@ internal partial class ThreadStartResponse
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string ModelProvider { get; set; } = default!;
 
-    /// <summary>
-    /// Canonical active permissions view for this thread.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("permissionProfile")]
-    public PermissionProfile8? PermissionProfile { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
     public ReasoningEffort4? ReasoningEffort { get; set; } = default!;
 
