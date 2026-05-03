@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// [UNSTABLE] Source that produced a terminal guardian approval review decision.
+/// [UNSTABLE] Source that produced a terminal approval auto-review decision.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal enum AutoReviewDecisionSource

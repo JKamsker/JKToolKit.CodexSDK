@@ -22,6 +22,9 @@ internal partial class ExternalAgentConfigMigrationItem
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string Description { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("details")]
+    public Details? Details { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("itemType")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ExternalAgentConfigMigrationItemType>))]
     public ExternalAgentConfigMigrationItemType ItemType { get; set; } = default!;

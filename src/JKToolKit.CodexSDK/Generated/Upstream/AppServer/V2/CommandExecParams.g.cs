@@ -73,7 +73,7 @@ internal partial class CommandExecParams
     /// <summary>
     /// Optional sandbox policy for this command.
     /// <br/>
-    /// <br/>Uses the same shape as thread/turn execution sandbox configuration and defaults to the user's configured policy when omitted.
+    /// <br/>Uses the same shape as thread/turn execution sandbox configuration and defaults to the user's configured policy when omitted. Cannot be combined with `permissionProfile`.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("sandboxPolicy")]
     public SandboxPolicy2? SandboxPolicy { get; set; } = default!;

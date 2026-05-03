@@ -13,17 +13,14 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginInstallParams
 {
 
-    /// <summary>
-    /// When true, apply the remote plugin change before the local install flow.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("forceRemoteSync")]
-    public bool? ForceRemoteSync { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
-    public string MarketplacePath { get; set; } = default!;
+    public MarketplacePath2? MarketplacePath { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("pluginName")]
     public string PluginName { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("remoteMarketplaceName")]
+    public string? RemoteMarketplaceName { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -17,7 +17,7 @@ internal partial class McpResourceReadParams
     public string Server { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
+    public string? ThreadId { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("uri")]
     public string Uri { get; set; } = default!;

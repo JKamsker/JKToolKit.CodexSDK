@@ -28,6 +28,9 @@ internal partial class RateLimitSnapshot
     [System.Text.Json.Serialization.JsonPropertyName("primary")]
     public Primary? Primary { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("rateLimitReachedType")]
+    public RateLimitReachedType2? RateLimitReachedType { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("secondary")]
     public Secondary? Secondary { get; set; } = default!;
 

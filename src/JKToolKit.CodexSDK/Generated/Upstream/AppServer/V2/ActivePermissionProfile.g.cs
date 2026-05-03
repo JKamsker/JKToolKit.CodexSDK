@@ -9,24 +9,27 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Details of a ghost commit created from a repository state.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class GhostCommit
+internal partial class ActivePermissionProfile
 {
 
+    /// <summary>
+    /// Parent profile identifier once permissions profiles support inheritance. This is currently always `null`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("extends")]
+    public string? Extends { get; set; } = default!;
+
+    /// <summary>
+    /// Identifier from `default_permissions` or the implicit built-in default, such as `:workspace` or a user-defined `[permissions.&lt;id&gt;]` profile.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("parent")]
-    public string? Parent { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("preexisting_untracked_dirs")]
-    public System.Collections.Generic.ICollection<string> Preexisting_untracked_dirs { get; set; } = new System.Collections.ObjectModel.Collection<string>();
-
-    [System.Text.Json.Serialization.JsonPropertyName("preexisting_untracked_files")]
-    public System.Collections.Generic.ICollection<string> Preexisting_untracked_files { get; set; } = new System.Collections.ObjectModel.Collection<string>();
+    /// <summary>
+    /// Bounded user-requested modifications applied on top of the named profile, if any.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("modifications")]
+    public System.Collections.Generic.ICollection<Modifications>? Modifications { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

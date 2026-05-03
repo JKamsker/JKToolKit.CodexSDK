@@ -44,6 +44,10 @@ internal partial class HookRunSummary
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookScope>))]
     public HookScope Scope { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("source")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookSource>))]
+    public HookSource? Source { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("sourcePath")]
     public string SourcePath { get; set; } = default!;
 

@@ -9,21 +9,9 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// EXPERIMENTAL - flat transcript delta emitted whenever realtime transcript text changes.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadRealtimeTranscriptUpdatedNotification
+internal partial class IconLarge
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("role")]
-    public string Role { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("text")]
-    public string Text { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

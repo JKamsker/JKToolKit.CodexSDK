@@ -26,7 +26,7 @@ internal partial class SkillSummary
     public string Name { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("path")]
-    public string Path { get; set; } = default!;
+    public Path3? Path { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("shortDescription")]
     public string? ShortDescription { get; set; } = default!;

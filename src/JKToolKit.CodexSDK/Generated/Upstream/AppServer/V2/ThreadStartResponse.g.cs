@@ -24,6 +24,12 @@ internal partial class ThreadStartResponse
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;
 
+    /// <summary>
+    /// Instruction source files currently loaded for this thread.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("instructionSources")]
+    public System.Collections.Generic.ICollection<string>? InstructionSources { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("model")]
     public string Model { get; set; } = default!;
 

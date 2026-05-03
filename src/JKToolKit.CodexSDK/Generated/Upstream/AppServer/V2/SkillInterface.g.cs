@@ -23,10 +23,10 @@ internal partial class SkillInterface
     public string? DisplayName { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("iconLarge")]
-    public string? IconLarge { get; set; } = default!;
+    public IconLarge? IconLarge { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("iconSmall")]
-    public string? IconSmall { get; set; } = default!;
+    public IconSmall? IconSmall { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("shortDescription")]
     public string? ShortDescription { get; set; } = default!;

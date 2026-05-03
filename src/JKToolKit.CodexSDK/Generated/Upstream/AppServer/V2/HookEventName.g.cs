@@ -17,20 +17,24 @@ internal enum HookEventName
     PreToolUse = 0,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"permissionRequest")]
+    PermissionRequest = 1,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"postToolUse")]
-    PostToolUse = 1,
+    PostToolUse = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"sessionStart")]
-    SessionStart = 2,
+    SessionStart = 3,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"userPromptSubmit")]
-    UserPromptSubmit = 3,
+    UserPromptSubmit = 4,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"stop")]
-    Stop = 4,
+    Stop = 5,
 
 
 }

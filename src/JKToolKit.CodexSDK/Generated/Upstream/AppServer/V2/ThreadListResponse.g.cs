@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ThreadListResponse
 {
 
+    /// <summary>
+    /// Opaque cursor to pass as `cursor` when reversing `sortDirection`. This is only populated when the page contains at least one thread. Use it with the opposite `sortDirection`; for timestamp sorts it anchors at the start of the page timestamp so same-second updates are not skipped.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("backwardsCursor")]
+    public string? BackwardsCursor { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("data")]
     public System.Collections.Generic.ICollection<Thread> Data { get; set; } = new System.Collections.ObjectModel.Collection<Thread>();
 

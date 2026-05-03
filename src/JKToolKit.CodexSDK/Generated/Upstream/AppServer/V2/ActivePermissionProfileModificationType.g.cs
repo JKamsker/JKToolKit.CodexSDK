@@ -10,11 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ReadOnlyAccessType
+internal enum ActivePermissionProfileModificationType
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"restricted")]
-    Restricted = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"additionalWritableRoot")]
+    AdditionalWritableRoot = 0,
 
 
 }
