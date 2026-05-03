@@ -1,6 +1,6 @@
 # Documentation
 
-JKToolKit.CodexSDK ships as **one NuGet package** with three integration modes for the Codex CLI.
+JKToolKit.CodexSDK ships as a core NuGet package with three integration modes for the Codex CLI. Optional adapter packages add integrations on top of those modes.
 
 ## Guides
 
@@ -9,6 +9,7 @@ JKToolKit.CodexSDK ships as **one NuGet package** with three integration modes f
 | [Exec Mode](exec.md) | Launch `codex exec`, stream JSONL events, structured outputs, code reviews |
 | [App Server](AppServer/README.md) | `codex app-server` — threads, turns, streaming deltas, approvals, DI, resiliency |
 | [MCP Server](McpServer/README.md) | `codex mcp-server` — tool discovery (`tools/list`, `tools/call`), sessions, follow-ups |
+| [Semantic Kernel Adapter](SemanticKernel.md) | Expose SK `[KernelFunction]` plugins as Codex app-server dynamic tools |
 | [Upstream Sync](upstreamgen.md) | How upstream JSON Schema → internal wire DTOs are generated + kept in sync |
 | [Manual Testing Runbook](Runbooks/Manual-Testing/README.md) | Step-by-step manual verification of all SDK features (via the demo app + scratch snippets) |
 
@@ -47,6 +48,7 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- review --commit <sha>
 # App Server
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-stream --repo "<repo-path>"
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout-seconds 30
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- sk-function-calling --repo "<repo-path>"
 
 # MCP Server
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcpserver --repo "<repo-path>"

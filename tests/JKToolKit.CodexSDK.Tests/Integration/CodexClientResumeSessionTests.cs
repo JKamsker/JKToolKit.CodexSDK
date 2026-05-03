@@ -150,7 +150,10 @@ public class CodexClientResumeSessionTests
         var baseTime = DateTimeOffset.Parse("2025-11-21T00:00:00Z");
         var newestPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime.AddMinutes(1), secondId);
         var cwd = Path.Combine(Path.GetTempPath(), $"codex-most-recent-{Guid.NewGuid():N}");
+        var codexHome = Path.Combine(Path.GetTempPath(), $"codex-most-recent-home-{Guid.NewGuid():N}");
         Directory.CreateDirectory(cwd);
+        Directory.CreateDirectory(codexHome);
+        File.WriteAllText(Path.Combine(codexHome, "config.toml"), string.Empty);
 
         try
         {
@@ -172,7 +175,7 @@ public class CodexClientResumeSessionTests
                 ]);
 
             var client = new CodexClient(
-                Options.Create(new CodexClientOptions()),
+                Options.Create(new CodexClientOptions { CodexHomeDirectory = codexHome }),
                 processLauncher: null,
                 locator,
                 new PathAwareTailer(logs),
@@ -192,6 +195,7 @@ public class CodexClientResumeSessionTests
         finally
         {
             Directory.Delete(cwd, recursive: true);
+            Directory.Delete(codexHome, recursive: true);
         }
     }
 
@@ -203,7 +207,10 @@ public class CodexClientResumeSessionTests
         var outsideId = SessionId.Parse("session-outside");
         var insidePath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime.AddMinutes(1), insideId);
         var cwd = Path.Combine(Path.GetTempPath(), $"codex-cwd-{Guid.NewGuid():N}");
+        var codexHome = Path.Combine(Path.GetTempPath(), $"codex-cwd-home-{Guid.NewGuid():N}");
         Directory.CreateDirectory(cwd);
+        Directory.CreateDirectory(codexHome);
+        File.WriteAllText(Path.Combine(codexHome, "config.toml"), string.Empty);
 
         try
         {
@@ -225,7 +232,7 @@ public class CodexClientResumeSessionTests
             };
 
             var client = new CodexClient(
-                Options.Create(new CodexClientOptions()),
+                Options.Create(new CodexClientOptions { CodexHomeDirectory = codexHome }),
                 processLauncher: null,
                 locator,
                 new PathAwareTailer(logs),
@@ -243,6 +250,7 @@ public class CodexClientResumeSessionTests
         finally
         {
             Directory.Delete(cwd, recursive: true);
+            Directory.Delete(codexHome, recursive: true);
         }
     }
 

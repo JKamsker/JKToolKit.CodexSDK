@@ -21,6 +21,7 @@ using JKToolKit.CodexSDK.Demo.Commands.McpServer;
 using JKToolKit.CodexSDK.Demo.Commands.McpOverrides;
 using JKToolKit.CodexSDK.Demo.Commands.Review;
 using JKToolKit.CodexSDK.Demo.Commands.SdkReviewRoute;
+using JKToolKit.CodexSDK.Demo.Commands.SemanticKernelFunctionCalling;
 using JKToolKit.CodexSDK.Demo.Commands.StructuredReview;
 using Spectre.Console.Cli;
 
@@ -148,6 +149,9 @@ internal static class Program
 
             config.AddCommand<StructuredReviewCommand>("structured-review")
                 .WithDescription("Run a structured code review with typed output (issues + fix tasks).");
+
+            config.AddCommand<SemanticKernelFunctionCallingCommand>("sk-function-calling")
+                .WithDescription("App-server: expose Semantic Kernel functions as Codex dynamic tools.");
 
             config.AddCommand<DiOverridesCommand>("di-overrides")
                 .WithDescription("Validate DI registration and override hooks (app-server + mcp-server).");

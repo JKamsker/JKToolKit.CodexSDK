@@ -56,6 +56,7 @@ Full docs, examples, and API reference live in [`docs/`](docs/README.md):
 - [Exec mode](docs/exec.md) — sessions, streaming events, structured outputs, code reviews
 - [App Server](docs/AppServer/README.md) — threads, turns, approvals, DI, resiliency
 - [MCP Server](docs/McpServer/README.md) — tool discovery, sessions, follow-ups
+- Semantic Kernel demo — `dotnet run --project src/JKToolKit.CodexSDK.Demo -- sk-function-calling --repo "<repo-path>"`
 
 ## Demo
 

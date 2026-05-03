@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>JKToolKit.CodexSDK.SemanticKernel</AssemblyName>
+    <RootNamespace>JKToolKit.CodexSDK.SemanticKernel</RootNamespace>
+    <PackageId>JKToolKit.CodexSDK.SemanticKernel</PackageId>
+    <Product>JKToolKit.CodexSDK.SemanticKernel</Product>
+    <Title>JKToolKit.CodexSDK.SemanticKernel</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JKToolKit.CodexSDK\JKToolKit.CodexSDK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.75.0" />
+  </ItemGroup>
+
+</Project>
