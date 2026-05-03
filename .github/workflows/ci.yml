@@ -73,11 +73,15 @@ jobs:
           print(f"Rewrote {path.as_posix()} for NuGet packaging")
           PY
 
-      - name: Pack NuGet Package
+      - name: Pack NuGet Packages
         if: matrix.os == 'ubuntu-latest'
-        run: dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+        run: |
+          dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+          dotnet pack src/JKToolKit.CodexSDK.SemanticKernel/JKToolKit.CodexSDK.SemanticKernel.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+          test -f "nuget-packages/JKToolKit.CodexSDK.${{ env.VERSION }}.nupkg"
+          test -f "nuget-packages/JKToolKit.CodexSDK.SemanticKernel.${{ env.VERSION }}.nupkg"
 
-      - name: Upload NuGet Package Artifact
+      - name: Upload NuGet Package Artifacts
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
@@ -89,7 +93,7 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-    - name: Download NuGet Package
+    - name: Download NuGet Packages
       uses: actions/download-artifact@v4
       with:
         name: nuget-package
@@ -105,5 +109,7 @@ jobs:
 
     - name: Upload to NuGet.org
       run: |
-        dotnet nuget push "nuget-packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        for package in nuget-packages/*.nupkg; do
+          dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        done
         echo "Version: ${{ needs.build-and-test.outputs.version }}"

@@ -12,7 +12,14 @@
     <PackageId>JKToolKit.CodexSDK.SemanticKernel</PackageId>
     <Product>JKToolKit.CodexSDK.SemanticKernel</Product>
     <Title>JKToolKit.CodexSDK.SemanticKernel</Title>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>SemanticKernel.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\res\logo.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\SemanticKernel.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\JKToolKit.CodexSDK\JKToolKit.CodexSDK.csproj" />
