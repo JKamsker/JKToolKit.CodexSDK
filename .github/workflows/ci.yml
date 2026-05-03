@@ -8,7 +8,61 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src_changed: ${{ steps.detect.outputs.src_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect src changes
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run: building regardless of changed paths."
+            exit 0
+          fi
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "No usable base SHA; building to stay safe."
+            exit 0
+          fi
+
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null || ! git cat-file -e "$head^{commit}" 2>/dev/null; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Could not resolve base/head commits locally; building to stay safe."
+            exit 0
+          fi
+
+          changed_files="$(git diff --name-only "$base" "$head" -- src)"
+          if [[ -n "$changed_files" ]]; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changed src files:"
+            echo "$changed_files"
+          else
+            echo "src_changed=false" >> "$GITHUB_OUTPUT"
+            echo "No src changes detected; build and publish jobs will be skipped."
+          fi
+
   build-and-test:
+    needs: changes
+    if: needs.changes.outputs.src_changed == 'true'
     runs-on: ${{ matrix.os }}
     outputs:
       version: ${{ steps.set-version.outputs.version }}
@@ -89,8 +143,8 @@ jobs:
           path: nuget-packages/*.nupkg
 
   NugetUpload:
-    needs: build-and-test
-    if: github.event_name == 'push'
+    needs: [changes, build-and-test]
+    if: github.event_name == 'push' && needs.changes.outputs.src_changed == 'true' && needs.build-and-test.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - name: Download NuGet Packages

@@ -1,14 +1,25 @@
 # Semantic Kernel Adapter
 
+[![NuGet](https://img.shields.io/nuget/v/JKToolKit.CodexSDK.SemanticKernel.svg?logo=nuget&label=JKToolKit.CodexSDK.SemanticKernel)](https://www.nuget.org/packages/JKToolKit.CodexSDK.SemanticKernel)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/JKToolKit.CodexSDK.SemanticKernel.svg?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK.SemanticKernel)
+
 `JKToolKit.CodexSDK.SemanticKernel` adapts Semantic Kernel native functions to Codex app-server dynamic tools.
 
 This is useful when you already have SK plugins marked with `[KernelFunction]` and want Codex app-server to call them through its `item/tool/call` flow.
 
+NuGet package: [`JKToolKit.CodexSDK.SemanticKernel`](https://www.nuget.org/packages/JKToolKit.CodexSDK.SemanticKernel)
+
 ## Install
 
+Install the adapter package into the project that owns your Semantic Kernel plugins:
+
 ```bash
-dotnet add package JKToolKit.CodexSDK
 dotnet add package JKToolKit.CodexSDK.SemanticKernel
+```
+
+The adapter package depends on `JKToolKit.CodexSDK` and `Microsoft.SemanticKernel.Abstractions`. If your project does not already reference Semantic Kernel's core package, add it too:
+
+```bash
 dotnet add package Microsoft.SemanticKernel.Core --version 1.75.0
 ```
 
