@@ -57,6 +57,12 @@ Run the end-to-end pizza demo:
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- sk-function-calling --repo "<repo-path>"
 ```
 
+The demo inherits the default model from your Codex configuration. To force a model, pass `--model <MODEL>`, for example:
+
+```bash
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- sk-function-calling --model gpt-5.5
+```
+
 ## Notes
 
 - Codex dynamic tools are currently behind the app-server experimental API capability, so set `CodexAppServerClientOptions.ExperimentalApi = true`.

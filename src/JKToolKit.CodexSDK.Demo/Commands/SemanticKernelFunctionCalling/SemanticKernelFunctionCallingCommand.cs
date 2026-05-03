@@ -1,6 +1,7 @@
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
+using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.Demo.Commands.SemanticKernelFunctionCalling.Pizza;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.SemanticKernel;
@@ -39,7 +40,7 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
             Console.CancelKeyPress += cancelHandler;
 
             var model = string.IsNullOrWhiteSpace(settings.Model)
-                ? CodexModel.Gpt52Codex
+                ? (CodexModel?)null
                 : CodexModel.Parse(settings.Model);
             var approvalPolicy = string.IsNullOrWhiteSpace(settings.ApprovalPolicy)
                 ? CodexApprovalPolicy.Never
@@ -88,10 +89,20 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
                 {
                     Console.Write(delta.Delta);
                 }
+
+                if (ev is ErrorNotification error)
+                {
+                    Console.Error.WriteLine($"Turn error: {error.Error}");
+                }
             }
 
             var completed = await turn.Completion;
             Console.WriteLine($"\nDone: {completed.Status}");
+            if (completed.Error is { } completedError)
+            {
+                Console.Error.WriteLine($"Completion error: {completedError}");
+            }
+
             Console.WriteLine("Final cart:");
             Console.WriteLine(JsonSerializer.Serialize(pizzaService.GetCart(), OutputJsonOptions));
             return 0;
