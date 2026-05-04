@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.AgentFramework.Internal;
 using Microsoft.Extensions.AI;
 
 namespace JKToolKit.CodexSDK.AgentFramework.Tools;
@@ -21,6 +22,8 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
 
     private readonly IReadOnlyDictionary<string, AIFunction> _functionsByToolName;
     private readonly IAppServerApprovalHandler? _fallbackHandler;
+    private readonly IServiceProvider? _functionInvocationServices;
+    private readonly Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? _toolApprovalHandler;
 
     /// <summary>
     /// Creates a handler for Codex app-server dynamic tool calls.
@@ -30,11 +33,22 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
     public AgentFrameworkToolCallHandler(
         IEnumerable<AIFunction> functions,
         IAppServerApprovalHandler? fallbackHandler = null)
+        : this(functions, fallbackHandler, functionInvocationServices: null, toolApprovalHandler: null)
+    {
+    }
+
+    internal AgentFrameworkToolCallHandler(
+        IEnumerable<AIFunction> functions,
+        IAppServerApprovalHandler? fallbackHandler,
+        IServiceProvider? functionInvocationServices = null,
+        Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? toolApprovalHandler = null)
     {
         ArgumentNullException.ThrowIfNull(functions);
 
         _functionsByToolName = BuildFunctionMap(functions);
         _fallbackHandler = fallbackHandler;
+        _functionInvocationServices = functionInvocationServices;
+        _toolApprovalHandler = toolApprovalHandler;
     }
 
     /// <inheritdoc />
@@ -55,7 +69,25 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
 
         try
         {
-            var result = await function.InvokeAsync(CreateArguments(request.Arguments), ct);
+            if (function.GetService<ApprovalRequiredAIFunction>() is not null)
+            {
+                var approval = await GetApprovalAsync(request, function, ct).ConfigureAwait(false);
+                if (approval?.Approved != true)
+                {
+                    var reason = string.IsNullOrWhiteSpace(approval?.Reason)
+                        ? $"Agent Framework tool '{request.Tool}' was not approved."
+                        : approval.Reason;
+                    return CreateResponse(success: false, reason);
+                }
+            }
+
+            var arguments = CreateArguments(request, _functionInvocationServices);
+            var result = await AgentFrameworkFunctionInvoker.InvokeAsync(
+                    function,
+                    arguments,
+                    CreateCallContent(request, arguments),
+                    ct)
+                .ConfigureAwait(false);
             return CreateResponse(success: true, FormatResult(result, function.JsonSerializerOptions));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -89,20 +121,66 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
                throw new ArgumentException("Dynamic tool call request could not be parsed.", nameof(@params));
     }
 
-    private static AIFunctionArguments CreateArguments(JsonElement arguments)
+    private async ValueTask<AgentFrameworkToolApprovalResponse?> GetApprovalAsync(
+        DynamicToolCallParams request,
+        AIFunction function,
+        CancellationToken cancellationToken)
     {
-        var aiArguments = new AIFunctionArguments();
-        if (arguments.ValueKind != JsonValueKind.Object)
+        if (_toolApprovalHandler is null)
+        {
+            return null;
+        }
+
+        return await _toolApprovalHandler(
+            new AgentFrameworkToolApprovalRequest(
+                request.ThreadId,
+                request.TurnId,
+                request.CallId,
+                function,
+                request.Arguments),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static AIFunctionArguments CreateArguments(
+        DynamicToolCallParams request,
+        IServiceProvider? functionInvocationServices)
+    {
+        var aiArguments = new AIFunctionArguments
+        {
+            Services = functionInvocationServices,
+            Context = new Dictionary<object, object?>
+            {
+                ["codex.threadId"] = request.ThreadId,
+                ["codex.turnId"] = request.TurnId,
+                ["codex.callId"] = request.CallId,
+                ["codex.toolName"] = request.Tool
+            }
+        };
+
+        if (request.Arguments.ValueKind != JsonValueKind.Object)
         {
             return aiArguments;
         }
 
-        foreach (var property in arguments.EnumerateObject())
+        foreach (var property in request.Arguments.EnumerateObject())
         {
             aiArguments[property.Name] = property.Value.Clone();
         }
 
         return aiArguments;
+    }
+
+    private static FunctionCallContent CreateCallContent(
+        DynamicToolCallParams request,
+        AIFunctionArguments arguments)
+    {
+        var callArguments = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var argument in arguments)
+        {
+            callArguments[argument.Key] = argument.Value;
+        }
+
+        return new FunctionCallContent(request.CallId, request.Tool, callArguments);
     }
 
     private static string FormatResult(object? value, JsonSerializerOptions serializerOptions)

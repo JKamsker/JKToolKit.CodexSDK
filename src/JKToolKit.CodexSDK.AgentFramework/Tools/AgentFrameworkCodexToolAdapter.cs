@@ -25,11 +25,30 @@ public static class AgentFrameworkCodexToolAdapter
         IEnumerable<AIFunction> functions,
         IAppServerApprovalHandler? fallbackHandler = null)
     {
+        return Create(
+            functions,
+            new AgentFrameworkCodexToolAdapterOptions { FallbackHandler = fallbackHandler });
+    }
+
+    /// <summary>
+    /// Creates Codex dynamic tools for the supplied Microsoft Agent Framework functions.
+    /// </summary>
+    /// <param name="functions">The invocable AI functions to expose to Codex.</param>
+    /// <param name="options">Options for invoking Agent Framework functions.</param>
+    public static AgentFrameworkCodexToolSet Create(
+        IEnumerable<AIFunction> functions,
+        AgentFrameworkCodexToolAdapterOptions options)
+    {
         ArgumentNullException.ThrowIfNull(functions);
+        ArgumentNullException.ThrowIfNull(options);
 
         var functionArray = functions.ToArray();
         var tools = functionArray.Select(CreateDynamicTool).ToArray();
-        var handler = new AgentFrameworkToolCallHandler(functionArray, fallbackHandler);
+        var handler = new AgentFrameworkToolCallHandler(
+            functionArray,
+            options.FallbackHandler,
+            options.FunctionInvocationServices,
+            options.ToolApprovalHandler);
 
         return new AgentFrameworkCodexToolSet(tools, handler);
     }

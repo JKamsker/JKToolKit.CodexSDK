@@ -1,38 +1,15 @@
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.Models;
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
 namespace JKToolKit.CodexSDK.AgentFramework.Agents;
 
 /// <summary>
-/// Per-run options for a Codex-backed Agent Framework agent.
+/// Codex-specific settings that can be attached to Agent Framework run options.
 /// </summary>
-public sealed class CodexAgentRunOptions : AgentRunOptions
+public sealed class CodexAgentRunConfiguration
 {
-    /// <summary>
-    /// Creates empty Codex run options.
-    /// </summary>
-    public CodexAgentRunOptions()
-    {
-    }
-
-    private CodexAgentRunOptions(CodexAgentRunOptions options)
-        : base(options)
-    {
-        Model = options.Model;
-        Cwd = options.Cwd;
-        ApprovalPolicy = options.ApprovalPolicy;
-        Sandbox = options.Sandbox;
-        Effort = options.Effort;
-        Summary = options.Summary;
-        Tools = options.Tools?.ToArray();
-        FunctionInvocationServices = options.FunctionInvocationServices;
-        ToolApprovalHandler = options.ToolApprovalHandler;
-        ConfigureTurn = options.ConfigureTurn;
-    }
-
     /// <summary>
     /// Gets or sets a per-run model override.
     /// </summary>
@@ -82,10 +59,4 @@ public sealed class CodexAgentRunOptions : AgentRunOptions
     /// Gets or sets additional turn configuration applied to this Codex turn.
     /// </summary>
     public Action<TurnStartOptions>? ConfigureTurn { get; set; }
-
-    /// <inheritdoc />
-    public override AgentRunOptions Clone()
-    {
-        return new CodexAgentRunOptions(this);
-    }
 }

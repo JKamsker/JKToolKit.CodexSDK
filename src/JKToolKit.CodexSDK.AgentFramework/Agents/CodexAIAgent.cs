@@ -17,12 +17,16 @@ namespace JKToolKit.CodexSDK.AgentFramework.Agents;
 public sealed class CodexAIAgent : AIAgent
 {
     private readonly CodexAgentClient _client;
+    private readonly FunctionInvokingChatClient _functionInvokingChatClient;
     private readonly CodexAIAgentOptions _options;
 
     internal CodexAIAgent(CodexAgentClient client, CodexAIAgentOptions options)
     {
         _client = client;
         _options = options;
+        _functionInvokingChatClient = new FunctionInvokingChatClient(
+            CodexAgentNoOpChatClient.Instance,
+            functionInvocationServices: options.FunctionInvocationServices);
     }
 
     /// <inheritdoc />
@@ -37,9 +41,17 @@ public sealed class CodexAIAgent : AIAgent
     /// <inheritdoc />
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        return serviceKey is null && serviceType == typeof(AIAgentMetadata)
-            ? new AIAgentMetadata("codex")
-            : base.GetService(serviceType, serviceKey);
+        if (serviceKey is null && serviceType == typeof(AIAgentMetadata))
+        {
+            return new AIAgentMetadata("codex");
+        }
+
+        if (serviceKey is null && serviceType == typeof(FunctionInvokingChatClient))
+        {
+            return _functionInvokingChatClient;
+        }
+
+        return base.GetService(serviceType, serviceKey);
     }
 
     /// <inheritdoc />
@@ -85,14 +97,25 @@ public sealed class CodexAIAgent : AIAgent
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var codexSession = await ResolveSessionAsync(session, cancellationToken).ConfigureAwait(false);
-        var toolSet = CreateToolSet(options, codexSession);
+        var chatOptions = await CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(options, cancellationToken)
+            .ConfigureAwait(false);
+        var configuredTools = await CodexAgentChatOptionsMapper.TransformToolsAsync(
+            _options.Tools,
+            options,
+            cancellationToken).ConfigureAwait(false);
+        var codexRunConfigurationTools = await CodexAgentChatOptionsMapper.TransformToolsAsync(
+            options.GetCodexConfiguration()?.Tools,
+            options,
+            cancellationToken).ConfigureAwait(false);
+        var toolSet = CreateToolSet(options, chatOptions, configuredTools, codexRunConfigurationTools, codexSession);
         var approvalHandler = toolSet.DynamicTools.Count == 0 ? null : toolSet.ApprovalHandler;
         await using var sdk = _client.CreateSdk(approvalHandler);
         await using var codex = await sdk.AppServer.StartAsync(cancellationToken).ConfigureAwait(false);
-        var thread = await ResolveThreadAsync(codex, codexSession, toolSet, options, cancellationToken).ConfigureAwait(false);
+        var thread = await ResolveThreadAsync(codex, codexSession, toolSet, options, chatOptions, cancellationToken)
+            .ConfigureAwait(false);
         codexSession.ThreadId = thread.Id;
 
-        await using var turn = await codex.StartTurnAsync(thread.Id, CreateTurnOptions(messages, options), cancellationToken)
+        await using var turn = await codex.StartTurnAsync(thread.Id, CreateTurnOptions(messages, options, chatOptions), cancellationToken)
             .ConfigureAwait(false);
 
         await foreach (var update in StreamUpdatesAsync(turn, cancellationToken).ConfigureAwait(false))
@@ -114,16 +137,31 @@ public sealed class CodexAIAgent : AIAgent
             : GetSession(session);
     }
 
-    private AgentFrameworkCodexToolSet CreateToolSet(AgentRunOptions? runOptions, CodexAgentSession session)
+    private AgentFrameworkCodexToolSet CreateToolSet(
+        AgentRunOptions? runOptions,
+        ChatOptions? chatOptions,
+        IReadOnlyList<AITool>? configuredTools,
+        IReadOnlyList<AITool>? codexRunConfigurationTools,
+        CodexAgentSession session)
     {
-        var functions = CodexAgentToolMapper.GetAIFunctions(_options.Tools, runOptions).ToArray();
-        if (session.ThreadId is not null && CodexAgentToolMapper.HasRunTools(runOptions))
+        var functions = CodexAgentToolMapper.GetAIFunctions(
+            configuredTools,
+            codexRunConfigurationTools,
+            runOptions,
+            chatOptions).ToArray();
+        if (session.ThreadId is not null && CodexAgentToolMapper.HasRunTools(runOptions, chatOptions))
         {
             throw new NotSupportedException(
                 "Codex dynamic tools are configured when the Codex thread is created. Create a new AgentSession to use different per-run tools.");
         }
 
-        return AgentFrameworkCodexToolAdapter.Create(functions);
+        return AgentFrameworkCodexToolAdapter.Create(
+            functions,
+            new AgentFrameworkCodexToolAdapterOptions
+            {
+                FunctionInvocationServices = CodexAgentOptionsMapper.GetFunctionInvocationServices(_options, runOptions),
+                ToolApprovalHandler = CodexAgentOptionsMapper.GetToolApprovalHandler(_options, runOptions)
+            });
     }
 
     private async Task<CodexThread> ResolveThreadAsync(
@@ -131,6 +169,7 @@ public sealed class CodexAIAgent : AIAgent
         CodexAgentSession session,
         AgentFrameworkCodexToolSet toolSet,
         AgentRunOptions? runOptions,
+        ChatOptions? chatOptions,
         CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(session.ThreadId))
@@ -138,18 +177,22 @@ public sealed class CodexAIAgent : AIAgent
             return await codex.ResumeThreadAsync(session.ThreadId, cancellationToken).ConfigureAwait(false);
         }
 
-        return await codex.StartThreadAsync(CreateThreadOptions(toolSet, runOptions), cancellationToken).ConfigureAwait(false);
+        return await codex.StartThreadAsync(CreateThreadOptions(toolSet, runOptions, chatOptions), cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    private ThreadStartOptions CreateThreadOptions(AgentFrameworkCodexToolSet toolSet, AgentRunOptions? runOptions)
+    private ThreadStartOptions CreateThreadOptions(
+        AgentFrameworkCodexToolSet toolSet,
+        AgentRunOptions? runOptions,
+        ChatOptions? chatOptions)
     {
         var options = new ThreadStartOptions
         {
-            Model = ParseModel(CodexAgentOptionsMapper.GetModel(_options, runOptions)),
+            Model = ParseModel(CodexAgentOptionsMapper.GetModel(_options, runOptions, chatOptions)),
             Cwd = CodexAgentOptionsMapper.GetCwd(_options, runOptions),
             ApprovalPolicy = CodexAgentOptionsMapper.GetApprovalPolicy(_options, runOptions),
             Sandbox = CodexAgentOptionsMapper.GetSandbox(_options, runOptions),
-            DeveloperInstructions = CodexAgentOptionsMapper.GetInstructions(_options, runOptions),
+            DeveloperInstructions = CodexAgentOptionsMapper.GetInstructions(_options, chatOptions),
             DynamicTools = toolSet.DynamicTools.Count == 0 ? null : toolSet.DynamicTools
         };
 
@@ -157,20 +200,25 @@ public sealed class CodexAIAgent : AIAgent
         return options;
     }
 
-    private TurnStartOptions CreateTurnOptions(IEnumerable<ChatMessage> messages, AgentRunOptions? runOptions)
+    private TurnStartOptions CreateTurnOptions(
+        IEnumerable<ChatMessage> messages,
+        AgentRunOptions? runOptions,
+        ChatOptions? chatOptions)
     {
         var options = new TurnStartOptions
         {
             Input = CodexAgentMessageMapper.ToTurnInputItems(messages),
-            Model = ParseModel(CodexAgentOptionsMapper.GetRunModel(runOptions)),
+            Model = ParseModel(CodexAgentOptionsMapper.GetRunModel(runOptions, chatOptions)),
             Cwd = CodexAgentOptionsMapper.GetRunCwd(runOptions),
             ApprovalPolicy = CodexAgentOptionsMapper.GetRunApprovalPolicy(runOptions),
             SandboxPolicy = null,
-            OutputSchema = CodexAgentOptionsMapper.GetOutputSchema(runOptions)
+            Effort = CodexAgentOptionsMapper.GetEffort(_options, runOptions, chatOptions),
+            Summary = CodexAgentOptionsMapper.GetSummary(_options, runOptions, chatOptions),
+            OutputSchema = CodexAgentOptionsMapper.GetOutputSchema(runOptions, chatOptions)
         };
 
         _options.ConfigureTurn?.Invoke(options);
-        (runOptions as CodexAgentRunOptions)?.ConfigureTurn?.Invoke(options);
+        CodexAgentOptionsMapper.ConfigureRunTurn(options, runOptions);
         return options;
     }
 

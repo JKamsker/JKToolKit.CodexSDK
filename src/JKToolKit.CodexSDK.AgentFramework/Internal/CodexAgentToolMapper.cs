@@ -8,9 +8,11 @@ internal static class CodexAgentToolMapper
 {
     public static IEnumerable<AIFunction> GetAIFunctions(
         IReadOnlyList<AITool>? configuredTools,
-        AgentRunOptions? runOptions)
+        IReadOnlyList<AITool>? codexRunConfigurationTools,
+        AgentRunOptions? runOptions,
+        ChatOptions? chatOptions)
     {
-        foreach (var tool in EnumerateTools(configuredTools, runOptions))
+        foreach (var tool in EnumerateTools(configuredTools, codexRunConfigurationTools, runOptions, chatOptions))
         {
             if (tool is AIFunction function)
             {
@@ -23,19 +25,18 @@ internal static class CodexAgentToolMapper
         }
     }
 
-    public static bool HasRunTools(AgentRunOptions? runOptions)
+    public static bool HasRunTools(AgentRunOptions? runOptions, ChatOptions? chatOptions)
     {
-        return runOptions switch
-        {
-            CodexAgentRunOptions { Tools.Count: > 0 } => true,
-            ChatClientAgentRunOptions { ChatOptions.Tools.Count: > 0 } => true,
-            _ => false
-        };
+        return (runOptions as CodexAgentRunOptions)?.Tools?.Count > 0 ||
+               runOptions.GetCodexConfiguration()?.Tools?.Count > 0 ||
+               chatOptions?.Tools?.Count > 0;
     }
 
     private static IEnumerable<AITool> EnumerateTools(
         IReadOnlyList<AITool>? configuredTools,
-        AgentRunOptions? runOptions)
+        IReadOnlyList<AITool>? codexRunConfigurationTools,
+        AgentRunOptions? runOptions,
+        ChatOptions? chatOptions)
     {
         if (configuredTools is not null)
         {
@@ -45,19 +46,41 @@ internal static class CodexAgentToolMapper
             }
         }
 
-        foreach (var tool in GetRunTools(runOptions))
+        foreach (var tool in GetRunTools(codexRunConfigurationTools, runOptions, chatOptions))
         {
             yield return tool;
         }
     }
 
-    private static IEnumerable<AITool> GetRunTools(AgentRunOptions? runOptions)
+    private static IEnumerable<AITool> GetRunTools(
+        IReadOnlyList<AITool>? codexRunConfigurationTools,
+        AgentRunOptions? runOptions,
+        ChatOptions? chatOptions)
     {
-        return runOptions switch
+        if (codexRunConfigurationTools is { } configuredTools)
         {
-            CodexAgentRunOptions { Tools: { } tools } => tools,
-            ChatClientAgentRunOptions { ChatOptions.Tools: { } tools } => tools,
-            _ => []
-        };
+            foreach (var tool in configuredTools)
+            {
+                yield return tool;
+            }
+        }
+
+        if (runOptions is CodexAgentRunOptions { Tools: { } codexTools })
+        {
+            foreach (var tool in codexTools)
+            {
+                yield return tool;
+            }
+        }
+
+        if (chatOptions?.Tools is null)
+        {
+            yield break;
+        }
+
+        foreach (var tool in chatOptions.Tools)
+        {
+            yield return tool;
+        }
     }
 }

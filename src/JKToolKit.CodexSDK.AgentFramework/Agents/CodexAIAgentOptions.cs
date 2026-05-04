@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.Models;
 using Microsoft.Extensions.AI;
 
@@ -50,9 +51,29 @@ public sealed class CodexAIAgentOptions
     public CodexSandboxMode? Sandbox { get; set; }
 
     /// <summary>
+    /// Gets or sets the default Codex reasoning effort.
+    /// </summary>
+    public CodexReasoningEffort? Effort { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default Codex reasoning summary setting.
+    /// </summary>
+    public string? Summary { get; set; }
+
+    /// <summary>
     /// Gets or sets the Agent Framework tools exposed to Codex.
     /// </summary>
     public IReadOnlyList<AITool>? Tools { get; set; }
+
+    /// <summary>
+    /// Gets or sets services made available to Agent Framework function invocations.
+    /// </summary>
+    public IServiceProvider? FunctionInvocationServices { get; set; }
+
+    /// <summary>
+    /// Gets or sets a host approval callback for <see cref="ApprovalRequiredAIFunction"/> calls.
+    /// </summary>
+    public Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? ToolApprovalHandler { get; set; }
 
     /// <summary>
     /// Gets or sets additional thread configuration applied when a Codex thread is created.
