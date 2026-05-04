@@ -78,6 +78,35 @@ await foreach (AgentResponseUpdate update in agent.RunStreamingAsync("Order a pi
 }
 ```
 
+Register the agent with dependency injection when your host resolves `AIAgent` instances:
+
+```csharp
+using JKToolKit.CodexSDK;
+using JKToolKit.CodexSDK.AgentFramework.Agents;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.AI;
+
+static string GetWeather(string location) => $"Weather in {location}: cloudy.";
+
+var services = new ServiceCollection();
+
+services.AddCodexSdk(appServer: options =>
+{
+    options.CodexHomeDirectory = Environment.GetEnvironmentVariable("CODEX_HOME");
+});
+
+services.AddKeyedCodexAIAgent("pizza", agent =>
+{
+    agent.Name = "PizzaAgent";
+    agent.Instructions = "Use the pizza tools for menu, cart, and checkout state.";
+    agent.Tools = [AIFunctionFactory.Create(GetWeather)];
+});
+
+await using var provider = services.BuildServiceProvider();
+AIAgent agent = provider.GetRequiredKeyedService<AIAgent>("pizza");
+```
+
 Configure Codex-specific run options:
 
 ```csharp
