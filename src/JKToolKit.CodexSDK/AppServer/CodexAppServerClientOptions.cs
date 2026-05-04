@@ -11,7 +11,12 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class CodexAppServerClientOptions
 {
     /// <summary>
-    /// Gets or sets the process launch configuration for the Codex executable.
+    /// Gets or sets the app-server endpoint. When null, <see cref="Launch"/> is used as a stdio endpoint.
+    /// </summary>
+    public CodexAppServerEndpoint? Endpoint { get; set; }
+
+    /// <summary>
+    /// Gets or sets the process launch configuration for the Codex executable when <see cref="Endpoint"/> is null.
     /// </summary>
     public CodexLaunch Launch { get; set; } = CodexLaunch.CodexOnPath().WithArgs("app-server");
 
@@ -115,6 +120,7 @@ public sealed class CodexAppServerClientOptions
     /// </summary>
     public CodexAppServerClientOptions Clone() => new()
     {
+        Endpoint = Endpoint,
         Launch = Launch,
         CodexExecutablePath = CodexExecutablePath,
         CodexHomeDirectory = CodexHomeDirectory,

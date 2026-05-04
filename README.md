@@ -11,7 +11,7 @@ A strongly-typed .NET SDK for the **Codex CLI** — launch it as a subprocess, s
 | Mode | Best for | Docs |
 |------|----------|------|
 | **`codex exec`** | Stream JSONL session events from normal Codex runs | [Exec docs](docs/exec.md) |
-| **`codex app-server`** | Deep, event-driven integrations (threads / turns / streaming deltas) | [App Server docs](docs/AppServer/README.md) |
+| **`codex app-server`** | Deep, event-driven integrations, including remote stdio and WebSocket attach | [App Server docs](docs/AppServer/README.md) |
 | **`codex mcp-server`** | Using Codex as an MCP tool provider | [MCP Server docs](docs/McpServer/README.md) |
 
 ## Install

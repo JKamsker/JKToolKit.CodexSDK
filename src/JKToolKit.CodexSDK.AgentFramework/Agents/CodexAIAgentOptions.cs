@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AgentFramework.Agents.Remote;
 using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.Models;
 using Microsoft.Agents.AI;
@@ -85,6 +86,11 @@ public sealed class CodexAIAgentOptions
     /// Gets or sets services made available to Agent Framework function invocations.
     /// </summary>
     public IServiceProvider? FunctionInvocationServices { get; set; }
+
+    /// <summary>
+    /// Gets or sets a managed remote app-server attachment used instead of starting a local app-server process.
+    /// </summary>
+    public CodexAgentRemoteAppServerOptions? RemoteAppServer { get; set; }
 
     /// <summary>
     /// Gets or sets a host approval callback for <see cref="ApprovalRequiredAIFunction"/> calls.

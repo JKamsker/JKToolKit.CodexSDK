@@ -144,7 +144,7 @@ public sealed class CodexAIAgent : AIAgent
         var toolSet = CreateToolSet(options, chatOptions, configuredTools, codexRunConfigurationTools, codexSession);
         var approvalHandler = toolSet.DynamicTools.Count == 0 ? null : toolSet.ApprovalHandler;
         using var functionInvocationScope = AgentFrameworkFunctionInvoker.PushEffectiveChatOptions(chatOptions);
-        await using var codexLease = await _client.StartAppServerAsync(approvalHandler, cancellationToken)
+        await using var codexLease = await _client.StartAppServerAsync(approvalHandler, _options, cancellationToken)
             .ConfigureAwait(false);
         var codex = codexLease.Client;
         var thread = await ResolveThreadAsync(codex, codexSession, toolSet, options, chatOptions, cancellationToken)

@@ -1,4 +1,6 @@
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote;
+using JKToolKit.CodexSDK.AgentFramework.Agents.Remote;
 using JKToolKit.CodexSDK.AgentFramework.Internal;
 using JKToolKit.CodexSDK.Facade;
 
@@ -33,8 +35,17 @@ public sealed class CodexAgentClient
 
     internal async ValueTask<CodexAgentAppServerLease> StartAppServerAsync(
         IAppServerApprovalHandler? approvalHandler,
+        CodexAIAgentOptions agentOptions,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(agentOptions);
+
+        if (agentOptions.RemoteAppServer is { } remote)
+        {
+            return await AttachRemoteAppServerAsync(remote, approvalHandler, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         if (_sdk is not null)
         {
             var client = approvalHandler is null
@@ -56,6 +67,44 @@ public sealed class CodexAgentClient
             await sdk.DisposeAsync().ConfigureAwait(false);
             throw;
         }
+    }
+
+    private static async ValueTask<CodexAgentAppServerLease> AttachRemoteAppServerAsync(
+        CodexAgentRemoteAppServerOptions remote,
+        IAppServerApprovalHandler? approvalHandler,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(remote);
+        ArgumentNullException.ThrowIfNull(remote.Manager);
+        ArgumentException.ThrowIfNullOrWhiteSpace(remote.EntryId);
+
+        var attachOptions = CreateAttachOptions(remote.AttachOptions, approvalHandler);
+        var attachment = await remote.Manager.AttachAsync(remote.EntryId, attachOptions, cancellationToken)
+            .ConfigureAwait(false);
+        return new CodexAgentAppServerLease(attachment.Client, sdk: null, clientOwner: attachment);
+    }
+
+    private static CodexRemoteAttachOptions? CreateAttachOptions(
+        CodexRemoteAttachOptions? options,
+        IAppServerApprovalHandler? approvalHandler)
+    {
+        if (options is null && approvalHandler is null)
+        {
+            return null;
+        }
+
+        var configureClientOptions = options?.ConfigureClientOptions;
+        return new CodexRemoteAttachOptions
+        {
+            ClientOptions = options?.ClientOptions,
+            SshPassword = options?.SshPassword,
+            BearerToken = options?.BearerToken,
+            ConfigureClientOptions = clientOptions =>
+            {
+                configureClientOptions?.Invoke(clientOptions);
+                ConfigureDynamicToolApproval(clientOptions, approvalHandler);
+            }
+        };
     }
 
     private CodexSdk CreateSdk(IAppServerApprovalHandler? approvalHandler)
