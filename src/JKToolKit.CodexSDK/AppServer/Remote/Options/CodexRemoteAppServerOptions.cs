@@ -50,6 +50,15 @@ public sealed class CodexRemoteAttachOptions
     public CodexAppServerClientOptions? ClientOptions { get; set; }
 
     /// <summary>
+    /// Gets or sets a callback applied to the cloned client options just before attaching.
+    /// </summary>
+    /// <remarks>
+    /// This lets adapters add per-attachment handlers or capabilities while preserving the manager's
+    /// default client options when <see cref="ClientOptions"/> is <see langword="null"/>.
+    /// </remarks>
+    public Action<CodexAppServerClientOptions>? ConfigureClientOptions { get; set; }
+
+    /// <summary>
     /// Gets or sets an SSH password used at attach time. The registry does not persist this value.
     /// </summary>
     public string? SshPassword { get; set; }

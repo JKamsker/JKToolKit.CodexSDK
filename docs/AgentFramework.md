@@ -57,6 +57,88 @@ Console.WriteLine(await agent.RunAsync("What is the weather like in Amsterdam?")
 
 You can also use `new CodexAgentClient(configureSdk).AsAIAgent(...)` when you want the agent to create a fresh SDK facade for each run.
 
+## Remote App Servers
+
+The Agent Framework adapter can run against the same remote app-server transports as the core SDK.
+
+For process-bound remote stdio, configure the app-server launch on the SDK builder. This starts `codex app-server` over SSH or Docker for each agent run:
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AgentFramework.Agents;
+using Microsoft.Agents.AI;
+
+AIAgent sshAgent = new CodexAgentClient(builder =>
+{
+    builder.ConfigureAppServer(options =>
+    {
+        options.Launch = CodexLaunchRemote.SshAppServer(
+            host: "devbox",
+            remoteWorkingDirectory: "/home/me/project");
+    });
+}).AsAIAgent(
+    model: "gpt-5.5",
+    instructions: "Work in the remote checkout.");
+
+AIAgent dockerAgent = new CodexAgentClient(builder =>
+{
+    builder.ConfigureAppServer(options =>
+    {
+        options.Launch = CodexLaunchRemote.DockerAppServer(
+            container: "codex-dev",
+            workingDirectory: "/workspace",
+            codexHome: "/home/codex/.codex");
+    });
+}).AsAIAgent(
+    model: "gpt-5.5",
+    instructions: "Work inside the container.");
+```
+
+For detached WebSocket app-servers, start or load a managed remote entry with `CodexRemoteAppServerManager`, then attach the agent to that entry:
+
+```csharp
+using JKToolKit.CodexSDK.AgentFramework.Agents;
+using JKToolKit.CodexSDK.AgentFramework.Agents.Remote;
+using JKToolKit.CodexSDK.AppServer.Remote;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
+using JKToolKit.CodexSDK.Models;
+using Microsoft.Agents.AI;
+
+var registry = new JsonFileCodexRemoteAppServerRegistry("codexsdk-appservers.json");
+var manager = new CodexRemoteAppServerManager(registry);
+
+var entry = await manager.StartDockerContainerWebSocketAsync(new CodexDockerContainerWebSocketAppServerOptions
+{
+    Image = "codex-dev",
+    WorkingDirectory = "/workspace",
+    CodexHome = "/home/codex/.codex",
+    AdditionalDockerRunArguments =
+    [
+        "-v", "/host/project:/workspace",
+        "-v", "/host/.codex:/home/codex/.codex"
+    ]
+});
+
+AIAgent remoteAgent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
+{
+    Model = "gpt-5.5",
+    Cwd = "/workspace",
+    ApprovalPolicy = CodexApprovalPolicy.Never,
+    Instructions = "Work in the managed remote app-server.",
+    RemoteAppServer = new CodexAgentRemoteAppServerOptions
+    {
+        Manager = manager,
+        EntryId = entry.Id
+    }
+});
+
+Console.WriteLine(await remoteAgent.RunAsync("Run pwd and summarize the result."));
+
+await manager.StopAsync(entry.Id, new CodexRemoteStopOptions { RemoveFromRegistry = true });
+```
+
+Each agent run attaches to the registered app-server and disposes only that attachment when the run completes. For SSH entries this closes the local tunnel; for detached Docker and SSH WebSocket entries, the remote app-server keeps running until you stop it through the manager. Dynamic Agent Framework tools still work: the adapter applies the required app-server experimental capability and approval handler to the remote attachment.
+
 Use Agent Framework `ChatClientAgentOptions` when you already configure agents that way:
 
 ```csharp

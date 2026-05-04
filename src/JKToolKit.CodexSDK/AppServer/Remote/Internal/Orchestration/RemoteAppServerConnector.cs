@@ -21,6 +21,7 @@ internal sealed class RemoteAppServerConnector
         var secrets = _context.GetSecrets(id);
         var token = options?.BearerToken ?? secrets.BearerToken ?? entry.BearerToken;
         var clientOptions = (options?.ClientOptions ?? _context.Options.ClientOptions).Clone();
+        options?.ConfigureClientOptions?.Invoke(clientOptions);
         clientOptions.StartupTimeout = _context.Options.AttachTimeout;
 
         return entry.Kind == CodexRemoteAppServerKind.SshWebSocket

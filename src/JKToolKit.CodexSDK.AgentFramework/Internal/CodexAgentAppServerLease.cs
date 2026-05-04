@@ -5,13 +5,18 @@ namespace JKToolKit.CodexSDK.AgentFramework.Internal;
 internal sealed class CodexAgentAppServerLease : IAsyncDisposable
 {
     private readonly CodexSdk? _sdk;
+    private readonly IAsyncDisposable? _clientOwner;
 
-    public CodexAgentAppServerLease(CodexAppServerClient client, CodexSdk? sdk)
+    public CodexAgentAppServerLease(
+        CodexAppServerClient client,
+        CodexSdk? sdk,
+        IAsyncDisposable? clientOwner = null)
     {
         ArgumentNullException.ThrowIfNull(client);
 
         Client = client;
         _sdk = sdk;
+        _clientOwner = clientOwner;
     }
 
     public CodexAppServerClient Client { get; }
@@ -20,7 +25,14 @@ internal sealed class CodexAgentAppServerLease : IAsyncDisposable
     {
         try
         {
-            await Client.DisposeAsync().ConfigureAwait(false);
+            if (_clientOwner is null)
+            {
+                await Client.DisposeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                await _clientOwner.DisposeAsync().ConfigureAwait(false);
+            }
         }
         finally
         {
