@@ -322,6 +322,36 @@ await using var docker = await CodexAppServerClient.StartAsync(new CodexAppServe
 
 The SSH helper uses `ssh -T`. The Docker helper uses `docker exec -i`.
 
+For SSH host aliases from your normal OpenSSH config, pass the alias as `Host`; OpenSSH reads the default config automatically. Use the options overload when you need an explicit config file, identity file, username, port, or password authentication:
+
+```csharp
+await using var keyedSsh = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    Launch = CodexLaunchRemote.SshAppServer(new CodexSshAppServerOptions
+    {
+        Host = "codex-devbox",                  // Host alias or real host
+        ConfigFile = "/home/me/.ssh/config",    // Optional: ssh -F
+        IdentityFile = "/home/me/.ssh/codex",   // Optional: ssh -i
+        Username = "codex",                     // Optional: ssh -l
+        Port = 2222,                            // Optional: ssh -p
+        RemoteWorkingDirectory = "/workspace"
+    })
+});
+```
+
+Password auth uses `sshpass -e ssh ...` and stores the password in the launched process environment as `SSHPASS`, not in the command-line arguments:
+
+```csharp
+Launch = CodexLaunchRemote.SshAppServer(new CodexSshAppServerOptions
+{
+    Host = "devbox",
+    Username = "codex",
+    Password = "<password>"
+});
+```
+
+Install `sshpass` on the machine running the SDK if you use password authentication.
+
 ### Attach over WebSocket
 
 Use WebSocket when something else starts `codex app-server --listen ws://127.0.0.1:4500` and the SDK only attaches. Upstream currently treats this transport as experimental; prefer loopback listeners or SSH port forwarding. If the listener requires auth, pass the bearer token used by the server's WebSocket auth mode.

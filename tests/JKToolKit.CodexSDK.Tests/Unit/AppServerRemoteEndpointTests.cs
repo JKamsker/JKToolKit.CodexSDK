@@ -47,6 +47,78 @@ public sealed class AppServerRemoteEndpointTests
     }
 
     [Fact]
+    public void CodexLaunchRemote_SshAppServer_SupportsConfigFileAndHostAlias()
+    {
+        var launch = CodexLaunchRemote.SshAppServer(new CodexSshAppServerOptions
+        {
+            Host = "codex-devbox",
+            ConfigFile = "/home/me/.ssh/work-config"
+        });
+
+        launch.FileName.Should().Be("ssh");
+        launch.Arguments.Should().Equal(
+            "-F",
+            "/home/me/.ssh/work-config",
+            "-T",
+            "codex-devbox",
+            "bash",
+            "-lc",
+            "exec codex app-server");
+    }
+
+    [Fact]
+    public void CodexLaunchRemote_SshAppServer_SupportsKeyfileUsernameAndPort()
+    {
+        var launch = CodexLaunchRemote.SshAppServer(new CodexSshAppServerOptions
+        {
+            Host = "example.com",
+            Username = "codex",
+            IdentityFile = "/keys/codex_ed25519",
+            Port = 2222,
+            RemoteWorkingDirectory = "/workspace"
+        });
+
+        launch.FileName.Should().Be("ssh");
+        launch.Arguments.Should().Equal(
+            "-T",
+            "-i",
+            "/keys/codex_ed25519",
+            "-p",
+            "2222",
+            "-l",
+            "codex",
+            "example.com",
+            "bash",
+            "-lc",
+            "cd '/workspace' && exec codex app-server");
+    }
+
+    [Fact]
+    public void CodexLaunchRemote_SshAppServer_UsesSshpassEnvironmentForPasswordAuth()
+    {
+        var launch = CodexLaunchRemote.SshAppServer(new CodexSshAppServerOptions
+        {
+            Host = "devbox",
+            Username = "codex",
+            Password = "secret-password"
+        });
+
+        launch.FileName.Should().Be("sshpass");
+        launch.Arguments.Should().Equal(
+            "-e",
+            "ssh",
+            "-T",
+            "-l",
+            "codex",
+            "devbox",
+            "bash",
+            "-lc",
+            "exec codex app-server");
+        launch.Environment.Should().Contain("SSHPASS", "secret-password");
+        launch.Arguments.Should().NotContain("secret-password");
+    }
+
+    [Fact]
     public void CodexAppServerClientOptions_Clone_CopiesEndpoint()
     {
         var endpoint = new CodexAppServerWebSocketEndpoint(new Uri("ws://127.0.0.1:4500"), "token");
