@@ -352,6 +352,64 @@ Launch = CodexLaunchRemote.SshAppServer(new CodexSshAppServerOptions
 
 Install `sshpass` on the machine running the SDK if you use password authentication.
 
+### Manage Detached Remote App Servers
+
+Use `CodexRemoteAppServerManager` when the app-server process should keep running after a client detaches. The default registry is in-memory. Use `JsonFileCodexRemoteAppServerRegistry` when you want to list and reattach after the SDK process exits.
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+
+var registry = new JsonFileCodexRemoteAppServerRegistry("/tmp/codexsdk-appservers.json");
+var manager = new CodexRemoteAppServerManager(registry);
+
+var entry = await manager.StartDockerContainerWebSocketAsync(new CodexDockerContainerWebSocketAppServerOptions
+{
+    Image = "codex-dev",
+    WorkingDirectory = "/workspace",
+    CodexHome = "/home/codex/.codex",
+    AdditionalDockerRunArguments =
+    [
+        "-v", "/host/project:/workspace",
+        "-v", "/host/.codex:/home/codex/.codex"
+    ]
+});
+
+await using (var attached = await manager.AttachAsync(entry.Id))
+{
+    var codex = attached.Client;
+    // Use codex like any other initialized CodexAppServerClient.
+}
+
+var known = await manager.ListAsync(refresh: true);
+await manager.StopAsync(entry.Id, new CodexRemoteStopOptions { RemoveFromRegistry = true });
+```
+
+For SSH, the manager starts `codex app-server --listen ws://127.0.0.1:0` remotely, records the remote PID/log files, and creates a local SSH tunnel when you attach:
+
+```csharp
+var sshEntry = await manager.StartSshWebSocketAsync(new CodexSshWebSocketAppServerOptions
+{
+    Host = "codex-devbox",
+    RemoteWorkingDirectory = "/home/me/project"
+});
+
+await using var sshAttachment = await manager.AttachAsync(sshEntry.Id);
+```
+
+For an existing Docker container, publish the target port before starting the app-server and pass the reachable WebSocket URI:
+
+```csharp
+var execEntry = await manager.StartDockerExecWebSocketAsync(new CodexDockerExecWebSocketAppServerOptions
+{
+    Container = "codex-dev",
+    PublicUri = new Uri("ws://127.0.0.1:49153"),
+    WorkingDirectory = "/workspace",
+    CodexHome = "/home/codex/.codex"
+});
+```
+
+JSON registry persistence omits bearer tokens by default. Pass `new JsonFileCodexRemoteAppServerRegistryOptions { PersistSecrets = true }` only if writing tokens to that file is acceptable.
+
 ### Attach over WebSocket
 
 Use WebSocket when something else starts `codex app-server --listen ws://127.0.0.1:4500` and the SDK only attaches. Upstream currently treats this transport as experimental; prefer loopback listeners or SSH port forwarding. If the listener requires auth, pass the bearer token used by the server's WebSocket auth mode.
