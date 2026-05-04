@@ -10,7 +10,7 @@ JKToolKit.CodexSDK ships as a core NuGet package with three integration modes fo
 | [App Server](AppServer/README.md) | `codex app-server` — threads, turns, streaming deltas, approvals, DI, resiliency |
 | [MCP Server](McpServer/README.md) | `codex mcp-server` — tool discovery (`tools/list`, `tools/call`), sessions, follow-ups |
 | [Semantic Kernel Adapter](SemanticKernel.md) | Expose SK `[KernelFunction]` plugins as Codex app-server dynamic tools |
-| [Microsoft Agent Framework Adapter](AgentFramework.md) | Expose Agent Framework `AIFunction` tools as Codex app-server dynamic tools |
+| [Microsoft Agent Framework Adapter](AgentFramework.md) | Use Codex as an Agent Framework `AIAgent` and expose `AIFunction` tools |
 | [Upstream Sync](upstreamgen.md) | How upstream JSON Schema → internal wire DTOs are generated + kept in sync |
 | [Manual Testing Runbook](Runbooks/Manual-Testing/README.md) | Step-by-step manual verification of all SDK features (via the demo app + scratch snippets) |
 

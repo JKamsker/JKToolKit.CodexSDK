@@ -4,7 +4,7 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using Microsoft.Extensions.AI;
 
-namespace JKToolKit.CodexSDK.AgentFramework;
+namespace JKToolKit.CodexSDK.AgentFramework.Tools;
 
 /// <summary>
 /// Handles Codex app-server dynamic tool calls by invoking Agent Framework functions.

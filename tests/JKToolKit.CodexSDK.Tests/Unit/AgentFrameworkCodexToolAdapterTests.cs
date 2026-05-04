@@ -3,8 +3,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using FluentAssertions;
-using JKToolKit.CodexSDK.AgentFramework;
+using JKToolKit.CodexSDK.AgentFramework.Agents;
+using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -80,6 +82,40 @@ public sealed class AgentFrameworkCodexToolAdapterTests
             .Be("Large:Pepperoni,Mushrooms:2");
     }
 
+    [Fact]
+    public async Task CodexAgentSession_SerializesThreadIdAndStateBag()
+    {
+        var agent = new CodexAgentClient().AsAIAgent(name: "NativeCodex");
+        var session = (CodexAgentSession)await agent.CreateSessionAsync();
+        session.ThreadId = "thread-123";
+        session.StateBag.SetValue("memory", new SessionMemory("Alice"), SerializerOptions);
+
+        var serialized = await agent.SerializeSessionAsync(session, SerializerOptions);
+        var resumed = (CodexAgentSession)await agent.DeserializeSessionAsync(serialized, SerializerOptions);
+
+        resumed.ThreadId.Should().Be("thread-123");
+        var memory = resumed.StateBag.GetValue<SessionMemory>("memory", SerializerOptions);
+        memory.Should().NotBeNull();
+        memory!.Name.Should().Be("Alice");
+    }
+
+    [Fact]
+    public void CodexAgentClient_AsAIAgent_CreatesNativeAgentWithMetadata()
+    {
+        var agent = new CodexAgentClient().AsAIAgent(
+            model: "gpt-5.5",
+            instructions: "You are a helpful assistant.",
+            name: "CodexNative",
+            description: "Runs Codex as an Agent Framework agent.",
+            tools: [AIFunctionFactory.Create((Func<string, string>)(location => location))]);
+
+        agent.Should().BeAssignableTo<AIAgent>();
+        agent.Name.Should().Be("CodexNative");
+        agent.Description.Should().Be("Runs Codex as an Agent Framework agent.");
+        var metadata = agent.GetService(typeof(AIAgentMetadata), serviceKey: null);
+        metadata.Should().BeOfType<AIAgentMetadata>().Which.ProviderName.Should().Be("codex");
+    }
+
     [Description("Add a pizza to the user's cart.")]
     private static string AddPizzaToCart(
         [Description("Pizza size.")] PizzaSize size,
@@ -102,4 +138,6 @@ public sealed class AgentFrameworkCodexToolAdapterTests
         Pepperoni,
         Mushrooms
     }
+
+    private sealed record SessionMemory(string Name);
 }

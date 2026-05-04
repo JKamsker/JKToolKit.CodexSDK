@@ -1,7 +1,7 @@
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
-namespace JKToolKit.CodexSDK.AgentFramework;
+namespace JKToolKit.CodexSDK.AgentFramework.Tools;
 
 /// <summary>
 /// Contains Codex app-server dynamic tools and the matching server-request handler for Agent Framework functions.

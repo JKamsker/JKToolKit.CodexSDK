@@ -1,10 +1,8 @@
 using System.Text.Json;
-using JKToolKit.CodexSDK.AgentFramework;
-using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.AppServer.Notifications;
-using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
+using JKToolKit.CodexSDK.AgentFramework.Agents;
 using JKToolKit.CodexSDK.Demo.Commands.Common.Pizza;
 using JKToolKit.CodexSDK.Models;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Spectre.Console.Cli;
 
@@ -51,56 +49,34 @@ public sealed class AgentFrameworkFunctionCallingCommand : AsyncCommand<AgentFra
 
             var pizzaService = new InMemoryPizzaService();
             var functions = new OrderPizzaFunctions(pizzaService).CreateFunctions();
-            var toolSet = AgentFrameworkCodexToolAdapter.Create(functions);
-
-            await using var sdk = CodexSdk.Create(builder =>
+            var agent = new CodexAgentClient(builder =>
             {
                 builder.CodexExecutablePath = settings.CodexExecutablePath;
                 builder.CodexHomeDirectory = settings.CodexHomeDirectory;
-                builder.ConfigureAppServer(o =>
-                {
-                    o.ExperimentalApi = true;
-                    o.ApprovalHandler = toolSet.ApprovalHandler;
-                    o.DefaultClientInfo = new("ncodexsdk-agent-framework-demo", "JKToolKit.CodexSDK Agent Framework Demo", "1.0.0");
-                });
-            });
+            }).AsAIAgent(
+                model: model?.Value,
+                instructions: "Use the pizza tools for menu, cart, and checkout state. Do not invent cart contents.",
+                name: "CodexPizzaAgent",
+                tools: functions);
 
-            await using var codex = await sdk.AppServer.StartAsync(cts.Token);
-            PrintTools(functions, toolSet);
-
-            var thread = await codex.StartThreadAsync(new ThreadStartOptions
+            PrintTools(functions);
+            var session = await agent.CreateSessionAsync(cts.Token);
+            var runOptions = new CodexAgentRunOptions
             {
-                Model = model,
                 Cwd = repoPath,
                 ApprovalPolicy = approvalPolicy,
-                Sandbox = sandbox,
-                DynamicTools = toolSet.DynamicTools,
-                DeveloperInstructions = "Use the pizza tools for menu, cart, and checkout state. Do not invent cart contents."
-            }, cts.Token);
+                Sandbox = sandbox
+            };
 
-            await using var turn = await codex.StartTurnAsync(thread.Id, new TurnStartOptions
+            await foreach (var update in agent.RunStreamingAsync(GetPrompt(settings), session, runOptions, cts.Token))
             {
-                Input = [TurnInputItem.Text(GetPrompt(settings))]
-            }, cts.Token);
-
-            await foreach (var ev in turn.Events(cts.Token))
-            {
-                if (ev is AgentMessageDeltaNotification delta)
-                {
-                    Console.Write(delta.Delta);
-                }
-
-                if (ev is ErrorNotification error)
-                {
-                    Console.Error.WriteLine($"Turn error: {error.Error}");
-                }
+                Console.Write(update.Text);
             }
 
-            var completed = await turn.Completion;
-            Console.WriteLine($"\nDone: {completed.Status}");
-            if (completed.Error is { } completedError)
+            Console.WriteLine("\nDone");
+            if (session is CodexAgentSession codexSession)
             {
-                Console.Error.WriteLine($"Completion error: {completedError}");
+                Console.WriteLine($"Thread: {codexSession.ThreadId}");
             }
 
             Console.WriteLine("Final cart:");
@@ -129,13 +105,12 @@ public sealed class AgentFrameworkFunctionCallingCommand : AsyncCommand<AgentFra
             : settings.Prompt;
     }
 
-    private static void PrintTools(IReadOnlyList<AIFunction> functions, AgentFrameworkCodexToolSet toolSet)
+    private static void PrintTools(IReadOnlyList<AIFunction> functions)
     {
         Console.WriteLine("Dynamic tools from Microsoft Agent Framework functions:");
-        foreach (var tool in toolSet.DynamicTools)
+        foreach (var function in functions)
         {
-            var source = functions.First(function => function.Name == tool.Name);
-            Console.WriteLine($"- {tool.Name} ({source.GetType().Name})");
+            Console.WriteLine($"- {function.Name}");
         }
 
         Console.WriteLine();

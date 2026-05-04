@@ -155,7 +155,7 @@ internal static class Program
                 .WithDescription("App-server: expose Semantic Kernel functions as Codex dynamic tools.");
 
             config.AddCommand<AgentFrameworkFunctionCallingCommand>("agent-framework-function-calling")
-                .WithDescription("App-server: expose Microsoft Agent Framework functions as Codex dynamic tools.");
+                .WithDescription("Agent Framework: run Codex as an AIAgent with function tools.");
 
             config.AddCommand<DiOverridesCommand>("di-overrides")
                 .WithDescription("Validate DI registration and override hooks (app-server + mcp-server).");
