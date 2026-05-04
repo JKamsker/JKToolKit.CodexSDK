@@ -1,17 +1,16 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AgentFramework;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.Demo.Commands.Common.Pizza;
-using JKToolKit.CodexSDK.Demo.Commands.SemanticKernelFunctionCalling.Pizza;
 using JKToolKit.CodexSDK.Models;
-using JKToolKit.CodexSDK.SemanticKernel;
-using Microsoft.SemanticKernel;
+using Microsoft.Extensions.AI;
 using Spectre.Console.Cli;
 
-namespace JKToolKit.CodexSDK.Demo.Commands.SemanticKernelFunctionCalling;
+namespace JKToolKit.CodexSDK.Demo.Commands.AgentFrameworkFunctionCalling;
 
-public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<SemanticKernelFunctionCallingSettings>
+public sealed class AgentFrameworkFunctionCallingCommand : AsyncCommand<AgentFrameworkFunctionCallingSettings>
 {
     private static readonly JsonSerializerOptions OutputJsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -20,7 +19,7 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
 
     public override async Task<int> ExecuteAsync(
         CommandContext context,
-        SemanticKernelFunctionCallingSettings settings,
+        AgentFrameworkFunctionCallingSettings settings,
         CancellationToken cancellationToken)
     {
         var repoPath = settings.RepoPath ?? Directory.GetCurrentDirectory();
@@ -51,8 +50,8 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
                 : CodexSandboxMode.Parse(settings.Sandbox);
 
             var pizzaService = new InMemoryPizzaService();
-            var kernel = CreateKernel(pizzaService);
-            var toolSet = SemanticKernelCodexToolAdapter.Create(kernel);
+            var functions = new OrderPizzaFunctions(pizzaService).CreateFunctions();
+            var toolSet = AgentFrameworkCodexToolAdapter.Create(functions);
 
             await using var sdk = CodexSdk.Create(builder =>
             {
@@ -62,12 +61,12 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
                 {
                     o.ExperimentalApi = true;
                     o.ApprovalHandler = toolSet.ApprovalHandler;
-                    o.DefaultClientInfo = new("ncodexsdk-sk-demo", "JKToolKit.CodexSDK Semantic Kernel Demo", "1.0.0");
+                    o.DefaultClientInfo = new("ncodexsdk-agent-framework-demo", "JKToolKit.CodexSDK Agent Framework Demo", "1.0.0");
                 });
             });
 
             await using var codex = await sdk.AppServer.StartAsync(cts.Token);
-            PrintTools(toolSet);
+            PrintTools(functions, toolSet);
 
             var thread = await codex.StartThreadAsync(new ThreadStartOptions
             {
@@ -76,7 +75,7 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
                 ApprovalPolicy = approvalPolicy,
                 Sandbox = sandbox,
                 DynamicTools = toolSet.DynamicTools,
-                DeveloperInstructions = "Use the OrderPizza tools for menu, cart, and checkout state. Do not invent cart contents."
+                DeveloperInstructions = "Use the pizza tools for menu, cart, and checkout state. Do not invent cart contents."
             }, cts.Token);
 
             await using var turn = await codex.StartTurnAsync(thread.Id, new TurnStartOptions
@@ -123,26 +122,20 @@ public sealed class SemanticKernelFunctionCallingCommand : AsyncCommand<Semantic
         }
     }
 
-    private static Kernel CreateKernel(InMemoryPizzaService pizzaService)
-    {
-        var builder = Kernel.CreateBuilder();
-        builder.Plugins.AddFromObject(new OrderPizzaPlugin(pizzaService), "OrderPizza");
-        return builder.Build();
-    }
-
-    private static string GetPrompt(SemanticKernelFunctionCallingSettings settings)
+    private static string GetPrompt(AgentFrameworkFunctionCallingSettings settings)
     {
         return string.IsNullOrWhiteSpace(settings.Prompt)
             ? "Order one large pepperoni and mushroom pizza, show me the cart, then checkout."
             : settings.Prompt;
     }
 
-    private static void PrintTools(SemanticKernelCodexToolSet toolSet)
+    private static void PrintTools(IReadOnlyList<AIFunction> functions, AgentFrameworkCodexToolSet toolSet)
     {
-        Console.WriteLine("Dynamic tools from Semantic Kernel:");
+        Console.WriteLine("Dynamic tools from Microsoft Agent Framework functions:");
         foreach (var tool in toolSet.DynamicTools)
         {
-            Console.WriteLine($"- {tool.Name}");
+            var source = functions.First(function => function.Name == tool.Name);
+            Console.WriteLine($"- {tool.Name} ({source.GetType().Name})");
         }
 
         Console.WriteLine();

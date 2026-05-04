@@ -132,8 +132,10 @@ jobs:
         run: |
           dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
           dotnet pack src/JKToolKit.CodexSDK.SemanticKernel/JKToolKit.CodexSDK.SemanticKernel.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+          dotnet pack src/JKToolKit.CodexSDK.AgentFramework/JKToolKit.CodexSDK.AgentFramework.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
           test -f "nuget-packages/JKToolKit.CodexSDK.${{ env.VERSION }}.nupkg"
           test -f "nuget-packages/JKToolKit.CodexSDK.SemanticKernel.${{ env.VERSION }}.nupkg"
+          test -f "nuget-packages/JKToolKit.CodexSDK.AgentFramework.${{ env.VERSION }}.nupkg"
 
       - name: Upload NuGet Package Artifacts
         if: matrix.os == 'ubuntu-latest'

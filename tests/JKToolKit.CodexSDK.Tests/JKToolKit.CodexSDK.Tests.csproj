@@ -16,6 +16,7 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="8.8.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.75.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -50,6 +51,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK\JKToolKit.CodexSDK.csproj" />
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK.Demo\JKToolKit.CodexSDK.Demo.csproj" />
+    <ProjectReference Include="..\..\src\JKToolKit.CodexSDK.AgentFramework\JKToolKit.CodexSDK.AgentFramework.csproj" />
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK.SemanticKernel\JKToolKit.CodexSDK.SemanticKernel.csproj" />
   </ItemGroup>
 

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\\JKToolKit.CodexSDK\\JKToolKit.CodexSDK.csproj" />
+    <ProjectReference Include="..\JKToolKit.CodexSDK.AgentFramework\JKToolKit.CodexSDK.AgentFramework.csproj" />
     <ProjectReference Include="..\JKToolKit.CodexSDK.SemanticKernel\JKToolKit.CodexSDK.SemanticKernel.csproj" />
   </ItemGroup>
 

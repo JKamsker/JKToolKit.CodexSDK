@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.Demo.Commands.SemanticKernelFunctionCalling.Pizza;
+namespace JKToolKit.CodexSDK.Demo.Commands.Common.Pizza;
 
 internal enum PizzaSize
 {

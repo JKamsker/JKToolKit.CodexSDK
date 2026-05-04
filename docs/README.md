@@ -10,6 +10,7 @@ JKToolKit.CodexSDK ships as a core NuGet package with three integration modes fo
 | [App Server](AppServer/README.md) | `codex app-server` — threads, turns, streaming deltas, approvals, DI, resiliency |
 | [MCP Server](McpServer/README.md) | `codex mcp-server` — tool discovery (`tools/list`, `tools/call`), sessions, follow-ups |
 | [Semantic Kernel Adapter](SemanticKernel.md) | Expose SK `[KernelFunction]` plugins as Codex app-server dynamic tools |
+| [Microsoft Agent Framework Adapter](AgentFramework.md) | Expose Agent Framework `AIFunction` tools as Codex app-server dynamic tools |
 | [Upstream Sync](upstreamgen.md) | How upstream JSON Schema → internal wire DTOs are generated + kept in sync |
 | [Manual Testing Runbook](Runbooks/Manual-Testing/README.md) | Step-by-step manual verification of all SDK features (via the demo app + scratch snippets) |
 
@@ -18,6 +19,7 @@ JKToolKit.CodexSDK ships as a core NuGet package with three integration modes fo
 | Package | Install | Docs |
 |---------|---------|------|
 | [![NuGet](https://img.shields.io/nuget/v/JKToolKit.CodexSDK.SemanticKernel.svg?logo=nuget&label=JKToolKit.CodexSDK.SemanticKernel)](https://www.nuget.org/packages/JKToolKit.CodexSDK.SemanticKernel) | `dotnet add package JKToolKit.CodexSDK.SemanticKernel` | [Semantic Kernel Adapter](SemanticKernel.md) |
+| [![NuGet](https://img.shields.io/nuget/v/JKToolKit.CodexSDK.AgentFramework.svg?logo=nuget&label=JKToolKit.CodexSDK.AgentFramework)](https://www.nuget.org/packages/JKToolKit.CodexSDK.AgentFramework) | `dotnet add package JKToolKit.CodexSDK.AgentFramework` | [Microsoft Agent Framework Adapter](AgentFramework.md) |
 
 ## At a Glance
 
@@ -55,6 +57,7 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- review --commit <sha>
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-stream --repo "<repo-path>"
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- appserver-approval --timeout-seconds 30
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- sk-function-calling --repo "<repo-path>"
+dotnet run --project src/JKToolKit.CodexSDK.Demo -- agent-framework-function-calling --repo "<repo-path>"
 
 # MCP Server
 dotnet run --project src/JKToolKit.CodexSDK.Demo -- mcpserver --repo "<repo-path>"

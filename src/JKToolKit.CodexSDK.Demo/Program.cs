@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.Demo.Commands.AppServerApproval;
+using JKToolKit.CodexSDK.Demo.Commands.AgentFrameworkFunctionCalling;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerConfig;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerFuzzyFileSearch;
 using JKToolKit.CodexSDK.Demo.Commands.AppServerMcpManagement;
@@ -152,6 +153,9 @@ internal static class Program
 
             config.AddCommand<SemanticKernelFunctionCallingCommand>("sk-function-calling")
                 .WithDescription("App-server: expose Semantic Kernel functions as Codex dynamic tools.");
+
+            config.AddCommand<AgentFrameworkFunctionCallingCommand>("agent-framework-function-calling")
+                .WithDescription("App-server: expose Microsoft Agent Framework functions as Codex dynamic tools.");
 
             config.AddCommand<DiOverridesCommand>("di-overrides")
                 .WithDescription("Validate DI registration and override hooks (app-server + mcp-server).");

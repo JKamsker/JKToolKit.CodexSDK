@@ -1,6 +1,6 @@
 # <img src="res/logo.png" align="left" width="120" height="120" /> JKToolKit.CodexSDK
 
-[![CI](https://github.com/JKamsker/JKToolKit.CodexSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/JKToolKit.CodexSDK/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/badge/Nuget-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK) [![Semantic Kernel Plugin](https://img.shields.io/badge/Semantic%20Kernel%20Plugin-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK.SemanticKernel)
+[![CI](https://github.com/JKamsker/JKToolKit.CodexSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/JKToolKit.CodexSDK/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/badge/Nuget-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK) [![Semantic Kernel Plugin](https://img.shields.io/badge/Semantic%20Kernel%20Plugin-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK.SemanticKernel) [![Agent Framework Plugin](https://img.shields.io/badge/Agent%20Framework%20Plugin-Download-blue?logo=nuget)](https://www.nuget.org/packages/JKToolKit.CodexSDK.AgentFramework)
 
 <br clear="left"/>
 
@@ -57,6 +57,7 @@ Full docs, examples, and API reference live in [`docs/`](docs/README.md):
 - [App Server](docs/AppServer/README.md) — threads, turns, approvals, DI, resiliency
 - [MCP Server](docs/McpServer/README.md) — tool discovery, sessions, follow-ups
 - [Semantic Kernel package](docs/SemanticKernel.md)
+- [Microsoft Agent Framework package](docs/AgentFramework.md)
 
 ## Demo
 
