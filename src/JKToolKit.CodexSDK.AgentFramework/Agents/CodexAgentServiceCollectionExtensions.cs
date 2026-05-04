@@ -54,6 +54,30 @@ public static class CodexAgentServiceCollectionExtensions
     /// Registers a singleton Codex-backed <see cref="AIAgent"/>.
     /// </summary>
     /// <param name="services">The service collection to populate.</param>
+    /// <param name="options">Agent Framework chat-client agent options to map to the Codex-backed agent.</param>
+    /// <param name="model">Optional model id that overrides <see cref="ChatClientAgentOptions.ChatOptions"/>.</param>
+    /// <param name="configureSdk">
+    /// Optional Codex SDK builder configuration used when no <see cref="CodexSdk"/> is resolved from DI.
+    /// </param>
+    /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddCodexAIAgent(
+        this IServiceCollection services,
+        ChatClientAgentOptions options,
+        string? model = null,
+        Action<CodexSdkBuilder>? configureSdk = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(options);
+
+        return services.AddCodexAIAgent(
+            _ => options.ToCodexAIAgentOptions(model),
+            configureSdk);
+    }
+
+    /// <summary>
+    /// Registers a singleton Codex-backed <see cref="AIAgent"/>.
+    /// </summary>
+    /// <param name="services">The service collection to populate.</param>
     /// <param name="optionsFactory">Creates the Codex-backed agent options from DI.</param>
     /// <param name="configureSdk">
     /// Optional Codex SDK builder configuration used when no <see cref="CodexSdk"/> is resolved from DI.
@@ -93,6 +117,33 @@ public static class CodexAgentServiceCollectionExtensions
         return services.AddKeyedCodexAIAgent(
             serviceKey,
             (_, _) => CreateOptions(configureAgent),
+            configureSdk);
+    }
+
+    /// <summary>
+    /// Registers a keyed singleton Codex-backed <see cref="AIAgent"/>.
+    /// </summary>
+    /// <param name="services">The service collection to populate.</param>
+    /// <param name="serviceKey">The keyed service identifier.</param>
+    /// <param name="options">Agent Framework chat-client agent options to map to the Codex-backed agent.</param>
+    /// <param name="model">Optional model id that overrides <see cref="ChatClientAgentOptions.ChatOptions"/>.</param>
+    /// <param name="configureSdk">
+    /// Optional Codex SDK builder configuration used when no <see cref="CodexSdk"/> is resolved from DI.
+    /// </param>
+    /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddKeyedCodexAIAgent(
+        this IServiceCollection services,
+        object? serviceKey,
+        ChatClientAgentOptions options,
+        string? model = null,
+        Action<CodexSdkBuilder>? configureSdk = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(options);
+
+        return services.AddKeyedCodexAIAgent(
+            serviceKey,
+            (_, _) => options.ToCodexAIAgentOptions(model),
             configureSdk);
     }
 

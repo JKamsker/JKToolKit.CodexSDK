@@ -144,6 +144,22 @@ await using var provider = services.BuildServiceProvider();
 AIAgent agent = provider.GetRequiredKeyedService<AIAgent>("pizza");
 ```
 
+DI registration also accepts native Agent Framework options:
+
+```csharp
+services.AddCodexAIAgent(
+    new ChatClientAgentOptions
+    {
+        Name = "CodexAgent",
+        ChatOptions = new ChatOptions
+        {
+            Instructions = "Use the configured tools when helpful.",
+            Tools = [AIFunctionFactory.Create(GetWeather)]
+        }
+    },
+    model: "gpt-5.5");
+```
+
 Configure Codex-specific run options:
 
 ```csharp
