@@ -287,6 +287,32 @@ AIAgent agent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
 });
 ```
 
+Compose or host the Codex agent with Agent Framework packages that accept `AIAgent`:
+
+```csharp
+// dotnet add package Microsoft.Agents.AI.Workflows --prerelease
+using Microsoft.Agents.AI.Workflows;
+
+var workflow = new WorkflowBuilder(codexAgent)
+    .AddEdge(codexAgent, reviewerAgent)
+    .Build();
+```
+
+```csharp
+// dotnet add package Microsoft.Agents.AI.Hosting.OpenAI --prerelease
+using Microsoft.Agents.AI.Hosting;
+
+app.MapOpenAIChatCompletions(codexAgent);
+app.MapOpenAIResponses(codexAgent);
+```
+
+```csharp
+// dotnet add package Microsoft.Agents.AI.Hosting.A2A.AspNetCore --prerelease
+using Microsoft.Agents.AI.Hosting;
+
+app.MapA2A(codexAgent, path: "/a2a/codex");
+```
+
 The lower-level adapter remains available when you want to manually wire Codex app-server:
 
 ```csharp
@@ -343,6 +369,7 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- agent-framework-function-cal
 
 - `CodexAgentClient().AsAIAgent(...)` returns a normal Agent Framework `AIAgent`, so Agent Framework middleware, workflows, `RunAsync<T>`, `RunStreamingAsync`, and `AIAgent.AsAIFunction(...)` can be used on top of it.
 - `CodexSdk.AsAIAgent(...)` adapts an existing SDK facade and leaves its lifetime with the caller. This is the closest match to provider APIs such as `AIProjectClient.AsAIAgent(...)`.
+- Workflow and hosting packages are intentionally not referenced by this adapter. Add `Microsoft.Agents.AI.Workflows`, `Microsoft.Agents.AI.Hosting.OpenAI`, `Microsoft.Agents.AI.Hosting.A2A.AspNetCore`, or another Agent Framework host package in the application that composes or exposes the Codex agent.
 - `ChatClientAgentOptions` maps its metadata, default `ChatOptions`, `ChatHistoryProvider`, and `AIContextProviders` into the Codex agent. `CodexAIAgent` exposes `ChatOptions`, `Instructions`, `ChatHistoryProvider`, and `AIContextProviders` for the same native inspection style. Chat-client pipeline flags such as `UseProvidedChatClientAsIs` are specific to `IChatClient` agents and are not used by Codex.
 - `ChatClientAgentOptions.ToCodexAIAgentOptions(...)` keeps existing Agent Framework configuration reusable when you also need Codex-specific agent defaults.
 - `CodexAgentSession` stores the backing Codex thread id and the Agent Framework session state bag. Serialize and deserialize the session through the Agent Framework APIs to resume the same Codex thread later.
