@@ -97,7 +97,7 @@ public sealed class CodexSdkBuilder
         CreateEffectiveOptionsSnapshot()
     {
         var exec = _execOptions.Clone();
-        var app = Clone(_appServerOptions);
+        var app = _appServerOptions.Clone();
         var mcp = Clone(_mcpServerOptions);
 
         var globalPath = CodexExecutablePath;
@@ -128,27 +128,6 @@ public sealed class CodexSdkBuilder
 
         return (exec, app, mcp);
     }
-
-    private static CodexAppServerClientOptions Clone(CodexAppServerClientOptions options) => new()
-    {
-        Launch = options.Launch,
-        CodexExecutablePath = options.CodexExecutablePath,
-        CodexHomeDirectory = options.CodexHomeDirectory,
-        StartupTimeout = options.StartupTimeout,
-        ShutdownTimeout = options.ShutdownTimeout,
-        DefaultClientInfo = options.DefaultClientInfo,
-        SerializerOptionsOverride = options.SerializerOptionsOverride,
-        NotificationBufferCapacity = options.NotificationBufferCapacity,
-        ApprovalHandler = options.ApprovalHandler,
-        Capabilities = options.Capabilities,
-        ExperimentalApi = options.ExperimentalApi,
-        OptOutNotificationMethods = options.OptOutNotificationMethods,
-        RequestParamsTransformers = options.RequestParamsTransformers,
-        ResponseTransformers = options.ResponseTransformers,
-        NotificationTransformers = options.NotificationTransformers,
-        NotificationMappers = options.NotificationMappers,
-        MessageObservers = options.MessageObservers
-    };
 
     private static CodexMcpServerClientOptions Clone(CodexMcpServerClientOptions options) => new()
     {

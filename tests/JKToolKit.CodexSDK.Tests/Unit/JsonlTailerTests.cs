@@ -177,8 +177,8 @@ public class JsonlTailerTests : IDisposable
             }
         });
 
-        // Wait a bit for the first line to be read
-        await Task.Delay(100);
+        // Wait until the first line is observed before cancelling.
+        SpinWait.SpinUntil(() => lines.Count == 1, TimeSpan.FromSeconds(2)).Should().BeTrue();
 
         // Cancel the operation
         cts.Cancel();

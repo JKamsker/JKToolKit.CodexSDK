@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using FluentAssertions;
+using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.AgentFramework.Agents;
 using JKToolKit.CodexSDK.Models;
 using Microsoft.Agents.AI;
@@ -47,6 +48,22 @@ public sealed class AgentFrameworkCodexAgentTests
         agent.Should().BeAssignableTo<AIAgent>();
         agent.Name.Should().Be("CodexNative");
         agent.Description.Should().Be("Runs Codex as an Agent Framework agent.");
+        var metadata = agent.GetService(typeof(AIAgentMetadata), serviceKey: null);
+        metadata.Should().BeOfType<AIAgentMetadata>().Which.ProviderName.Should().Be("codex");
+    }
+
+    [Fact]
+    public async Task CodexSdk_AsAIAgent_CreatesNativeAgentWithMetadata()
+    {
+        await using var sdk = CodexSdk.Create();
+
+        var agent = sdk.AsAIAgent(
+            model: "gpt-5.5",
+            instructions: "You are a helpful assistant.",
+            name: "CodexSdkNative");
+
+        agent.Should().BeAssignableTo<AIAgent>();
+        agent.Name.Should().Be("CodexSdkNative");
         var metadata = agent.GetService(typeof(AIAgentMetadata), serviceKey: null);
         metadata.Should().BeOfType<AIAgentMetadata>().Which.ProviderName.Should().Be("codex");
     }

@@ -109,4 +109,28 @@ public sealed class CodexAppServerClientOptions
     /// Optional observers for raw JSON-RPC traffic (best-effort).
     /// </summary>
     public IReadOnlyList<IAppServerMessageObserver>? MessageObservers { get; set; }
+
+    /// <summary>
+    /// Creates a shallow copy of these app-server client options.
+    /// </summary>
+    public CodexAppServerClientOptions Clone() => new()
+    {
+        Launch = Launch,
+        CodexExecutablePath = CodexExecutablePath,
+        CodexHomeDirectory = CodexHomeDirectory,
+        StartupTimeout = StartupTimeout,
+        ShutdownTimeout = ShutdownTimeout,
+        DefaultClientInfo = DefaultClientInfo,
+        SerializerOptionsOverride = SerializerOptionsOverride,
+        NotificationBufferCapacity = NotificationBufferCapacity,
+        ApprovalHandler = ApprovalHandler,
+        Capabilities = Capabilities,
+        ExperimentalApi = ExperimentalApi,
+        OptOutNotificationMethods = OptOutNotificationMethods,
+        RequestParamsTransformers = RequestParamsTransformers,
+        ResponseTransformers = ResponseTransformers,
+        NotificationTransformers = NotificationTransformers,
+        NotificationMappers = NotificationMappers,
+        MessageObservers = MessageObservers
+    };
 }

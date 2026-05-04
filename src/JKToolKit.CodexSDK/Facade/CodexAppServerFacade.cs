@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.Facade;
 
@@ -24,5 +25,26 @@ public sealed class CodexAppServerFacade
     /// </summary>
     public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default) =>
         _factory.StartAsync(ct);
+
+    /// <summary>
+    /// Starts a new <see cref="CodexAppServerClient"/> with per-start app-server option overrides.
+    /// </summary>
+    /// <param name="configure">Configuration applied to a cloned options snapshot before startup.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A started <see cref="CodexAppServerClient"/>.</returns>
+    /// <exception cref="NotSupportedException">
+    /// The underlying app-server factory does not support per-start option overrides.
+    /// </exception>
+    public Task<CodexAppServerClient> StartAsync(
+        Action<CodexAppServerClientOptions> configure,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        return _factory is ICodexAppServerClientOptionsFactory configurableFactory
+            ? configurableFactory.StartAsync(configure, ct)
+            : throw new NotSupportedException(
+                "The configured app-server factory does not support per-start app-server options.");
+    }
 }
 

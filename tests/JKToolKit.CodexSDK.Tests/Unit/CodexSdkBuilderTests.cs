@@ -1,4 +1,5 @@
 using FluentAssertions;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Facade;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -91,5 +92,36 @@ public class CodexSdkBuilderTests
         app.CodexExecutablePath.Should().Be(@"C:\bin\app.exe");
         mcp.CodexExecutablePath.Should().Be(@"C:\bin\global.exe");
     }
-}
 
+    [Fact]
+    public void CodexAppServerClientOptions_Clone_CopiesAppServerOptions()
+    {
+        var handler = new TestApprovalHandler();
+        var options = new CodexAppServerClientOptions
+        {
+            CodexExecutablePath = "codex.exe",
+            CodexHomeDirectory = "codex-home",
+            ExperimentalApi = true,
+            ApprovalHandler = handler
+        };
+
+        var clone = options.Clone();
+
+        clone.Should().NotBeSameAs(options);
+        clone.CodexExecutablePath.Should().Be("codex.exe");
+        clone.CodexHomeDirectory.Should().Be("codex-home");
+        clone.ExperimentalApi.Should().BeTrue();
+        clone.ApprovalHandler.Should().BeSameAs(handler);
+    }
+
+    private sealed class TestApprovalHandler : IAppServerApprovalHandler
+    {
+        public ValueTask<System.Text.Json.JsonElement> HandleAsync(
+            string method,
+            System.Text.Json.JsonElement? parameters,
+            CancellationToken ct = default)
+        {
+            throw new NotSupportedException();
+        }
+    }
+}
