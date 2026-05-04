@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
+using JKToolKit.CodexSDK.AppServer.Remote;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Registry;
 
 /// <summary>
 /// In-memory registry for SDK-managed remote Codex app-server processes.

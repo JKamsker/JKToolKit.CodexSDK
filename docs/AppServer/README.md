@@ -357,7 +357,8 @@ Install `sshpass` on the machine running the SDK if you use password authenticat
 Use `CodexRemoteAppServerManager` when the app-server process should keep running after a client detaches. The default registry is in-memory. Use `JsonFileCodexRemoteAppServerRegistry` when you want to list and reattach after the SDK process exits.
 
 ```csharp
-using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
 
 var registry = new JsonFileCodexRemoteAppServerRegistry("/tmp/codexsdk-appservers.json");
 var manager = new CodexRemoteAppServerManager(registry);

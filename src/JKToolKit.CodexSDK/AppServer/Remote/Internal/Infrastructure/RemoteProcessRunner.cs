@@ -3,7 +3,7 @@ using System.Text;
 using JKToolKit.CodexSDK.Exec;
 using Microsoft.Extensions.Logging;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal interface IRemoteProcessRunner
 {

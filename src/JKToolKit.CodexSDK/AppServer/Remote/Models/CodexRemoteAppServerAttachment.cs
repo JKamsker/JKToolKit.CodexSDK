@@ -1,4 +1,6 @@
-namespace JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer;
+
+namespace JKToolKit.CodexSDK.AppServer.Remote;
 
 /// <summary>
 /// Represents an active attachment to a registered remote Codex app-server.

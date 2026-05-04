@@ -1,7 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.AppServer.Remote;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Registry;
 
 /// <summary>
 /// Options for <see cref="JsonFileCodexRemoteAppServerRegistry"/>.

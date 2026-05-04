@@ -1,6 +1,9 @@
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote.Internal;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote;
 
 /// <summary>
 /// Manages SDK-started detached remote Codex app-server processes.

@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
+using JKToolKit.CodexSDK.AppServer.Remote;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal sealed class RemoteAppServerStarter
 {

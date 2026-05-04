@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal sealed record RemoteStartMetadata(
     string Id,

@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote;
 
 /// <summary>
 /// Options for starting a detached Codex app-server over SSH WebSocket transport.

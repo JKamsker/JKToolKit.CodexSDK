@@ -1,4 +1,6 @@
-namespace JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote;
+
+namespace JKToolKit.CodexSDK.AppServer.Remote.Registry;
 
 /// <summary>
 /// Stores SDK-managed remote Codex app-server process entries.

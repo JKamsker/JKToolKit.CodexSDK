@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal static class RemoteShell
 {

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal interface IRemoteAppServerHealthProbe
 {

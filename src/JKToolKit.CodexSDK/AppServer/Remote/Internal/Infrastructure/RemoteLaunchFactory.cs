@@ -1,6 +1,7 @@
+using JKToolKit.CodexSDK.AppServer.Remote;
 using JKToolKit.CodexSDK.Exec;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal static class RemoteLaunchFactory
 {

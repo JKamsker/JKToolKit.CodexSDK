@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote;
 
 /// <summary>
 /// Docker-specific details for a SDK-managed remote app-server.

@@ -1,4 +1,7 @@
-namespace JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
+
+namespace JKToolKit.CodexSDK.AppServer.Remote;
 
 /// <summary>
 /// Options for <see cref="CodexRemoteAppServerManager"/>.

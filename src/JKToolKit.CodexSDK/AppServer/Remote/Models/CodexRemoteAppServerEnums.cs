@@ -1,4 +1,4 @@
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote;
 
 /// <summary>
 /// Identifies the kind of SDK-managed remote Codex app-server process.

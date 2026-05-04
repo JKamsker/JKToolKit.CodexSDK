@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;

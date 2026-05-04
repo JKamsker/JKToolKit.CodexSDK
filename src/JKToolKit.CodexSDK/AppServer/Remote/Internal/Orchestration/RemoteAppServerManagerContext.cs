@@ -1,6 +1,9 @@
+using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
 using JKToolKit.CodexSDK.Exec;
 
-namespace JKToolKit.CodexSDK.AppServer;
+namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal sealed class RemoteAppServerManagerContext
 {

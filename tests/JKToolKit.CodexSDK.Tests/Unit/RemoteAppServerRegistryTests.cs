@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
-using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Remote;
+using JKToolKit.CodexSDK.AppServer.Remote.Registry;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
