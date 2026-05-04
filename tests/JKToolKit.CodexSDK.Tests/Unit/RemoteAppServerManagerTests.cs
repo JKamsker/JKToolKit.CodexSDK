@@ -210,9 +210,14 @@ public sealed class RemoteAppServerManagerTests
         public Task<RemoteProcessResult> RunAsync(CodexLaunch launch, TimeSpan timeout, CancellationToken ct)
         {
             RunLaunches.Add(launch);
-            return Task.FromResult(_runResults.Count == 0
-                ? new RemoteProcessResult(0, "", "")
-                : _runResults.Dequeue());
+            if (_runResults.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"No enqueued remote process result for launch '{launch.FileName} {string.Join(" ", launch.Arguments)}'. " +
+                    $"Recorded launches: {RunLaunches.Count}.");
+            }
+
+            return Task.FromResult(_runResults.Dequeue());
         }
 
         public Task<IAsyncDisposableProcess> StartAsync(CodexLaunch launch, CancellationToken ct)

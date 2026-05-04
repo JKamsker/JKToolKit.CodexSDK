@@ -130,6 +130,18 @@ public sealed class AppServerRemoteEndpointTests
     }
 
     [Fact]
+    public void CodexAppServerWebSocketEndpoint_ToString_RedactsBearerToken()
+    {
+        var endpoint = new CodexAppServerWebSocketEndpoint(new Uri("ws://127.0.0.1:4500"), "secret-token");
+
+        var text = endpoint.ToString();
+
+        text.Should().Contain("ws://127.0.0.1:4500");
+        text.Should().Contain("<redacted>");
+        text.Should().NotContain("secret-token");
+    }
+
+    [Fact]
     public void CodexAppServerWebSocketEndpoint_RejectsNonWebSocketUri()
     {
         var act = () => new CodexAppServerWebSocketEndpoint(new Uri("http://127.0.0.1:4500"));

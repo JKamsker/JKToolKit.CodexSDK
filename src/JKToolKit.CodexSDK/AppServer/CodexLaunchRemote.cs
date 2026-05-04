@@ -1,3 +1,4 @@
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.Exec;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -77,14 +78,7 @@ public static class CodexLaunchRemote
     }
 
     private static string ShellQuote(string value)
-    {
-        if (value.Length == 0)
-        {
-            return "''";
-        }
-
-        return "'" + value.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
-    }
+        => InternalShellQuoting.Quote(value);
 
     private static List<string> BuildSshArguments(CodexSshAppServerOptions options)
     {

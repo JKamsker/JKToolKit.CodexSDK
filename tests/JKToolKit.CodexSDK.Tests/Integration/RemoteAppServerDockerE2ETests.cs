@@ -136,10 +136,21 @@ public sealed class RemoteAppServerDockerE2ETests
     private static async Task<string> CreateCodexHomeCopyAsync(CancellationToken ct)
     {
         var source = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
+        var authPath = Path.Combine(source, "auth.json");
+        var configPath = Path.Combine(source, "config.toml");
+        var missing = new[] { authPath, configPath }
+            .Where(path => !File.Exists(path))
+            .ToArray();
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"CreateCodexHomeCopyAsync requires local Codex auth files. Missing: {string.Join(", ", missing)}");
+        }
+
         var target = Path.Combine(Path.GetTempPath(), $"codexsdk-home-{Guid.NewGuid():N}");
         Directory.CreateDirectory(target);
-        File.Copy(Path.Combine(source, "auth.json"), Path.Combine(target, "auth.json"));
-        File.Copy(Path.Combine(source, "config.toml"), Path.Combine(target, "config.toml"));
+        File.Copy(authPath, Path.Combine(target, "auth.json"));
+        File.Copy(configPath, Path.Combine(target, "config.toml"));
         await Task.Yield();
         ct.ThrowIfCancellationRequested();
         return target;
@@ -192,8 +203,8 @@ public sealed class RemoteAppServerDockerE2ETests
         }
 
         process.Start();
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
         try
         {
             await process.WaitForExitAsync(ct);
@@ -201,6 +212,8 @@ public sealed class RemoteAppServerDockerE2ETests
         catch
         {
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+            await ObserveProcessReadAsync(stdoutTask);
+            await ObserveProcessReadAsync(stderrTask);
             throw;
         }
 
@@ -212,5 +225,17 @@ public sealed class RemoteAppServerDockerE2ETests
         }
 
         return stdout;
+    }
+
+    private static async Task ObserveProcessReadAsync(Task<string> task)
+    {
+        try
+        {
+            await task;
+        }
+        catch
+        {
+            // Ignore read failures after process cancellation cleanup.
+        }
     }
 }

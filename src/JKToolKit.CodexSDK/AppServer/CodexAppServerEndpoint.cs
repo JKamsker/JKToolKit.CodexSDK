@@ -1,3 +1,4 @@
+using System.Text;
 using JKToolKit.CodexSDK.Exec;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -53,6 +54,27 @@ public sealed record CodexAppServerWebSocketEndpoint : CodexAppServerEndpoint
     /// Gets an optional bearer token sent as an Authorization header.
     /// </summary>
     public string? BearerToken { get; }
+
+    /// <inheritdoc />
+    protected override bool PrintMembers(StringBuilder builder)
+    {
+        if (base.PrintMembers(builder))
+        {
+            builder.Append(", ");
+        }
+
+        builder.Append(nameof(Uri));
+        builder.Append(" = ");
+        builder.Append(Uri);
+        if (BearerToken is not null)
+        {
+            builder.Append(", ");
+            builder.Append(nameof(BearerToken));
+            builder.Append(" = <redacted>");
+        }
+
+        return true;
+    }
 
     private static void ValidateUri(Uri uri)
     {

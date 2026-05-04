@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -143,27 +144,34 @@ internal sealed class WebSocketJsonRpcMessageTransport : IJsonRpcMessageTranspor
             return null;
         }
 
-        var buffer = new byte[ReceiveBufferSize];
+        var buffer = ArrayPool<byte>.Shared.Rent(ReceiveBufferSize);
         using var message = new MemoryStream();
 
-        while (true)
+        try
         {
-            var result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), ct).ConfigureAwait(false);
-            if (result.MessageType == WebSocketMessageType.Close)
+            while (true)
             {
-                return null;
-            }
+                var result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), ct).ConfigureAwait(false);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    return null;
+                }
 
-            if (result.MessageType != WebSocketMessageType.Text)
-            {
-                throw new IOException($"WebSocket app-server sent unsupported {result.MessageType} frame.");
-            }
+                if (result.MessageType != WebSocketMessageType.Text)
+                {
+                    throw new IOException($"WebSocket app-server sent unsupported {result.MessageType} frame.");
+                }
 
-            message.Write(buffer, 0, result.Count);
-            if (result.EndOfMessage)
-            {
-                return Encoding.UTF8.GetString(message.ToArray());
+                message.Write(buffer, 0, result.Count);
+                if (result.EndOfMessage)
+                {
+                    return Encoding.UTF8.GetString(message.ToArray());
+                }
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
         }
     }
 

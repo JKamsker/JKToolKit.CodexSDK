@@ -56,6 +56,8 @@ internal sealed class LineJsonRpcMessageTransport : IJsonRpcMessageTransport
 
     public ValueTask DisposeAsync()
     {
+        // The reader and writer are owned by the process/stream lifetime that created the transport.
+        // Disposing the transport only completes the receive loop bookkeeping.
         _completion.TrySetResult();
         return ValueTask.CompletedTask;
     }

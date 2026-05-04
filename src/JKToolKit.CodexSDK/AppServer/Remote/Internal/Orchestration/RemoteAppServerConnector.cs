@@ -111,6 +111,10 @@ internal sealed class RemoteAppServerConnector
 
             lastError = new TimeoutException($"SSH tunnel for '{entry.Id}' did not become ready on local port {localPort}.");
             await tunnel.DisposeAsync().ConfigureAwait(false);
+            if (attempt < 4)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * (attempt + 1)), ct).ConfigureAwait(false);
+            }
         }
 
         throw lastError ?? new InvalidOperationException($"Unable to attach SSH remote app-server '{entry.Id}'.");

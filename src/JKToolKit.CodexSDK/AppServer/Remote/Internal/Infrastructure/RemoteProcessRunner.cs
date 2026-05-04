@@ -47,6 +47,8 @@ internal sealed class RemoteProcessRunner : IRemoteProcessRunner
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             TryKill(process);
+            await ObserveReadTaskAsync(stdoutTask).ConfigureAwait(false);
+            await ObserveReadTaskAsync(stderrTask).ConfigureAwait(false);
             throw new TimeoutException($"Remote command timed out after {timeout}.");
         }
 
@@ -115,6 +117,18 @@ internal sealed class RemoteProcessRunner : IRemoteProcessRunner
         catch
         {
             // Best effort cleanup.
+        }
+    }
+
+    private static async Task ObserveReadTaskAsync(Task<string> task)
+    {
+        try
+        {
+            await task.ConfigureAwait(false);
+        }
+        catch
+        {
+            // Ignore read failures after timeout cleanup.
         }
     }
 

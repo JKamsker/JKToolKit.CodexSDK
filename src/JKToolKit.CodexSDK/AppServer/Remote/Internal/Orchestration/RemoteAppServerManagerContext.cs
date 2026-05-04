@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Remote;
 using JKToolKit.CodexSDK.AppServer.Remote.Registry;
@@ -7,8 +8,7 @@ namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal sealed class RemoteAppServerManagerContext
 {
-    private readonly Dictionary<string, RemoteAppServerSecrets> _secrets = new(StringComparer.Ordinal);
-    private readonly object _secretsSync = new();
+    private readonly ConcurrentDictionary<string, RemoteAppServerSecrets> _secrets = new(StringComparer.Ordinal);
 
     public RemoteAppServerManagerContext(
         CodexRemoteAppServerManagerOptions options,
@@ -40,20 +40,14 @@ internal sealed class RemoteAppServerManagerContext
             return;
         }
 
-        lock (_secretsSync)
-        {
-            _secrets[id] = new RemoteAppServerSecrets(sshPassword, bearerToken);
-        }
+        _secrets[id] = new RemoteAppServerSecrets(sshPassword, bearerToken);
     }
 
     public RemoteAppServerSecrets GetSecrets(string id)
     {
-        lock (_secretsSync)
-        {
-            return _secrets.TryGetValue(id, out var secrets)
-                ? secrets
-                : new RemoteAppServerSecrets(null, null);
-        }
+        return _secrets.TryGetValue(id, out var secrets)
+            ? secrets
+            : new RemoteAppServerSecrets(null, null);
     }
 
     public async Task<CodexRemoteAppServerEntry> GetRequiredEntryAsync(string id, CancellationToken ct)

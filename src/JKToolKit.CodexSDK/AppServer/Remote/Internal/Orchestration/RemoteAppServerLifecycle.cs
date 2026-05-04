@@ -38,17 +38,19 @@ internal sealed class RemoteAppServerLifecycle
         CancellationToken ct)
     {
         var entry = await _context.GetRequiredEntryAsync(id, ct).ConfigureAwait(false);
-        if (entry.Kind == CodexRemoteAppServerKind.SshWebSocket)
+        switch (entry.Kind)
         {
-            await StopSshAsync(entry, options, ct).ConfigureAwait(false);
-        }
-        else if (entry.Kind == CodexRemoteAppServerKind.DockerContainerWebSocket)
-        {
-            await StopDockerContainerAsync(entry, ct).ConfigureAwait(false);
-        }
-        else
-        {
-            await StopDockerExecAsync(entry, ct).ConfigureAwait(false);
+            case CodexRemoteAppServerKind.SshWebSocket:
+                await StopSshAsync(entry, options, ct).ConfigureAwait(false);
+                break;
+            case CodexRemoteAppServerKind.DockerContainerWebSocket:
+                await StopDockerContainerAsync(entry, ct).ConfigureAwait(false);
+                break;
+            case CodexRemoteAppServerKind.DockerExecWebSocket:
+                await StopDockerExecAsync(entry, ct).ConfigureAwait(false);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(entry), entry.Kind, $"Unsupported remote app-server kind '{entry.Kind}'.");
         }
 
         var stopped = entry with { Status = CodexRemoteAppServerStatus.Stopped, UpdatedAt = DateTimeOffset.UtcNow };

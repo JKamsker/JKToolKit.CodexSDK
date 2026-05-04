@@ -112,11 +112,20 @@ internal sealed class RemoteAppServerStarter
     {
         var deadline = DateTimeOffset.UtcNow + _context.Options.StartTimeout;
         RemoteProcessResult? last = null;
-        while (DateTimeOffset.UtcNow <= deadline)
+        while (true)
         {
+            var remaining = deadline - DateTimeOffset.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            var perCallTimeout = remaining < TimeSpan.FromSeconds(5)
+                ? remaining
+                : TimeSpan.FromSeconds(5);
             last = await _context.ProcessRunner.RunAsync(
                     RemoteLaunchFactory.DockerExecReadMetadata(options, id),
-                    TimeSpan.FromSeconds(5),
+                    perCallTimeout,
                     ct)
                 .ConfigureAwait(false);
             if (last.ExitCode == 0 && last.StandardOutput.Contains("CODEXSDK_PID=", StringComparison.Ordinal))
@@ -124,7 +133,16 @@ internal sealed class RemoteAppServerStarter
                 return RemoteStartMetadata.Parse(last.StandardOutput);
             }
 
-            await Task.Delay(TimeSpan.FromMilliseconds(200), ct).ConfigureAwait(false);
+            remaining = deadline - DateTimeOffset.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            var delay = remaining < TimeSpan.FromMilliseconds(200)
+                ? remaining
+                : TimeSpan.FromMilliseconds(200);
+            await Task.Delay(delay, ct).ConfigureAwait(false);
         }
 
         throw new TimeoutException($"Timed out waiting for Docker exec app-server metadata. Last stderr: {last?.StandardError}");

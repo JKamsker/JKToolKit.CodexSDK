@@ -1,18 +1,12 @@
 using System.Text;
+using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal static class RemoteShell
 {
     public static string Quote(string value)
-    {
-        if (value.Length == 0)
-        {
-            return "''";
-        }
-
-        return "'" + value.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
-    }
+        => InternalShellQuoting.Quote(value);
 
     public static string JoinQuoted(IEnumerable<string> values) =>
         string.Join(" ", values.Select(Quote));
