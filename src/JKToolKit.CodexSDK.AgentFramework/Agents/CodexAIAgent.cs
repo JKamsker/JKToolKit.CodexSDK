@@ -1,8 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.AppServer.Notifications;
-using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.AgentFramework.Internal;
 using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.Models;
@@ -17,6 +15,7 @@ namespace JKToolKit.CodexSDK.AgentFramework.Agents;
 public sealed class CodexAIAgent : AIAgent
 {
     private readonly CodexAgentClient _client;
+    private readonly CodexAgentContextPipeline _contextPipeline;
     private readonly FunctionInvokingChatClient _functionInvokingChatClient;
     private readonly CodexAIAgentOptions _options;
 
@@ -24,6 +23,7 @@ public sealed class CodexAIAgent : AIAgent
     {
         _client = client;
         _options = options;
+        _contextPipeline = new CodexAgentContextPipeline(this, options.ChatHistoryProvider, options.AIContextProviders);
         _functionInvokingChatClient = new FunctionInvokingChatClient(
             CodexAgentNoOpChatClient.Instance,
             functionInvocationServices: options.FunctionInvocationServices);
@@ -38,6 +38,16 @@ public sealed class CodexAIAgent : AIAgent
     /// <inheritdoc />
     public override string Description => _options.Description ?? "Codex CLI agent.";
 
+    /// <summary>
+    /// Gets the Agent Framework chat history provider used by this agent, if configured.
+    /// </summary>
+    public ChatHistoryProvider? ChatHistoryProvider => _contextPipeline.ChatHistoryProvider;
+
+    /// <summary>
+    /// Gets the Agent Framework context providers used by this agent, if configured.
+    /// </summary>
+    public IReadOnlyList<AIContextProvider>? AIContextProviders => _contextPipeline.AIContextProviders;
+
     /// <inheritdoc />
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
@@ -49,6 +59,16 @@ public sealed class CodexAIAgent : AIAgent
         if (serviceKey is null && serviceType == typeof(FunctionInvokingChatClient))
         {
             return _functionInvokingChatClient;
+        }
+
+        if (serviceKey is null && serviceType == typeof(CodexAIAgentOptions))
+        {
+            return _options;
+        }
+
+        if (_contextPipeline.GetService(serviceType, serviceKey) is { } contextService)
+        {
+            return contextService;
         }
 
         return base.GetService(serviceType, serviceKey);
@@ -96,9 +116,18 @@ public sealed class CodexAIAgent : AIAgent
         AgentRunOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        var requestMessages = messages as IReadOnlyCollection<ChatMessage> ?? messages.ToArray();
         var codexSession = await ResolveSessionAsync(session, cancellationToken).ConfigureAwait(false);
+        CurrentRunContext = new AgentRunContext(this, codexSession, requestMessages, options);
+
         var chatOptions = await CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(options, cancellationToken)
             .ConfigureAwait(false);
+        var preparedRun = await _contextPipeline.PrepareAsync(codexSession, requestMessages, chatOptions, cancellationToken)
+            .ConfigureAwait(false);
+        var preparedRunContext = new AgentRunContext(this, codexSession, preparedRun.Messages, options);
+        CurrentRunContext = preparedRunContext;
+        chatOptions = preparedRun.ChatOptions;
+
         var configuredTools = await CodexAgentChatOptionsMapper.TransformToolsAsync(
             _options.Tools,
             options,
@@ -109,19 +138,48 @@ public sealed class CodexAIAgent : AIAgent
             cancellationToken).ConfigureAwait(false);
         var toolSet = CreateToolSet(options, chatOptions, configuredTools, codexRunConfigurationTools, codexSession);
         var approvalHandler = toolSet.DynamicTools.Count == 0 ? null : toolSet.ApprovalHandler;
+        using var functionInvocationScope = AgentFrameworkFunctionInvoker.PushEffectiveChatOptions(chatOptions);
         await using var sdk = _client.CreateSdk(approvalHandler);
         await using var codex = await sdk.AppServer.StartAsync(cancellationToken).ConfigureAwait(false);
         var thread = await ResolveThreadAsync(codex, codexSession, toolSet, options, chatOptions, cancellationToken)
             .ConfigureAwait(false);
         codexSession.ThreadId = thread.Id;
 
-        await using var turn = await codex.StartTurnAsync(thread.Id, CreateTurnOptions(messages, options, chatOptions), cancellationToken)
+        await using var turn = await codex.StartTurnAsync(thread.Id, CreateTurnOptions(preparedRun.Messages, options, chatOptions), cancellationToken)
             .ConfigureAwait(false);
 
-        await foreach (var update in StreamUpdatesAsync(turn, cancellationToken).ConfigureAwait(false))
+        var responseUpdates = new List<AgentResponseUpdate>();
+        await using var updates = CodexAgentResponseMapper.StreamUpdatesAsync(turn, Id, Name, cancellationToken)
+            .GetAsyncEnumerator(cancellationToken);
+        while (true)
         {
+            AgentResponseUpdate update;
+            try
+            {
+                CurrentRunContext = preparedRunContext;
+                if (!await updates.MoveNextAsync().ConfigureAwait(false))
+                {
+                    break;
+                }
+
+                update = updates.Current;
+            }
+            catch (Exception ex)
+            {
+                await _contextPipeline.NotifyFailureAsync(preparedRun, codexSession, ex, cancellationToken)
+                    .ConfigureAwait(false);
+                throw;
+            }
+
+            responseUpdates.Add(update);
             yield return update;
         }
+
+        await _contextPipeline.NotifySuccessAsync(
+            preparedRun,
+            codexSession,
+            responseUpdates.ToAgentResponse().Messages,
+            cancellationToken).ConfigureAwait(false);
     }
 
     private static CodexAgentSession GetSession(AgentSession session)
@@ -220,49 +278,6 @@ public sealed class CodexAIAgent : AIAgent
         _options.ConfigureTurn?.Invoke(options);
         CodexAgentOptionsMapper.ConfigureRunTurn(options, runOptions);
         return options;
-    }
-
-    private async IAsyncEnumerable<AgentResponseUpdate> StreamUpdatesAsync(
-        CodexTurnHandle turn,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await foreach (var ev in turn.Events(cancellationToken).ConfigureAwait(false))
-        {
-            switch (ev)
-            {
-                case AgentMessageDeltaNotification delta:
-                    yield return new AgentResponseUpdate(ChatRole.Assistant, delta.Delta)
-                    {
-                        AgentId = Id,
-                        AuthorName = Name,
-                        ResponseId = turn.TurnId,
-                        MessageId = delta.ItemId,
-                        CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    break;
-                case ErrorNotification error:
-                    yield return new AgentResponseUpdate(ChatRole.Assistant, [new ErrorContent(error.Error.GetRawText())])
-                    {
-                        AgentId = Id,
-                        AuthorName = Name,
-                        ResponseId = turn.TurnId
-                    };
-                    break;
-            }
-        }
-
-        var completed = await turn.Completion.ConfigureAwait(false);
-        if (!string.Equals(completed.Status, "completed", StringComparison.OrdinalIgnoreCase) &&
-            completed.Error is { } completionError)
-        {
-            yield return new AgentResponseUpdate(ChatRole.Assistant, [new ErrorContent(completionError.GetRawText())])
-            {
-                AgentId = Id,
-                AuthorName = Name,
-                ResponseId = turn.TurnId,
-                FinishReason = ChatFinishReason.Stop
-            };
-        }
     }
 
     private static CodexModel? ParseModel(string? model)

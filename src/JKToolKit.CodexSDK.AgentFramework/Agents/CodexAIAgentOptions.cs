@@ -1,6 +1,7 @@
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.Models;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
 namespace JKToolKit.CodexSDK.AgentFramework.Agents;
@@ -64,6 +65,16 @@ public sealed class CodexAIAgentOptions
     /// Gets or sets the Agent Framework tools exposed to Codex.
     /// </summary>
     public IReadOnlyList<AITool>? Tools { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Agent Framework chat history provider used to enrich Codex runs.
+    /// </summary>
+    public ChatHistoryProvider? ChatHistoryProvider { get; set; }
+
+    /// <summary>
+    /// Gets or sets Agent Framework context providers that add run-specific instructions, messages, or tools.
+    /// </summary>
+    public IEnumerable<AIContextProvider>? AIContextProviders { get; set; }
 
     /// <summary>
     /// Gets or sets services made available to Agent Framework function invocations.

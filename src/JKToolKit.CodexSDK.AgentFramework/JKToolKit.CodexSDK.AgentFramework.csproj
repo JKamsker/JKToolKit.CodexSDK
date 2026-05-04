@@ -26,9 +26,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>JKToolKit.CodexSDK.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Agents.AI" Version="1.3.0" />
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.5.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.5.0" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.5.1" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.5.1" />
   </ItemGroup>
 
 </Project>

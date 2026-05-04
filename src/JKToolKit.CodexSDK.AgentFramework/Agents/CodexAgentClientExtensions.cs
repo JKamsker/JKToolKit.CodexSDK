@@ -28,7 +28,9 @@ public static class CodexAgentClientExtensions
         string? instructions = null,
         string? name = null,
         string? description = null,
-        IEnumerable<AITool>? tools = null)
+        IEnumerable<AITool>? tools = null,
+        ChatHistoryProvider? chatHistoryProvider = null,
+        IEnumerable<AIContextProvider>? aiContextProviders = null)
     {
         ArgumentNullException.ThrowIfNull(client);
 
@@ -38,7 +40,9 @@ public static class CodexAgentClientExtensions
             Instructions = instructions,
             Name = name,
             Description = description,
-            Tools = tools?.ToArray()
+            Tools = tools?.ToArray(),
+            ChatHistoryProvider = chatHistoryProvider,
+            AIContextProviders = aiContextProviders?.ToArray()
         });
     }
 }

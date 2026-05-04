@@ -9,7 +9,7 @@ Use it when you want a Codex-backed `AIAgent`, or when you already have Agent Fr
 
 NuGet package: [`JKToolKit.CodexSDK.AgentFramework`](https://www.nuget.org/packages/JKToolKit.CodexSDK.AgentFramework)
 
-Microsoft docs: [Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) and [function tools](https://learn.microsoft.com/en-us/agent-framework/agents/tools/function-tools).
+Microsoft docs: [Agent Framework](https://learn.microsoft.com/en-us/agent-framework/), [function tools](https://learn.microsoft.com/en-us/agent-framework/agents/tools/function-tools), and [context providers](https://learn.microsoft.com/en-us/agent-framework/agents/conversations/context-providers).
 
 ## Install
 
@@ -160,6 +160,40 @@ AIAgent agent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
 });
 ```
 
+Agent Framework runtime context is available inside tools and function middleware:
+
+```csharp
+static string RememberTopic(string topic)
+{
+    var session = AIAgent.CurrentRunContext?.Session;
+    if (session is null)
+    {
+        return "No session is available.";
+    }
+
+    session.StateBag.SetValue("topic", topic);
+    return $"Remembered {topic}.";
+}
+
+AIAgent agent = new CodexAgentClient().AsAIAgent(
+    instructions: "Remember useful project context.",
+    tools: [AIFunctionFactory.Create(RememberTopic)]);
+```
+
+Use Agent Framework context providers when you want the normal memory/RAG pipeline to enrich Codex runs:
+
+```csharp
+AIContextProvider projectContextProvider = new MyProjectContextProvider();
+
+AIAgent agent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
+{
+    Instructions = "Use project context when it is relevant.",
+    AIContextProviders = [projectContextProvider],
+    ChatHistoryProvider = new InMemoryChatHistoryProvider(),
+    Tools = [AIFunctionFactory.Create(GetWeather)]
+});
+```
+
 The lower-level adapter remains available when you want to manually wire Codex app-server:
 
 ```csharp
@@ -216,9 +250,13 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- agent-framework-function-cal
 
 - `CodexAgentClient().AsAIAgent(...)` returns a normal Agent Framework `AIAgent`, so Agent Framework middleware, workflows, `RunAsync<T>`, `RunStreamingAsync`, and `AIAgent.AsAIFunction(...)` can be used on top of it.
 - `CodexAgentSession` stores the backing Codex thread id and the Agent Framework session state bag. Serialize and deserialize the session through the Agent Framework APIs to resume the same Codex thread later.
+- When a run does not pass a session, the Codex agent creates one and updates `AIAgent.CurrentRunContext` so Agent Framework tools can still read `CurrentRunContext.Session` and `CurrentRunContext.RunOptions`.
+- `AIContextProviders` run before Codex starts the turn. Provider instructions and tools are merged into `ChatOptions`; provider messages are sent as turn input; providers are notified after success or failure.
+- `ChatHistoryProvider` is opt-in because Codex threads already maintain conversation state. Add one only when you explicitly want Agent Framework-managed history or memory enrichment.
 - Codex dynamic tools are currently behind the app-server experimental API capability. The native `AIAgent` surface enables it automatically when tools are present.
 - Tool names are the `AIFunction.Name` values supplied by Agent Framework.
 - Agent Framework tools must currently be `AIFunction` instances. Hosted Agent Framework tools such as provider-native code interpreter, file search, or web search are not translated to Codex dynamic tools.
-- Per-run tools can be used when creating a new Codex thread. Once a `CodexAgentSession` has a thread id, create a new session to use a different tool set.
+- Per-run tools and context-provider tools can be used when creating a new Codex thread. Once a `CodexAgentSession` has a thread id, create a new session to use a different tool set.
 - Function invocation middleware is supported for default tools and `ChatClientAgentRunOptions` tools through `ChatClientFactory`. When combining it with Codex-specific settings, attach those settings with `ConfigureCodex(...)`; Agent Framework's function middleware only accepts no options, base `AgentRunOptions`, or `ChatClientAgentRunOptions`.
+- `ChatClientAgentRunOptions.ChatClientFactory` is used only to apply Agent Framework option/tool transformations before Codex runs. Codex is not an `IChatClient`, so chat-client middleware cannot observe the raw Codex model request or response.
 - `ApprovalRequiredAIFunction` is supported through `toolApprovalHandler`. Codex dynamic tool calls are synchronous, so the adapter does not use Agent Framework `FunctionApprovalRequestContent` / `FunctionApprovalResponseContent` round trips. Without an approval handler, approval-required functions are rejected before invocation.
