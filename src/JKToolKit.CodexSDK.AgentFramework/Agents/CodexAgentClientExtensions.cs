@@ -1,4 +1,3 @@
-using JKToolKit.CodexSDK.AgentFramework.Internal;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
@@ -55,7 +54,7 @@ public static class CodexAgentClientExtensions
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(options);
 
-        return client.AsAIAgent(CodexAgentOptionsMapper.FromChatClientAgentOptions(options, model: null));
+        return client.AsAIAgent(options.ToCodexAIAgentOptions());
     }
 
     /// <summary>
@@ -69,6 +68,6 @@ public static class CodexAgentClientExtensions
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(options);
 
-        return client.AsAIAgent(CodexAgentOptionsMapper.FromChatClientAgentOptions(options, model));
+        return client.AsAIAgent(options.ToCodexAIAgentOptions(model));
     }
 }

@@ -75,6 +75,25 @@ AIAgent agent = sdk.AsAIAgent(
     });
 ```
 
+Layer Codex-specific defaults on top of Agent Framework options when needed:
+
+```csharp
+var options = new ChatClientAgentOptions
+{
+    Name = "CodexAgent",
+    ChatOptions = new ChatOptions
+    {
+        Instructions = "You are a helpful assistant.",
+        Tools = [getWeather]
+    }
+}.ToCodexAIAgentOptions(model: "gpt-5.5");
+
+options.Cwd = Environment.CurrentDirectory;
+options.ApprovalPolicy = CodexApprovalPolicy.Never;
+
+AIAgent agent = sdk.AsAIAgent(options);
+```
+
 Use sessions for multi-turn conversations:
 
 ```csharp
@@ -309,6 +328,7 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- agent-framework-function-cal
 - `CodexAgentClient().AsAIAgent(...)` returns a normal Agent Framework `AIAgent`, so Agent Framework middleware, workflows, `RunAsync<T>`, `RunStreamingAsync`, and `AIAgent.AsAIFunction(...)` can be used on top of it.
 - `CodexSdk.AsAIAgent(...)` adapts an existing SDK facade and leaves its lifetime with the caller. This is the closest match to provider APIs such as `AIProjectClient.AsAIAgent(...)`.
 - `ChatClientAgentOptions` maps its metadata, default `ChatOptions`, `ChatHistoryProvider`, and `AIContextProviders` into the Codex agent. `CodexAIAgent` exposes `ChatOptions`, `Instructions`, `ChatHistoryProvider`, and `AIContextProviders` for the same native inspection style. Chat-client pipeline flags such as `UseProvidedChatClientAsIs` are specific to `IChatClient` agents and are not used by Codex.
+- `ChatClientAgentOptions.ToCodexAIAgentOptions(...)` keeps existing Agent Framework configuration reusable when you also need Codex-specific agent defaults.
 - `CodexAgentSession` stores the backing Codex thread id and the Agent Framework session state bag. Serialize and deserialize the session through the Agent Framework APIs to resume the same Codex thread later.
 - When a run does not pass a session, the Codex agent creates one and updates `AIAgent.CurrentRunContext` so Agent Framework tools can still read `CurrentRunContext.Session` and `CurrentRunContext.RunOptions`.
 - `AIContextProviders` run before Codex starts the turn. Provider instructions and tools are merged into `ChatOptions`; provider messages are sent as turn input; providers are notified after success or failure.

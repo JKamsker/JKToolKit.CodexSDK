@@ -140,6 +140,27 @@ public sealed class AgentFrameworkCodexAgentTests
     }
 
     [Fact]
+    public void ChatClientAgentOptions_ToCodexAIAgentOptions_AllowsCodexDefaults()
+    {
+        var nativeOptions = new ChatClientAgentOptions
+        {
+            ChatOptions = new ChatOptions
+            {
+                Instructions = "native instructions"
+            }
+        };
+
+        var codexOptions = nativeOptions.ToCodexAIAgentOptions(model: "gpt-5.5");
+        codexOptions.Cwd = "repo";
+        codexOptions.ApprovalPolicy = CodexApprovalPolicy.Never;
+
+        codexOptions.ChatOptions!.ModelId.Should().Be("gpt-5.5");
+        codexOptions.ChatOptions.Instructions.Should().Be("native instructions");
+        codexOptions.Cwd.Should().Be("repo");
+        codexOptions.ApprovalPolicy.Should().Be(CodexApprovalPolicy.Never);
+    }
+
+    [Fact]
     public async Task GetEffectiveChatOptionsAsync_MergesDefaultAndRunOptions()
     {
         var defaultTool = AIFunctionFactory.Create((Func<string>)(() => "default"), "default_tool");
