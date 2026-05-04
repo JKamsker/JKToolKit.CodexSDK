@@ -1,6 +1,6 @@
 # JKToolKit.CodexSDK.AppServer
 
-`JKToolKit.CodexSDK.AppServer` is a namespace/module in the main `JKToolKit.CodexSDK` package that integrates with **`codex app-server`**, a long-running **JSON-RPC-over-stdio** mode of the Codex CLI.
+`JKToolKit.CodexSDK.AppServer` is a namespace/module in the main `JKToolKit.CodexSDK` package that integrates with **`codex app-server`**, a long-running JSON-RPC mode of the Codex CLI. It supports local stdio, remote stdio launchers such as SSH/Docker, and WebSocket attach for already-listening app-server instances.
 
 See also:
 
@@ -41,8 +41,10 @@ JKToolKit.CodexSDK.AppServer provides `CodexTurnHandle` to model that lifecycle.
 
 ## How It Works Internally
 
-1. Launches `codex app-server` as a stdio process (`StdioProcess`)
-2. Creates a `JsonRpcConnection` (JSONL read loop + request correlation)
+1. Opens the selected endpoint:
+   - stdio process launch (`codex app-server`, SSH, Docker, etc.)
+   - WebSocket attach (`ws://` / `wss://`)
+2. Creates a `JsonRpcConnection` (request correlation + notification routing)
 3. Performs handshake:
    - `initialize` request
    - `initialized` notification
@@ -293,6 +295,58 @@ await foreach (var e in turn.Events())
 
 var completed = await turn.Completion;
 Console.WriteLine($"\nDone: {completed.Status}");
+```
+
+### Remote app-server over SSH or Docker stdio
+
+Use remote stdio when you want the SDK to start the app-server process but run all Codex work on another host/container. Do not allocate a TTY; the JSON-RPC stream must stay clean.
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+
+await using var ssh = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    Launch = CodexLaunchRemote.SshAppServer(
+        host: "devbox",
+        remoteWorkingDirectory: "/home/me/project")
+});
+
+await using var docker = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    Launch = CodexLaunchRemote.DockerAppServer(
+        container: "codex-dev",
+        workingDirectory: "/workspace",
+        codexHome: "/home/codex/.codex")
+});
+```
+
+The SSH helper uses `ssh -T`. The Docker helper uses `docker exec -i`.
+
+### Attach over WebSocket
+
+Use WebSocket when something else starts `codex app-server --listen ws://127.0.0.1:4500` and the SDK only attaches. Upstream currently treats this transport as experimental; prefer loopback listeners or SSH port forwarding. If the listener requires auth, pass the bearer token used by the server's WebSocket auth mode.
+
+```csharp
+using JKToolKit.CodexSDK.AppServer;
+
+await using var codex = await CodexAppServerClient.ConnectWebSocketAsync(new CodexAppServerWebSocketOptions
+{
+    Uri = new Uri("ws://127.0.0.1:4500"),
+    BearerToken = "<optional-token>",
+    ClientOptions = new CodexAppServerClientOptions
+    {
+        DefaultClientInfo = new("my_app", "My App", "1.0.0")
+    }
+});
+```
+
+Equivalent endpoint-based configuration:
+
+```csharp
+await using var codex = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions
+{
+    Endpoint = new CodexAppServerWebSocketEndpoint(new Uri("ws://127.0.0.1:4500"))
+});
 ```
 
 ### Structured outputs (JSON → DTO)

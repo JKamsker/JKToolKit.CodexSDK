@@ -1,18 +1,14 @@
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
-using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
-using JKToolKit.CodexSDK.Exec;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -123,14 +119,25 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         ILogger logger,
         JsonSerializerOptions serializerOptions,
         bool startExitWatcher = true)
+        : this(options, new StdioAppServerLifetime(process), rpc, logger, serializerOptions, startExitWatcher)
+    {
+    }
+
+    internal CodexAppServerClient(
+        CodexAppServerClientOptions options,
+        IAppServerLifetime lifetime,
+        IJsonRpcConnection rpc,
+        ILogger logger,
+        JsonSerializerOptions serializerOptions,
+        bool startExitWatcher = true)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(process);
+        ArgumentNullException.ThrowIfNull(lifetime);
         ArgumentNullException.ThrowIfNull(rpc);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(serializerOptions);
         _serializerOptions = serializerOptions;
-        _core = new CodexAppServerClientCore(options, process, rpc, logger, startExitWatcher);
+        _core = new CodexAppServerClientCore(options, lifetime, rpc, logger, startExitWatcher);
 
         Func<bool> experimentalApiEnabled = () => _core.ExperimentalApiEnabled;
         _threadsClient = new CodexAppServerThreadsClient(_core.SendRequestAsync, experimentalApiEnabled);
@@ -163,77 +170,6 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     }
 
     /// <summary>
-    /// Starts a new Codex app-server process and returns a connected client.
-    /// </summary>
-    public static async Task<CodexAppServerClient> StartAsync(
-        CodexAppServerClientOptions options,
-        CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        var loggerFactory = NullLoggerFactory.Instance;
-        var logger = loggerFactory.CreateLogger<CodexAppServerClient>();
-        var serializerOptions = options.SerializerOptionsOverride ?? CreateDefaultSerializerOptions();
-
-        var stdioFactory = CodexJsonRpcBootstrap.CreateDefaultStdioFactory(loggerFactory);
-        var launch = ApplyCodexHome(options.Launch, options.CodexHomeDirectory);
-        var (process, rpc) = await CodexJsonRpcBootstrap.StartAsync(
-            stdioFactory,
-            loggerFactory,
-            launch,
-            options.CodexExecutablePath,
-            options.StartupTimeout,
-            options.ShutdownTimeout,
-            options.NotificationBufferCapacity,
-            serializerOptions,
-            includeJsonRpcHeader: false,
-            ct);
-
-        return await CreateInitializedAsync(options, process, rpc, logger, serializerOptions, ct).ConfigureAwait(false);
-    }
-
-    internal static async Task<CodexAppServerClient> CreateInitializedAsync(
-        CodexAppServerClientOptions options,
-        IStdioProcess process,
-        IJsonRpcConnection rpc,
-        ILogger logger,
-        JsonSerializerOptions serializerOptions,
-        CancellationToken ct)
-    {
-        var client = new CodexAppServerClient(options, process, rpc, logger, serializerOptions);
-
-        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        handshakeCts.CancelAfter(options.StartupTimeout);
-
-        try
-        {
-            await client.InitializeAsync(options.DefaultClientInfo, handshakeCts.Token).ConfigureAwait(false);
-            return client;
-        }
-        catch
-        {
-            try { await client.DisposeAsync().ConfigureAwait(false); } catch { /* best-effort */ }
-            throw;
-        }
-    }
-
-    internal static JsonSerializerOptions CreateDefaultSerializerOptions() =>
-        new(JsonSerializerDefaults.Web)
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-
-    private static CodexLaunch ApplyCodexHome(CodexLaunch launch, string? codexHomeDirectory)
-    {
-        if (string.IsNullOrWhiteSpace(codexHomeDirectory))
-        {
-            return launch;
-        }
-
-        return launch.WithEnvironment("CODEX_HOME", codexHomeDirectory);
-    }
-
-    /// <summary>
     /// Performs the JSON-RPC initialization handshake.
     /// </summary>
     public Task<AppServerInitializeResult> InitializeAsync(
@@ -247,7 +183,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     public AppServerInitializeResult? InitializeResult => _core.InitializeResult;
 
     /// <summary>
-    /// A task that completes when the underlying Codex app-server subprocess exits.
+    /// A task that completes when the underlying Codex app-server endpoint disconnects.
     /// </summary>
     public Task ExitTask => _core.ExitTask;
 
@@ -461,7 +397,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _turnsClient.StartReviewAsync(options, ct);
 
     /// <summary>
-    /// Disposes the underlying app-server connection and terminates the process.
+    /// Disposes the underlying app-server connection.
     /// </summary>
     public ValueTask DisposeAsync() => _core.DisposeAsync();
 }

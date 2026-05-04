@@ -3,15 +3,13 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
-using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Wire;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 internal sealed partial class JsonRpcConnection : IJsonRpcConnection
 {
-    private readonly StreamWriter _writer;
-    private readonly StreamReader _reader;
+    private readonly IJsonRpcMessageTransport _transport;
     private readonly ILogger _logger;
     private readonly JsonSerializerOptions _serializerOptions;
     private readonly CancellationTokenSource _disposeCts = new();
@@ -38,9 +36,23 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
         int notificationBufferCapacity,
         JsonSerializerOptions? serializerOptions,
         ILogger logger)
+        : this(
+            new LineJsonRpcMessageTransport(reader, writer),
+            includeJsonRpcHeader,
+            notificationBufferCapacity,
+            serializerOptions,
+            logger)
     {
-        _reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        _writer = writer ?? throw new ArgumentNullException(nameof(writer));
+    }
+
+    public JsonRpcConnection(
+        IJsonRpcMessageTransport transport,
+        bool includeJsonRpcHeader,
+        int notificationBufferCapacity,
+        JsonSerializerOptions? serializerOptions,
+        ILogger logger)
+    {
+        _transport = transport ?? throw new ArgumentNullException(nameof(transport));
         IncludeJsonRpcHeader = includeJsonRpcHeader;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serializerOptions = serializerOptions ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
@@ -129,6 +141,15 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
             // ignore
         }
 
+        try
+        {
+            await _transport.DisposeAsync();
+        }
+        catch
+        {
+            // ignore
+        }
+
         _notifications.Writer.TryComplete();
 
         foreach (var (_, tcs) in _pending)
@@ -141,18 +162,8 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
     {
         try
         {
-            while (!_disposeCts.IsCancellationRequested)
+            await foreach (var line in _transport.ReceiveAsync(_disposeCts.Token).ConfigureAwait(false))
             {
-                var line = await _reader.ReadLineAsync(_disposeCts.Token);
-                if (line is null)
-                {
-                    if (!_disposeCts.IsCancellationRequested)
-                    {
-                        Fault(new JsonRpcConnectionClosedException("JSON-RPC stream closed by remote endpoint."));
-                    }
-                    break;
-                }
-
                 if (line.Length == 0)
                 {
                     continue;
@@ -208,6 +219,11 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                 {
                     doc?.Dispose();
                 }
+            }
+
+            if (!_disposeCts.IsCancellationRequested)
+            {
+                Fault(new JsonRpcConnectionClosedException("JSON-RPC stream closed by remote endpoint."));
             }
         }
         catch (OperationCanceledException)
@@ -399,92 +415,6 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                 _logger.LogWarning(ex, "Failed to write JSON-RPC server request response.");
             }
         }, CancellationToken.None);
-    }
-
-    private async Task WriteAsync(object payload, CancellationToken ct)
-    {
-        ThrowIfFaulted();
-        ct.ThrowIfCancellationRequested();
-        var json = JsonSerializer.Serialize(payload, _serializerOptions);
-
-        // Serialize *all* outbound writes to prevent concurrent calls from interleaving/corrupting JSONL.
-        await _writeGate.WaitAsync(ct).ConfigureAwait(false);
-        try
-        {
-            ThrowIfFaulted();
-
-            // Don't cancel mid-write. Callers can cancel waiting for responses, but the wire must remain well-formed.
-            await _writer.WriteLineAsync(json.AsMemory(), CancellationToken.None).ConfigureAwait(false);
-            await _writer.FlushAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-        finally
-        {
-            _writeGate.Release();
-        }
-    }
-
-    private void ThrowIfFaulted()
-    {
-        if (_fault is not null)
-        {
-            throw new JsonRpcProtocolException("JSON-RPC connection is faulted.", _fault);
-        }
-    }
-
-    private object CreateRequestObject(long id, string method, object? @params)
-    {
-        return new JsonRpcRequestWireMessage
-        {
-            Id = id,
-            Method = method,
-            Params = @params,
-            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
-        };
-    }
-
-    private object CreateNotificationObject(string method, object? @params)
-    {
-        return new JsonRpcNotificationWireMessage
-        {
-            Method = method,
-            Params = @params,
-            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
-        };
-    }
-
-    private object CreateResponseObject(JsonRpcResponse response)
-    {
-        return new JsonRpcResponseWireMessage
-        {
-            Id = response.Id.Value,
-            Result = response.Error is null ? response.Result : null,
-            Error = response.Error,
-            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
-        };
-    }
-
-    private static JsonRpcError ParseError(JsonElement errorProp)
-    {
-        if (errorProp.ValueKind != JsonValueKind.Object)
-        {
-            return new JsonRpcError(-32000, "Remote error", Data: errorProp.Clone());
-        }
-
-        var code = errorProp.TryGetProperty("code", out var codeProp) && codeProp.TryGetInt32(out var c)
-            ? c
-            : -32000;
-
-        var message = errorProp.TryGetProperty("message", out var messageProp) && messageProp.ValueKind == JsonValueKind.String
-            ? (messageProp.GetString() ?? "Remote error")
-            : "Remote error";
-
-        JsonElement? data = null;
-        if (errorProp.TryGetProperty("data", out var dataProp))
-        {
-            data = dataProp.Clone();
-        }
-
-        return new JsonRpcError(code, message, data);
     }
 
 }

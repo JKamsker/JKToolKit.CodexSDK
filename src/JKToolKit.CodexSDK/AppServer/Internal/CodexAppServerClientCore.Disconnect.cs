@@ -11,7 +11,7 @@ internal sealed partial class CodexAppServerClientCore
     {
         try
         {
-            await _process.Completion.ConfigureAwait(false);
+            await _lifetime.Completion.ConfigureAwait(false);
         }
         catch
         {
@@ -30,7 +30,7 @@ internal sealed partial class CodexAppServerClientCore
         catch
         {
             SignalDisconnect(new CodexAppServerDisconnectedException(
-                "Codex app-server subprocess disconnected.",
+                "Codex app-server transport disconnected.",
                 processId: null,
                 exitCode: null,
                 stderrTail: Array.Empty<string>()));
@@ -42,7 +42,7 @@ internal sealed partial class CodexAppServerClientCore
         var stderrTailRaw = Array.Empty<string>();
         try
         {
-            stderrTailRaw = _process.StderrTail.ToArray();
+            stderrTailRaw = _lifetime.DiagnosticTail.ToArray();
         }
         catch
         {
@@ -53,12 +53,14 @@ internal sealed partial class CodexAppServerClientCore
 
         int? exitCode = null;
         int? pid = null;
-        try { exitCode = _process.ExitCode; } catch { /* ignore */ }
-        try { pid = _process.ProcessId; } catch { /* ignore */ }
+        try { exitCode = _lifetime.ExitCode; } catch { /* ignore */ }
+        try { pid = _lifetime.ProcessId; } catch { /* ignore */ }
 
-        var msg = exitCode is null
-            ? "Codex app-server subprocess disconnected."
-            : $"Codex app-server subprocess exited with code {exitCode}.";
+        var msg = exitCode is null && pid is null && stderrTail.Length == 0
+            ? "Codex app-server transport disconnected."
+            : exitCode is null
+                ? "Codex app-server process disconnected."
+                : $"Codex app-server process exited with code {exitCode}.";
 
         // Note: include only redacted/truncated stderr snippets to reduce accidental leakage when exception messages are logged.
         if (stderrTail.Length > 0)

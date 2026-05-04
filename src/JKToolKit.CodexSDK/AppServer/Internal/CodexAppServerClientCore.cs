@@ -26,7 +26,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
     private readonly CodexAppServerClientOptions _options;
     private readonly ILogger _logger;
-    private readonly IStdioProcess _process;
+    private readonly IAppServerLifetime _lifetime;
     private readonly IJsonRpcConnection _rpc;
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly CancellationToken _disposeToken;
@@ -54,9 +54,19 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         IJsonRpcConnection rpc,
         ILogger logger,
         bool startExitWatcher)
+        : this(options, new StdioAppServerLifetime(process), rpc, logger, startExitWatcher)
+    {
+    }
+
+    public CodexAppServerClientCore(
+        CodexAppServerClientOptions options,
+        IAppServerLifetime lifetime,
+        IJsonRpcConnection rpc,
+        ILogger logger,
+        bool startExitWatcher)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _process = process ?? throw new ArgumentNullException(nameof(process));
+        _lifetime = lifetime ?? throw new ArgumentNullException(nameof(lifetime));
         _rpc = rpc ?? throw new ArgumentNullException(nameof(rpc));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -86,7 +96,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
     public AppServerInitializeResult? InitializeResult => _initializeResult;
 
-    public Task ExitTask => _process.Completion;
+    public Task ExitTask => _lifetime.Completion;
 
     public IAsyncEnumerable<AppServerNotification> Notifications(CancellationToken ct) =>
         _globalNotifications.Reader.ReadAllAsync(ct);
@@ -191,7 +201,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                 ex.Error.Message,
                 dataJson,
                 help,
-                stderrTail: CodexDiagnosticsSanitizer.SanitizeLines(_process.StderrTail, maxLines: 20, maxCharsPerLine: 400),
+                stderrTail: CodexDiagnosticsSanitizer.SanitizeLines(_lifetime.DiagnosticTail, maxLines: 20, maxCharsPerLine: 400),
                 innerException: ex);
         }
     }
@@ -443,7 +453,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         }
 
         await _rpc.DisposeAsync();
-        await _process.DisposeAsync();
+        await _lifetime.DisposeAsync();
 
         try { await _processExitWatcher.ConfigureAwait(false); } catch { /* ignore */ }
         try { _disposeCts.Dispose(); } catch { /* ignore */ }

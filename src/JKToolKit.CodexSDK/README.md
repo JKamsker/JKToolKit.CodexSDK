@@ -6,9 +6,9 @@ JKToolKit.CodexSDK is a .NET client library that wraps the **Codex CLI** as a lo
 - Resuming/attaching to existing sessions by session id / log path
 - Running non-interactive reviews (`codex review`) through the same process-launch infrastructure
 
-This package also includes two stdio JSON-RPC integrations:
+This package also includes JSON-RPC integrations:
 
-- `JKToolKit.CodexSDK.AppServer` (`codex app-server`)
+- `JKToolKit.CodexSDK.AppServer` (`codex app-server`; local stdio, remote stdio, or WebSocket attach)
 - `JKToolKit.CodexSDK.McpServer` (`codex mcp-server`)
 
 Docs live under `docs/`:
@@ -21,7 +21,7 @@ Docs live under `docs/`:
 
 **It is:**
 
-- A **local CLI wrapper**: it starts `codex` as a process and interacts with it through stdin/stdout/stderr and local files.
+- A **CLI wrapper**: exec mode is local-first, while app-server mode can also run through SSH/Docker stdio or attach to a WebSocket listener.
 - **Streaming-first**: it turns the Codex JSONL log into `IAsyncEnumerable<T>` of typed events.
 - **Testable**: core dependencies are abstracted (`IFileSystem`, `ICodexPathProvider`, `ICodexProcessLauncher`, …).
 
