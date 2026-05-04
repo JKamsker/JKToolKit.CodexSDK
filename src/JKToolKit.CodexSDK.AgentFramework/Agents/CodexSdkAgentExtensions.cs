@@ -43,4 +43,29 @@ public static class CodexSdkAgentExtensions
             chatHistoryProvider,
             aiContextProviders);
     }
+
+    /// <summary>
+    /// Creates an Agent Framework <see cref="AIAgent"/> backed by an existing Codex SDK facade.
+    /// </summary>
+    public static AIAgent AsAIAgent(this CodexSdk sdk, ChatClientAgentOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(sdk);
+        ArgumentNullException.ThrowIfNull(options);
+
+        return new CodexAgentClient(sdk).AsAIAgent(options);
+    }
+
+    /// <summary>
+    /// Creates an Agent Framework <see cref="AIAgent"/> backed by an existing Codex SDK facade.
+    /// </summary>
+    public static AIAgent AsAIAgent(
+        this CodexSdk sdk,
+        string? model,
+        ChatClientAgentOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(sdk);
+        ArgumentNullException.ThrowIfNull(options);
+
+        return new CodexAgentClient(sdk).AsAIAgent(model, options);
+    }
 }

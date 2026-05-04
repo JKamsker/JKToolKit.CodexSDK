@@ -1,3 +1,4 @@
+using JKToolKit.CodexSDK.AgentFramework.Internal;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
@@ -44,5 +45,30 @@ public static class CodexAgentClientExtensions
             ChatHistoryProvider = chatHistoryProvider,
             AIContextProviders = aiContextProviders?.ToArray()
         });
+    }
+
+    /// <summary>
+    /// Creates an Agent Framework <see cref="AIAgent"/> backed by Codex app-server.
+    /// </summary>
+    public static AIAgent AsAIAgent(this CodexAgentClient client, ChatClientAgentOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(options);
+
+        return client.AsAIAgent(CodexAgentOptionsMapper.FromChatClientAgentOptions(options, model: null));
+    }
+
+    /// <summary>
+    /// Creates an Agent Framework <see cref="AIAgent"/> backed by Codex app-server.
+    /// </summary>
+    public static AIAgent AsAIAgent(
+        this CodexAgentClient client,
+        string? model,
+        ChatClientAgentOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(options);
+
+        return client.AsAIAgent(CodexAgentOptionsMapper.FromChatClientAgentOptions(options, model));
     }
 }

@@ -6,23 +6,23 @@ namespace JKToolKit.CodexSDK.AgentFramework.Internal;
 internal static class CodexAgentChatOptionsMapper
 {
     public static async ValueTask<ChatOptions?> GetEffectiveChatOptionsAsync(
+        ChatOptions? defaultChatOptions,
         AgentRunOptions? runOptions,
         CancellationToken cancellationToken)
     {
-        if (runOptions is not ChatClientAgentRunOptions chatRunOptions)
-        {
-            return null;
-        }
+        var runChatOptions = runOptions is ChatClientAgentRunOptions chatRunOptions
+            ? chatRunOptions.ChatOptions
+            : null;
+        var chatOptions = Merge(defaultChatOptions, runChatOptions);
 
-        var chatOptions = chatRunOptions.ChatOptions?.Clone() ?? new ChatOptions();
-        if (chatRunOptions.ChatClientFactory is null)
+        if (runOptions is not ChatClientAgentRunOptions { ChatClientFactory: { } chatClientFactory })
         {
             return chatOptions;
         }
 
         return await ApplyChatClientFactoryAsync(
-            chatOptions,
-            chatRunOptions.ChatClientFactory,
+            chatOptions ?? new ChatOptions(),
+            chatClientFactory,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -56,6 +56,77 @@ internal static class CodexAgentChatOptionsMapper
 
         await transformedClient.GetResponseAsync([], chatOptions, cancellationToken).ConfigureAwait(false);
         return captureClient.CapturedOptions ?? chatOptions;
+    }
+
+    private static ChatOptions? Merge(ChatOptions? defaults, ChatOptions? runOptions)
+    {
+        if (defaults is null)
+        {
+            return runOptions?.Clone();
+        }
+
+        var merged = defaults.Clone();
+        if (runOptions is null)
+        {
+            return merged;
+        }
+
+        ApplyOverrides(merged, runOptions);
+        return merged;
+    }
+
+    private static void ApplyOverrides(ChatOptions target, ChatOptions source)
+    {
+        target.AllowMultipleToolCalls = source.AllowMultipleToolCalls ?? target.AllowMultipleToolCalls;
+        target.ConversationId = source.ConversationId ?? target.ConversationId;
+        target.FrequencyPenalty = source.FrequencyPenalty ?? target.FrequencyPenalty;
+        target.Instructions = source.Instructions ?? target.Instructions;
+        target.MaxOutputTokens = source.MaxOutputTokens ?? target.MaxOutputTokens;
+        target.ModelId = source.ModelId ?? target.ModelId;
+        target.PresencePenalty = source.PresencePenalty ?? target.PresencePenalty;
+        target.RawRepresentationFactory = source.RawRepresentationFactory ?? target.RawRepresentationFactory;
+        target.Reasoning = source.Reasoning ?? target.Reasoning;
+        target.ResponseFormat = source.ResponseFormat ?? target.ResponseFormat;
+        target.Seed = source.Seed ?? target.Seed;
+        target.StopSequences = source.StopSequences ?? target.StopSequences;
+        target.Temperature = source.Temperature ?? target.Temperature;
+        target.ToolMode = source.ToolMode ?? target.ToolMode;
+        target.TopK = source.TopK ?? target.TopK;
+        target.TopP = source.TopP ?? target.TopP;
+        target.Tools = Combine(target.Tools, source.Tools);
+        target.AdditionalProperties = MergeAdditionalProperties(target.AdditionalProperties, source.AdditionalProperties);
+    }
+
+    private static IList<AITool>? Combine(IList<AITool>? defaults, IList<AITool>? runTools)
+    {
+        if (runTools is null)
+        {
+            return defaults;
+        }
+
+        return defaults is null
+            ? runTools.ToArray()
+            : defaults.Concat(runTools).ToArray();
+    }
+
+    private static AdditionalPropertiesDictionary? MergeAdditionalProperties(
+        AdditionalPropertiesDictionary? defaults,
+        AdditionalPropertiesDictionary? overrides)
+    {
+        if (overrides is null)
+        {
+            return defaults;
+        }
+
+        var merged = defaults is null
+            ? new AdditionalPropertiesDictionary()
+            : new AdditionalPropertiesDictionary(defaults);
+        foreach (var pair in overrides)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        return merged;
     }
 
     private sealed class CapturingChatClient : IChatClient

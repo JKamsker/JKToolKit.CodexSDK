@@ -37,6 +37,11 @@ public sealed class CodexAIAgentOptions
     public string? Model { get; set; }
 
     /// <summary>
+    /// Gets or sets default Agent Framework chat options used for each Codex run.
+    /// </summary>
+    public ChatOptions? ChatOptions { get; set; }
+
+    /// <summary>
     /// Gets or sets the working directory used for Codex threads.
     /// </summary>
     public string? Cwd { get; set; }

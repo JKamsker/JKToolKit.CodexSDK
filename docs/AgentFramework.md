@@ -57,6 +57,24 @@ Console.WriteLine(await agent.RunAsync("What is the weather like in Amsterdam?")
 
 You can also use `new CodexAgentClient(configureSdk).AsAIAgent(...)` when you want the agent to create a fresh SDK facade for each run.
 
+Use Agent Framework `ChatClientAgentOptions` when you already configure agents that way:
+
+```csharp
+AIAgent agent = sdk.AsAIAgent(
+    model: "gpt-5.5",
+    options: new ChatClientAgentOptions
+    {
+        Name = "CodexAgent",
+        Description = "Codex with Agent Framework tools.",
+        ChatOptions = new ChatOptions
+        {
+            Instructions = "You are a helpful assistant.",
+            Tools = [getWeather]
+        },
+        ChatHistoryProvider = new InMemoryChatHistoryProvider()
+    });
+```
+
 Use sessions for multi-turn conversations:
 
 ```csharp
@@ -290,6 +308,7 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- agent-framework-function-cal
 
 - `CodexAgentClient().AsAIAgent(...)` returns a normal Agent Framework `AIAgent`, so Agent Framework middleware, workflows, `RunAsync<T>`, `RunStreamingAsync`, and `AIAgent.AsAIFunction(...)` can be used on top of it.
 - `CodexSdk.AsAIAgent(...)` adapts an existing SDK facade and leaves its lifetime with the caller. This is the closest match to provider APIs such as `AIProjectClient.AsAIAgent(...)`.
+- `ChatClientAgentOptions` maps its metadata, default `ChatOptions`, `ChatHistoryProvider`, and `AIContextProviders` into the Codex agent. Chat-client pipeline flags such as `UseProvidedChatClientAsIs` are specific to `IChatClient` agents and are not used by Codex.
 - `CodexAgentSession` stores the backing Codex thread id and the Agent Framework session state bag. Serialize and deserialize the session through the Agent Framework APIs to resume the same Codex thread later.
 - When a run does not pass a session, the Codex agent creates one and updates `AIAgent.CurrentRunContext` so Agent Framework tools can still read `CurrentRunContext.Session` and `CurrentRunContext.RunOptions`.
 - `AIContextProviders` run before Codex starts the turn. Provider instructions and tools are merged into `ChatOptions`; provider messages are sent as turn input; providers are notified after success or failure.

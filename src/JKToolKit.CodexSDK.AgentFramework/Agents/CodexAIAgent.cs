@@ -120,7 +120,10 @@ public sealed class CodexAIAgent : AIAgent
         var codexSession = await ResolveSessionAsync(session, cancellationToken).ConfigureAwait(false);
         CurrentRunContext = new AgentRunContext(this, codexSession, requestMessages, options);
 
-        var chatOptions = await CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(options, cancellationToken)
+        var chatOptions = await CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(
+                _options.ChatOptions,
+                options,
+                cancellationToken)
             .ConfigureAwait(false);
         var preparedRun = await _contextPipeline.PrepareAsync(codexSession, requestMessages, chatOptions, cancellationToken)
             .ConfigureAwait(false);

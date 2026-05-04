@@ -4,6 +4,7 @@ using System.Text.Json.Serialization.Metadata;
 using FluentAssertions;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.AgentFramework.Agents;
+using JKToolKit.CodexSDK.AgentFramework.Internal;
 using JKToolKit.CodexSDK.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -96,6 +97,82 @@ public sealed class AgentFrameworkCodexAgentTests
         codexAgent.AIContextProviders.Should().ContainSingle().Which.Should().BeSameAs(provider);
         agent.GetService(typeof(InMemoryChatHistoryProvider)).Should().BeSameAs(history);
         agent.GetService(typeof(TestContextProvider)).Should().BeSameAs(provider);
+    }
+
+    [Fact]
+    public void CodexAgentClient_AsAIAgent_MapsChatClientAgentOptions()
+    {
+        var history = new InMemoryChatHistoryProvider();
+        var provider = new TestContextProvider();
+        var tool = AIFunctionFactory.Create((Func<string>)(() => "ok"), "default_tool");
+        var chatOptions = new ChatOptions
+        {
+            ModelId = "default-model",
+            Instructions = "default instructions",
+            Tools = [tool]
+        };
+        var nativeOptions = new ChatClientAgentOptions
+        {
+            Id = "native-id",
+            Name = "NativeCodex",
+            Description = "Mapped from ChatClientAgentOptions.",
+            ChatOptions = chatOptions,
+            ChatHistoryProvider = history,
+            AIContextProviders = [provider]
+        };
+
+        var agent = new CodexAgentClient().AsAIAgent("override-model", nativeOptions);
+
+        var codexOptions = agent.GetService(typeof(CodexAIAgentOptions)).Should()
+            .BeOfType<CodexAIAgentOptions>().Subject;
+        codexOptions.Id.Should().Be("native-id");
+        codexOptions.Name.Should().Be("NativeCodex");
+        codexOptions.Description.Should().Be("Mapped from ChatClientAgentOptions.");
+        codexOptions.ChatOptions.Should().NotBeSameAs(chatOptions);
+        codexOptions.ChatOptions!.ModelId.Should().Be("override-model");
+        codexOptions.ChatOptions.Instructions.Should().Be("default instructions");
+        codexOptions.ChatOptions.Tools.Should().ContainSingle().Which.Should().BeSameAs(tool);
+        codexOptions.ChatHistoryProvider.Should().BeSameAs(history);
+        codexOptions.AIContextProviders.Should().ContainSingle().Which.Should().BeSameAs(provider);
+    }
+
+    [Fact]
+    public async Task GetEffectiveChatOptionsAsync_MergesDefaultAndRunOptions()
+    {
+        var defaultTool = AIFunctionFactory.Create((Func<string>)(() => "default"), "default_tool");
+        var runTool = AIFunctionFactory.Create((Func<string>)(() => "run"), "run_tool");
+        var defaultOptions = new ChatOptions
+        {
+            ModelId = "default-model",
+            Instructions = "default instructions",
+            Tools = [defaultTool],
+            AdditionalProperties = new AdditionalPropertiesDictionary
+            {
+                ["default"] = "kept",
+                ["shared"] = "default"
+            }
+        };
+        var runOptions = new ChatClientAgentRunOptions(new ChatOptions
+        {
+            ModelId = "run-model",
+            Tools = [runTool],
+            AdditionalProperties = new AdditionalPropertiesDictionary
+            {
+                ["shared"] = "run"
+            }
+        });
+
+        var effective = await CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(
+            defaultOptions,
+            runOptions,
+            CancellationToken.None);
+
+        effective.Should().NotBeSameAs(defaultOptions);
+        effective!.ModelId.Should().Be("run-model");
+        effective.Instructions.Should().Be("default instructions");
+        effective.Tools!.Select(tool => tool.Name).Should().Equal("default_tool", "run_tool");
+        effective.AdditionalProperties!["default"].Should().Be("kept");
+        effective.AdditionalProperties["shared"].Should().Be("run");
     }
 
     [Fact]

@@ -10,6 +10,29 @@ namespace JKToolKit.CodexSDK.AgentFramework.Internal;
 
 internal static class CodexAgentOptionsMapper
 {
+    public static CodexAIAgentOptions FromChatClientAgentOptions(
+        ChatClientAgentOptions options,
+        string? model)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var chatOptions = options.ChatOptions?.Clone() ?? new ChatOptions();
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            chatOptions.ModelId = model;
+        }
+
+        return new CodexAIAgentOptions
+        {
+            Id = options.Id,
+            Name = options.Name,
+            Description = options.Description,
+            ChatOptions = chatOptions,
+            ChatHistoryProvider = options.ChatHistoryProvider,
+            AIContextProviders = options.AIContextProviders?.ToArray()
+        };
+    }
+
     public static string? GetModel(CodexAIAgentOptions options, AgentRunOptions? runOptions, ChatOptions? chatOptions)
     {
         return GetRunModel(runOptions, chatOptions) ?? options.Model;
