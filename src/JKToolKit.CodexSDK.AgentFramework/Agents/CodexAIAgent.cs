@@ -38,14 +38,16 @@ public sealed class CodexAIAgent : AIAgent
     /// <inheritdoc />
     public override string Description => _options.Description ?? "Codex CLI agent.";
 
-    /// <summary>
-    /// Gets the Agent Framework chat history provider used by this agent, if configured.
-    /// </summary>
+    /// <summary>Gets the default Agent Framework chat options used by this agent, if configured.</summary>
+    public ChatOptions? ChatOptions => _options.ChatOptions;
+
+    /// <summary>Gets the system instructions that guide this agent, if configured.</summary>
+    public string? Instructions => CodexAgentOptionsMapper.GetInstructions(_options, _options.ChatOptions);
+
+    /// <summary>Gets the Agent Framework chat history provider used by this agent, if configured.</summary>
     public ChatHistoryProvider? ChatHistoryProvider => _contextPipeline.ChatHistoryProvider;
 
-    /// <summary>
-    /// Gets the Agent Framework context providers used by this agent, if configured.
-    /// </summary>
+    /// <summary>Gets the Agent Framework context providers used by this agent, if configured.</summary>
     public IReadOnlyList<AIContextProvider>? AIContextProviders => _contextPipeline.AIContextProviders;
 
     /// <inheritdoc />

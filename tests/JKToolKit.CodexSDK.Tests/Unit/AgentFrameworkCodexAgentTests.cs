@@ -123,6 +123,7 @@ public sealed class AgentFrameworkCodexAgentTests
 
         var agent = new CodexAgentClient().AsAIAgent("override-model", nativeOptions);
 
+        var codexAgent = agent.Should().BeOfType<CodexAIAgent>().Subject;
         var codexOptions = agent.GetService(typeof(CodexAIAgentOptions)).Should()
             .BeOfType<CodexAIAgentOptions>().Subject;
         codexOptions.Id.Should().Be("native-id");
@@ -134,6 +135,8 @@ public sealed class AgentFrameworkCodexAgentTests
         codexOptions.ChatOptions.Tools.Should().ContainSingle().Which.Should().BeSameAs(tool);
         codexOptions.ChatHistoryProvider.Should().BeSameAs(history);
         codexOptions.AIContextProviders.Should().ContainSingle().Which.Should().BeSameAs(provider);
+        codexAgent.ChatOptions.Should().BeSameAs(codexOptions.ChatOptions);
+        codexAgent.Instructions.Should().Be("default instructions");
     }
 
     [Fact]
