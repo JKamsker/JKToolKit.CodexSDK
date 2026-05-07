@@ -10,8 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class Service_tier
+internal partial class PluginShareListItem
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("localPluginPath")]
+    public LocalPluginPath? LocalPluginPath { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("plugin")]
+    public PluginSummary Plugin { get; set; } = new PluginSummary();
+
+    [System.Text.Json.Serialization.JsonPropertyName("shareUrl")]
+    public string ShareUrl { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

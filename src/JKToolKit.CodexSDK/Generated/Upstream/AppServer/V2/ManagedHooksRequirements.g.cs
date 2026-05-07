@@ -16,8 +16,14 @@ internal partial class ManagedHooksRequirements
     [System.Text.Json.Serialization.JsonPropertyName("PermissionRequest")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PermissionRequest { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("PostCompact")]
+    public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PostCompact { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
+
     [System.Text.Json.Serialization.JsonPropertyName("PostToolUse")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PostToolUse { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("PreCompact")]
+    public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PreCompact { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 
     [System.Text.Json.Serialization.JsonPropertyName("PreToolUse")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PreToolUse { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();

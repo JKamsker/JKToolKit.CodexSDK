@@ -85,12 +85,24 @@ internal partial class Thread
     [System.Text.Json.Serialization.JsonPropertyName("preview")]
     public string Preview { get; set; } = default!;
 
+    /// <summary>
+    /// Session id shared by threads that belong to the same session tree.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sessionId")]
+    public string SessionId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Source2>))]
     public Source2 Source { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     public Status Status { get; set; } = default!;
+
+    /// <summary>
+    /// Optional analytics source classification for this thread.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadSource")]
+    public ThreadSource2? ThreadSource { get; set; } = default!;
 
     /// <summary>
     /// Only populated on `thread/resume`, `thread/rollback`, `thread/fork`, and `thread/read` (when `includeTurns` is true) responses. For all other responses and notifications returning a Thread, the turns field will be an empty list.

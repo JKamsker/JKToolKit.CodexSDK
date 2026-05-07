@@ -25,16 +25,24 @@ internal enum HookEventName
     PostToolUse = 2,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"preCompact")]
+    PreCompact = 3,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"postCompact")]
+    PostCompact = 4,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"sessionStart")]
-    SessionStart = 3,
+    SessionStart = 5,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"userPromptSubmit")]
-    UserPromptSubmit = 4,
+    UserPromptSubmit = 6,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"stop")]
-    Stop = 5,
+    Stop = 7,
 
 
 }

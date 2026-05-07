@@ -10,8 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ServiceTier7
+internal partial class PluginShareSaveParams
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("discoverability")]
+    public Discoverability? Discoverability { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("pluginPath")]
+    public string PluginPath { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
+    public string? RemotePluginId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("shareTargets")]
+    public System.Collections.Generic.ICollection<PluginShareTarget>? ShareTargets { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

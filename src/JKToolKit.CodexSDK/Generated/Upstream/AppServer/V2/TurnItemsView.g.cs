@@ -9,8 +9,11 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// `items` was not loaded for this turn. The field is intentionally empty.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class SortDirection3
+internal partial class TurnItemsView
 {
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;

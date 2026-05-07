@@ -10,15 +10,19 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ServiceTier
+internal enum WindowsSandboxReadiness
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"fast")]
-    Fast = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"ready")]
+    Ready = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"flex")]
-    Flex = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"notConfigured")]
+    NotConfigured = 1,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"updateRequired")]
+    UpdateRequired = 2,
 
 
 }

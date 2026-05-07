@@ -10,8 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class Service_tier2
+internal partial class PluginSkillReadParams
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("remoteMarketplaceName")]
+    public string RemoteMarketplaceName { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
+    public string RemotePluginId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("skillName")]
+    public string SkillName { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

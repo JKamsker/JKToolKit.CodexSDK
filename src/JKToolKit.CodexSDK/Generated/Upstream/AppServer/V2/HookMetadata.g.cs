@@ -16,6 +16,9 @@ internal partial class HookMetadata
     [System.Text.Json.Serialization.JsonPropertyName("command")]
     public string? Command { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("currentHash")]
+    public string CurrentHash { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("displayOrder")]
     public long DisplayOrder { get; set; } = default!;
 
@@ -54,6 +57,10 @@ internal partial class HookMetadata
 
     [System.Text.Json.Serialization.JsonPropertyName("timeoutSec")]
     public ulong TimeoutSec { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("trustStatus")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookTrustStatus>))]
+    public HookTrustStatus TrustStatus { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

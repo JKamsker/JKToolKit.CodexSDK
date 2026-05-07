@@ -43,7 +43,7 @@ internal partial class ThreadForkResponse
     public Sandbox2 Sandbox { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
-    public ServiceTier3? ServiceTier { get; set; } = default!;
+    public string? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("thread")]
     public Thread Thread { get; set; } = new Thread();

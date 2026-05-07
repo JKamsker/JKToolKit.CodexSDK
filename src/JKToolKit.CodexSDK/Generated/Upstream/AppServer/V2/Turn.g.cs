@@ -35,10 +35,14 @@ internal partial class Turn
     public string Id { get; set; } = default!;
 
     /// <summary>
-    /// Only populated on a `thread/resume` or `thread/fork` response. For all other responses and notifications returning a Turn, the items field will be an empty list.
+    /// Thread items currently included in this turn payload.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("items")]
     public System.Collections.Generic.ICollection<Item> Items { get; set; } = new System.Collections.ObjectModel.Collection<Item>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("itemsView")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ItemsView>))]
+    public ItemsView? ItemsView { get; set; } = default!;
 
     /// <summary>
     /// Unix timestamp (in seconds) when the turn started.

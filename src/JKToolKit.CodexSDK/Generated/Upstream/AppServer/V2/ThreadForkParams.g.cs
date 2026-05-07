@@ -45,12 +45,6 @@ internal partial class ThreadForkParams
     public bool? Ephemeral { get; set; } = default!;
 
     /// <summary>
-    /// When true, return only thread metadata and live fork state without populating `thread.turns`. This is useful when the client plans to call `thread/turns/list` immediately after forking.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("excludeTurns")]
-    public bool? ExcludeTurns { get; set; } = default!;
-
-    /// <summary>
     /// Configuration overrides for the forked thread, if any.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("model")]
@@ -63,10 +57,16 @@ internal partial class ThreadForkParams
     public Sandbox? Sandbox { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
-    public ServiceTier2? ServiceTier { get; set; } = default!;
+    public string? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
+
+    /// <summary>
+    /// Optional client-supplied analytics source classification for this forked thread.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadSource")]
+    public ThreadSource3? ThreadSource { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

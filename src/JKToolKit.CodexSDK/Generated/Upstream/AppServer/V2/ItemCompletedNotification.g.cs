@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ItemCompletedNotification
 {
 
+    /// <summary>
+    /// Unix timestamp (in milliseconds) when this item lifecycle completed.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("completedAtMs")]
+    public long CompletedAtMs { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("item")]
     public Item Item { get; set; } = default!;
 

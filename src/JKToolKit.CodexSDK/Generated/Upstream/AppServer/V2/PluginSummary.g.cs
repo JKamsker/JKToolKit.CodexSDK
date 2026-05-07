@@ -17,6 +17,10 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginAuthPolicy>))]
     public PluginAuthPolicy AuthPolicy { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("availability")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Availability>))]
+    public Availability? Availability { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = default!;
 
@@ -33,8 +37,17 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonPropertyName("interface")]
     public Interface2? Interface { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("keywords")]
+    public System.Collections.Generic.ICollection<string>? Keywords { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
+
+    /// <summary>
+    /// Remote sharing context associated with this plugin when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("shareContext")]
+    public ShareContext? ShareContext { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     public Source Source { get; set; } = default!;
