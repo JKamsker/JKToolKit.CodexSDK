@@ -16,8 +16,8 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ThreadRealtimeStartedNotification
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("sessionId")]
-    public string? SessionId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("realtimeSessionId")]
+    public string? RealtimeSessionId { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

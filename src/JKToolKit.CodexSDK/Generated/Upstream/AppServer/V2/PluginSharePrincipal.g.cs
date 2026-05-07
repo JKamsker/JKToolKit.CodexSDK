@@ -10,8 +10,18 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ServiceTier6
+internal partial class PluginSharePrincipal
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("principalId")]
+    public string PrincipalId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("principalType")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginSharePrincipalType>))]
+    public PluginSharePrincipalType PrincipalType { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

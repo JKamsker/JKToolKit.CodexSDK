@@ -68,7 +68,7 @@ internal partial class TurnStartParams
     /// Override the service tier for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
-    public ServiceTier8? ServiceTier { get; set; } = default!;
+    public string? ServiceTier { get; set; } = default!;
 
     /// <summary>
     /// Override the reasoning summary for this turn and subsequent turns.

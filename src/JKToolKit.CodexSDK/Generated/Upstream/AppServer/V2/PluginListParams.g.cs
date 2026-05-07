@@ -19,6 +19,13 @@ internal partial class PluginListParams
     [System.Text.Json.Serialization.JsonPropertyName("cwds")]
     public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
 
+    /// <summary>
+    /// Optional marketplace kind filter. When omitted, only local marketplaces are queried, plus the default remote catalog when enabled by feature flag.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaceKinds")]
+    // TODO(system.text.json): Add ItemConverterType with enum converter when supported
+    public System.Collections.Generic.ICollection<PluginListMarketplaceKind>? MarketplaceKinds { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

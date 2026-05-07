@@ -9,26 +9,16 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Deprecated legacy notification for `apply_patch` textual output.
-/// <br/>
-/// <br/>The server no longer emits this notification.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class FileChangeOutputDeltaNotification
+internal partial class PluginShareTarget
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("delta")]
-    public string Delta { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("principalId")]
+    public string PrincipalId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("itemId")]
-    public string ItemId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("turnId")]
-    public string TurnId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("principalType")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginSharePrincipalType>))]
+    public PluginSharePrincipalType PrincipalType { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

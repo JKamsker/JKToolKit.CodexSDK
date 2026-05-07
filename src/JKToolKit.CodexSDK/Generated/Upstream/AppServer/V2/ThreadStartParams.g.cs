@@ -53,10 +53,16 @@ internal partial class ThreadStartParams
     public string? ServiceName { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
-    public ServiceTier6? ServiceTier { get; set; } = default!;
+    public string? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("sessionStartSource")]
     public SessionStartSource? SessionStartSource { get; set; } = default!;
+
+    /// <summary>
+    /// Optional client-supplied analytics source classification for this thread.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadSource")]
+    public ThreadSource4? ThreadSource { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

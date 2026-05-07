@@ -16,6 +16,12 @@ internal partial class ItemStartedNotification
     [System.Text.Json.Serialization.JsonPropertyName("item")]
     public Item Item { get; set; } = default!;
 
+    /// <summary>
+    /// Unix timestamp (in milliseconds) when this item lifecycle started.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("startedAtMs")]
+    public long StartedAtMs { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
 

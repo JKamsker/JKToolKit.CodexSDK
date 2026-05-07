@@ -9,30 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// PTY size in character cells for `process/spawn` PTY sessions.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadTurnsListParams
+internal partial class ProcessTerminalSize
 {
 
     /// <summary>
-    /// Opaque cursor to pass to the next call to continue after the last turn.
+    /// Terminal width in character cells.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("cursor")]
-    public string? Cursor { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("cols")]
+    public int Cols { get; set; } = default!;
 
     /// <summary>
-    /// Optional turn page size.
+    /// Terminal height in character cells.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("limit")]
-    public int? Limit { get; set; } = default!;
-
-    /// <summary>
-    /// Optional turn pagination direction; defaults to descending.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
-    public SortDirection3? SortDirection { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("rows")]
+    public int Rows { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

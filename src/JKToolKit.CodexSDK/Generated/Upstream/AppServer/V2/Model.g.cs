@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class Model
 {
 
+    /// <summary>
+    /// Deprecated: use `serviceTiers` instead.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("additionalSpeedTiers")]
     public System.Collections.Generic.ICollection<string>? AdditionalSpeedTiers { get; set; } = default!;
 
@@ -43,6 +46,9 @@ internal partial class Model
 
     [System.Text.Json.Serialization.JsonPropertyName("model")]
     public string Model1 { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTiers")]
+    public System.Collections.Generic.ICollection<ModelServiceTier>? ServiceTiers { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("supportedReasoningEfforts")]
     public System.Collections.Generic.ICollection<ReasoningEffortOption> SupportedReasoningEfforts { get; set; } = new System.Collections.ObjectModel.Collection<ReasoningEffortOption>();

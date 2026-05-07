@@ -42,12 +42,6 @@ internal partial class ThreadResumeParams
     public string? DeveloperInstructions { get; set; } = default!;
 
     /// <summary>
-    /// When true, return only thread metadata and live-resume state without populating `thread.turns`. This is useful when the client plans to call `thread/turns/list` immediately after resuming.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("excludeTurns")]
-    public bool? ExcludeTurns { get; set; } = default!;
-
-    /// <summary>
     /// Configuration overrides for the resumed thread, if any.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("model")]
@@ -63,7 +57,7 @@ internal partial class ThreadResumeParams
     public Sandbox3? Sandbox { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
-    public ServiceTier4? ServiceTier { get; set; } = default!;
+    public string? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
