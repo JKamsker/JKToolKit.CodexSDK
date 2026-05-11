@@ -141,14 +141,26 @@ public sealed class CodexAIAgent : AIAgent
             options.GetCodexConfiguration()?.Tools,
             options,
             cancellationToken).ConfigureAwait(false);
-        var toolSet = CreateToolSet(options, chatOptions, configuredTools, codexRunConfigurationTools, codexSession);
+        var toolSet = CodexAgentToolSetFactory.Create(
+            _options,
+            options,
+            chatOptions,
+            configuredTools,
+            codexRunConfigurationTools,
+            codexSession);
         var approvalHandler = toolSet.DynamicTools.Count == 0 ? null : toolSet.ApprovalHandler;
         using var functionInvocationScope = AgentFrameworkFunctionInvoker.PushEffectiveChatOptions(chatOptions);
         await using var codexLease = await _client.StartAppServerAsync(approvalHandler, _options, cancellationToken)
             .ConfigureAwait(false);
         var codex = codexLease.Client;
+        var isNewThread = string.IsNullOrWhiteSpace(codexSession.ThreadId);
         var thread = await ResolveThreadAsync(codex, codexSession, toolSet, options, chatOptions, cancellationToken)
             .ConfigureAwait(false);
+        if (isNewThread)
+        {
+            CodexAgentSessionStateUpdater.CaptureThreadCreation(codexSession, toolSet, _options, options, chatOptions);
+        }
+
         codexSession.ThreadId = thread.Id;
 
         await using var turn = await codex.StartTurnAsync(thread.Id, CreateTurnOptions(preparedRun.Messages, options, chatOptions), cancellationToken)
@@ -199,33 +211,6 @@ public sealed class CodexAIAgent : AIAgent
         return session is null
             ? (CodexAgentSession)await CreateSessionAsync(cancellationToken).ConfigureAwait(false)
             : GetSession(session);
-    }
-
-    private AgentFrameworkCodexToolSet CreateToolSet(
-        AgentRunOptions? runOptions,
-        ChatOptions? chatOptions,
-        IReadOnlyList<AITool>? configuredTools,
-        IReadOnlyList<AITool>? codexRunConfigurationTools,
-        CodexAgentSession session)
-    {
-        var functions = CodexAgentToolMapper.GetAIFunctions(
-            configuredTools,
-            codexRunConfigurationTools,
-            runOptions,
-            chatOptions).ToArray();
-        if (session.ThreadId is not null && CodexAgentToolMapper.HasRunTools(runOptions, chatOptions))
-        {
-            throw new NotSupportedException(
-                "Codex dynamic tools are configured when the Codex thread is created. Create a new AgentSession to use different per-run tools.");
-        }
-
-        return AgentFrameworkCodexToolAdapter.Create(
-            functions,
-            new AgentFrameworkCodexToolAdapterOptions
-            {
-                FunctionInvocationServices = CodexAgentOptionsMapper.GetFunctionInvocationServices(_options, runOptions),
-                ToolApprovalHandler = CodexAgentOptionsMapper.GetToolApprovalHandler(_options, runOptions)
-            });
     }
 
     private async Task<CodexThread> ResolveThreadAsync(

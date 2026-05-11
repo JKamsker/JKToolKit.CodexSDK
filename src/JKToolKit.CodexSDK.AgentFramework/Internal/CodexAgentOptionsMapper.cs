@@ -74,7 +74,7 @@ internal static class CodexAgentOptionsMapper
 
     public static CodexSandboxMode? GetSandbox(CodexAIAgentOptions options, AgentRunOptions? runOptions)
     {
-        return GetRunSandbox(runOptions) ?? options.Sandbox;
+        return GetRunSandbox(runOptions) ?? options.Sandbox ?? options.SafetyOptions?.DefaultSandbox;
     }
 
     public static CodexSandboxMode? GetRunSandbox(AgentRunOptions? runOptions)

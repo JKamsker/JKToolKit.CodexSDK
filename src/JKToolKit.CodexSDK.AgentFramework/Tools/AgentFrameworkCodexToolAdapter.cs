@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.AgentFramework.Internal;
 using Microsoft.Extensions.AI;
 
 namespace JKToolKit.CodexSDK.AgentFramework.Tools;
@@ -48,9 +49,10 @@ public static class AgentFrameworkCodexToolAdapter
             functionArray,
             options.FallbackHandler,
             options.FunctionInvocationServices,
-            options.ToolApprovalHandler);
+            options.ToolApprovalHandler,
+            options.SafetyOptions);
 
-        return new AgentFrameworkCodexToolSet(tools, handler);
+        return new AgentFrameworkCodexToolSet(tools, handler, CodexAgentToolSchemaHasher.Compute(tools));
     }
 
     private static DynamicToolSpec CreateDynamicTool(AIFunction function)

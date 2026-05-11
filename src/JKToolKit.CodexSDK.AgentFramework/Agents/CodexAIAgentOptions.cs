@@ -98,6 +98,11 @@ public sealed class CodexAIAgentOptions
     public Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? ToolApprovalHandler { get; set; }
 
     /// <summary>
+    /// Gets or sets safety policy for Agent Framework tools exposed to Codex.
+    /// </summary>
+    public CodexAgentSafetyOptions? SafetyOptions { get; set; }
+
+    /// <summary>
     /// Gets or sets additional thread configuration applied when a Codex thread is created.
     /// </summary>
     public Action<ThreadStartOptions>? ConfigureThread { get; set; }

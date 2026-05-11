@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.AgentFramework.Agents;
 using JKToolKit.CodexSDK.AgentFramework.Internal;
 using Microsoft.Extensions.AI;
 
@@ -24,6 +25,7 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
     private readonly IAppServerApprovalHandler? _fallbackHandler;
     private readonly IServiceProvider? _functionInvocationServices;
     private readonly Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? _toolApprovalHandler;
+    private readonly CodexAgentSafetyOptions _safetyOptions;
 
     /// <summary>
     /// Creates a handler for Codex app-server dynamic tool calls.
@@ -41,7 +43,8 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
         IEnumerable<AIFunction> functions,
         IAppServerApprovalHandler? fallbackHandler,
         IServiceProvider? functionInvocationServices = null,
-        Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? toolApprovalHandler = null)
+        Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? toolApprovalHandler = null,
+        CodexAgentSafetyOptions? safetyOptions = null)
     {
         ArgumentNullException.ThrowIfNull(functions);
 
@@ -49,6 +52,7 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
         _fallbackHandler = fallbackHandler;
         _functionInvocationServices = functionInvocationServices;
         _toolApprovalHandler = toolApprovalHandler;
+        _safetyOptions = safetyOptions ?? new CodexAgentSafetyOptions();
     }
 
     /// <inheritdoc />
@@ -61,15 +65,42 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
                 : throw new NotSupportedException($"Unhandled app-server request '{method}'.");
         }
 
-        var request = ReadRequest(@params);
+        DynamicToolCallParams request;
+        try
+        {
+            request = ReadRequest(@params);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return CreateErrorResponse(
+                errorCode: "invalid_tool_request",
+                errorMessage: "Dynamic tool call request is invalid.",
+                request: null,
+                isRetryable: false,
+                exception: ex);
+        }
+
         if (!_functionsByToolName.TryGetValue(request.Tool, out var function))
         {
-            return CreateResponse(success: false, $"Unknown Agent Framework tool '{request.Tool}'.");
+            return CreateErrorResponse(
+                errorCode: "unknown_tool",
+                errorMessage: $"Unknown Agent Framework tool '{request.Tool}'.",
+                request,
+                isRetryable: false);
         }
 
         try
         {
-            if (function.GetService<ApprovalRequiredAIFunction>() is not null)
+            if (!IsToolAllowed(request.Tool))
+            {
+                return CreateErrorResponse(
+                    errorCode: "tool_denied_by_policy",
+                    errorMessage: $"Agent Framework tool '{request.Tool}' is denied by policy.",
+                    request,
+                    isRetryable: false);
+            }
+
+            if (RequiresApproval(function, request.Arguments))
             {
                 var approval = await GetApprovalAsync(request, function, ct).ConfigureAwait(false);
                 if (approval?.Approved != true)
@@ -77,7 +108,11 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
                     var reason = string.IsNullOrWhiteSpace(approval?.Reason)
                         ? $"Agent Framework tool '{request.Tool}' was not approved."
                         : approval.Reason;
-                    return CreateResponse(success: false, reason);
+                    return CreateErrorResponse(
+                        errorCode: approval is null ? "approval_required" : "approval_denied",
+                        errorMessage: reason,
+                        request,
+                        isRetryable: false);
                 }
             }
 
@@ -88,11 +123,21 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
                     CreateCallContent(request, arguments),
                     ct)
                 .ConfigureAwait(false);
-            return CreateResponse(success: true, FormatResult(result, function.JsonSerializerOptions));
+            return CreateResponse(
+                success: true,
+                AgentFrameworkToolResultMapper.CreateContentItems(result, function.JsonSerializerOptions));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return CreateResponse(success: false, ex.Message);
+            var message = _safetyOptions.RedactToolExceptionDetails
+                ? $"Agent Framework tool '{request.Tool}' failed."
+                : ex.Message;
+            return CreateErrorResponse(
+                errorCode: "tool_invocation_failed",
+                errorMessage: message,
+                request,
+                isRetryable: false,
+                exception: ex);
         }
     }
 
@@ -141,6 +186,24 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
             cancellationToken).ConfigureAwait(false);
     }
 
+    private bool IsToolAllowed(string toolName)
+    {
+        if (_safetyOptions.DeniedToolNames?.Contains(toolName) == true)
+        {
+            return false;
+        }
+
+        return _safetyOptions.AllowedToolNames is not { Count: > 0 } allowed ||
+               allowed.Contains(toolName);
+    }
+
+    private bool RequiresApproval(AIFunction function, JsonElement arguments)
+    {
+        return function.GetService<ApprovalRequiredAIFunction>() is not null ||
+               _safetyOptions.RequireApprovalForAllAgentFrameworkTools ||
+               (_safetyOptions.RequireApproval?.Invoke(function, arguments) ?? false);
+    }
+
     private static AIFunctionArguments CreateArguments(
         DynamicToolCallParams request,
         IServiceProvider? functionInvocationServices)
@@ -183,32 +246,52 @@ public sealed class AgentFrameworkToolCallHandler : IAppServerApprovalHandler
         return new FunctionCallContent(request.CallId, request.Tool, callArguments);
     }
 
-    private static string FormatResult(object? value, JsonSerializerOptions serializerOptions)
+    private JsonElement CreateErrorResponse(
+        string errorCode,
+        string errorMessage,
+        DynamicToolCallParams? request,
+        bool isRetryable,
+        Exception? exception = null)
     {
-        return value switch
-        {
-            null => string.Empty,
-            string text => text,
-            JsonElement json => FormatJsonElement(json),
-            _ => JsonSerializer.Serialize(value, value.GetType(), serializerOptions)
-        };
+        var text = JsonSerializer.Serialize(
+            new ToolCallError(
+                errorCode,
+                errorMessage,
+                isRetryable,
+                request?.Tool,
+                request?.CallId,
+                CreateDiagnostics(exception)),
+            SerializerOptions);
+        return CreateResponse(success: false, [DynamicToolCallOutputContentItem.InputText(text)]);
     }
 
-    private static string FormatJsonElement(JsonElement json)
+    private ToolCallErrorDiagnostics? CreateDiagnostics(Exception? exception)
     {
-        return json.ValueKind == JsonValueKind.String
-            ? json.GetString() ?? string.Empty
-            : json.GetRawText();
+        return exception is null || _safetyOptions.RedactToolExceptionDetails
+            ? null
+            : new ToolCallErrorDiagnostics(exception.GetType().FullName, exception.Message);
     }
 
-    private static JsonElement CreateResponse(bool success, string text)
+    private static JsonElement CreateResponse(bool success, IReadOnlyList<DynamicToolCallOutputContentItem> contentItems)
     {
         return JsonSerializer.SerializeToElement(
             new DynamicToolCallResponse
             {
                 Success = success,
-                ContentItems = [DynamicToolCallOutputContentItem.InputText(text)]
+                ContentItems = contentItems
             },
             SerializerOptions);
     }
+
+    private sealed record ToolCallError(
+        [property: JsonPropertyName("error_code")] string ErrorCode,
+        [property: JsonPropertyName("error_message")] string ErrorMessage,
+        [property: JsonPropertyName("is_retryable")] bool IsRetryable,
+        [property: JsonPropertyName("tool_name")] string? ToolName,
+        [property: JsonPropertyName("call_id")] string? CallId,
+        [property: JsonPropertyName("diagnostics")] ToolCallErrorDiagnostics? Diagnostics);
+
+    private sealed record ToolCallErrorDiagnostics(
+        [property: JsonPropertyName("exception_type")] string? ExceptionType,
+        [property: JsonPropertyName("exception_message")] string ExceptionMessage);
 }

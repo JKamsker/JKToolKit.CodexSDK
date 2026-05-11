@@ -5,6 +5,7 @@ using FluentAssertions;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.AgentFramework.Agents;
 using JKToolKit.CodexSDK.AgentFramework.Internal;
+using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -25,12 +26,24 @@ public sealed class AgentFrameworkCodexAgentTests
         var agent = new CodexAgentClient().AsAIAgent(name: "NativeCodex");
         var session = (CodexAgentSession)await agent.CreateSessionAsync();
         session.ThreadId = "thread-123";
+        session.ToolSchemaHash = "tool-hash";
+        session.Model = "gpt-5.5";
+        session.Cwd = "repo";
+        session.ApprovalPolicy = CodexApprovalPolicy.Never;
+        session.Sandbox = CodexSandboxMode.ReadOnly;
+        session.CreatedAt = DateTimeOffset.Parse("2026-05-05T10:15:00Z");
         session.StateBag.SetValue("memory", new SessionMemory("Alice"), SerializerOptions);
 
         var serialized = await agent.SerializeSessionAsync(session, SerializerOptions);
         var resumed = (CodexAgentSession)await agent.DeserializeSessionAsync(serialized, SerializerOptions);
 
         resumed.ThreadId.Should().Be("thread-123");
+        resumed.ToolSchemaHash.Should().Be("tool-hash");
+        resumed.Model.Should().Be("gpt-5.5");
+        resumed.Cwd.Should().Be("repo");
+        resumed.ApprovalPolicy.Should().Be(CodexApprovalPolicy.Never);
+        resumed.Sandbox.Should().Be(CodexSandboxMode.ReadOnly);
+        resumed.CreatedAt.Should().Be(DateTimeOffset.Parse("2026-05-05T10:15:00Z"));
         var memory = resumed.StateBag.GetValue<SessionMemory>("memory", SerializerOptions);
         memory.Should().NotBeNull();
         memory!.Name.Should().Be("Alice");
@@ -243,6 +256,51 @@ public sealed class AgentFrameworkCodexAgentTests
         clone.Summary.Should().Be(options.Summary);
         clone.Tools.Should().NotBeSameAs(options.Tools);
         clone.Tools.Should().BeEquivalentTo(options.Tools);
+    }
+
+    [Fact]
+    public void CodexAgentToolSetFactory_AllowsSameRunToolSchemaOnResumedSession()
+    {
+        var tool = AIFunctionFactory.Create((Func<string>)(() => "ok"), "read_value");
+        var existingToolSet = AgentFrameworkCodexToolAdapter.Create([tool]);
+        var session = new CodexAgentSession
+        {
+            ThreadId = "thread-1",
+            ToolSchemaHash = existingToolSet.ToolSchemaHash
+        };
+
+        var resumedToolSet = CodexAgentToolSetFactory.Create(
+            new CodexAIAgentOptions(),
+            new CodexAgentRunOptions { Tools = [tool] },
+            chatOptions: null,
+            configuredTools: null,
+            codexRunConfigurationTools: null,
+            session);
+
+        resumedToolSet.ToolSchemaHash.Should().Be(existingToolSet.ToolSchemaHash);
+    }
+
+    [Fact]
+    public void CodexAgentToolSetFactory_RejectsChangedRunToolSchemaOnResumedSession()
+    {
+        var firstTool = AIFunctionFactory.Create((Func<string>)(() => "first"), "first_tool");
+        var secondTool = AIFunctionFactory.Create((Func<string>)(() => "second"), "second_tool");
+        var session = new CodexAgentSession
+        {
+            ThreadId = "thread-1",
+            ToolSchemaHash = AgentFrameworkCodexToolAdapter.Create([firstTool]).ToolSchemaHash
+        };
+
+        Action act = () => CodexAgentToolSetFactory.Create(
+            new CodexAIAgentOptions(),
+            new CodexAgentRunOptions { Tools = [secondTool] },
+            chatOptions: null,
+            configuredTools: null,
+            codexRunConfigurationTools: null,
+            session);
+
+        act.Should().Throw<NotSupportedException>()
+            .WithMessage("*different tool schema hash*");
     }
 
     private sealed record SessionMemory(string Name);

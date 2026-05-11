@@ -335,6 +335,32 @@ AIAgent agent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
 });
 ```
 
+Add adapter-level safety policy when host approval should not depend only on individual `ApprovalRequiredAIFunction` wrappers:
+
+```csharp
+using JKToolKit.CodexSDK.AgentFramework.Agents;
+using JKToolKit.CodexSDK.AgentFramework.Tools;
+using JKToolKit.CodexSDK.Models;
+
+AIAgent agent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
+{
+    Tools = [deleteFile],
+    Sandbox = CodexSandboxMode.ReadOnly,
+    SafetyOptions = new CodexAgentSafetyOptions
+    {
+        RequireApprovalForAllAgentFrameworkTools = true,
+        DeniedToolNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "delete_file"
+        }
+    },
+    ToolApprovalHandler = (request, cancellationToken) =>
+    {
+        return ValueTask.FromResult(AgentFrameworkToolApprovalResponse.Reject("Disabled by host policy."));
+    }
+});
+```
+
 Agent Framework runtime context is available inside tools and function middleware:
 
 ```csharp
@@ -454,14 +480,35 @@ dotnet run --project src/JKToolKit.CodexSDK.Demo -- agent-framework-function-cal
 - Workflow and hosting packages are intentionally not referenced by this adapter. Add `Microsoft.Agents.AI.Workflows`, `Microsoft.Agents.AI.Hosting.OpenAI`, `Microsoft.Agents.AI.Hosting.A2A.AspNetCore`, or another Agent Framework host package in the application that composes or exposes the Codex agent.
 - `ChatClientAgentOptions` maps its metadata, default `ChatOptions`, `ChatHistoryProvider`, and `AIContextProviders` into the Codex agent. `CodexAIAgent` exposes `ChatOptions`, `Instructions`, `ChatHistoryProvider`, and `AIContextProviders` for the same native inspection style. Chat-client pipeline flags such as `UseProvidedChatClientAsIs` are specific to `IChatClient` agents and are not used by Codex.
 - `ChatClientAgentOptions.ToCodexAIAgentOptions(...)` keeps existing Agent Framework configuration reusable when you also need Codex-specific agent defaults.
-- `CodexAgentSession` stores the backing Codex thread id and the Agent Framework session state bag. Serialize and deserialize the session through the Agent Framework APIs to resume the same Codex thread later.
+- `CodexAgentSession` stores the backing Codex thread id, Agent Framework session state bag, dynamic tool schema hash, model, working directory, approval policy, sandbox mode, and thread creation timestamp. Serialize and deserialize the session through the Agent Framework APIs to resume the same Codex thread later.
 - When a run does not pass a session, the Codex agent creates one and updates `AIAgent.CurrentRunContext` so Agent Framework tools can still read `CurrentRunContext.Session` and `CurrentRunContext.RunOptions`.
 - `AIContextProviders` run before Codex starts the turn. Provider instructions and tools are merged into `ChatOptions`; provider messages are sent as turn input; providers are notified after success or failure.
 - `ChatHistoryProvider` is opt-in because Codex threads already maintain conversation state. Add one only when you explicitly want Agent Framework-managed history or memory enrichment.
 - Codex dynamic tools are currently behind the app-server experimental API capability. The native `AIAgent` surface enables it automatically when tools are present.
 - Tool names are the `AIFunction.Name` values supplied by Agent Framework.
 - Agent Framework tools must currently be `AIFunction` instances. Hosted Agent Framework tools such as provider-native code interpreter, file search, or web search are not translated to Codex dynamic tools.
-- Per-run tools and context-provider tools can be used when creating a new Codex thread. Once a `CodexAgentSession` has a thread id, create a new session to use a different tool set.
+- Per-run tools and context-provider tools can be used when creating a new Codex thread. When resuming a session, the adapter compares the current dynamic tool schema hash with the hash captured on the session and rejects changed tool sets because Codex app-server dynamic tools are thread-scoped.
 - Function invocation middleware is supported for default tools and `ChatClientAgentRunOptions` tools through `ChatClientFactory`. When combining it with Codex-specific settings, attach those settings with `ConfigureCodex(...)`; Agent Framework's function middleware only accepts no options, base `AgentRunOptions`, or `ChatClientAgentRunOptions`.
 - `ChatClientAgentRunOptions.ChatClientFactory` is used only to apply Agent Framework option/tool transformations before Codex runs. Codex is not an `IChatClient`, so chat-client middleware cannot observe the raw Codex model request or response.
 - `ApprovalRequiredAIFunction` is supported through `toolApprovalHandler`. Codex dynamic tool calls are synchronous, so the adapter does not use Agent Framework `FunctionApprovalRequestContent` / `FunctionApprovalResponseContent` round trips. Without an approval handler, approval-required functions are rejected before invocation.
+- `CodexAgentSafetyOptions` can require host approval for all tools, require approval through a predicate, allow or deny exact tool names, redact tool exception details, and provide a default sandbox when no run or agent sandbox is configured.
+- Failed dynamic tool calls return `success: false` with a JSON error envelope in the text content item. The envelope includes `error_code`, `error_message`, `is_retryable`, `tool_name`, `call_id`, and opt-in exception diagnostics when `RedactToolExceptionDetails` is `false`.
+- Codex dynamic tool output currently supports only `inputText` and `inputImage`. The adapter maps `TextContent`, image `DataContent`, image `UriContent`, and multiple `AIContent` results to those item types; JSON and other structured values are serialized as text because the current Codex app-server protocol has no JSON output content item.
+
+## Capability Matrix
+
+| Agent Framework capability | Status | Notes |
+| --- | --- | --- |
+| `AIAgent` execution | Supported | Codex runs behind a native `AIAgent` implementation. |
+| Sessions | Supported | Session JSON includes Codex thread id plus diagnostic thread metadata. |
+| `AIFunction` tools | Supported | Functions are exposed as Codex dynamic tools. |
+| Approval-required functions | Supported, synchronous | Uses a Codex-side callback rather than Agent Framework approval request/response content. |
+| Policy-level tool approval | Supported | `CodexAgentSafetyOptions` can require approval for all tools or by predicate. |
+| Tool allow/deny policy | Supported | Exact Agent Framework tool-name allow and deny sets. |
+| Tool result content | Approximated | Codex supports text and image output items; other structured content is serialized to text. |
+| Structured tool errors | Approximated | Error metadata is returned as JSON text inside the Codex dynamic-tool response. |
+| Per-run tools on resumed sessions | Partially supported | Allowed only when the dynamic tool schema hash matches the thread-created schema. |
+| Agent/chat-client middleware fidelity | Approximated | Chat-client middleware is used for option/tool transformation, not raw Codex request/response observation. |
+| Rich Codex event streaming | Limited | Assistant text deltas and errors are mapped; command/file/tool lifecycle events are not yet first-class Agent Framework content. |
+| Workflow checkpointing | Limited | Store serialized `CodexAgentSession` in workflow checkpoint metadata when composing workflows. |
+| MCP/A2A/hosting packages | Application-owned | The adapter does not reference hosting packages; compose them in the app that owns the agent. |

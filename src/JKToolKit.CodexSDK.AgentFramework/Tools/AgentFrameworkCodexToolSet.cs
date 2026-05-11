@@ -13,15 +13,18 @@ public sealed class AgentFrameworkCodexToolSet
     /// </summary>
     /// <param name="dynamicTools">The dynamic tool specifications to pass to <see cref="ThreadStartOptions.DynamicTools"/>.</param>
     /// <param name="approvalHandler">The handler to assign to <see cref="CodexAppServerClientOptions.ApprovalHandler"/>.</param>
+    /// <param name="toolSchemaHash">The stable hash of the dynamic tool schema, if tools are present.</param>
     public AgentFrameworkCodexToolSet(
         IReadOnlyList<DynamicToolSpec> dynamicTools,
-        IAppServerApprovalHandler approvalHandler)
+        IAppServerApprovalHandler approvalHandler,
+        string? toolSchemaHash = null)
     {
         ArgumentNullException.ThrowIfNull(dynamicTools);
         ArgumentNullException.ThrowIfNull(approvalHandler);
 
         DynamicTools = dynamicTools;
         ApprovalHandler = approvalHandler;
+        ToolSchemaHash = toolSchemaHash;
     }
 
     /// <summary>
@@ -33,4 +36,9 @@ public sealed class AgentFrameworkCodexToolSet
     /// Gets the server-request handler that invokes Agent Framework functions for <c>item/tool/call</c> requests.
     /// </summary>
     public IAppServerApprovalHandler ApprovalHandler { get; }
+
+    /// <summary>
+    /// Gets the stable hash of the dynamic tool schema, if tools are present.
+    /// </summary>
+    public string? ToolSchemaHash { get; }
 }

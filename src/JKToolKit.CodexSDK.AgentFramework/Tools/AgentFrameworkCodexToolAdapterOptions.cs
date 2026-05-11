@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AgentFramework.Agents;
 
 namespace JKToolKit.CodexSDK.AgentFramework.Tools;
 
@@ -21,4 +22,9 @@ public sealed class AgentFrameworkCodexToolAdapterOptions
     /// Gets or sets a host approval callback for <see cref="Microsoft.Extensions.AI.ApprovalRequiredAIFunction"/> calls.
     /// </summary>
     public Func<AgentFrameworkToolApprovalRequest, CancellationToken, ValueTask<AgentFrameworkToolApprovalResponse>>? ToolApprovalHandler { get; set; }
+
+    /// <summary>
+    /// Gets or sets safety policy for Agent Framework tools exposed to Codex.
+    /// </summary>
+    public CodexAgentSafetyOptions? SafetyOptions { get; set; }
 }
