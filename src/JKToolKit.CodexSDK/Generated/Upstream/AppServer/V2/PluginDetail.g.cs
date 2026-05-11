@@ -19,6 +19,9 @@ internal partial class PluginDetail
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string? Description { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("hooks")]
+    public System.Collections.Generic.ICollection<PluginHookSummary> Hooks { get; set; } = new System.Collections.ObjectModel.Collection<PluginHookSummary>();
+
     [System.Text.Json.Serialization.JsonPropertyName("marketplaceName")]
     public string MarketplaceName { get; set; } = default!;
 

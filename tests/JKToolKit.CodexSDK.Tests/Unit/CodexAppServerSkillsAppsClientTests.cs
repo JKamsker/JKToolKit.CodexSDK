@@ -15,7 +15,7 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class CodexAppServerSkillsAppsClientTests
 {
     [Fact]
-    public async Task ListSkillsAsync_IncludesPerCwdExtraUserRoots()
+    public async Task ListSkillsAsync_SendsCurrentUpstreamParams()
     {
         var rpc = new FakeRpc
         {
@@ -23,13 +23,8 @@ public sealed class CodexAppServerSkillsAppsClientTests
             {
                 method.Should().Be("skills/list");
                 var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
-                var entries = typed.PerCwdExtraUserRoots.ToArray();
-                entries.Should().HaveCount(2);
-
-                entries[0].Cwd.Should().Be(XPaths.Abs("cwd-1"));
-                entries[0].ExtraUserRoots.Should().Equal(new[] { XPaths.Abs("root-a") });
-                entries[1].Cwd.Should().Be(XPaths.Abs("cwd-2"));
-                entries[1].ExtraUserRoots.Should().Equal(new[] { XPaths.Abs("root-b"), XPaths.Abs("root-c") });
+                typed.Cwds.Should().Equal(XPaths.Abs("cwd-1"), XPaths.Abs("cwd-2"));
+                typed.ForceReload.Should().BeTrue();
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -39,26 +34,15 @@ public sealed class CodexAppServerSkillsAppsClientTests
 
         var options = new SkillsListOptions
         {
-            PerCwdExtraUserRoots = new[]
-            {
-                new SkillsListExtraRootsForCwdEntry
-                {
-                    Cwd = XPaths.Abs("cwd-1"),
-                    ExtraUserRoots = new[] { XPaths.Abs("root-a") }
-                },
-                new SkillsListExtraRootsForCwdEntry
-                {
-                    Cwd = XPaths.Abs("cwd-2"),
-                    ExtraUserRoots = new[] { XPaths.Abs("root-b"), XPaths.Abs("root-c") }
-                }
-            }
+            Cwds = [XPaths.Abs("cwd-1"), XPaths.Abs("cwd-2")],
+            ForceReload = true
         };
 
         await client.ListSkillsAsync(options);
     }
 
     [Fact]
-    public async Task ListSkillsAsync_IncludesSingleCwdExtraRootsWhenPerCwdNotSet()
+    public async Task ListSkillsAsync_IgnoresRemovedExtraRootsOptions()
     {
         var rpc = new FakeRpc
         {
@@ -66,11 +50,8 @@ public sealed class CodexAppServerSkillsAppsClientTests
             {
                 method.Should().Be("skills/list");
                 var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
-                var entries = typed.PerCwdExtraUserRoots.ToArray();
-                entries.Should().HaveCount(1);
-
-                entries[0].Cwd.Should().Be(XPaths.Abs("cwd-main"));
-                entries[0].ExtraUserRoots.Should().Equal(new[] { XPaths.Abs("extra") });
+                typed.Cwds.Should().Equal(XPaths.Abs("cwd-main"));
+                typed.AdditionalProperties.Should().NotContainKey("perCwdExtraUserRoots");
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -81,36 +62,22 @@ public sealed class CodexAppServerSkillsAppsClientTests
         var options = new SkillsListOptions
         {
             Cwds = new[] { XPaths.Abs("cwd-main") },
-            ExtraRootsForCwd = new[] { XPaths.Abs("extra") }
+            ExtraRootsForCwd = ["relative-extra-root"],
+            PerCwdExtraUserRoots =
+            [
+                new SkillsListExtraRootsForCwdEntry
+                {
+                    Cwd = "relative\\cwd",
+                    ExtraUserRoots = ["relative\\skills"]
+                }
+            ]
         };
 
         await client.ListSkillsAsync(options);
     }
 
     [Fact]
-    public async Task ListSkillsAsync_RejectsRelativePerCwdExtraRoots()
-    {
-        var client = new CodexAppServerSkillsAppsClient((_, _, _) =>
-            Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone()));
-
-        var act = async () => await client.ListSkillsAsync(new SkillsListOptions
-        {
-            PerCwdExtraUserRoots =
-            [
-                new SkillsListExtraRootsForCwdEntry
-                {
-                    Cwd = "C:\\repo",
-                    ExtraUserRoots = ["relative\\skills"]
-                }
-            ]
-        });
-
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*absolute paths*");
-    }
-
-    [Fact]
-    public async Task ListSkillsAsync_AllowsRelativeCwdsAndPerCwdScopes_ToPassThrough()
+    public async Task ListSkillsAsync_AllowsRelativeCwds_ToPassThrough()
     {
         var rpc = new FakeRpc
         {
@@ -120,9 +87,6 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
 
                 typed.Cwds.Should().Equal("relative\\cwd", ".\\second");
-                typed.PerCwdExtraUserRoots.Should().ContainSingle();
-                typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be("relative\\cwd");
-                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal(XPaths.Abs("extra-root"));
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -132,20 +96,12 @@ public sealed class CodexAppServerSkillsAppsClientTests
 
         await client.ListSkillsAsync(new SkillsListOptions
         {
-            Cwds = ["relative\\cwd", ".\\second"],
-            PerCwdExtraUserRoots =
-            [
-                new SkillsListExtraRootsForCwdEntry
-                {
-                    Cwd = "relative\\cwd",
-                    ExtraUserRoots = [XPaths.Abs("extra-root")]
-                }
-            ]
+            Cwds = ["relative\\cwd", ".\\second"]
         });
     }
 
     [Fact]
-    public async Task ListSkillsAsync_AllowsRelativeSingleCwd_WhenUsingExtraRootsForCwd()
+    public async Task ListSkillsAsync_UsesSingleCwdWhenCwdsNotSet()
     {
         var rpc = new FakeRpc
         {
@@ -155,9 +111,6 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
 
                 typed.Cwds.Should().Equal(".\\repo");
-                typed.PerCwdExtraUserRoots.Should().ContainSingle();
-                typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be(".\\repo");
-                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().Equal(XPaths.Abs("extra-root"));
 
                 return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
             }
@@ -167,42 +120,30 @@ public sealed class CodexAppServerSkillsAppsClientTests
 
         await client.ListSkillsAsync(new SkillsListOptions
         {
-            Cwd = ".\\repo",
-            ExtraRootsForCwd = [XPaths.Abs("extra-root")]
+            Cwd = ".\\repo"
         });
     }
 
     [Fact]
-    public async Task ListSkillsAsync_AllowsBlankPerCwdScopes_AndEmptyExtraRoots_ToPassThrough()
+    public void ProtocolSkillsListParams_DoesNotSerializeRemovedExtraRoots()
     {
-        var rpc = new FakeRpc
-        {
-            SendRequestAsyncImpl = (method, @params, _) =>
+        var json = JsonSerializer.Serialize(
+            new JKToolKit.CodexSDK.AppServer.Protocol.V2.SkillsListParams
             {
-                method.Should().Be("skills/list");
-                var typed = @params.Should().BeOfType<UpstreamV2.SkillsListParams>().Which;
+                Cwds = ["C:\\repo"],
+                PerCwdExtraUserRoots =
+                [
+                    new JKToolKit.CodexSDK.AppServer.Protocol.V2.SkillsListExtraRootsForCwd
+                    {
+                        Cwd = "C:\\repo",
+                        ExtraUserRoots = ["C:\\skills"]
+                    }
+                ]
+            },
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
-                typed.PerCwdExtraUserRoots.Should().ContainSingle();
-                typed.PerCwdExtraUserRoots.Single().Cwd.Should().Be("");
-                typed.PerCwdExtraUserRoots.Single().ExtraUserRoots.Should().BeEmpty();
-
-                return Task.FromResult(JsonDocument.Parse("""{"data":[]}""").RootElement.Clone());
-            }
-        };
-
-        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
-
-        await client.ListSkillsAsync(new SkillsListOptions
-        {
-            PerCwdExtraUserRoots =
-            [
-                new SkillsListExtraRootsForCwdEntry
-                {
-                    Cwd = string.Empty,
-                    ExtraUserRoots = Array.Empty<string>()
-                }
-            ]
-        });
+        json.Should().Contain("cwds");
+        json.Should().NotContain("perCwdExtraUserRoots");
     }
 
     [Fact]

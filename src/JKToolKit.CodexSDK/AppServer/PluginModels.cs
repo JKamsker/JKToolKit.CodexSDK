@@ -193,6 +193,27 @@ public sealed record class PluginSkillDescriptor
 }
 
 /// <summary>
+/// Describes a hook bundled by a plugin.
+/// </summary>
+public sealed record class PluginHookDescriptor
+{
+    /// <summary>
+    /// Gets the hook key within the plugin.
+    /// </summary>
+    public required string Key { get; init; }
+
+    /// <summary>
+    /// Gets the hook event name.
+    /// </summary>
+    public required string EventName { get; init; }
+
+    /// <summary>
+    /// Gets the raw hook payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
 /// Describes a plugin detail payload.
 /// </summary>
 public sealed record class PluginDetailDescriptor
@@ -231,6 +252,11 @@ public sealed record class PluginDetailDescriptor
     /// Gets the apps exposed by the plugin.
     /// </summary>
     public required IReadOnlyList<PluginAppDescriptor> Apps { get; init; }
+
+    /// <summary>
+    /// Gets the hooks exposed by the plugin.
+    /// </summary>
+    public required IReadOnlyList<PluginHookDescriptor> Hooks { get; init; }
 
     /// <summary>
     /// Gets the raw plugin detail payload.

@@ -25,12 +25,6 @@ internal partial class SkillsListParams
     [System.Text.Json.Serialization.JsonPropertyName("forceReload")]
     public bool? ForceReload { get; set; } = default!;
 
-    /// <summary>
-    /// Optional per-cwd extra roots to scan as user-scoped skills.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("perCwdExtraUserRoots")]
-    public System.Collections.Generic.ICollection<SkillsListExtraRootsForCwd>? PerCwdExtraUserRoots { get; set; } = default!;
-
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

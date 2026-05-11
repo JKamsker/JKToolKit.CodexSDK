@@ -203,6 +203,12 @@ internal static partial class AppServerNotificationMapper
                 data: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
                 @params: p),
 
+            "remoteControl/status/changed" when TryGetRequiredString(p, "status", out var remoteControlStatus)
+                => new RemoteControlStatusChangedNotification(
+                    status: remoteControlStatus,
+                    environmentId: GetStringOrNull(p, "environmentId"),
+                    @params: p),
+
             "skills/changed" => new SkillsChangedNotification(
                 @params: p),
 

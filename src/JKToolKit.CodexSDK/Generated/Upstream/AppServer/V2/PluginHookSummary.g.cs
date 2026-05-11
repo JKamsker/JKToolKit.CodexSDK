@@ -9,9 +9,16 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-[System.CodeDom.Compiler.GeneratedCode("JKToolKit.CodexSDK.UpstreamGen", "0.0.0")]
-internal partial class Payload
+[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
+internal partial class PluginHookSummary
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("eventName")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookEventName>))]
+    public HookEventName EventName { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("key")]
+    public string Key { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

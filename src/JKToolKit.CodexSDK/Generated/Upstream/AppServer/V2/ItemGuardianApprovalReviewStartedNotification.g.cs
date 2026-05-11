@@ -29,6 +29,12 @@ internal partial class ItemGuardianApprovalReviewStartedNotification
     public string ReviewId { get; set; } = default!;
 
     /// <summary>
+    /// Unix timestamp (in milliseconds) when this review started.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("startedAtMs")]
+    public long StartedAtMs { get; set; } = default!;
+
+    /// <summary>
     /// Identifier for the reviewed item or tool call when one exists.
     /// <br/>
     /// <br/>In most cases, one review maps to one target item. The exceptions are - execve reviews, where a single command may contain multiple execve calls to review (only possible when using the shell_zsh_fork feature) - network policy reviews, where there is no target item

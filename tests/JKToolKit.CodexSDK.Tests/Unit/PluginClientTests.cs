@@ -171,6 +171,12 @@ public sealed class PluginClientTests
                   }}
                 }},
                 ""apps"": [],
+                ""hooks"": [
+                  {{
+                    ""key"": ""pre-tool"",
+                    ""eventName"": ""PreToolUse""
+                  }}
+                ],
                 ""mcpServers"": []
               }}
             }}");
@@ -194,6 +200,9 @@ public sealed class PluginClientTests
         result.Plugin.Skills[0].Interface!.DisplayName.Should().Be("Skill A");
         result.Plugin.Skills[0].Interface!.DefaultPrompt.Should().Be("Explain the failing build");
         result.Plugin.Apps.Should().BeEmpty();
+        result.Plugin.Hooks.Should().ContainSingle();
+        result.Plugin.Hooks[0].Key.Should().Be("pre-tool");
+        result.Plugin.Hooks[0].EventName.Should().Be("PreToolUse");
         result.Plugin.McpServers.Should().BeEmpty();
         rpc.LastMethod.Should().Be("plugin/read");
     }

@@ -19,6 +19,12 @@ internal partial class ItemGuardianApprovalReviewCompletedNotification
     [System.Text.Json.Serialization.JsonPropertyName("action")]
     public Action Action { get; set; } = default!;
 
+    /// <summary>
+    /// Unix timestamp (in milliseconds) when this review completed.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("completedAtMs")]
+    public long CompletedAtMs { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("decisionSource")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AutoReviewDecisionSource>))]
     public AutoReviewDecisionSource DecisionSource { get; set; } = default!;
@@ -31,6 +37,12 @@ internal partial class ItemGuardianApprovalReviewCompletedNotification
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("reviewId")]
     public string ReviewId { get; set; } = default!;
+
+    /// <summary>
+    /// Unix timestamp (in milliseconds) when this review started.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("startedAtMs")]
+    public long StartedAtMs { get; set; } = default!;
 
     /// <summary>
     /// Identifier for the reviewed item or tool call when one exists.

@@ -25,7 +25,11 @@ public sealed record class SkillsListParams
     /// <summary>
     /// Gets optional per-cwd extra roots to scan as user-scoped skills.
     /// </summary>
-    [JsonPropertyName("perCwdExtraUserRoots")]
+    /// <remarks>
+    /// Upstream Codex 0.130.0 removed this request field. The property is kept for source compatibility,
+    /// but is ignored during serialization so current servers do not receive stale wire data.
+    /// </remarks>
+    [JsonIgnore]
     public IReadOnlyList<SkillsListExtraRootsForCwd>? PerCwdExtraUserRoots { get; init; }
 }
 
@@ -46,4 +50,3 @@ public sealed record class SkillsListExtraRootsForCwd
     [JsonPropertyName("extraUserRoots")]
     public required IReadOnlyList<string> ExtraUserRoots { get; init; }
 }
-

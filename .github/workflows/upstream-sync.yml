@@ -72,10 +72,6 @@ jobs:
         if: steps.versions.outputs.up_to_date != 'true'
         run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check
 
-      - name: Test
-        if: steps.versions.outputs.up_to_date != 'true'
-        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release
-
       - name: Create pull request
         if: steps.versions.outputs.up_to_date != 'true'
         id: cpr
@@ -89,6 +85,8 @@ jobs:
 
             - Previous: ${{ steps.versions.outputs.pinned }}
             - Latest: ${{ steps.versions.outputs.latest }}
+
+            CI is dispatched on the update branch after this PR is created. If upstream removed or changed a handwritten SDK surface, fix the branch in the PR instead of letting the scheduled sync fail before a PR exists.
           delete-branch: true
 
       - name: Trigger CI for PR branch

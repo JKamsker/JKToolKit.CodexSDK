@@ -169,6 +169,7 @@ internal static class CodexAppServerClientPluginParsers
         }
 
         var mcpServers = GetRequiredStringArray(item, "mcpServers", "plugin/read plugin");
+        var hooks = ParsePluginHooks(item);
 
         return new PluginDetailDescriptor
         {
@@ -182,6 +183,7 @@ internal static class CodexAppServerClientPluginParsers
             McpServers = mcpServers,
             Skills = skills,
             Apps = apps,
+            Hooks = hooks,
             Raw = item.Clone()
         };
     }
@@ -249,6 +251,33 @@ internal static class CodexAppServerClientPluginParsers
             InstallUrl = CodexAppServerClientJson.GetStringOrNull(item, "installUrl"),
             Raw = item.Clone()
         };
+    }
+
+    private static IReadOnlyList<PluginHookDescriptor> ParsePluginHooks(JsonElement item)
+    {
+        var hooksArray = CodexAppServerClientJson.TryGetArray(item, "hooks");
+        if (hooksArray is null)
+        {
+            return Array.Empty<PluginHookDescriptor>();
+        }
+
+        var hooks = new List<PluginHookDescriptor>();
+        foreach (var hook in hooksArray.Value.EnumerateArray())
+        {
+            if (hook.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("plugin/read hooks[] entries must be objects.");
+            }
+
+            hooks.Add(new PluginHookDescriptor
+            {
+                Key = CodexAppServerClientJson.GetRequiredString(hook, "key", "plugin hook"),
+                EventName = CodexAppServerClientJson.GetRequiredString(hook, "eventName", "plugin hook"),
+                Raw = hook.Clone()
+            });
+        }
+
+        return hooks;
     }
 
     private static PluginMarketplaceInterfaceMetadata? ParsePluginMarketplaceInterface(JsonElement item)

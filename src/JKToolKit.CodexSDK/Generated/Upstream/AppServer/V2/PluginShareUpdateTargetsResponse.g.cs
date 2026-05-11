@@ -13,6 +13,10 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginShareUpdateTargetsResponse
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("discoverability")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginShareDiscoverability>))]
+    public PluginShareDiscoverability Discoverability { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("principals")]
     public System.Collections.Generic.ICollection<PluginSharePrincipal> Principals { get; set; } = new System.Collections.ObjectModel.Collection<PluginSharePrincipal>();
 

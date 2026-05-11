@@ -22,6 +22,12 @@ internal partial class PluginShareContext
     [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
     public string RemotePluginId { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("shareTargets")]
+    public System.Collections.Generic.ICollection<PluginSharePrincipal>? ShareTargets { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("shareUrl")]
+    public string? ShareUrl { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

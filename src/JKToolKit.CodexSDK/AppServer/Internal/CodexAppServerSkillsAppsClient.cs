@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Linq;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -27,54 +26,12 @@ internal sealed class CodexAppServerSkillsAppsClient
             cwds = [options.Cwd];
         }
 
-        UpstreamV2.SkillsListExtraRootsForCwd[]? perCwd = null;
-        if (options.PerCwdExtraUserRoots is { Count: > 0 })
-        {
-            perCwd = options.PerCwdExtraUserRoots.Select(entry =>
-            {
-                if (entry is null)
-                {
-                    throw new ArgumentException("PerCwdExtraUserRoots entries must not be null.", nameof(options));
-                }
-
-                CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(
-                    entry.ExtraUserRoots ?? Array.Empty<string>(),
-                    nameof(options),
-                    "PerCwdExtraUserRoots[].ExtraUserRoots");
-
-                return new UpstreamV2.SkillsListExtraRootsForCwd
-                {
-                    Cwd = entry.Cwd,
-                    ExtraUserRoots = (entry.ExtraUserRoots ?? Array.Empty<string>()).ToArray()
-                };
-            }).ToArray();
-        }
-        else if (options.ExtraRootsForCwd is { Count: > 0 })
-        {
-            var cwd = options.Cwd ?? (cwds is { Count: 1 } ? cwds[0] : null);
-            if (string.IsNullOrWhiteSpace(cwd))
-            {
-                throw new ArgumentException("ExtraRootsForCwd requires a single Cwd scope.", nameof(options));
-            }
-            CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(options.ExtraRootsForCwd, nameof(options), "ExtraRootsForCwd");
-
-            perCwd =
-            [
-                new UpstreamV2.SkillsListExtraRootsForCwd
-                {
-                    Cwd = cwd,
-                    ExtraUserRoots = options.ExtraRootsForCwd.ToArray()
-                }
-            ];
-        }
-
         var result = await _sendRequestAsync(
             "skills/list",
             new UpstreamV2.SkillsListParams
             {
                 Cwds = cwds?.ToArray(),
-                ForceReload = options.ForceReload ? true : null,
-                PerCwdExtraUserRoots = perCwd
+                ForceReload = options.ForceReload ? true : null
             },
             ct);
 

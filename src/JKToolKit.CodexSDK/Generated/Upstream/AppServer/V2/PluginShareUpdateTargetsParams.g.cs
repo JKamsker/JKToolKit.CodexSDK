@@ -13,6 +13,10 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginShareUpdateTargetsParams
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("discoverability")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginShareUpdateDiscoverability>))]
+    public PluginShareUpdateDiscoverability Discoverability { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
     public string RemotePluginId { get; set; } = default!;
 

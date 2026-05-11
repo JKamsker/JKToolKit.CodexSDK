@@ -24,8 +24,8 @@ public sealed class SkillsListOptions
     /// Gets or sets optional extra roots for resolving skills relative to <see cref="Cwd"/>, if supported upstream.
     /// </summary>
     /// <remarks>
-    /// This option requires a single working directory scope. If <see cref="Cwds"/> is set, it must contain exactly one entry
-    /// (or <see cref="Cwd"/> must be set) for this option to apply.
+    /// Upstream Codex 0.130.0 removed this request field. The SDK keeps this property for caller compatibility,
+    /// but current servers ignore it because it is no longer sent on the wire.
     /// </remarks>
     public IReadOnlyList<string>? ExtraRootsForCwd { get; set; }
 
@@ -33,7 +33,8 @@ public sealed class SkillsListOptions
     /// Gets or sets optional per-cwd extra roots to scan as user-scoped skills.
     /// </summary>
     /// <remarks>
-    /// When set, each entry must specify the working directory scope and at least one extra root.
+    /// Upstream Codex 0.130.0 removed this request field. The SDK keeps this property for caller compatibility,
+    /// but current servers ignore it because it is no longer sent on the wire.
     /// </remarks>
     public IReadOnlyList<SkillsListExtraRootsForCwdEntry>? PerCwdExtraUserRoots { get; set; }
 

@@ -67,7 +67,7 @@ Add options:
 
 - `SkillsListOptions`
   - `string? Cwd`
-  - `IReadOnlyList<string>? ExtraRootsForCwd` (upstream supports additional roots)
+  - `IReadOnlyList<string>? ExtraRootsForCwd` (kept as a compatibility no-op after upstream removed extra roots in Codex 0.130.0)
 
 #### 2.1.1 Design notes: typing vs raw JSON
 
