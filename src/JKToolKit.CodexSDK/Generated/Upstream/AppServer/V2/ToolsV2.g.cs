@@ -13,9 +13,6 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ToolsV2
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("view_image")]
-    public bool? View_image { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("web_search")]
     public Web_search3? Web_search { get; set; } = default!;
 

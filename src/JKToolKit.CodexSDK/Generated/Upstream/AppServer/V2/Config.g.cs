@@ -28,11 +28,14 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("compact_prompt")]
     public string? Compact_prompt { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("desktop")]
+    public System.Collections.Generic.IDictionary<string, object>? Desktop { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("developer_instructions")]
     public string? Developer_instructions { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("forced_chatgpt_workspace_id")]
-    public string? Forced_chatgpt_workspace_id { get; set; } = default!;
+    public Forced_chatgpt_workspace_id? Forced_chatgpt_workspace_id { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("forced_login_method")]
     public Forced_login_method? Forced_login_method { get; set; } = default!;

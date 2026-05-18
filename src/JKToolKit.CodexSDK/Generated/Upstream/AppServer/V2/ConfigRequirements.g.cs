@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ConfigRequirements
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("allowManagedHooksOnly")]
+    public bool? AllowManagedHooksOnly { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("allowedApprovalPolicies")]
     public System.Collections.Generic.ICollection<AllowedApprovalPolicies>? AllowedApprovalPolicies { get; set; } = default!;
 

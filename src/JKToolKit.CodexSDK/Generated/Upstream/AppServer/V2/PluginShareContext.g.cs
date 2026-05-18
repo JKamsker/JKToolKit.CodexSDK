@@ -19,11 +19,20 @@ internal partial class PluginShareContext
     [System.Text.Json.Serialization.JsonPropertyName("creatorName")]
     public string? CreatorName { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("discoverability")]
+    public Discoverability? Discoverability { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
     public string RemotePluginId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("shareTargets")]
-    public System.Collections.Generic.ICollection<PluginSharePrincipal>? ShareTargets { get; set; } = default!;
+    /// <summary>
+    /// Version of the remote shared plugin release when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("remoteVersion")]
+    public string? RemoteVersion { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("sharePrincipals")]
+    public System.Collections.Generic.ICollection<PluginSharePrincipal>? SharePrincipals { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("shareUrl")]
     public string? ShareUrl { get; set; } = default!;

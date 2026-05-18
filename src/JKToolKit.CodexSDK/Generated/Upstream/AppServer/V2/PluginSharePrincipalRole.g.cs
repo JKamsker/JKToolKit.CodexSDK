@@ -10,11 +10,19 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum PermissionProfileSelectionParamsType
+internal enum PluginSharePrincipalRole
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"profile")]
-    Profile = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"reader")]
+    Reader = 0,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"editor")]
+    Editor = 1,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"owner")]
+    Owner = 2,
 
 
 }

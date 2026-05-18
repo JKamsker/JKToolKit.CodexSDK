@@ -20,6 +20,10 @@ internal partial class PluginShareTarget
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginSharePrincipalType>))]
     public PluginSharePrincipalType PrincipalType { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("role")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginShareTargetRole>))]
+    public PluginShareTargetRole Role { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
