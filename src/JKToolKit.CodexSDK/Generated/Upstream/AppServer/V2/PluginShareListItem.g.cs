@@ -19,9 +19,6 @@ internal partial class PluginShareListItem
     [System.Text.Json.Serialization.JsonPropertyName("plugin")]
     public PluginSummary Plugin { get; set; } = new PluginSummary();
 
-    [System.Text.Json.Serialization.JsonPropertyName("shareUrl")]
-    public string ShareUrl { get; set; } = default!;
-
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Current remote-control connection status and environment id exposed to clients.
+/// Current remote-control connection status and remote identity exposed to clients.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class RemoteControlStatusChangedNotification
@@ -18,6 +18,12 @@ internal partial class RemoteControlStatusChangedNotification
 
     [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
     public string? EnvironmentId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("installationId")]
+    public string InstallationId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("serverName")]
+    public string ServerName { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<RemoteControlConnectionStatus>))]

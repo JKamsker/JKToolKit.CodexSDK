@@ -25,12 +25,6 @@ internal partial class ActivePermissionProfile
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 
-    /// <summary>
-    /// Bounded user-requested modifications applied on top of the named profile, if any.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("modifications")]
-    public System.Collections.Generic.ICollection<Modifications>? Modifications { get; set; } = default!;
-
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

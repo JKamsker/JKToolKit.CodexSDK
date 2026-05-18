@@ -40,8 +40,20 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonPropertyName("keywords")]
     public System.Collections.Generic.ICollection<string>? Keywords { get; set; } = default!;
 
+    /// <summary>
+    /// Version of the locally materialized plugin package when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("localVersion")]
+    public string? LocalVersion { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
+
+    /// <summary>
+    /// Backend remote plugin identifier when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
+    public string? RemotePluginId { get; set; } = default!;
 
     /// <summary>
     /// Remote sharing context associated with this plugin when available.

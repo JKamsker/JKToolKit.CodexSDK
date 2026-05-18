@@ -9,11 +9,8 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Select a named built-in or user-defined profile and optionally apply bounded modifications that Codex knows how to validate.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PermissionProfileSelectionParams
+internal partial class Discoverability2
 {
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
