@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Tests.TestHelpers;
 using Microsoft.Extensions.Logging.Abstractions;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Models;
@@ -52,7 +53,7 @@ public sealed class AppServerClientGuardrailSeamTests
 
         var act = async () => await client.StartThreadAsync(new ThreadStartOptions
         {
-            RuntimeWorkspaceRoots = ["C:/repo"]
+            RuntimeWorkspaceRoots = [XPaths.JsonAbs("repo")]
         });
 
         await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
@@ -288,15 +289,18 @@ public sealed class AppServerClientGuardrailSeamTests
             NullLogger.Instance,
             startExitWatcher: false);
 
+        var root = XPaths.JsonAbs("repo");
+        var subRoot = XPaths.JsonAbs("repo/sub");
+
         var thread = await client.StartThreadAsync(new ThreadStartOptions
         {
-            RuntimeWorkspaceRoots = ["C:/repo", "C:/repo/sub"],
+            RuntimeWorkspaceRoots = [root, subRoot],
             Environments =
             [
                 new TurnEnvironmentOptions
                 {
                     EnvironmentId = "env-1",
-                    Cwd = "C:/repo"
+                    Cwd = root
                 }
             ],
             PermissionProfileId = "profile-1"
@@ -306,7 +310,7 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.RequestCount.Should().Be(1);
         rpc.LastMethod.Should().Be("thread/start");
         var p = rpc.LastParams.Should().BeOfType<ThreadStartParams>().Subject;
-        p.RuntimeWorkspaceRoots.Should().Equal("C:/repo", "C:/repo/sub");
+        p.RuntimeWorkspaceRoots.Should().Equal(root, subRoot);
         p.Environments.Should().ContainSingle();
         p.Environments![0].EnvironmentId.Should().Be("env-1");
         p.Permissions.Should().Be("profile-1");
@@ -350,7 +354,7 @@ public sealed class AppServerClientGuardrailSeamTests
 
         var act = async () => await client.StartTurnAsync("thr_1", new TurnStartOptions
         {
-            RuntimeWorkspaceRoots = ["C:/repo"]
+            RuntimeWorkspaceRoots = [XPaths.JsonAbs("repo")]
         });
 
         await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
@@ -370,15 +374,17 @@ public sealed class AppServerClientGuardrailSeamTests
             NullLogger.Instance,
             startExitWatcher: false);
 
+        var root = XPaths.JsonAbs("repo");
+
         await client.StartTurnAsync("thr_1", new TurnStartOptions
         {
-            RuntimeWorkspaceRoots = ["C:/repo"],
+            RuntimeWorkspaceRoots = [root],
             Environments =
             [
                 new TurnEnvironmentOptions
                 {
                     EnvironmentId = "env-1",
-                    Cwd = "C:/repo"
+                    Cwd = root
                 }
             ],
             PermissionProfileId = "profile-1"
@@ -387,7 +393,7 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.RequestCount.Should().Be(1);
         rpc.LastMethod.Should().Be("turn/start");
         var p = rpc.LastParams.Should().BeOfType<TurnStartParams>().Subject;
-        p.RuntimeWorkspaceRoots.Should().Equal("C:/repo");
+        p.RuntimeWorkspaceRoots.Should().Equal(root);
         p.Environments.Should().ContainSingle();
         p.Permissions.Should().Be("profile-1");
     }

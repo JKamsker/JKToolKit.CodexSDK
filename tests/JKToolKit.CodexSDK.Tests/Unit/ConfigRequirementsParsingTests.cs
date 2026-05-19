@@ -67,12 +67,13 @@ public sealed class ConfigRequirementsParsingTests
         requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never");
         requirements.AllowedAskForApproval.Should().NotBeNull();
         requirements.AllowedAskForApproval!.Should().HaveCount(2);
-        requirements.AllowedAskForApproval[1].Granular.Should().NotBeNull();
-        requirements.AllowedAskForApproval[1].Granular!.SandboxApproval.Should().BeTrue();
-        requirements.AllowedAskForApproval[1].Granular.Rules.Should().BeFalse();
-        requirements.AllowedAskForApproval[1].Granular.McpElicitations.Should().BeTrue();
-        requirements.AllowedAskForApproval[1].Granular.SkillApproval.Should().BeTrue();
-        requirements.AllowedAskForApproval[1].Granular.RequestPermissions.Should().BeFalse();
+        var granular = requirements.AllowedAskForApproval[1].Granular;
+        granular.Should().NotBeNull();
+        granular!.SandboxApproval.Should().BeTrue();
+        granular.Rules.Should().BeFalse();
+        granular.McpElicitations.Should().BeTrue();
+        granular.SkillApproval.Should().BeTrue();
+        granular.RequestPermissions.Should().BeFalse();
     }
 
     [Fact]

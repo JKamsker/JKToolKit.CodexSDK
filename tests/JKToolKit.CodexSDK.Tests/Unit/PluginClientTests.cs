@@ -219,7 +219,11 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ListPluginsAsync_MissingMarketplacePlugins_Throws()
     {
-        using var doc = JsonDocument.Parse("""{"marketplaces":[{"name":"official","path":"C:\\market"}]}""");
+        var marketPath = XPaths.JsonAbs("market");
+        using var doc = JsonDocument.Parse(
+            $$"""
+            {"marketplaces":[{"name":"official","path":"{{marketPath}}"}]}
+            """);
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
@@ -315,35 +319,35 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ReadPluginAsync_MissingRequiredSkillFields_Throws()
     {
+        var marketPath = XPaths.JsonAbs("market");
+        var sourcePath = XPaths.JsonAbs("plugins/plug-1");
         using var doc = JsonDocument.Parse(
-            """
-            {
-              "plugin": {
-                "marketplaceName": "official",
-                "marketplacePath": "C:\\market",
-                "skills": [
-                  {
-                    "name": "skill-a",
-                    "enabled": true
-                  }
+            $@"{{
+              ""plugin"": {{
+                ""marketplaceName"": ""official"",
+                ""marketplacePath"": ""{marketPath}"",
+                ""skills"": [
+                  {{
+                    ""name"": ""skill-a"",
+                    ""enabled"": true
+                  }}
                 ],
-                "summary": {
-                  "id": "plug-1",
-                  "name": "Plugin One",
-                  "installed": true,
-                  "enabled": true,
-                  "authPolicy": "ON_USE",
-                  "installPolicy": "INSTALLED_BY_DEFAULT",
-                  "source": {
-                    "type": "local",
-                    "path": "C:\\plugins\\plug-1"
-                  }
-                },
-                "apps": [],
-                "mcpServers": []
-              }
-            }
-            """);
+                ""summary"": {{
+                  ""id"": ""plug-1"",
+                  ""name"": ""Plugin One"",
+                  ""installed"": true,
+                  ""enabled"": true,
+                  ""authPolicy"": ""ON_USE"",
+                  ""installPolicy"": ""INSTALLED_BY_DEFAULT"",
+                  ""source"": {{
+                    ""type"": ""local"",
+                    ""path"": ""{sourcePath}""
+                  }}
+                }},
+                ""apps"": [],
+                ""mcpServers"": []
+              }}
+            }}");
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
@@ -360,12 +364,14 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ReadPluginAsync_MissingRequiredCollections_Throws()
     {
+        var marketPath = XPaths.JsonAbs("market");
+        var sourcePath = XPaths.JsonAbs("plugins/plug-1");
         using var doc = JsonDocument.Parse(
-            """
+            $$"""
             {
               "plugin": {
                 "marketplaceName": "official",
-                "marketplacePath": "C:\\market",
+                "marketplacePath": "{{marketPath}}",
                 "summary": {
                   "id": "plug-1",
                   "name": "Plugin One",
@@ -375,7 +381,7 @@ public sealed class PluginClientTests
                   "installPolicy": "INSTALLED_BY_DEFAULT",
                   "source": {
                     "type": "local",
-                    "path": "C:\\plugins\\plug-1"
+                    "path": "{{sourcePath}}"
                   }
                 }
               }
@@ -397,12 +403,14 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ReadPluginAsync_InterfaceMissingOptionalCollections_DefaultsToEmpty()
     {
+        var marketPath = XPaths.JsonAbs("market");
+        var sourcePath = XPaths.JsonAbs("plugins/plug-1");
         using var doc = JsonDocument.Parse(
-            """
+            $$"""
             {
               "plugin": {
                 "marketplaceName": "official",
-                "marketplacePath": "C:\\market",
+                "marketplacePath": "{{marketPath}}",
                 "skills": [],
                 "apps": [],
                 "mcpServers": [],
@@ -415,7 +423,7 @@ public sealed class PluginClientTests
                   "installPolicy": "INSTALLED_BY_DEFAULT",
                   "source": {
                     "type": "local",
-                    "path": "C:\\plugins\\plug-1"
+                    "path": "{{sourcePath}}"
                   },
                   "interface": {
                     "displayName": "Plugin One Display"
@@ -649,13 +657,14 @@ public sealed class PluginClientTests
     [Fact]
     public async Task ListPluginsAsync_MissingRequiredPluginFields_Throws()
     {
+        var marketPath = XPaths.JsonAbs("market");
         using var doc = JsonDocument.Parse(
-            """
+            $$"""
             {
               "marketplaces": [
                 {
                   "name": "official",
-                  "path": "C:\\market",
+                  "path": "{{marketPath}}",
                   "plugins": [
                     {
                       "id": "plug-1",

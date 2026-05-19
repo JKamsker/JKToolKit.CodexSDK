@@ -26,9 +26,10 @@ public sealed class ThreadApiParsingTests
         threads[0].SourceKind.Should().Be("cli");
         threads[0].TurnCount.Should().Be(1);
         threads[0].ServiceTier.Should().BeNull();
-        threads[0].Status.Should().NotBeNull();
-        threads[0].Status!.Kind.Should().Be(CodexThreadStatusKind.Active);
-        threads[0].Status.ActiveFlags.Should().Contain("waitingOnUserInput");
+        var status = threads[0].Status;
+        status.Should().NotBeNull();
+        status!.Kind.Should().Be(CodexThreadStatusKind.Active);
+        status.ActiveFlags.Should().Contain("waitingOnUserInput");
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
         threads[1].Path.Should().Contain("rollout-t_2");
         threads[1].SourceKind.Should().Be("subAgentThreadSpawn");
