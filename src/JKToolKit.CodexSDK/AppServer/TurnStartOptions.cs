@@ -24,6 +24,25 @@ public sealed class TurnStartOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets runtime workspace roots used to materialize <c>:workspace_roots</c> for this and subsequent turns.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// Relative paths are resolved by app-server against the effective turn working directory.
+    /// </remarks>
+    public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional turn-scoped execution environments.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// Omit to use the thread sticky environments, pass an empty list to disable environment access for this turn,
+    /// or pass explicit environments to select the first one as the current turn environment.
+    /// </remarks>
+    public IReadOnlyList<TurnEnvironmentOptions>? Environments { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional approval policy.
     /// </summary>
     /// <remarks>
@@ -54,6 +73,15 @@ public sealed class TurnStartOptions
     /// Optional sandbox policy override for this turn and subsequent turns.
     /// </summary>
     public SandboxPolicy? SandboxPolicy { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional named permission profile id for this and subsequent turns.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds and
+    /// cannot be combined with <see cref="SandboxPolicy"/>.
+    /// </remarks>
+    public string? PermissionProfileId { get; set; }
 
     /// <summary>
     /// Gets or sets an optional model identifier.
@@ -133,10 +161,13 @@ public sealed class TurnStartOptions
         {
             Input = Input,
             Cwd = Cwd,
+            RuntimeWorkspaceRoots = RuntimeWorkspaceRoots,
+            Environments = Environments,
             ApprovalPolicy = ApprovalPolicy,
             AskForApproval = AskForApproval,
             ApprovalsReviewer = ApprovalsReviewer,
             SandboxPolicy = SandboxPolicy,
+            PermissionProfileId = PermissionProfileId,
             Model = Model,
             ServiceTier = ServiceTier,
             ClearServiceTier = ClearServiceTier,

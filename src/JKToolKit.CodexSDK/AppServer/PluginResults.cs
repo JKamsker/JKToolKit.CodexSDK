@@ -13,8 +13,16 @@ public sealed class PluginListOptions
     public IReadOnlyList<string>? Cwds { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether remote marketplace sync should be forced.
+    /// Gets or sets the marketplace kinds to include.
     /// </summary>
+    public IReadOnlyList<PluginListMarketplaceKind>? MarketplaceKinds { get; set; }
+
+    /// <summary>
+    /// Gets or sets a legacy value indicating whether remote marketplace sync should be forced.
+    /// </summary>
+    /// <remarks>
+    /// Codex 0.131 removed this request field; the SDK keeps the option for source compatibility and does not send it.
+    /// </remarks>
     public bool? ForceRemoteSync { get; set; }
 }
 
@@ -57,7 +65,12 @@ public sealed class PluginReadOptions
     /// <summary>
     /// Gets or sets the absolute marketplace path that contains the plugin.
     /// </summary>
-    public required string MarketplacePath { get; set; }
+    public string? MarketplacePath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the remote marketplace name that contains the plugin.
+    /// </summary>
+    public string? RemoteMarketplaceName { get; set; }
 
     /// <summary>
     /// Gets or sets the plugin name within the marketplace.
@@ -89,7 +102,12 @@ public sealed class PluginInstallOptions
     /// <summary>
     /// Gets or sets the absolute marketplace path that contains the plugin.
     /// </summary>
-    public required string MarketplacePath { get; set; }
+    public string? MarketplacePath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the remote marketplace name that contains the plugin.
+    /// </summary>
+    public string? RemoteMarketplaceName { get; set; }
 
     /// <summary>
     /// Gets or sets the plugin name within the marketplace.
@@ -97,8 +115,11 @@ public sealed class PluginInstallOptions
     public required string PluginName { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether remote marketplace sync should be forced.
+    /// Gets or sets a legacy value indicating whether remote marketplace sync should be forced.
     /// </summary>
+    /// <remarks>
+    /// Codex 0.131 removed this request field; the SDK keeps the option for source compatibility and does not send it.
+    /// </remarks>
     public bool? ForceRemoteSync { get; set; }
 }
 
@@ -139,8 +160,11 @@ public sealed class PluginUninstallOptions
     public required string PluginId { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether remote marketplace sync should be forced.
+    /// Gets or sets a legacy value indicating whether remote marketplace sync should be forced.
     /// </summary>
+    /// <remarks>
+    /// Codex 0.131 removed this request field; the SDK keeps the option for source compatibility and does not send it.
+    /// </remarks>
     public bool? ForceRemoteSync { get; set; }
 }
 

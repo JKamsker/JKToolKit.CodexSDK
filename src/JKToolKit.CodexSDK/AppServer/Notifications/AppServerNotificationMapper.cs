@@ -206,6 +206,8 @@ internal static partial class AppServerNotificationMapper
             "remoteControl/status/changed" when TryGetRequiredString(p, "status", out var remoteControlStatus)
                 => new RemoteControlStatusChangedNotification(
                     status: remoteControlStatus,
+                    serverName: GetStringOrNull(p, "serverName"),
+                    installationId: GetStringOrNull(p, "installationId"),
                     environmentId: GetStringOrNull(p, "environmentId"),
                     @params: p),
 

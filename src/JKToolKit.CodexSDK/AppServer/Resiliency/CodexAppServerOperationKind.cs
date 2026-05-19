@@ -83,5 +83,15 @@ public enum CodexAppServerOperationKind
     /// <summary>
     /// A user-initiated thread realtime request.
     /// </summary>
-    ThreadRealtime = 15
+    ThreadRealtime = 15,
+
+    /// <summary>
+    /// A user-initiated remote-control request.
+    /// </summary>
+    RemoteControl = 16,
+
+    /// <summary>
+    /// A user-initiated environment request.
+    /// </summary>
+    Environment = 17
 }

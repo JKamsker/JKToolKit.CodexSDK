@@ -18,5 +18,11 @@ public enum CodexApprovalsReviewer
     /// Route approvals to the guardian subagent.
     /// </summary>
     [JsonStringEnumMemberName("guardian_subagent")]
-    GuardianSubagent
+    GuardianSubagent,
+
+    /// <summary>
+    /// Route approvals to upstream automatic approval review.
+    /// </summary>
+    [JsonStringEnumMemberName("auto_review")]
+    AutoReview
 }

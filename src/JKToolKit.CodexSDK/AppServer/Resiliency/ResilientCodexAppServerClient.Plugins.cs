@@ -15,6 +15,27 @@ public sealed partial class ResilientCodexAppServerClient
 
     public Task<PluginUninstallResult> UninstallPluginAsync(PluginUninstallOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.UninstallPluginAsync(options, token), ct);
+
+    public Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.SavePluginShareAsync(options, token), ct);
+
+    public Task<PluginShareUpdateTargetsResult> UpdatePluginShareTargetsAsync(
+        PluginShareUpdateTargetsOptions options,
+        CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.UpdatePluginShareTargetsAsync(options, token), ct);
+
+    public Task<PluginShareListResult> ListPluginSharesAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.ListPluginSharesAsync(token), ct);
+
+    public Task<PluginShareCheckoutResult> CheckoutPluginShareAsync(
+        PluginShareCheckoutOptions options,
+        CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.CheckoutPluginShareAsync(options, token), ct);
+
+    public Task<PluginShareDeleteResult> DeletePluginShareAsync(
+        PluginShareDeleteOptions options,
+        CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.DeletePluginShareAsync(options, token), ct);
 }
 
 #pragma warning restore CS1591

@@ -40,21 +40,36 @@ public sealed class InitializeCapabilitiesTests
     }
 
     [Fact]
+    public void BuildCapabilitiesFromOptions_IncludesRequestAttestation_WhenConvenienceFlagEnabled()
+    {
+        var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions
+        {
+            RequestAttestation = true
+        });
+
+        caps.Should().NotBeNull();
+        caps!.RequestAttestation.Should().BeTrue();
+    }
+
+    [Fact]
     public void BuildCapabilitiesFromOptions_MergesCapabilitiesAndConvenienceFields()
     {
         var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions
         {
             ExperimentalApi = true,
+            RequestAttestation = true,
             OptOutNotificationMethods = ["a", "b", "a"],
             Capabilities = new InitializeCapabilities
             {
                 ExperimentalApi = false,
+                RequestAttestation = false,
                 OptOutNotificationMethods = ["b", "c"]
             }
         });
 
         caps.Should().NotBeNull();
         caps!.ExperimentalApi.Should().BeTrue();
+        caps.RequestAttestation.Should().BeTrue();
         caps.OptOutNotificationMethods.Should().BeEquivalentTo(["a", "b", "c"]);
     }
 
@@ -104,6 +119,18 @@ public sealed class InitializeCapabilitiesTests
     }
 
     [Fact]
+    public void NormalizeCapabilities_PreservesRequestAttestation()
+    {
+        var normalized = CodexAppServerClient.NormalizeCapabilities(new InitializeCapabilities
+        {
+            RequestAttestation = true
+        });
+
+        normalized.Should().NotBeNull();
+        normalized!.RequestAttestation.Should().BeTrue();
+    }
+
+    [Fact]
     public void InitializeParams_Serialization_OmitsCapabilities_WhenNull()
     {
         var json = JsonSerializer.Serialize(
@@ -130,6 +157,21 @@ public sealed class InitializeCapabilitiesTests
 
         json.Should().Contain("\"capabilities\":");
         json.Should().Contain("\"experimentalApi\":true");
+    }
+
+    [Fact]
+    public void InitializeParams_Serialization_IncludesRequestAttestation_WhenEnabled()
+    {
+        var json = JsonSerializer.Serialize(
+            new InitializeParams
+            {
+                ClientInfo = new AppServerClientInfo("id", "name", "1"),
+                Capabilities = new InitializeCapabilities { RequestAttestation = true }
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"capabilities\":");
+        json.Should().Contain("\"requestAttestation\":true");
     }
 
     [Fact]

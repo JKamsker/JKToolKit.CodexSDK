@@ -157,6 +157,16 @@ public readonly record struct PluginSourceType
     public static PluginSourceType Local => new("local");
 
     /// <summary>
+    /// Gets the <c>git</c> source type.
+    /// </summary>
+    public static PluginSourceType Git => new("git");
+
+    /// <summary>
+    /// Gets the <c>remote</c> source type.
+    /// </summary>
+    public static PluginSourceType Remote => new("remote");
+
+    /// <summary>
     /// Parses a plugin source type from a wire value.
     /// </summary>
     public static PluginSourceType Parse(string value) => new(value);
@@ -185,6 +195,73 @@ public readonly record struct PluginSourceType
     /// Converts a <see cref="PluginSourceType"/> to its wire value.
     /// </summary>
     public static implicit operator string(PluginSourceType sourceType) => sourceType.Value;
+
+    /// <summary>
+    /// Returns the underlying wire value.
+    /// </summary>
+    public override string ToString() => Value;
+}
+
+/// <summary>
+/// Represents a plugin availability state.
+/// </summary>
+public readonly record struct PluginAvailability
+{
+    /// <summary>
+    /// Gets the underlying wire value.
+    /// </summary>
+    public string Value { get; }
+
+    private PluginAvailability(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("Plugin availability cannot be empty or whitespace.", nameof(value));
+
+        Value = value;
+    }
+
+    /// <summary>
+    /// Gets the available state.
+    /// </summary>
+    public static PluginAvailability Available => new("AVAILABLE");
+
+    /// <summary>
+    /// Gets the admin-disabled state.
+    /// </summary>
+    public static PluginAvailability DisabledByAdmin => new("DISABLED_BY_ADMIN");
+
+    /// <summary>
+    /// Parses a plugin availability from a wire value.
+    /// </summary>
+    public static PluginAvailability Parse(string value) =>
+        string.Equals(value, "ENABLED", StringComparison.OrdinalIgnoreCase)
+            ? Available
+            : new PluginAvailability(value);
+
+    /// <summary>
+    /// Tries to parse a plugin availability from a wire value.
+    /// </summary>
+    public static bool TryParse(string? value, out PluginAvailability availability)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            availability = default;
+            return false;
+        }
+
+        availability = Parse(value);
+        return true;
+    }
+
+    /// <summary>
+    /// Converts a string to a <see cref="PluginAvailability"/>.
+    /// </summary>
+    public static implicit operator PluginAvailability(string value) => Parse(value);
+
+    /// <summary>
+    /// Converts a <see cref="PluginAvailability"/> to its wire value.
+    /// </summary>
+    public static implicit operator string(PluginAvailability availability) => availability.Value;
 
     /// <summary>
     /// Returns the underlying wire value.

@@ -59,9 +59,14 @@ internal sealed class CodexAppServerTurnsClient
             ThreadId = threadId,
             Input = options.Input.Select(i => i.Wire).ToArray(),
             Cwd = options.Cwd,
+            RuntimeWorkspaceRoots = options.RuntimeWorkspaceRoots,
+            Environments = CodexAppServerWireBuilders.BuildEnvironments(
+                options.Environments,
+                nameof(TurnStartOptions.Environments)),
             ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
             ApprovalsReviewer = options.ApprovalsReviewer,
             SandboxPolicy = options.SandboxPolicy,
+            Permissions = options.PermissionProfileId,
             Model = options.Model?.Value,
             ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
                 options.ServiceTier,

@@ -38,6 +38,16 @@ public sealed class ThreadStartParamsSerializationTests
     }
 
     [Fact]
+    public void Serialize_WritesAutoReviewApprovalsReviewer()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadStartParams { ApprovalsReviewer = CodexApprovalsReviewer.AutoReview },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"approvalsReviewer\":\"auto_review\"");
+    }
+
+    [Fact]
     public void Serialize_WritesSessionStartSource_WhenProvided()
     {
         var json = JsonSerializer.Serialize(
@@ -45,5 +55,29 @@ public sealed class ThreadStartParamsSerializationTests
             CodexAppServerClient.CreateDefaultSerializerOptions());
 
         json.Should().Contain("\"sessionStartSource\":\"clear\"");
+    }
+
+    [Fact]
+    public void Serialize_WritesRuntimeRootsEnvironmentsAndPermissions()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadStartParams
+            {
+                RuntimeWorkspaceRoots = ["C:/repo", "C:/repo/sub"],
+                Environments =
+                [
+                    new TurnEnvironmentParams
+                    {
+                        EnvironmentId = "env-1",
+                        Cwd = "C:/repo"
+                    }
+                ],
+                Permissions = "profile-1"
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"runtimeWorkspaceRoots\":[\"C:/repo\",\"C:/repo/sub\"]");
+        json.Should().Contain("\"environments\":[{\"environmentId\":\"env-1\",\"cwd\":\"C:/repo\"}]");
+        json.Should().Contain("\"permissions\":\"profile-1\"");
     }
 }

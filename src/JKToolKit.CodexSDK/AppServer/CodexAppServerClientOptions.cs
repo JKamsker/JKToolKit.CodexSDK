@@ -82,6 +82,15 @@ public sealed class CodexAppServerClientOptions
     public bool ExperimentalApi { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether to request upstream attestation callbacks during initialization.
+    /// </summary>
+    /// <remarks>
+    /// This enables <c>initialize.params.capabilities.requestAttestation</c>. Configure
+    /// <see cref="ApprovalHandler"/> to handle <c>attestation/generate</c> server requests before enabling it.
+    /// </remarks>
+    public bool RequestAttestation { get; set; }
+
+    /// <summary>
     /// Gets or sets optional notification method names to opt out of during initialization.
     /// </summary>
     /// <remarks>
@@ -132,6 +141,7 @@ public sealed class CodexAppServerClientOptions
         ApprovalHandler = ApprovalHandler,
         Capabilities = Capabilities,
         ExperimentalApi = ExperimentalApi,
+        RequestAttestation = RequestAttestation,
         OptOutNotificationMethods = OptOutNotificationMethods,
         RequestParamsTransformers = RequestParamsTransformers,
         ResponseTransformers = ResponseTransformers,

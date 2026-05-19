@@ -46,9 +46,14 @@ public sealed class PluginClientTests
                         ""defaultPrompt"": [""Open a pull request""],
                         ""capabilities"": [""issues"", ""pull-requests""],
                         ""composerIcon"": ""{iconPath}"",
+                        ""composerIconUrl"": ""https://example.test/icon.png"",
                         ""logo"": ""{logoPath}"",
-                        ""screenshots"": [""{screenshotPath}""]
+                        ""logoUrl"": ""https://example.test/logo.png"",
+                        ""screenshots"": [""{screenshotPath}""],
+                        ""screenshotUrls"": [""https://example.test/screenshot.png""]
                       }},
+                      ""availability"": ""ENABLED"",
+                      ""keywords"": [""review"", ""git""],
                       ""source"": {{
                         ""type"": ""local"",
                         ""path"": ""{sourcePath}""
@@ -76,8 +81,13 @@ public sealed class PluginClientTests
         result.Marketplaces[0].Plugins[0].Interface!.DisplayName.Should().Be("Plugin One Display");
         result.Marketplaces[0].Plugins[0].Interface!.Capabilities.Should().Equal("issues", "pull-requests");
         result.Marketplaces[0].Plugins[0].Interface!.ComposerIconPath.Should().Be(iconPath);
+        result.Marketplaces[0].Plugins[0].Interface!.ComposerIconUrl.Should().Be("https://example.test/icon.png");
         result.Marketplaces[0].Plugins[0].Interface!.LogoPath.Should().Be(logoPath);
+        result.Marketplaces[0].Plugins[0].Interface!.LogoUrl.Should().Be("https://example.test/logo.png");
         result.Marketplaces[0].Plugins[0].Interface!.Screenshots.Should().Equal(screenshotPath);
+        result.Marketplaces[0].Plugins[0].Interface!.ScreenshotUrls.Should().Equal("https://example.test/screenshot.png");
+        result.Marketplaces[0].Plugins[0].AvailabilityValue.Should().Be(PluginAvailability.Available);
+        result.Marketplaces[0].Plugins[0].Keywords.Should().Equal("review", "git");
         result.Marketplaces[0].Plugins[0].SourceInfo.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].SourceInfo!.Type.Should().Be(PluginSourceType.Local);
         result.Marketplaces[0].Plugins[0].SourceInfo!.Path.Should().Be(sourcePath);
@@ -98,6 +108,99 @@ public sealed class PluginClientTests
 
         result.FeaturedPluginIds.Should().BeEmpty();
         result.MarketplaceLoadErrors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListPluginsAsync_SendsMarketplaceKinds_AndOmitsLegacyForceRemoteSync()
+    {
+        using var doc = JsonDocument.Parse("""{"marketplaces":[]}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        await client.ListPluginsAsync(new PluginListOptions
+        {
+            ForceRemoteSync = true,
+            MarketplaceKinds = [PluginListMarketplaceKind.Local, PluginListMarketplaceKind.SharedWithMe]
+        });
+
+        var json = JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        json.Should().Contain("\"marketplaceKinds\":[\"local\",\"shared-with-me\"]");
+        json.Should().NotContain("forceRemoteSync");
+    }
+
+    [Fact]
+    public async Task ListPluginsAsync_ParsesRemoteMarketplaceAndShareMetadata()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "marketplaces": [
+                {
+                  "name": "remote",
+                  "path": null,
+                  "plugins": [
+                    {
+                      "id": "plug-remote",
+                      "remotePluginId": "remote-1",
+                      "localVersion": "1.2.3",
+                      "name": "Remote Plugin",
+                      "installed": false,
+                      "enabled": true,
+                      "authPolicy": "ON_USE",
+                      "installPolicy": "AVAILABLE",
+                      "availability": "AVAILABLE",
+                      "keywords": ["remote"],
+                      "shareContext": {
+                        "remotePluginId": "remote-1",
+                        "remoteVersion": "4.5.6",
+                        "discoverability": "LISTED",
+                        "shareUrl": "https://example.test/share",
+                        "creatorAccountUserId": "user-1",
+                        "creatorName": "Ada",
+                        "sharePrincipals": [
+                          {
+                            "principalType": "user",
+                            "principalId": "user-2",
+                            "role": "reader",
+                            "name": "Grace"
+                          }
+                        ]
+                      },
+                      "interface": {
+                        "displayName": "Remote Plugin",
+                        "capabilities": [],
+                        "screenshots": [],
+                        "screenshotUrls": ["https://example.test/shot.png"],
+                        "composerIconUrl": "https://example.test/icon.png",
+                        "logoUrl": "https://example.test/logo.png"
+                      },
+                      "source": {
+                        "type": "remote"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ListPluginsAsync(new PluginListOptions());
+
+        var marketplace = result.Marketplaces.Should().ContainSingle().Subject;
+        marketplace.Path.Should().BeNull();
+        var plugin = marketplace.Plugins.Should().ContainSingle().Subject;
+        plugin.RemotePluginId.Should().Be("remote-1");
+        plugin.LocalVersion.Should().Be("1.2.3");
+        plugin.SourceInfo.Type.Should().Be(PluginSourceType.Remote);
+        plugin.SourceInfo.Path.Should().BeNull();
+        plugin.ShareContext.Should().NotBeNull();
+        plugin.ShareContext!.RemoteVersion.Should().Be("4.5.6");
+        plugin.ShareContext.Discoverability.Should().Be(PluginShareDiscoverability.Listed);
+        plugin.ShareContext.SharePrincipals.Should().ContainSingle()
+            .Which.Role.Should().Be(PluginSharePrincipalRole.Reader);
+        plugin.Interface!.ScreenshotUrls.Should().Equal("https://example.test/shot.png");
     }
 
     [Fact]
@@ -131,6 +234,7 @@ public sealed class PluginClientTests
     {
         var marketPath = XPaths.JsonAbs("market");
         var pluginSourcePath = XPaths.JsonAbs("plugins/plug-1");
+        var skillPath = XPaths.JsonAbs("skills/a");
         using var doc = JsonDocument.Parse(
             $@"{{
               ""plugin"": {{
@@ -140,7 +244,7 @@ public sealed class PluginClientTests
                 ""skills"": [
                   {{
                     ""name"": ""skill-a"",
-                    ""path"": ""skills/a"",
+                    ""path"": ""{skillPath}"",
                     ""enabled"": true,
                     ""description"": ""desc"",
                     ""interface"": {{
@@ -196,6 +300,7 @@ public sealed class PluginClientTests
         result.Plugin.Summary.Interface!.DisplayName.Should().Be("Plugin One Display");
         result.Plugin.McpServers.Should().BeEmpty();
         result.Plugin.Skills.Should().ContainSingle();
+        result.Plugin.Skills[0].Path.Should().Be(skillPath);
         result.Plugin.Skills[0].Interface.Should().NotBeNull();
         result.Plugin.Skills[0].Interface!.DisplayName.Should().Be("Skill A");
         result.Plugin.Skills[0].Interface!.DefaultPrompt.Should().Be("Explain the failing build");
@@ -249,7 +354,7 @@ public sealed class PluginClientTests
         });
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*path*");
+            .WithMessage("*description*");
     }
 
     [Fact]
@@ -290,7 +395,7 @@ public sealed class PluginClientTests
     }
 
     [Fact]
-    public async Task ReadPluginAsync_InterfaceMissingRequiredCollections_Throws()
+    public async Task ReadPluginAsync_InterfaceMissingOptionalCollections_DefaultsToEmpty()
     {
         using var doc = JsonDocument.Parse(
             """
@@ -322,14 +427,16 @@ public sealed class PluginClientTests
         var rpc = new RecordingRpc { Result = doc.RootElement };
         await using var client = CreateClient(rpc);
 
-        var act = async () => await client.ReadPluginAsync(new PluginReadOptions
+        var result = await client.ReadPluginAsync(new PluginReadOptions
         {
             MarketplacePath = XPaths.Abs("market"),
             PluginName = "plugin-one"
         });
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*capabilities*");
+        result.Plugin.Summary.Interface.Should().NotBeNull();
+        result.Plugin.Summary.Interface!.Capabilities.Should().BeEmpty();
+        result.Plugin.Summary.Interface.Screenshots.Should().BeEmpty();
+        result.Plugin.Summary.Interface.ScreenshotUrls.Should().BeEmpty();
     }
 
     [Fact]
@@ -349,6 +456,194 @@ public sealed class PluginClientTests
         result.AuthPolicyValue.Should().Be(PluginAuthPolicy.OnInstall);
         result.AppsNeedingAuth.Should().BeEmpty();
         rpc.LastMethod.Should().Be("plugin/install");
+    }
+
+    [Fact]
+    public async Task ReadAndInstallPluginAsync_AcceptRemoteMarketplaceName()
+    {
+        var sourcePath = XPaths.JsonAbs("plugins/plug-1");
+        using var readDoc = JsonDocument.Parse(
+            $@"{{
+              ""plugin"": {{
+                ""marketplaceName"": ""remote"",
+                ""marketplacePath"": null,
+                ""skills"": [],
+                ""apps"": [],
+                ""hooks"": [],
+                ""mcpServers"": [],
+                ""summary"": {{
+                  ""id"": ""plug-1"",
+                  ""name"": ""Plugin One"",
+                  ""installed"": true,
+                  ""enabled"": true,
+                  ""authPolicy"": ""ON_USE"",
+                  ""installPolicy"": ""AVAILABLE"",
+                  ""source"": {{ ""type"": ""local"", ""path"": ""{sourcePath}"" }}
+                }}
+              }}
+            }}");
+        var readRpc = new RecordingRpc { Result = readDoc.RootElement };
+        await using var readClient = CreateClient(readRpc);
+
+        await readClient.ReadPluginAsync(new PluginReadOptions
+        {
+            RemoteMarketplaceName = "codex-remote",
+            PluginName = "plugin-one"
+        });
+
+        var readJson = JsonSerializer.Serialize(readRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        readJson.Should().Contain("\"remoteMarketplaceName\":\"codex-remote\"");
+        readJson.Should().NotContain("forceRemoteSync");
+
+        using var installDoc = JsonDocument.Parse("""{"authPolicy":"ON_USE","appsNeedingAuth":[]}""");
+        var installRpc = new RecordingRpc { Result = installDoc.RootElement };
+        await using var installClient = CreateClient(installRpc);
+
+        await installClient.InstallPluginAsync(new PluginInstallOptions
+        {
+            RemoteMarketplaceName = "codex-remote",
+            PluginName = "plugin-one",
+            ForceRemoteSync = true
+        });
+
+        var installJson = JsonSerializer.Serialize(installRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        installJson.Should().Contain("\"remoteMarketplaceName\":\"codex-remote\"");
+        installJson.Should().NotContain("forceRemoteSync");
+    }
+
+    [Fact]
+    public async Task ReadPluginAsync_RequiresExactlyOneMarketplaceSelector()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement };
+        await using var client = CreateClient(rpc);
+
+        var missing = async () => await client.ReadPluginAsync(new PluginReadOptions { PluginName = "plugin-one" });
+        await missing.Should().ThrowAsync<ArgumentException>().WithMessage("*Exactly one*");
+
+        var both = async () => await client.ReadPluginAsync(new PluginReadOptions
+        {
+            MarketplacePath = XPaths.Abs("market"),
+            RemoteMarketplaceName = "remote",
+            PluginName = "plugin-one"
+        });
+        await both.Should().ThrowAsync<ArgumentException>().WithMessage("*Exactly one*");
+        rpc.LastMethod.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task PluginShareMethods_SendExpectedParams_AndParseResponses()
+    {
+        using var saveDoc = JsonDocument.Parse("""{"remotePluginId":"remote-1","shareUrl":"https://example.test/share"}""");
+        var saveRpc = new RecordingRpc { Result = saveDoc.RootElement };
+        await using var saveClient = CreateClient(saveRpc);
+
+        var save = await saveClient.SavePluginShareAsync(new PluginShareSaveOptions
+        {
+            PluginPath = XPaths.Abs("plugins/plug-1"),
+            Discoverability = PluginShareDiscoverability.Unlisted,
+            ShareTargets =
+            [
+                new PluginShareTarget
+                {
+                    PrincipalType = PluginSharePrincipalType.User,
+                    PrincipalId = "user-1",
+                    Role = PluginShareTargetRole.Reader
+                }
+            ]
+        });
+
+        save.RemotePluginId.Should().Be("remote-1");
+        save.ShareUrl.Should().Be("https://example.test/share");
+        JsonSerializer.Serialize(saveRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"discoverability\":\"UNLISTED\"")
+            .And.Contain("\"principalType\":\"user\"");
+
+        using var updateDoc = JsonDocument.Parse(
+            """
+            {
+              "principals": [
+                {
+                  "principalType": "user",
+                  "principalId": "user-1",
+                  "role": "owner",
+                  "name": "Ada"
+                }
+              ],
+              "discoverability": "PRIVATE"
+            }
+            """);
+        var updateRpc = new RecordingRpc { Result = updateDoc.RootElement };
+        await using var updateClient = CreateClient(updateRpc);
+
+        var update = await updateClient.UpdatePluginShareTargetsAsync(new PluginShareUpdateTargetsOptions
+        {
+            RemotePluginId = "remote-1",
+            Discoverability = PluginShareUpdateDiscoverability.Private,
+            ShareTargets = []
+        });
+
+        update.Discoverability.Should().Be(PluginShareDiscoverability.Private);
+        update.Principals.Should().ContainSingle().Which.Role.Should().Be(PluginSharePrincipalRole.Owner);
+        updateRpc.LastMethod.Should().Be("plugin/share/updateTargets");
+
+        using var deleteDoc = JsonDocument.Parse("""{}""");
+        var deleteRpc = new RecordingRpc { Result = deleteDoc.RootElement };
+        await using var deleteClient = CreateClient(deleteRpc);
+
+        await deleteClient.DeletePluginShareAsync(new PluginShareDeleteOptions { RemotePluginId = "remote-1" });
+
+        deleteRpc.LastMethod.Should().Be("plugin/share/delete");
+    }
+
+    [Fact]
+    public async Task PluginShareListAndCheckout_ParseResponses()
+    {
+        using var listDoc = JsonDocument.Parse(
+            $@"{{
+              ""data"": [
+                {{
+                  ""localPluginPath"": ""{XPaths.JsonAbs("plugins/plug-1")}"",
+                  ""plugin"": {{
+                    ""id"": ""plug-1"",
+                    ""remotePluginId"": ""remote-1"",
+                    ""name"": ""Plugin One"",
+                    ""installed"": true,
+                    ""enabled"": true,
+                    ""authPolicy"": ""ON_USE"",
+                    ""installPolicy"": ""AVAILABLE"",
+                    ""source"": {{ ""type"": ""remote"" }}
+                  }}
+                }}
+              ]
+            }}");
+        var listRpc = new RecordingRpc { Result = listDoc.RootElement };
+        await using var listClient = CreateClient(listRpc);
+
+        var list = await listClient.ListPluginSharesAsync();
+
+        list.Data.Should().ContainSingle();
+        list.Data[0].Plugin.RemotePluginId.Should().Be("remote-1");
+        list.Data[0].LocalPluginPath.Should().Be(XPaths.JsonAbs("plugins/plug-1"));
+        listRpc.LastMethod.Should().Be("plugin/share/list");
+
+        using var checkoutDoc = JsonDocument.Parse(
+            $@"{{
+              ""remotePluginId"": ""remote-1"",
+              ""pluginId"": ""plug-1"",
+              ""pluginName"": ""Plugin One"",
+              ""pluginPath"": ""{XPaths.JsonAbs("plugins/plug-1")}"",
+              ""marketplaceName"": ""workspace"",
+              ""marketplacePath"": ""{XPaths.JsonAbs("market")}"",
+              ""remoteVersion"": null
+            }}");
+        var checkoutRpc = new RecordingRpc { Result = checkoutDoc.RootElement };
+        await using var checkoutClient = CreateClient(checkoutRpc);
+
+        var checkout = await checkoutClient.CheckoutPluginShareAsync(new PluginShareCheckoutOptions { RemotePluginId = "remote-1" });
+
+        checkout.PluginId.Should().Be("plug-1");
+        checkout.RemoteVersion.Should().BeNull();
+        checkoutRpc.LastMethod.Should().Be("plugin/share/checkout");
     }
 
     [Fact]
@@ -450,8 +745,9 @@ public sealed class PluginClientTests
         await client.UninstallPluginAsync(new PluginUninstallOptions { PluginId = "plug-1", ForceRemoteSync = true });
 
         rpc.LastMethod.Should().Be("plugin/uninstall");
-        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
-            .Should().Contain("\"pluginId\":\"plug-1\"");
+        var json = JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        json.Should().Contain("\"pluginId\":\"plug-1\"");
+        json.Should().NotContain("forceRemoteSync");
     }
 
     [Fact]

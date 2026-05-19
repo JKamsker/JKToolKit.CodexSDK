@@ -34,6 +34,16 @@ public sealed record class PluginSummaryDescriptor
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets the backend remote plugin identifier when available.
+    /// </summary>
+    public string? RemotePluginId { get; init; }
+
+    /// <summary>
+    /// Gets the local materialized plugin version when available.
+    /// </summary>
+    public string? LocalVersion { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the plugin is already installed.
     /// </summary>
     public bool Installed { get; init; }
@@ -62,6 +72,26 @@ public sealed record class PluginSummaryDescriptor
     /// Gets the typed plugin install policy when the marketplace provides one.
     /// </summary>
     public required PluginInstallPolicy InstallPolicyValue { get; init; }
+
+    /// <summary>
+    /// Gets the plugin availability state.
+    /// </summary>
+    public required string Availability { get; init; }
+
+    /// <summary>
+    /// Gets the typed plugin availability state.
+    /// </summary>
+    public required PluginAvailability AvailabilityValue { get; init; }
+
+    /// <summary>
+    /// Gets remote sharing context associated with this plugin when available.
+    /// </summary>
+    public PluginShareContextDescriptor? ShareContext { get; init; }
+
+    /// <summary>
+    /// Gets marketplace keywords associated with this plugin.
+    /// </summary>
+    public required IReadOnlyList<string> Keywords { get; init; }
 
     /// <summary>
     /// Gets typed plugin interface metadata when the marketplace provides it.
@@ -97,7 +127,7 @@ public sealed record class PluginMarketplace
     /// <summary>
     /// Gets the marketplace file-system path.
     /// </summary>
-    public required string Path { get; init; }
+    public string? Path { get; init; }
 
     /// <summary>
     /// Gets typed marketplace interface metadata when the payload provides it.
@@ -164,7 +194,7 @@ public sealed record class PluginSkillDescriptor
     /// <summary>
     /// Gets the skill path.
     /// </summary>
-    public required string Path { get; init; }
+    public string? Path { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the skill is enabled.
@@ -236,7 +266,7 @@ public sealed record class PluginDetailDescriptor
     /// <summary>
     /// Gets the marketplace path.
     /// </summary>
-    public required string MarketplacePath { get; init; }
+    public string? MarketplacePath { get; init; }
 
     /// <summary>
     /// Gets the MCP servers advertised by the plugin.

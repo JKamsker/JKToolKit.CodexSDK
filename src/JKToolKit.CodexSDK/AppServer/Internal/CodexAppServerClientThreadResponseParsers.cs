@@ -31,6 +31,9 @@ internal static class CodexAppServerClientThreadResponseParsers
         var reasoningEffort = CodexReasoningEffort.TryParse(GetStringOrNull(result, "reasoningEffort"), out var parsedReasoningEffort)
             ? parsedReasoningEffort
             : (CodexReasoningEffort?)null;
+        var runtimeWorkspaceRoots = GetOptionalStringArray(result, "runtimeWorkspaceRoots") ?? Array.Empty<string>();
+        var instructionSources = GetOptionalStringArray(result, "instructionSources") ?? Array.Empty<string>();
+        var activePermissionProfile = ParseActivePermissionProfile(result);
 
         return new CodexThread(
             summary.ThreadId,
@@ -42,7 +45,10 @@ internal static class CodexAppServerClientThreadResponseParsers
             sandbox,
             sandboxRaw,
             serviceTier,
-            reasoningEffort);
+            reasoningEffort,
+            runtimeWorkspaceRoots,
+            instructionSources,
+            activePermissionProfile);
     }
 
     public static CodexThreadReadResult ParseReadResult(JsonElement result, string fallbackThreadId)
@@ -59,6 +65,27 @@ internal static class CodexAppServerClientThreadResponseParsers
             Thread = summary,
             Turns = summary.Turns,
             Raw = result
+        };
+    }
+
+    private static ActivePermissionProfileInfo? ParseActivePermissionProfile(JsonElement result)
+    {
+        if (TryGetObject(result, "activePermissionProfile") is not { } profile)
+        {
+            return null;
+        }
+
+        var id = GetStringOrNull(profile, "id");
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return null;
+        }
+
+        return new ActivePermissionProfileInfo
+        {
+            Id = id,
+            Extends = GetStringOrNull(profile, "extends"),
+            Raw = profile.Clone()
         };
     }
 }

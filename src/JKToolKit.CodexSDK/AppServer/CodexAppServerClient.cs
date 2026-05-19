@@ -29,6 +29,8 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     private readonly CodexAppServerFuzzyFileSearchClient _fuzzyFileSearchClient;
     private readonly CodexAppServerTurnsClient _turnsClient;
     private readonly CodexAppServerCollaborationModesClient _collaborationModesClient;
+    private readonly CodexAppServerRemoteControlClient _remoteControlClient;
+    private readonly CodexAppServerEnvironmentsClient _environmentsClient;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport = new();
 
     internal static bool TryParseExperimentalApiRequiredMessage(string? message, out string descriptor)
@@ -58,6 +60,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         var caps = options.Capabilities;
 
         var experimentalApi = options.ExperimentalApi || caps?.ExperimentalApi == true;
+        var requestAttestation = options.RequestAttestation || caps?.RequestAttestation == true;
 
         var optOut = new List<string>();
         if (caps?.OptOutNotificationMethods is { Count: > 0 })
@@ -78,6 +81,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         return NormalizeCapabilities(new InitializeCapabilities
         {
             ExperimentalApi = experimentalApi,
+            RequestAttestation = requestAttestation,
             OptOutNotificationMethods = optOutNormalized
         });
     }
@@ -90,10 +94,11 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         }
 
         var experimentalApi = capabilities.ExperimentalApi;
+        var requestAttestation = capabilities.RequestAttestation;
         var optOut = capabilities.OptOutNotificationMethods;
         var hasOptOut = optOut is { Count: > 0 };
 
-        if (!experimentalApi && !hasOptOut)
+        if (!experimentalApi && !requestAttestation && !hasOptOut)
         {
             return null;
         }
@@ -101,6 +106,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         return new InitializeCapabilities
         {
             ExperimentalApi = experimentalApi,
+            RequestAttestation = requestAttestation,
             OptOutNotificationMethods = hasOptOut ? optOut : null
         };
     }
@@ -149,6 +155,8 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _filesystemClient = new CodexAppServerFilesystemClient(_core.SendRequestAsync);
         _fuzzyFileSearchClient = new CodexAppServerFuzzyFileSearchClient(_core.SendRequestAsync, experimentalApiEnabled);
         _collaborationModesClient = new CodexAppServerCollaborationModesClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _remoteControlClient = new CodexAppServerRemoteControlClient(_core.SendRequestAsync, experimentalApiEnabled);
+        _environmentsClient = new CodexAppServerEnvironmentsClient(_core.SendRequestAsync, experimentalApiEnabled);
         _turnsClient = new CodexAppServerTurnsClient(
             options,
             _core.SendRequestAsync,

@@ -25,6 +25,25 @@ public sealed class ThreadStartOptions
     public string? Cwd { get; set; }
 
     /// <summary>
+    /// Gets or sets thread-scoped runtime workspace roots used to materialize <c>:workspace_roots</c>.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// Relative paths are resolved by app-server against the effective thread working directory.
+    /// </remarks>
+    public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional sticky execution environments for turns on this thread.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// Omit to use the server default, pass an empty list to disable environment access, or pass explicit
+    /// environments to select the first one as the current turn environment.
+    /// </remarks>
+    public IReadOnlyList<TurnEnvironmentOptions>? Environments { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional service tier override for the thread.
     /// </summary>
     /// <remarks>
@@ -82,6 +101,15 @@ public sealed class ThreadStartOptions
     /// Known values include <c>read-only</c>, <c>workspace-write</c>, and <c>danger-full-access</c>.
     /// </remarks>
     public CodexSandboxMode? Sandbox { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional named permission profile id for the thread.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds and
+    /// cannot be combined with <see cref="Sandbox"/>.
+    /// </remarks>
+    public string? PermissionProfileId { get; set; }
 
     /// <summary>
     /// Optional config overrides (arbitrary JSON object).

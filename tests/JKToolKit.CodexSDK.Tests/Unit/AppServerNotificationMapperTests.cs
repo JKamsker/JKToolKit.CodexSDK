@@ -144,12 +144,16 @@ public sealed class AppServerNotificationMapperTests
             .Should().BeOfType<AppListUpdatedNotification>()
             .Which.Apps.Should().ContainSingle();
 
-        var remoteControlStatus = JsonDocument.Parse("""{"status":"connected","environmentId":"env-1"}""").RootElement;
+        var remoteControlStatus = JsonDocument.Parse(
+            """{"status":"connected","serverName":"codex-remote","installationId":"install-1","environmentId":"env-1"}""").RootElement;
         var remoteControlNotification = AppServerNotificationMapper.Map("remoteControl/status/changed", remoteControlStatus)
             .Should().BeOfType<RemoteControlStatusChangedNotification>()
             .Which;
 
         remoteControlNotification.Status.Should().Be("connected");
+        remoteControlNotification.StatusValue.Should().Be(RemoteControlConnectionStatus.Connected);
+        remoteControlNotification.ServerName.Should().Be("codex-remote");
+        remoteControlNotification.InstallationId.Should().Be("install-1");
         remoteControlNotification.EnvironmentId.Should().Be("env-1");
 
         var requestResolved = JsonDocument.Parse("""{"threadId":"t1","requestId":123}""").RootElement;

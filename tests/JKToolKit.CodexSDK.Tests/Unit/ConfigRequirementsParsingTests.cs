@@ -25,6 +25,7 @@ public sealed class ConfigRequirementsParsingTests
         requirements.FeatureRequirements!["apps"].Should().BeTrue();
         requirements.FeatureRequirements["network"].Should().BeFalse();
         requirements.FeatureRequirements.ContainsKey("ignoreMe").Should().BeFalse();
+        requirements.AllowManagedHooksOnly.Should().BeTrue();
         requirements.EnforceResidency!.Value.Value.Should().Be("us");
 
         requirements.Network.Should().NotBeNull();

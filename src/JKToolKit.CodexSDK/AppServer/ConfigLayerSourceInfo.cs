@@ -28,6 +28,11 @@ public sealed record class ConfigLayerSourceInfo
     public string? File { get; init; }
 
     /// <summary>
+    /// Gets the selected profile-v2 layer name when <see cref="Type"/> is "user" and the layer represents a profile.
+    /// </summary>
+    public string? Profile { get; init; }
+
+    /// <summary>
     /// Gets the absolute path to the <c>.codex</c> folder when <see cref="Type"/> is "project".
     /// </summary>
     public string? DotCodexFolder { get; init; }

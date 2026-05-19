@@ -1123,6 +1123,21 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<PluginUninstallResult> UninstallPluginAsync(PluginUninstallOptions options, CancellationToken ct) =>
             NotSupported<PluginUninstallResult>();
 
+        public Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct) =>
+            NotSupported<PluginShareSaveResult>();
+
+        public Task<PluginShareUpdateTargetsResult> UpdatePluginShareTargetsAsync(PluginShareUpdateTargetsOptions options, CancellationToken ct) =>
+            NotSupported<PluginShareUpdateTargetsResult>();
+
+        public Task<PluginShareListResult> ListPluginSharesAsync(CancellationToken ct) =>
+            NotSupported<PluginShareListResult>();
+
+        public Task<PluginShareCheckoutResult> CheckoutPluginShareAsync(PluginShareCheckoutOptions options, CancellationToken ct) =>
+            NotSupported<PluginShareCheckoutResult>();
+
+        public Task<PluginShareDeleteResult> DeletePluginShareAsync(PluginShareDeleteOptions options, CancellationToken ct) =>
+            NotSupported<PluginShareDeleteResult>();
+
         public Task<CommandExecResult> CommandExecAsync(CommandExecOptions options, CancellationToken ct) =>
             NotSupported<CommandExecResult>();
 
@@ -1188,6 +1203,18 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task StopThreadRealtimeAsync(string threadId, CancellationToken ct) =>
             NotSupported();
+
+        public Task<RemoteControlStatusResult> EnableRemoteControlAsync(CancellationToken ct) =>
+            NotSupported<RemoteControlStatusResult>();
+
+        public Task<RemoteControlStatusResult> DisableRemoteControlAsync(CancellationToken ct) =>
+            NotSupported<RemoteControlStatusResult>();
+
+        public Task<RemoteControlStatusResult> ReadRemoteControlStatusAsync(CancellationToken ct) =>
+            NotSupported<RemoteControlStatusResult>();
+
+        public Task<EnvironmentAddResult> AddEnvironmentAsync(EnvironmentAddOptions options, CancellationToken ct) =>
+            NotSupported<EnvironmentAddResult>();
 
         public ValueTask DisposeAsync()
         {

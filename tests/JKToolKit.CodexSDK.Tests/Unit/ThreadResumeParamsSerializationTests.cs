@@ -20,4 +20,20 @@ public sealed class ThreadResumeParamsSerializationTests
 
         json.Should().Contain("\"approvalsReviewer\":\"guardian_subagent\"");
     }
+
+    [Fact]
+    public void Serialize_WritesRuntimeRootsAndPermissions()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadResumeParams
+            {
+                ThreadId = "thr_123",
+                RuntimeWorkspaceRoots = ["C:/repo"],
+                Permissions = "profile-1"
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"runtimeWorkspaceRoots\":[\"C:/repo\"]");
+        json.Should().Contain("\"permissions\":\"profile-1\"");
+    }
 }

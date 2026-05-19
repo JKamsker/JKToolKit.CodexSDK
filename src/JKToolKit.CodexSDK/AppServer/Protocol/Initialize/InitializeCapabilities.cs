@@ -15,6 +15,13 @@ public sealed record class InitializeCapabilities
     public bool ExperimentalApi { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the client can handle <c>attestation/generate</c> server requests.
+    /// </summary>
+    [JsonPropertyName("requestAttestation")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool RequestAttestation { get; init; }
+
+    /// <summary>
     /// Gets an optional list of notification method names to opt out of.
     /// </summary>
     [JsonPropertyName("optOutNotificationMethods")]

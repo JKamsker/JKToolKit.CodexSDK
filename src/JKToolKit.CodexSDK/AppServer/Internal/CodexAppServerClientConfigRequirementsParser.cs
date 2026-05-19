@@ -75,6 +75,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowedSandboxModes = allowedSandboxModes,
             AllowedWebSearchModes = allowedWebSearchModes,
             FeatureRequirements = featureRequirements,
+            AllowManagedHooksOnly = GetBoolOrNull(req, "allowManagedHooksOnly"),
             EnforceResidency = residency,
             Network = network,
             Raw = req.Clone()

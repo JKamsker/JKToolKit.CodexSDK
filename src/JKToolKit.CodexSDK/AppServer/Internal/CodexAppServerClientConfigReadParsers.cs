@@ -236,6 +236,7 @@ internal static class CodexAppServerClientConfigReadParsers
             Domain = GetStringOrNull(obj, "domain"),
             Key = GetStringOrNull(obj, "key"),
             File = GetStringOrNull(obj, "file"),
+            Profile = GetStringOrNull(obj, "profile"),
             DotCodexFolder = GetStringOrNull(obj, "dotCodexFolder") ?? GetStringOrNull(obj, "dot_codex_folder"),
             Raw = obj
         };

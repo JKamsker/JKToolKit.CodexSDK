@@ -32,6 +32,18 @@ public sealed record class TurnStartParams
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets optional turn-scoped execution environments.
+    /// </summary>
+    [JsonPropertyName("environments")]
+    public IReadOnlyList<TurnEnvironmentParams>? Environments { get; init; }
+
+    /// <summary>
+    /// Gets optional runtime workspace roots for this and subsequent turns.
+    /// </summary>
+    [JsonPropertyName("runtimeWorkspaceRoots")]
+    public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; init; }
+
+    /// <summary>
     /// Gets an optional approval policy override for this turn and subsequent turns.
     /// </summary>
     /// <remarks>
@@ -52,6 +64,12 @@ public sealed record class TurnStartParams
     /// </summary>
     [JsonPropertyName("sandboxPolicy")]
     public SandboxPolicy.SandboxPolicy? SandboxPolicy { get; init; }
+
+    /// <summary>
+    /// Gets an optional named permission profile id.
+    /// </summary>
+    [JsonPropertyName("permissions")]
+    public string? Permissions { get; init; }
 
     /// <summary>
     /// Gets an optional model override for this turn and subsequent turns.

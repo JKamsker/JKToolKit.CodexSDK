@@ -21,7 +21,7 @@ internal sealed class CodexAppServerPluginsClient
             new
             {
                 cwds = options.Cwds,
-                forceRemoteSync = options.ForceRemoteSync
+                marketplaceKinds = BuildMarketplaceKinds(options.MarketplaceKinds, nameof(options))
             },
             ct);
 
@@ -31,7 +31,7 @@ internal sealed class CodexAppServerPluginsClient
     public async Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.MarketplacePath, nameof(options), "MarketplacePath");
+        ValidateMarketplaceSelector(options.MarketplacePath, options.RemoteMarketplaceName, nameof(options));
         if (string.IsNullOrWhiteSpace(options.PluginName))
             throw new ArgumentException("PluginName cannot be empty or whitespace.", nameof(options));
 
@@ -40,6 +40,7 @@ internal sealed class CodexAppServerPluginsClient
             new
             {
                 marketplacePath = options.MarketplacePath,
+                remoteMarketplaceName = options.RemoteMarketplaceName,
                 pluginName = options.PluginName
             },
             ct);
@@ -50,7 +51,7 @@ internal sealed class CodexAppServerPluginsClient
     public async Task<PluginInstallResult> InstallPluginAsync(PluginInstallOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.MarketplacePath, nameof(options), "MarketplacePath");
+        ValidateMarketplaceSelector(options.MarketplacePath, options.RemoteMarketplaceName, nameof(options));
         if (string.IsNullOrWhiteSpace(options.PluginName))
             throw new ArgumentException("PluginName cannot be empty or whitespace.", nameof(options));
 
@@ -59,8 +60,8 @@ internal sealed class CodexAppServerPluginsClient
             new
             {
                 marketplacePath = options.MarketplacePath,
-                pluginName = options.PluginName,
-                forceRemoteSync = options.ForceRemoteSync
+                remoteMarketplaceName = options.RemoteMarketplaceName,
+                pluginName = options.PluginName
             },
             ct);
 
@@ -77,11 +78,134 @@ internal sealed class CodexAppServerPluginsClient
             "plugin/uninstall",
             new
             {
-                pluginId = options.PluginId,
-                forceRemoteSync = options.ForceRemoteSync
+                pluginId = options.PluginId
             },
             ct);
 
         return CodexAppServerClientPluginParsers.ParsePluginUninstallResult(result);
+    }
+
+    public async Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        CodexAppServerPathValidation.ValidateRequiredAbsolutePath(options.PluginPath, nameof(options), "PluginPath");
+        ValidateOptionalWireValue(options.RemotePluginId, "RemotePluginId", nameof(options));
+        ValidateOptionalWireValue(options.Discoverability?.Value, "Discoverability", nameof(options));
+
+        var result = await _sendRequestAsync(
+            "plugin/share/save",
+            new
+            {
+                pluginPath = options.PluginPath,
+                remotePluginId = options.RemotePluginId,
+                discoverability = options.Discoverability?.Value,
+                shareTargets = CodexAppServerClientPluginShareParsers.BuildShareTargetsOrNull(options.ShareTargets, nameof(options))
+            },
+            ct);
+
+        return CodexAppServerClientPluginShareParsers.ParseSaveResult(result);
+    }
+
+    public async Task<PluginShareUpdateTargetsResult> UpdatePluginShareTargetsAsync(
+        PluginShareUpdateTargetsOptions options,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ValidateRequiredWireValue(options.RemotePluginId, "RemotePluginId", nameof(options));
+        ValidateRequiredWireValue(options.Discoverability.Value, "Discoverability", nameof(options));
+
+        var result = await _sendRequestAsync(
+            "plugin/share/updateTargets",
+            new
+            {
+                remotePluginId = options.RemotePluginId,
+                discoverability = options.Discoverability.Value,
+                shareTargets = CodexAppServerClientPluginShareParsers.BuildShareTargets(options.ShareTargets, nameof(options))
+            },
+            ct);
+
+        return CodexAppServerClientPluginShareParsers.ParseUpdateTargetsResult(result);
+    }
+
+    public async Task<PluginShareListResult> ListPluginSharesAsync(CancellationToken ct = default)
+    {
+        var result = await _sendRequestAsync("plugin/share/list", new { }, ct);
+        return CodexAppServerClientPluginShareParsers.ParseListResult(result);
+    }
+
+    public async Task<PluginShareCheckoutResult> CheckoutPluginShareAsync(PluginShareCheckoutOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ValidateRequiredWireValue(options.RemotePluginId, "RemotePluginId", nameof(options));
+
+        var result = await _sendRequestAsync(
+            "plugin/share/checkout",
+            new { remotePluginId = options.RemotePluginId },
+            ct);
+
+        return CodexAppServerClientPluginShareParsers.ParseCheckoutResult(result);
+    }
+
+    public async Task<PluginShareDeleteResult> DeletePluginShareAsync(PluginShareDeleteOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ValidateRequiredWireValue(options.RemotePluginId, "RemotePluginId", nameof(options));
+
+        var result = await _sendRequestAsync(
+            "plugin/share/delete",
+            new { remotePluginId = options.RemotePluginId },
+            ct);
+
+        return CodexAppServerClientPluginShareParsers.ParseDeleteResult(result);
+    }
+
+    private static string[]? BuildMarketplaceKinds(IReadOnlyList<PluginListMarketplaceKind>? kinds, string paramName)
+    {
+        if (kinds is null)
+        {
+            return null;
+        }
+
+        var values = new string[kinds.Count];
+        for (var i = 0; i < kinds.Count; i++)
+        {
+            ValidateRequiredWireValue(kinds[i].Value, $"MarketplaceKinds[{i}]", paramName);
+            values[i] = kinds[i].Value;
+        }
+
+        return values;
+    }
+
+    private static void ValidateMarketplaceSelector(string? marketplacePath, string? remoteMarketplaceName, string paramName)
+    {
+        var hasMarketplacePath = !string.IsNullOrWhiteSpace(marketplacePath);
+        var hasRemoteMarketplaceName = !string.IsNullOrWhiteSpace(remoteMarketplaceName);
+        if (hasMarketplacePath == hasRemoteMarketplaceName)
+        {
+            throw new ArgumentException("Exactly one of MarketplacePath or RemoteMarketplaceName must be provided.", paramName);
+        }
+
+        if (hasMarketplacePath)
+        {
+            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(marketplacePath, paramName, "MarketplacePath");
+        }
+    }
+
+    private static void ValidateOptionalWireValue(string? value, string displayName, string paramName)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        ValidateRequiredWireValue(value, displayName, paramName);
+    }
+
+    private static void ValidateRequiredWireValue(string? value, string displayName, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException($"{displayName} cannot be empty or whitespace.", paramName);
+        }
     }
 }

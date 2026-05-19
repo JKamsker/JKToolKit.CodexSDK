@@ -69,6 +69,11 @@ public sealed record class PluginInterfaceMetadata
     public required IReadOnlyList<string> Screenshots { get; init; }
 
     /// <summary>
+    /// Gets the advertised remote screenshot URLs.
+    /// </summary>
+    public required IReadOnlyList<string> ScreenshotUrls { get; init; }
+
+    /// <summary>
     /// Gets the optional privacy policy URL.
     /// </summary>
     public string? PrivacyPolicyUrl { get; init; }
@@ -89,6 +94,11 @@ public sealed record class PluginInterfaceMetadata
     public string? ComposerIconPath { get; init; }
 
     /// <summary>
+    /// Gets the optional remote composer icon URL.
+    /// </summary>
+    public string? ComposerIconUrl { get; init; }
+
+    /// <summary>
     /// Gets the optional composer icon payload.
     /// </summary>
     public JsonElement? ComposerIcon { get; init; }
@@ -97,6 +107,11 @@ public sealed record class PluginInterfaceMetadata
     /// Gets the optional logo asset path.
     /// </summary>
     public string? LogoPath { get; init; }
+
+    /// <summary>
+    /// Gets the optional remote logo URL.
+    /// </summary>
+    public string? LogoUrl { get; init; }
 
     /// <summary>
     /// Gets the optional logo payload.
@@ -164,6 +179,21 @@ public sealed record class PluginSourceDescriptor
     /// Gets the source asset path when the payload provides one.
     /// </summary>
     public string? Path { get; init; }
+
+    /// <summary>
+    /// Gets the Git source URL when the payload provides one.
+    /// </summary>
+    public string? Url { get; init; }
+
+    /// <summary>
+    /// Gets the Git source ref name when the payload provides one.
+    /// </summary>
+    public string? RefName { get; init; }
+
+    /// <summary>
+    /// Gets the Git source SHA when the payload provides one.
+    /// </summary>
+    public string? Sha { get; init; }
 
     /// <summary>
     /// Gets the raw source payload.

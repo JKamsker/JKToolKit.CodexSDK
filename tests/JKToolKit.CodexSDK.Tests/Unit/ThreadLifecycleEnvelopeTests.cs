@@ -48,4 +48,35 @@ public sealed class ThreadLifecycleEnvelopeTests
         thread.ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
         thread.Sandbox.Should().Be(CodexSandboxMode.DangerFullAccess);
     }
+
+    [Fact]
+    public async Task StartThreadAsync_ReturnsRuntimeRootsInstructionSourcesAndPermissionProfile()
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(
+            """
+            {
+              "thread": {
+                "id": "t_started"
+              },
+              "runtimeWorkspaceRoots": ["C:/repo", "C:/repo/sub"],
+              "instructionSources": ["C:/repo/AGENTS.md"],
+              "activePermissionProfile": {
+                "id": "profile-1",
+                "extends": "base"
+              }
+            }
+            """);
+        var response = doc.RootElement.Clone();
+        var client = new CodexAppServerThreadsClient(
+            sendRequestAsync: (_, _, _) => Task.FromResult(response),
+            experimentalApiEnabled: () => false);
+
+        var thread = await client.StartThreadAsync(new ThreadStartOptions());
+
+        thread.RuntimeWorkspaceRoots.Should().Equal("C:/repo", "C:/repo/sub");
+        thread.InstructionSources.Should().Equal("C:/repo/AGENTS.md");
+        thread.ActivePermissionProfile.Should().NotBeNull();
+        thread.ActivePermissionProfile!.Id.Should().Be("profile-1");
+        thread.ActivePermissionProfile.Extends.Should().Be("base");
+    }
 }

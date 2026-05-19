@@ -51,6 +51,12 @@ public sealed record class ThreadForkParams
     public string? Cwd { get; init; }
 
     /// <summary>
+    /// Gets optional thread-scoped runtime workspace roots.
+    /// </summary>
+    [JsonPropertyName("runtimeWorkspaceRoots")]
+    public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; init; }
+
+    /// <summary>
     /// Gets an optional approval policy override.
     /// </summary>
     [JsonPropertyName("approvalPolicy")]
@@ -70,6 +76,12 @@ public sealed record class ThreadForkParams
     /// </remarks>
     [JsonPropertyName("sandbox")]
     public string? Sandbox { get; init; }
+
+    /// <summary>
+    /// Gets an optional named permission profile id.
+    /// </summary>
+    [JsonPropertyName("permissions")]
+    public string? Permissions { get; init; }
 
     /// <summary>
     /// Gets optional config overrides (raw JSON object).

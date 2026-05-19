@@ -33,7 +33,7 @@ public sealed class ConfigReadWrapperTests
             {
                 model = new
                 {
-                    name = new { type = "user", file = "C:/Users/me/.codex/config.toml" },
+                    name = new { type = "user", file = "C:/Users/me/.codex/config.toml", profile = "work" },
                     version = "1"
                 }
             },
@@ -85,6 +85,7 @@ public sealed class ConfigReadWrapperTests
         result.McpServers["docs"].Url.Should().Be("https://example.com/mcp");
         result.McpServers["docs"].BearerTokenEnvVar.Should().Be("MCP_TOKEN");
         result.McpServers["docs"].Enabled.Should().BeTrue();
+        result.Origins!["model"].Name.Profile.Should().Be("work");
     }
 
     private sealed class FakeProcess : IStdioProcess

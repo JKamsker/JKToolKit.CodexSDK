@@ -54,6 +54,21 @@ public sealed record class CodexThread
     public CodexServiceTier? ServiceTier { get; }
 
     /// <summary>
+    /// Gets the thread-scoped runtime workspace roots returned by the lifecycle response.
+    /// </summary>
+    public IReadOnlyList<string> RuntimeWorkspaceRoots { get; }
+
+    /// <summary>
+    /// Gets instruction source paths currently loaded for this thread.
+    /// </summary>
+    public IReadOnlyList<string> InstructionSources { get; }
+
+    /// <summary>
+    /// Gets the active permission profile identity returned by the lifecycle response, when present.
+    /// </summary>
+    public ActivePermissionProfileInfo? ActivePermissionProfile { get; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the lifecycle response.
     /// </summary>
     public JsonElement Raw { get; }
@@ -71,7 +86,10 @@ public sealed record class CodexThread
         CodexSandboxMode? sandbox = null,
         JsonElement? sandboxRaw = null,
         CodexServiceTier? serviceTier = null,
-        CodexReasoningEffort? reasoningEffort = null)
+        CodexReasoningEffort? reasoningEffort = null,
+        IReadOnlyList<string>? runtimeWorkspaceRoots = null,
+        IReadOnlyList<string>? instructionSources = null,
+        ActivePermissionProfileInfo? activePermissionProfile = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Thread = thread ?? new CodexThreadSummary
@@ -86,6 +104,9 @@ public sealed record class CodexThread
         SandboxRaw = sandboxRaw;
         ReasoningEffort = reasoningEffort;
         ServiceTier = serviceTier;
+        RuntimeWorkspaceRoots = runtimeWorkspaceRoots ?? Array.Empty<string>();
+        InstructionSources = instructionSources ?? Array.Empty<string>();
+        ActivePermissionProfile = activePermissionProfile;
         Raw = raw;
     }
 }

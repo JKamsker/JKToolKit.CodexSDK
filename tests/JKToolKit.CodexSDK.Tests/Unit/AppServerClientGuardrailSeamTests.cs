@@ -6,6 +6,7 @@ using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
 using Microsoft.Extensions.Logging.Abstractions;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
+using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -35,6 +36,48 @@ public sealed class AppServerClientGuardrailSeamTests
         });
 
         await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task StartThread_WithRuntimeWorkspaceRoots_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StartThreadAsync(new ThreadStartOptions
+        {
+            RuntimeWorkspaceRoots = ["C:/repo"]
+        });
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task StartThread_WithSandboxAndPermissionProfile_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StartThreadAsync(new ThreadStartOptions
+        {
+            Sandbox = CodexSandboxMode.WorkspaceWrite,
+            PermissionProfileId = "profile-1"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Sandbox*PermissionProfileId*");
         rpc.RequestCount.Should().Be(0);
     }
 
@@ -233,6 +276,43 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task StartThread_WithRuntimeRootsEnvironmentsAndPermissions_WhenExperimentalEnabled_SendsThreadStart()
+    {
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var thread = await client.StartThreadAsync(new ThreadStartOptions
+        {
+            RuntimeWorkspaceRoots = ["C:/repo", "C:/repo/sub"],
+            Environments =
+            [
+                new TurnEnvironmentOptions
+                {
+                    EnvironmentId = "env-1",
+                    Cwd = "C:/repo"
+                }
+            ],
+            PermissionProfileId = "profile-1"
+        });
+
+        thread.Id.Should().Be("thr_1");
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/start");
+        var p = rpc.LastParams.Should().BeOfType<ThreadStartParams>().Subject;
+        p.RuntimeWorkspaceRoots.Should().Equal("C:/repo", "C:/repo/sub");
+        p.Environments.Should().ContainSingle();
+        p.Environments![0].EnvironmentId.Should().Be("env-1");
+        p.Permissions.Should().Be("profile-1");
+    }
+
+    [Fact]
     public async Task StartTurn_WithApprovalsReviewer_SendsTypedReviewerValue()
     {
         using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
@@ -255,6 +335,61 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.LastMethod.Should().Be("turn/start");
         rpc.LastParams.Should().BeOfType<TurnStartParams>();
         ((TurnStartParams)rpc.LastParams!).ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
+    }
+
+    [Fact]
+    public async Task StartTurn_WithRuntimeWorkspaceRoots_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            RuntimeWorkspaceRoots = ["C:/repo"]
+        });
+
+        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task StartTurn_WithRuntimeRootsEnvironmentsAndPermissions_WhenExperimentalEnabled_SendsTurnStart()
+    {
+        using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            RuntimeWorkspaceRoots = ["C:/repo"],
+            Environments =
+            [
+                new TurnEnvironmentOptions
+                {
+                    EnvironmentId = "env-1",
+                    Cwd = "C:/repo"
+                }
+            ],
+            PermissionProfileId = "profile-1"
+        });
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("turn/start");
+        var p = rpc.LastParams.Should().BeOfType<TurnStartParams>().Subject;
+        p.RuntimeWorkspaceRoots.Should().Equal("C:/repo");
+        p.Environments.Should().ContainSingle();
+        p.Permissions.Should().Be("profile-1");
     }
 
     [Fact]

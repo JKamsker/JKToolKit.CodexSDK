@@ -34,6 +34,11 @@ public sealed record class ConfigRequirements
     public IReadOnlyDictionary<string, bool>? FeatureRequirements { get; init; }
 
     /// <summary>
+    /// Gets whether unmanaged hooks are disabled while managed hook requirements are active.
+    /// </summary>
+    public bool? AllowManagedHooksOnly { get; init; }
+
+    /// <summary>
     /// Gets the enforced residency requirement, when present.
     /// </summary>
     public CodexResidencyRequirement? EnforceResidency { get; init; }
