@@ -21,12 +21,20 @@ internal enum ThreadGoalStatus
     Paused = 1,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"blocked")]
+    Blocked = 2,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"usageLimited")]
+    UsageLimited = 3,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"budgetLimited")]
-    BudgetLimited = 2,
+    BudgetLimited = 4,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"complete")]
-    Complete = 3,
+    Complete = 5,
 
 
 }

@@ -9,12 +9,21 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Codex owns sandbox construction for this profile.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PermissionProfile
+internal partial class PluginInstalledParams
 {
+
+    /// <summary>
+    /// Optional working directories used to discover repo marketplaces.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cwds")]
+    public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
+
+    /// <summary>
+    /// Additional uninstalled plugin names that should be returned when present locally. This is used by mention surfaces that intentionally expose install entrypoints.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("installSuggestionPluginNames")]
+    public System.Collections.Generic.ICollection<string>? InstallSuggestionPluginNames { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
