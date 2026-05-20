@@ -10,8 +10,14 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class FileSystem2
+internal partial class PluginInstalledResponse
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaceLoadErrors")]
+    public System.Collections.Generic.ICollection<MarketplaceLoadErrorInfo>? MarketplaceLoadErrors { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaces")]
+    public System.Collections.Generic.ICollection<PluginMarketplaceEntry> Marketplaces { get; set; } = new System.Collections.ObjectModel.Collection<PluginMarketplaceEntry>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

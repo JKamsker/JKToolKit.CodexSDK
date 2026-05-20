@@ -14,7 +14,7 @@ internal partial class RequestPermissionProfile
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("fileSystem")]
-    public FileSystem2? FileSystem { get; set; } = default!;
+    public FileSystem? FileSystem { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("network")]
     public Network? Network { get; set; } = default!;
