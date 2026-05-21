@@ -12,7 +12,7 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 /// <summary>
 /// There are two ways to fork a thread: 1. By thread_id: load the thread from disk by thread_id and fork it into a new thread. 2. By path: load the thread from disk by path and fork it into a new thread.
 /// <br/>
-/// <br/>If using path, the thread_id param will be ignored.
+/// <br/>If using a non-empty path, the thread_id param will be ignored. Empty string path values are treated as absent.
 /// <br/>
 /// <br/>Prefer using thread_id whenever possible.
 /// </summary>

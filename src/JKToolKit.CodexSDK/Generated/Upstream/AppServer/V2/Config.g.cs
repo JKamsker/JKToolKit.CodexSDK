@@ -49,6 +49,9 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("model_auto_compact_token_limit")]
     public long? Model_auto_compact_token_limit { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("model_auto_compact_token_limit_scope")]
+    public Model_auto_compact_token_limit_scope? Model_auto_compact_token_limit_scope { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("model_context_window")]
     public long? Model_context_window { get; set; } = default!;
 

@@ -12,7 +12,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 /// <summary>
 /// There are three ways to resume a thread: 1. By thread_id: load the thread from disk by thread_id and resume it. 2. By history: instantiate the thread from memory and resume it. 3. By path: load the thread from disk by path and resume it.
 /// <br/>
-/// <br/>The precedence is: history &gt; path &gt; thread_id. If using history or path, the thread_id param will be ignored.
+/// <br/>For non-running threads, the precedence is: history &gt; non-empty path &gt; thread_id. If using history or a non-empty path for a non-running thread, the thread_id param will be ignored.
+/// <br/>
+/// <br/>If thread_id identifies a running thread, app-server rejoins that thread and treats a non-empty path as a consistency check against the active rollout path. Empty string path values are treated as absent.
 /// <br/>
 /// <br/>Prefer using thread_id whenever possible.
 /// </summary>

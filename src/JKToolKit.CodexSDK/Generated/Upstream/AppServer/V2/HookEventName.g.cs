@@ -41,8 +41,16 @@ internal enum HookEventName
     UserPromptSubmit = 6,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"subagentStart")]
+    SubagentStart = 7,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"subagentStop")]
+    SubagentStop = 8,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"stop")]
-    Stop = 7,
+    Stop = 9,
 
 
 }

@@ -25,6 +25,12 @@ internal partial class ExperimentalFeatureListParams
     [System.Text.Json.Serialization.JsonPropertyName("limit")]
     public int? Limit { get; set; } = default!;
 
+    /// <summary>
+    /// Optional loaded thread id. Pass this when showing feature state for an existing thread so enablement is computed from that thread's refreshed config, including project-local config for the thread's cwd.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

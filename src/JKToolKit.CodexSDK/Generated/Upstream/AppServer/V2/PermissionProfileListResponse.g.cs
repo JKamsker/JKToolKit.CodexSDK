@@ -10,20 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ActivePermissionProfile
+internal partial class PermissionProfileListResponse
 {
 
-    /// <summary>
-    /// Parent profile identifier from the selected permissions profile's `extends` setting, when present.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("extends")]
-    public string? Extends { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("data")]
+    public System.Collections.Generic.ICollection<PermissionProfileSummary> Data { get; set; } = new System.Collections.ObjectModel.Collection<PermissionProfileSummary>();
 
     /// <summary>
-    /// Identifier from `default_permissions` or the implicit built-in default, such as `:workspace` or a user-defined `[permissions.&lt;id&gt;]` profile.
+    /// Opaque cursor to pass to the next call to continue after the last item. If None, there are no more items to return.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

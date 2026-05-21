@@ -10,20 +10,14 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ActivePermissionProfile
+internal partial class PluginInstalledResponse
 {
 
-    /// <summary>
-    /// Parent profile identifier from the selected permissions profile's `extends` setting, when present.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("extends")]
-    public string? Extends { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaceLoadErrors")]
+    public System.Collections.Generic.ICollection<MarketplaceLoadErrorInfo>? MarketplaceLoadErrors { get; set; } = default!;
 
-    /// <summary>
-    /// Identifier from `default_permissions` or the implicit built-in default, such as `:workspace` or a user-defined `[permissions.&lt;id&gt;]` profile.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("marketplaces")]
+    public System.Collections.Generic.ICollection<PluginMarketplaceEntry> Marketplaces { get; set; } = new System.Collections.ObjectModel.Collection<PluginMarketplaceEntry>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

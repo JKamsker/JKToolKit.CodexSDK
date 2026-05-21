@@ -13,20 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal enum ImageDetail
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"auto")]
-    Auto = 0,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"low")]
-    Low = 1,
-
-
     [System.Runtime.Serialization.EnumMember(Value = @"high")]
-    High = 2,
+    High = 0,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"original")]
-    Original = 3,
+    Original = 1,
 
 
 }

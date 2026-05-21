@@ -9,21 +9,12 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Selects which part of the active context is charged against `model_auto_compact_token_limit`.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ActivePermissionProfile
+internal partial class AutoCompactTokenLimitScope
 {
-
-    /// <summary>
-    /// Parent profile identifier from the selected permissions profile's `extends` setting, when present.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("extends")]
-    public string? Extends { get; set; } = default!;
-
-    /// <summary>
-    /// Identifier from `default_permissions` or the implicit built-in default, such as `:workspace` or a user-defined `[permissions.&lt;id&gt;]` profile.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

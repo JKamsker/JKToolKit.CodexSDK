@@ -35,7 +35,7 @@ internal partial class TurnStartParams
     /// Override the reasoning effort for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("effort")]
-    public Effort? Effort { get; set; } = default!;
+    public Effort2? Effort { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("input")]
     public System.Collections.Generic.ICollection<Content2> Input { get; set; } = new System.Collections.ObjectModel.Collection<Content2>();
@@ -56,7 +56,7 @@ internal partial class TurnStartParams
     /// Override the personality for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
-    public Personality4? Personality { get; set; } = default!;
+    public Personality5? Personality { get; set; } = default!;
 
     /// <summary>
     /// Override the sandbox policy for this turn and subsequent turns.
@@ -74,7 +74,7 @@ internal partial class TurnStartParams
     /// Override the reasoning summary for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("summary")]
-    public Summary? Summary { get; set; } = default!;
+    public Summary2? Summary { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
