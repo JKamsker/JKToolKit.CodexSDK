@@ -10,20 +10,26 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ActivePermissionProfile
+internal partial class PermissionProfileListParams
 {
 
     /// <summary>
-    /// Parent profile identifier from the selected permissions profile's `extends` setting, when present.
+    /// Opaque pagination cursor returned by a previous call.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("extends")]
-    public string? Extends { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("cursor")]
+    public string? Cursor { get; set; } = default!;
 
     /// <summary>
-    /// Identifier from `default_permissions` or the implicit built-in default, such as `:workspace` or a user-defined `[permissions.&lt;id&gt;]` profile.
+    /// Optional working directory to resolve project config layers.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
+    public string? Cwd { get; set; } = default!;
+
+    /// <summary>
+    /// Optional page size; defaults to the full result set.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("limit")]
+    public int? Limit { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -21,8 +21,8 @@ internal enum FileSystemAccessMode
     Write = 1,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"none")]
-    None = 2,
+    [System.Runtime.Serialization.EnumMember(Value = @"deny")]
+    Deny = 2,
 
 
 }

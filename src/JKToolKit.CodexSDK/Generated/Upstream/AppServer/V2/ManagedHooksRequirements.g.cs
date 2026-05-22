@@ -34,6 +34,12 @@ internal partial class ManagedHooksRequirements
     [System.Text.Json.Serialization.JsonPropertyName("Stop")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> Stop { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("SubagentStart")]
+    public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> SubagentStart { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("SubagentStop")]
+    public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> SubagentStop { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
+
     [System.Text.Json.Serialization.JsonPropertyName("UserPromptSubmit")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> UserPromptSubmit { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 

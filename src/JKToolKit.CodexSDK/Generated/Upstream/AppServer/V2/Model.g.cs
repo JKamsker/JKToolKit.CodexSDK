@@ -26,6 +26,12 @@ internal partial class Model
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ReasoningEffort>))]
     public ReasoningEffort DefaultReasoningEffort { get; set; } = default!;
 
+    /// <summary>
+    /// Catalog default service tier id for this model, when one is configured.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("defaultServiceTier")]
+    public string? DefaultServiceTier { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string Description { get; set; } = default!;
 

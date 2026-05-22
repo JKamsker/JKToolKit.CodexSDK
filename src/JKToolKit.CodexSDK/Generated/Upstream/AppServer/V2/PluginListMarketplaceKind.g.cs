@@ -17,12 +17,16 @@ internal enum PluginListMarketplaceKind
     Local = 0,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"vertical")]
+    Vertical = 1,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"workspace-directory")]
-    WorkspaceDirectory = 1,
+    WorkspaceDirectory = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"shared-with-me")]
-    SharedWithMe = 2,
+    SharedWithMe = 3,
 
 
 }

@@ -44,7 +44,7 @@ internal partial class ThreadStartParams
     public string? ModelProvider { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
-    public Personality3? Personality { get; set; } = default!;
+    public Personality4? Personality { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
     public Sandbox4? Sandbox { get; set; } = default!;
