@@ -17,7 +17,7 @@ internal partial class ThreadReadParams
     /// When true, include turns and their items from rollout history.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("includeTurns")]
-    public bool? IncludeTurns { get; set; } = false;
+    public bool? IncludeTurns { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

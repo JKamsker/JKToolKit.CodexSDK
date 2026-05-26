@@ -20,7 +20,7 @@ internal partial class FeedbackUploadParams
     public System.Collections.Generic.ICollection<string>? ExtraLogFiles { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("includeLogs")]
-    public bool IncludeLogs { get; set; } = default!;
+    public bool? IncludeLogs { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("reason")]
     public string? Reason { get; set; } = default!;
