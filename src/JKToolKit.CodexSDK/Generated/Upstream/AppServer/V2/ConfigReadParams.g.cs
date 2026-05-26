@@ -20,7 +20,7 @@ internal partial class ConfigReadParams
     public string? Cwd { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("includeLayers")]
-    public bool? IncludeLayers { get; set; } = false;
+    public bool? IncludeLayers { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

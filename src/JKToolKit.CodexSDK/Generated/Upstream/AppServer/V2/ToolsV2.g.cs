@@ -14,7 +14,7 @@ internal partial class ToolsV2
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("web_search")]
-    public Web_search3? Web_search { get; set; } = default!;
+    public Web_search2? Web_search { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

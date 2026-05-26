@@ -19,7 +19,7 @@ internal partial class GetAccountParams
     /// <br/>In managed auth mode this triggers the normal refresh-token flow. In external auth mode this flag is ignored. Clients should refresh tokens themselves and call `account/login/start` with `chatgptAuthTokens`.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("refreshToken")]
-    public bool? RefreshToken { get; set; } = false;
+    public bool? RefreshToken { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

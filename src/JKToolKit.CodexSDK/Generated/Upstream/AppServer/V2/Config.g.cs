@@ -67,12 +67,6 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("model_verbosity")]
     public Model_verbosity? Model_verbosity { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("profile")]
-    public string? Profile { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("profiles")]
-    public System.Collections.Generic.IDictionary<string, ProfileV2>? Profiles { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("review_model")]
     public string? Review_model { get; set; } = default!;
 
