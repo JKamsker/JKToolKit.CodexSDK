@@ -19,13 +19,19 @@ public sealed class ConfigRequirementsParsingTests
         requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never", "on-request");
         requirements.AllowedAskForApproval.Should().NotBeNull();
         requirements.AllowedAskForApproval!.Select(a => a.Policy!.Value).Should().Equal("never", "on-request");
+        requirements.AllowedApprovalsReviewers!.Should().Equal(CodexApprovalsReviewer.User, CodexApprovalsReviewer.AutoReview);
         requirements.AllowedSandboxModes!.Select(m => m.Value).Should().Equal("read-only", "workspace-write");
+        requirements.AllowedPermissionProfileIds!.Should().Equal(":read-only", "managed");
         requirements.AllowedWebSearchModes!.Select(m => m.Value).Should().Equal("disabled", "cached", "live");
         requirements.FeatureRequirements.Should().NotBeNull();
         requirements.FeatureRequirements!["apps"].Should().BeTrue();
         requirements.FeatureRequirements["network"].Should().BeFalse();
         requirements.FeatureRequirements.ContainsKey("ignoreMe").Should().BeFalse();
         requirements.AllowManagedHooksOnly.Should().BeTrue();
+        requirements.AllowAppshots.Should().BeFalse();
+        requirements.ComputerUse.Should().NotBeNull();
+        requirements.ComputerUse!.AllowLockedComputerUse.Should().BeTrue();
+        requirements.Hooks.Should().NotBeNull();
         requirements.EnforceResidency!.Value.Value.Should().Be("us");
 
         requirements.Network.Should().NotBeNull();

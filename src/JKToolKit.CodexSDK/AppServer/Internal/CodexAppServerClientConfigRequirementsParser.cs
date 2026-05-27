@@ -48,6 +48,12 @@ internal static class CodexAppServerClientConfigRequirementsParser
             .Select(m => m!.Value)
             .ToArray();
 
+        var allowedApprovalsReviewers = GetOptionalStringArray(req, "allowedApprovalsReviewers")
+            ?.Select(CodexApprovalsReviewerParser.ParseOrNull)
+            .Where(r => r.HasValue)
+            .Select(r => r!.Value)
+            .ToArray();
+
         var allowedWebSearchModes = GetOptionalStringArray(req, "allowedWebSearchModes")
             ?.Select(s => CodexWebSearchMode.TryParse(s, out var w) ? w : (CodexWebSearchMode?)null)
             .Where(w => w.HasValue)
@@ -72,10 +78,21 @@ internal static class CodexAppServerClientConfigRequirementsParser
         {
             AllowedApprovalPolicies = allowedApprovalPolicyValues?.ToArray(),
             AllowedAskForApproval = allowedAskForApprovalValues?.ToArray(),
+            AllowedApprovalsReviewers = allowedApprovalsReviewers,
             AllowedSandboxModes = allowedSandboxModes,
+            AllowedPermissionProfileIds = GetOptionalStringArray(req, "allowedPermissions"),
             AllowedWebSearchModes = allowedWebSearchModes,
             FeatureRequirements = featureRequirements,
             AllowManagedHooksOnly = GetBoolOrNull(req, "allowManagedHooksOnly"),
+            AllowAppshots = GetBoolOrNull(req, "allowAppshots"),
+            ComputerUse = TryGetObject(req, "computerUse") is { } computerUse
+                ? new ComputerUseRequirements
+                {
+                    AllowLockedComputerUse = GetBoolOrNull(computerUse, "allowLockedComputerUse"),
+                    Raw = computerUse.Clone()
+                }
+                : null,
+            Hooks = TryGetObject(req, "hooks")?.Clone(),
             EnforceResidency = residency,
             Network = network,
             Raw = req.Clone()

@@ -19,9 +19,19 @@ public sealed record class ConfigRequirements
     public IReadOnlyList<CodexAskForApproval>? AllowedAskForApproval { get; init; }
 
     /// <summary>
+    /// Gets the allow-list of approval reviewers, when present.
+    /// </summary>
+    public IReadOnlyList<CodexApprovalsReviewer>? AllowedApprovalsReviewers { get; init; }
+
+    /// <summary>
     /// Gets the allow-list of sandbox modes, when present.
     /// </summary>
     public IReadOnlyList<CodexSandboxMode>? AllowedSandboxModes { get; init; }
+
+    /// <summary>
+    /// Gets the allow-list of named permission profiles, when present.
+    /// </summary>
+    public IReadOnlyList<string>? AllowedPermissionProfileIds { get; init; }
 
     /// <summary>
     /// Gets the allow-list of web search modes, when present.
@@ -39,6 +49,21 @@ public sealed record class ConfigRequirements
     public bool? AllowManagedHooksOnly { get; init; }
 
     /// <summary>
+    /// Gets whether app snapshots are allowed by policy.
+    /// </summary>
+    public bool? AllowAppshots { get; init; }
+
+    /// <summary>
+    /// Gets computer-use requirements, when present.
+    /// </summary>
+    public ComputerUseRequirements? ComputerUse { get; init; }
+
+    /// <summary>
+    /// Gets managed hook requirements as raw JSON, when present.
+    /// </summary>
+    public JsonElement? Hooks { get; init; }
+
+    /// <summary>
     /// Gets the enforced residency requirement, when present.
     /// </summary>
     public CodexResidencyRequirement? EnforceResidency { get; init; }
@@ -50,6 +75,22 @@ public sealed record class ConfigRequirements
     /// Upstream may gate this field behind experimental API capabilities.
     /// </remarks>
     public NetworkRequirements? Network { get; init; }
+
+    /// <summary>
+    /// Gets the raw JSON requirements payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents policy gates for computer-use flows.
+/// </summary>
+public sealed record class ComputerUseRequirements
+{
+    /// <summary>
+    /// Gets whether locked-computer use is allowed.
+    /// </summary>
+    public bool? AllowLockedComputerUse { get; init; }
 
     /// <summary>
     /// Gets the raw JSON requirements payload.

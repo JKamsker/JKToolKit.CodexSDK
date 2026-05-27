@@ -10,6 +10,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct);
 
+    Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct);
+
     Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct);
 
     Task<CodexThreadReadResult> ReadThreadAsync(string threadId, ThreadReadOptions options, CancellationToken ct);
@@ -31,6 +33,16 @@ internal partial interface ICodexAppServerClientAdapter
     Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct);
 
     Task SetThreadNameAsync(string threadId, string name, CancellationToken ct);
+
+    Task<PermissionProfileListPage> ListPermissionProfilesAsync(PermissionProfileListOptions options, CancellationToken ct);
+
+    Task<ThreadSettingsUpdateResult> UpdateThreadSettingsAsync(ThreadSettingsUpdateOptions options, CancellationToken ct);
+
+    Task<ThreadGoalResult> SetThreadGoalAsync(ThreadGoalSetOptions options, CancellationToken ct);
+
+    Task<ThreadGoalResult> GetThreadGoalAsync(string threadId, CancellationToken ct);
+
+    Task<ThreadGoalClearResult> ClearThreadGoalAsync(string threadId, CancellationToken ct);
 }
 
 internal sealed partial class CodexAppServerClientAdapter
@@ -42,6 +54,8 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct) => _inner.ResumeThreadAsync(options, ct);
 
     public Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct) => _inner.ListThreadsAsync(options, ct);
+
+    public Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct) => _inner.SearchThreadsAsync(options, ct);
 
     public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct) => _inner.ReadThreadAsync(threadId, ct);
 
@@ -64,4 +78,14 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) => _inner.UnarchiveThreadAsync(threadId, ct);
 
     public Task SetThreadNameAsync(string threadId, string name, CancellationToken ct) => _inner.SetThreadNameAsync(threadId, name, ct);
+
+    public Task<PermissionProfileListPage> ListPermissionProfilesAsync(PermissionProfileListOptions options, CancellationToken ct) => _inner.ListPermissionProfilesAsync(options, ct);
+
+    public Task<ThreadSettingsUpdateResult> UpdateThreadSettingsAsync(ThreadSettingsUpdateOptions options, CancellationToken ct) => _inner.UpdateThreadSettingsAsync(options, ct);
+
+    public Task<ThreadGoalResult> SetThreadGoalAsync(ThreadGoalSetOptions options, CancellationToken ct) => _inner.SetThreadGoalAsync(options, ct);
+
+    public Task<ThreadGoalResult> GetThreadGoalAsync(string threadId, CancellationToken ct) => _inner.GetThreadGoalAsync(threadId, ct);
+
+    public Task<ThreadGoalClearResult> ClearThreadGoalAsync(string threadId, CancellationToken ct) => _inner.ClearThreadGoalAsync(threadId, ct);
 }

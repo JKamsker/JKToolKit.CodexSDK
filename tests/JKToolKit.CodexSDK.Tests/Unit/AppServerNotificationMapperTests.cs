@@ -168,6 +168,29 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("serverRequest/resolved", stringRequestResolved)
             .Should().BeOfType<ServerRequestResolvedNotification>()
             .Which.RequestId.StringValue.Should().Be("req-1");
+
+        var threadGoalUpdated = JsonDocument.Parse(
+            """{"threadId":"t1","turnId":"turn1","goal":{"threadId":"t1","objective":"Ship","status":"budgetLimited","tokenBudget":100,"tokensUsed":101,"timeUsedSeconds":2,"createdAt":1,"updatedAt":2}}""").RootElement;
+        var goalNotification = AppServerNotificationMapper.Map("thread/goal/updated", threadGoalUpdated)
+            .Should().BeOfType<ThreadGoalUpdatedNotification>()
+            .Which;
+
+        goalNotification.Goal.Should().NotBeNull();
+        goalNotification.Goal!.Status.Should().Be(ThreadGoalStatus.BudgetLimited);
+        goalNotification.Goal.TokenBudget.Should().Be(100);
+
+        AppServerNotificationMapper.Map("thread/goal/cleared", JsonDocument.Parse("""{"threadId":"t1"}""").RootElement)
+            .Should().BeOfType<ThreadGoalClearedNotification>()
+            .Which.ThreadId.Should().Be("t1");
+
+        var settingsUpdated = JsonDocument.Parse(
+            """{"threadId":"t1","threadSettings":{"cwd":"C:/repo","model":"gpt-5","serviceTier":"fast"}}""").RootElement;
+        var settingsNotification = AppServerNotificationMapper.Map("thread/settings/updated", settingsUpdated)
+            .Should().BeOfType<ThreadSettingsUpdatedNotification>()
+            .Which;
+
+        settingsNotification.Cwd.Should().Be("C:/repo");
+        settingsNotification.Model.Should().Be("gpt-5");
     }
 
     [Fact]

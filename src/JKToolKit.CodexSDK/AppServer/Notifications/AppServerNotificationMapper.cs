@@ -36,6 +36,24 @@ internal static partial class AppServerNotificationMapper
                 ThreadName: GetStringOrNull(p, "threadName"),
                 Params: p),
 
+            "thread/settings/updated" => new ThreadSettingsUpdatedNotification(
+                threadId: GetString(p, "threadId") ?? string.Empty,
+                threadSettings: GetAny(p, "threadSettings"),
+                cwd: GetStringOrNull(GetAny(p, "threadSettings"), "cwd"),
+                model: GetStringOrNull(GetAny(p, "threadSettings"), "model"),
+                serviceTier: GetStringOrNull(GetAny(p, "threadSettings"), "serviceTier"),
+                @params: p),
+
+            "thread/goal/updated" => new ThreadGoalUpdatedNotification(
+                threadId: GetString(p, "threadId") ?? string.Empty,
+                turnId: GetStringOrNull(p, "turnId"),
+                goal: CodexAppServerThreadManagementParsers.ParseThreadGoal(GetAny(p, "goal")),
+                @params: p),
+
+            "thread/goal/cleared" => new ThreadGoalClearedNotification(
+                threadId: GetString(p, "threadId") ?? string.Empty,
+                @params: p),
+
             "thread/tokenUsage/updated" => new ThreadTokenUsageUpdatedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,

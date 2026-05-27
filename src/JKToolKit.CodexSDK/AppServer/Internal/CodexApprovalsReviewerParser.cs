@@ -7,6 +7,7 @@ internal static class CodexApprovalsReviewerParser
         {
             "user" => CodexApprovalsReviewer.User,
             "guardian_subagent" => CodexApprovalsReviewer.GuardianSubagent,
+            "auto_review" => CodexApprovalsReviewer.AutoReview,
             _ => null
         };
 }

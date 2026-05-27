@@ -1,7 +1,9 @@
 {
   "requirements": {
     "allowedApprovalPolicies": ["never", "on-request"],
+    "allowedApprovalsReviewers": ["user", "auto_review"],
     "allowedSandboxModes": ["read-only", "workspace-write"],
+    "allowedPermissions": [":read-only", "managed"],
     "allowedWebSearchModes": ["disabled", "cached", "live"],
     "featureRequirements": {
       "apps": true,
@@ -9,6 +11,13 @@
       "ignoreMe": "not-a-bool"
     },
     "allowManagedHooksOnly": true,
+    "allowAppshots": false,
+    "computerUse": {
+      "allowLockedComputerUse": true
+    },
+    "hooks": {
+      "managedDir": ".codex/hooks"
+    },
     "enforceResidency": "us",
     "network": {
       "enabled": true,

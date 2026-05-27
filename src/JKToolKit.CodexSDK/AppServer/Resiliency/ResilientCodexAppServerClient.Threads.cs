@@ -16,6 +16,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ListThreadsAsync(options, token), ct);
 
+    public Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.SearchThreadsAsync(options, token), ct);
+
     public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ReadThreadAsync(threadId, token), ct);
 
@@ -48,6 +51,21 @@ public sealed partial class ResilientCodexAppServerClient
 
     public Task SetThreadNameAsync(string threadId, string name, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.SetThreadNameAsync(threadId, name, token), ct);
+
+    public Task<PermissionProfileListPage> ListPermissionProfilesAsync(PermissionProfileListOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ListPermissionProfilesAsync(options, token), ct);
+
+    public Task<ThreadSettingsUpdateResult> UpdateThreadSettingsAsync(ThreadSettingsUpdateOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.UpdateThreadSettingsAsync(options, token), ct);
+
+    public Task<ThreadGoalResult> SetThreadGoalAsync(ThreadGoalSetOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.SetThreadGoalAsync(options, token), ct);
+
+    public Task<ThreadGoalResult> GetThreadGoalAsync(string threadId, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.GetThreadGoalAsync(threadId, token), ct);
+
+    public Task<ThreadGoalClearResult> ClearThreadGoalAsync(string threadId, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ClearThreadGoalAsync(threadId, token), ct);
 }
 
 #pragma warning restore CS1591

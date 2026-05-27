@@ -26,6 +26,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.StartThreadAsync),
         nameof(CodexAppServerClient.ResumeThreadAsync),
         nameof(CodexAppServerClient.ListThreadsAsync),
+        nameof(CodexAppServerClient.SearchThreadsAsync),
         nameof(CodexAppServerClient.ReadThreadAsync),
         nameof(CodexAppServerClient.ListLoadedThreadsAsync),
         nameof(CodexAppServerClient.UnsubscribeThreadAsync),
@@ -36,6 +37,11 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ArchiveThreadAsync),
         nameof(CodexAppServerClient.UnarchiveThreadAsync),
         nameof(CodexAppServerClient.SetThreadNameAsync),
+        nameof(CodexAppServerClient.ListPermissionProfilesAsync),
+        nameof(CodexAppServerClient.UpdateThreadSettingsAsync),
+        nameof(CodexAppServerClient.SetThreadGoalAsync),
+        nameof(CodexAppServerClient.GetThreadGoalAsync),
+        nameof(CodexAppServerClient.ClearThreadGoalAsync),
         nameof(CodexAppServerClient.ListSkillsAsync),
         nameof(CodexAppServerClient.ListAppsAsync),
         nameof(CodexAppServerClient.ReadConfigRequirementsAsync),
@@ -949,6 +955,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct) =>
             NotSupported<CodexThreadListPage>();
 
+        public Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSearchPage>();
+
         public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<CodexThreadReadResult>();
 
@@ -981,6 +990,21 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task SetThreadNameAsync(string threadId, string name, CancellationToken ct) =>
             NotSupported();
+
+        public Task<PermissionProfileListPage> ListPermissionProfilesAsync(PermissionProfileListOptions options, CancellationToken ct) =>
+            NotSupported<PermissionProfileListPage>();
+
+        public Task<ThreadSettingsUpdateResult> UpdateThreadSettingsAsync(ThreadSettingsUpdateOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSettingsUpdateResult>();
+
+        public Task<ThreadGoalResult> SetThreadGoalAsync(ThreadGoalSetOptions options, CancellationToken ct) =>
+            NotSupported<ThreadGoalResult>();
+
+        public Task<ThreadGoalResult> GetThreadGoalAsync(string threadId, CancellationToken ct) =>
+            NotSupported<ThreadGoalResult>();
+
+        public Task<ThreadGoalClearResult> ClearThreadGoalAsync(string threadId, CancellationToken ct) =>
+            NotSupported<ThreadGoalClearResult>();
 
         public Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct) =>
             NotSupported<SkillsListResult>();
