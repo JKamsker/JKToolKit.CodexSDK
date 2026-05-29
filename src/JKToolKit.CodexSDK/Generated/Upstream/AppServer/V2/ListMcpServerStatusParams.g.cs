@@ -31,6 +31,9 @@ internal partial class ListMcpServerStatusParams
     [System.Text.Json.Serialization.JsonPropertyName("limit")]
     public int? Limit { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
