@@ -26,6 +26,9 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonPropertyName("resources")]
     public System.Collections.Generic.ICollection<Resource> Resources { get; set; } = new System.Collections.ObjectModel.Collection<Resource>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("serverInfo")]
+    public ServerInfo? ServerInfo { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("tools")]
     public System.Collections.Generic.IDictionary<string, Tool> Tools { get; set; } = new System.Collections.Generic.Dictionary<string, Tool>();
 

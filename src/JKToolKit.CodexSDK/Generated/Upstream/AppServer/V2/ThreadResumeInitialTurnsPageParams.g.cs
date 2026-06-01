@@ -10,23 +10,26 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class TurnSteerParams
+internal partial class ThreadResumeInitialTurnsPageParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("clientUserMessageId")]
-    public string? ClientUserMessageId { get; set; } = default!;
+    /// <summary>
+    /// How much item detail to include for each returned turn; defaults to summary.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("itemsView")]
+    public ItemsView? ItemsView { get; set; } = default!;
 
     /// <summary>
-    /// Required active turn id precondition. The request fails when it does not match the currently active turn.
+    /// Optional turn page size.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("expectedTurnId")]
-    public string ExpectedTurnId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("limit")]
+    public int? Limit { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("input")]
-    public System.Collections.Generic.ICollection<Content2> Input { get; set; } = new System.Collections.ObjectModel.Collection<Content2>();
-
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
+    /// <summary>
+    /// Optional turn pagination direction; defaults to descending.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
+    public SortDirection3? SortDirection { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

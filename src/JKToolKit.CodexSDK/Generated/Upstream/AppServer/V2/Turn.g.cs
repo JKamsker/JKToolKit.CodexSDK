@@ -41,8 +41,8 @@ internal partial class Turn
     public System.Collections.Generic.ICollection<Item> Items { get; set; } = new System.Collections.ObjectModel.Collection<Item>();
 
     [System.Text.Json.Serialization.JsonPropertyName("itemsView")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ItemsView>))]
-    public ItemsView? ItemsView { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ItemsView2>))]
+    public ItemsView2? ItemsView { get; set; } = default!;
 
     /// <summary>
     /// Unix timestamp (in seconds) when the turn started.
