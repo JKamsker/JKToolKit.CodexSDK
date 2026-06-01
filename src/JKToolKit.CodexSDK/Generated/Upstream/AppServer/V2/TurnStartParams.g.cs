@@ -25,6 +25,9 @@ internal partial class TurnStartParams
     [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
     public ApprovalsReviewer5? ApprovalsReviewer { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("clientUserMessageId")]
+    public string? ClientUserMessageId { get; set; } = default!;
+
     /// <summary>
     /// Override the working directory for this turn and subsequent turns.
     /// </summary>

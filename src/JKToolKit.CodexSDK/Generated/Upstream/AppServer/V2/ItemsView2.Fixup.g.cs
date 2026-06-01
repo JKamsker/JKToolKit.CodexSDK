@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("JKToolKit.CodexSDK.UpstreamGen", "0.0.0")]
-internal enum ItemsView
+internal enum ItemsView2
 {
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
     Unknown = 0,

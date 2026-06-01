@@ -17,8 +17,8 @@ internal enum NetworkUnixSocketPermission
     Allow = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"none")]
-    None = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"deny")]
+    Deny = 1,
 
 
 }
