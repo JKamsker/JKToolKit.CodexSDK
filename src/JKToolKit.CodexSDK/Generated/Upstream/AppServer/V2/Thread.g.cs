@@ -74,6 +74,12 @@ internal partial class Thread
     public string? Name { get; set; } = default!;
 
     /// <summary>
+    /// The ID of the parent thread. This will only be set if this thread is a subagent.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("parentThreadId")]
+    public string? ParentThreadId { get; set; } = default!;
+
+    /// <summary>
     /// [UNSTABLE] Path to the thread on disk.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("path")]

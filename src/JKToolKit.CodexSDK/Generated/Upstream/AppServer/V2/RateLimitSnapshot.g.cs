@@ -16,6 +16,9 @@ internal partial class RateLimitSnapshot
     [System.Text.Json.Serialization.JsonPropertyName("credits")]
     public Credits? Credits { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("individualLimit")]
+    public IndividualLimit? IndividualLimit { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("limitId")]
     public string? LimitId { get; set; } = default!;
 

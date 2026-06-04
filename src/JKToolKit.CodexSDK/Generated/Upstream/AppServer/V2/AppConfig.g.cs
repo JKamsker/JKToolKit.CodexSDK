@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class AppConfig
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
+    public Approvals_reviewer? Approvals_reviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("default_tools_approval_mode")]
     public Default_tools_approval_mode? Default_tools_approval_mode { get; set; } = default!;
 

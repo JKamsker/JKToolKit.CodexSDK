@@ -23,7 +23,7 @@ internal partial class Config
     /// [UNSTABLE] Optional default for where approval requests are routed for review.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
-    public Approvals_reviewer? Approvals_reviewer { get; set; } = default!;
+    public Approvals_reviewer2? Approvals_reviewer { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("compact_prompt")]
     public string? Compact_prompt { get; set; } = default!;
