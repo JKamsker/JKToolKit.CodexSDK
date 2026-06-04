@@ -41,16 +41,20 @@ internal enum HookSource
     CloudRequirements = 6,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"cloudManagedConfig")]
+    CloudManagedConfig = 7,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"legacyManagedConfigFile")]
-    LegacyManagedConfigFile = 7,
+    LegacyManagedConfigFile = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"legacyManagedConfigMdm")]
-    LegacyManagedConfigMdm = 8,
+    LegacyManagedConfigMdm = 9,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 9,
+    Unknown = 10,
 
 
 }

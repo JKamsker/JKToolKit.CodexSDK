@@ -9,17 +9,9 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Sparse rolling rate-limit update.
-/// <br/>
-/// <br/>Clients should merge available values into the most recent `account/rateLimits/read` response or refetch that snapshot. Nullable account metadata may be unavailable in a rolling update and does not clear a previously observed value.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AccountRateLimitsUpdatedNotification
+internal partial class IndividualLimit
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("rateLimits")]
-    public RateLimitSnapshot RateLimits { get; set; } = new RateLimitSnapshot();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
