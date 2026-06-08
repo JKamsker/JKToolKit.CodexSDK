@@ -60,4 +60,53 @@ internal static class CodexAppServerWireBuilders
 
         return result;
     }
+
+    internal static IReadOnlyDictionary<string, TurnAdditionalContextEntryParams>? BuildAdditionalContext(
+        IReadOnlyDictionary<string, TurnAdditionalContextEntry>? additionalContext,
+        string argumentName)
+    {
+        if (additionalContext is null)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, TurnAdditionalContextEntryParams>(StringComparer.Ordinal);
+        foreach (var entry in additionalContext)
+        {
+            if (entry.Value is null)
+            {
+                throw new ArgumentException("Additional context entries cannot be null.", argumentName);
+            }
+
+            result[entry.Key] = new TurnAdditionalContextEntryParams
+            {
+                Value = entry.Value.Value,
+                Kind = entry.Value.Kind.Value
+            };
+        }
+
+        return result;
+    }
+
+    internal static ThreadResumeInitialTurnsPageParams? BuildInitialTurnsPage(
+        ThreadResumeInitialTurnsPageOptions? options,
+        string argumentName)
+    {
+        if (options is null)
+        {
+            return null;
+        }
+
+        if (options.Limit is < 0)
+        {
+            throw new ArgumentOutOfRangeException(argumentName, options.Limit, "Initial turn page limit cannot be negative.");
+        }
+
+        return new ThreadResumeInitialTurnsPageParams
+        {
+            Limit = options.Limit,
+            SortDirection = options.SortDirection,
+            ItemsView = options.ItemsView
+        };
+    }
 }

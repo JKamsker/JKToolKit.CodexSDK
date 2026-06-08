@@ -138,17 +138,6 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
-    public void ValidateThreadStart_Throws_WhenPersistExtendedHistoryTrue_AndExperimentalDisabled()
-    {
-        var options = new ThreadStartOptions { PersistExtendedHistory = true };
-
-        Action act = () => ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
-
-        act.Should().Throw<CodexExperimentalApiRequiredException>()
-            .Which.Descriptor.Should().Be("thread/start.persistFullHistory");
-    }
-
-    [Fact]
     public void ValidateAll_DoesNotThrow_WhenExperimentalEnabled()
     {
         using var history = JsonDocument.Parse("""{"items":[]}""");
@@ -167,7 +156,6 @@ public sealed class ExperimentalApiGuardsTests
                     McpElicitations = true
                 },
                 ExperimentalRawEvents = true,
-                PersistExtendedHistory = true,
                 DynamicTools =
                 [
                     new JKToolKit.CodexSDK.AppServer.Protocol.V2.DynamicToolSpec
@@ -191,13 +179,17 @@ public sealed class ExperimentalApiGuardsTests
                 },
                 History = history.RootElement,
                 Path = "C:\\rollout",
-                PersistExtendedHistory = true
+                InitialTurnsPage = new ThreadResumeInitialTurnsPageOptions
+                {
+                    Limit = 20,
+                    SortDirection = "desc",
+                    ItemsView = "summary"
+                }
             }, experimentalApiEnabled: true);
 
             ExperimentalApiGuards.ValidateThreadFork(new ThreadForkOptions
             {
-                Path = "C:\\rollout",
-                PersistExtendedHistory = true
+                Path = "C:\\rollout"
             }, experimentalApiEnabled: true);
             ExperimentalApiGuards.ValidateTurnStart(new TurnStartOptions
             {
@@ -208,7 +200,34 @@ public sealed class ExperimentalApiGuardsTests
                     RequestPermissions = true,
                     McpElicitations = true
                 },
-                CollaborationMode = collab.RootElement
+                CollaborationMode = collab.RootElement,
+                ResponsesApiClientMetadata = new Dictionary<string, string>
+                {
+                    ["workspace_kind"] = "local"
+                },
+                AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry>
+                {
+                    ["note"] = new()
+                    {
+                        Value = "extra context",
+                        Kind = TurnAdditionalContextKind.Application
+                    }
+                }
+            }, experimentalApiEnabled: true);
+
+            ExperimentalApiGuards.ValidateTurnSteer(new TurnSteerOptions
+            {
+                ThreadId = "t",
+                ExpectedTurnId = "turn_1",
+                Input = [TurnInputItem.Text("follow up")],
+                ResponsesApiClientMetadata = new Dictionary<string, string>
+                {
+                    ["workspace_kind"] = "local"
+                },
+                AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry>
+                {
+                    ["note"] = new() { Value = "extra context" }
+                }
             }, experimentalApiEnabled: true);
         };
 
@@ -224,28 +243,6 @@ public sealed class ExperimentalApiGuardsTests
 
         act.Should().Throw<CodexExperimentalApiRequiredException>()
             .Which.Descriptor.Should().Be("thread/fork.path");
-    }
-
-    [Fact]
-    public void ValidateThreadFork_Throws_WhenPersistExtendedHistoryTrue_AndExperimentalDisabled()
-    {
-        var options = new ThreadForkOptions { ThreadId = "thr_1", PersistExtendedHistory = true };
-
-        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
-
-        act.Should().Throw<CodexExperimentalApiRequiredException>()
-            .Which.Descriptor.Should().Be("thread/fork.persistFullHistory");
-    }
-
-    [Fact]
-    public void ValidateThreadResume_Throws_WhenPersistExtendedHistoryTrue_AndExperimentalDisabled()
-    {
-        var options = new ThreadResumeOptions { ThreadId = "t", PersistExtendedHistory = true };
-
-        Action act = () => ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: false);
-
-        act.Should().Throw<CodexExperimentalApiRequiredException>()
-            .Which.Descriptor.Should().Be("thread/resume.persistFullHistory");
     }
 
     [Fact]
@@ -276,5 +273,74 @@ public sealed class ExperimentalApiGuardsTests
         Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
 
         act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ValidateThreadResume_Throws_WhenInitialTurnsPageSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadResumeOptions
+        {
+            ThreadId = "t",
+            InitialTurnsPage = new ThreadResumeInitialTurnsPageOptions { Limit = 10 }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadResume(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/resume.initialTurnsPage");
+    }
+
+    [Fact]
+    public void ValidateTurnStart_Throws_WhenResponsesApiClientMetadataSet_AndExperimentalDisabled()
+    {
+        var options = new TurnStartOptions
+        {
+            ResponsesApiClientMetadata = new Dictionary<string, string>
+            {
+                ["workspace_kind"] = "local"
+            }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("turn/start.responsesapiClientMetadata");
+    }
+
+    [Fact]
+    public void ValidateTurnStart_Throws_WhenAdditionalContextSet_AndExperimentalDisabled()
+    {
+        var options = new TurnStartOptions
+        {
+            AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry>
+            {
+                ["note"] = new() { Value = "extra context" }
+            }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("turn/start.additionalContext");
+    }
+
+    [Fact]
+    public void ValidateTurnSteer_Throws_WhenAdditionalContextSet_AndExperimentalDisabled()
+    {
+        var options = new TurnSteerOptions
+        {
+            ThreadId = "t",
+            ExpectedTurnId = "turn_1",
+            Input = [TurnInputItem.Text("follow up")],
+            AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry>
+            {
+                ["note"] = new() { Value = "extra context" }
+            }
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateTurnSteer(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("turn/steer.additionalContext");
     }
 }

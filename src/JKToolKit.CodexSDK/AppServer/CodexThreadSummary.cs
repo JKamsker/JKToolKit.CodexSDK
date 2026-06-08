@@ -97,6 +97,11 @@ public sealed record class CodexThreadSummary
     public string? SourceKind { get; init; }
 
     /// <summary>
+    /// Gets the parent thread identifier, when this thread was spawned from another thread.
+    /// </summary>
+    public string? ParentThreadId { get; init; }
+
+    /// <summary>
     /// Gets the Git metadata captured on the thread, when present.
     /// </summary>
     public CodexThreadGitInfo? GitInfo { get; init; }

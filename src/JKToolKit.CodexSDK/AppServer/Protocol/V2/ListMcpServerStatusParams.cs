@@ -24,5 +24,11 @@ public sealed record class ListMcpServerStatusParams
     /// </summary>
     [JsonPropertyName("detail")]
     public string? Detail { get; init; }
+
+    /// <summary>
+    /// Gets an optional thread id used to include thread/project-scoped MCP configuration.
+    /// </summary>
+    [JsonPropertyName("threadId")]
+    public string? ThreadId { get; init; }
 }
 

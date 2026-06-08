@@ -29,6 +29,11 @@ public sealed record class ConfigRequirements
     public IReadOnlyList<CodexSandboxMode>? AllowedSandboxModes { get; init; }
 
     /// <summary>
+    /// Gets the allow-list of Windows sandbox setup implementations, when present.
+    /// </summary>
+    public IReadOnlyList<WindowsSandboxSetupMode>? AllowedWindowsSandboxImplementations { get; init; }
+
+    /// <summary>
     /// Gets the allow-list of named permission profiles, when present.
     /// </summary>
     public IReadOnlyList<string>? AllowedPermissionProfileIds { get; init; }

@@ -13,6 +13,16 @@ public sealed record class ConfigLayerSourceInfo
     public required string Type { get; init; }
 
     /// <summary>
+    /// Gets the stable identifier for an enterprise-managed config layer, when present.
+    /// </summary>
+    public string? Id { get; init; }
+
+    /// <summary>
+    /// Gets the display name for an enterprise-managed config layer, when present.
+    /// </summary>
+    public string? Name { get; init; }
+
+    /// <summary>
     /// Gets the MDM domain when <see cref="Type"/> is "mdm".
     /// </summary>
     public string? Domain { get; init; }

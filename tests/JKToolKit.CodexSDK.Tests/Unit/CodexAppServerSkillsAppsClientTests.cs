@@ -147,6 +147,47 @@ public sealed class CodexAppServerSkillsAppsClientTests
     }
 
     [Fact]
+    public async Task SetSkillsExtraRootsAsync_SendsCurrentUpstreamParams()
+    {
+        var root = XPaths.Abs("skills-root");
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("skills/extraRoots/set");
+                var typed = @params.Should().BeOfType<UpstreamV2.SkillsExtraRootsSetParams>().Which;
+                typed.ExtraRoots.Should().Equal(root);
+
+                return Task.FromResult(JsonDocument.Parse("""{}""").RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        var result = await client.SetSkillsExtraRootsAsync(new SkillsExtraRootsSetOptions
+        {
+            ExtraRoots = [root]
+        });
+
+        result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task SetSkillsExtraRootsAsync_RejectsRelativeRoots()
+    {
+        var client = new CodexAppServerSkillsAppsClient((_, _, _) =>
+            Task.FromResult(JsonDocument.Parse("""{}""").RootElement.Clone()));
+
+        var act = async () => await client.SetSkillsExtraRootsAsync(new SkillsExtraRootsSetOptions
+        {
+            ExtraRoots = ["relative\\skills"]
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*ExtraRoots[0]*");
+    }
+
+    [Fact]
     public async Task ListAppsAsync_RejectsCwdScoping()
     {
         var client = new CodexAppServerSkillsAppsClient((_, _, _) =>

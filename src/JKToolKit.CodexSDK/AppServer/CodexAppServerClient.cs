@@ -322,6 +322,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _skillsAppsClient.ListSkillsAsync(options, ct);
 
     /// <summary>
+    /// Sets additional skill roots for the current app-server session.
+    /// </summary>
+    public Task<SkillsExtraRootsSetResult> SetSkillsExtraRootsAsync(SkillsExtraRootsSetOptions options, CancellationToken ct = default) =>
+        _skillsAppsClient.SetSkillsExtraRootsAsync(options, ct);
+
+    /// <summary>
     /// Lists apps/connectors.
     /// </summary>
     public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default) =>

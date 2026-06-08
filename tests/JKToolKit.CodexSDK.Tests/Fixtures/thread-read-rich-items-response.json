@@ -8,6 +8,7 @@
         "items": [
           {
             "id": "user_1",
+            "clientId": "client_msg_1",
             "type": "userMessage",
             "content": [
               {

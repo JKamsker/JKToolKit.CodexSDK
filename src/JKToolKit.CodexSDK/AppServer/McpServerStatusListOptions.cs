@@ -19,5 +19,10 @@ public sealed class McpServerStatusListOptions
     /// Gets or sets the optional response detail level.
     /// </summary>
     public McpServerStatusDetail? Detail { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional thread id used to include thread/project-scoped MCP configuration.
+    /// </summary>
+    public string? ThreadId { get; set; }
 }
 

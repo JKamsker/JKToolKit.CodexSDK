@@ -233,6 +233,8 @@ internal static class CodexAppServerClientConfigReadParsers
         return new ConfigLayerSourceInfo
         {
             Type = type,
+            Id = GetStringOrNull(obj, "id"),
+            Name = GetStringOrNull(obj, "name"),
             Domain = GetStringOrNull(obj, "domain"),
             Key = GetStringOrNull(obj, "key"),
             File = GetStringOrNull(obj, "file"),

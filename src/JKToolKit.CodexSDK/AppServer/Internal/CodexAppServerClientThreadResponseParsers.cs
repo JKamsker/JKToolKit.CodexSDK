@@ -34,6 +34,7 @@ internal static class CodexAppServerClientThreadResponseParsers
         var runtimeWorkspaceRoots = GetOptionalStringArray(result, "runtimeWorkspaceRoots") ?? Array.Empty<string>();
         var instructionSources = GetOptionalStringArray(result, "instructionSources") ?? Array.Empty<string>();
         var activePermissionProfile = ParseActivePermissionProfile(result);
+        var initialTurnsPage = ParseTurnsPage(result, "initialTurnsPage");
 
         return new CodexThread(
             summary.ThreadId,
@@ -48,7 +49,37 @@ internal static class CodexAppServerClientThreadResponseParsers
             reasoningEffort,
             runtimeWorkspaceRoots,
             instructionSources,
-            activePermissionProfile);
+            activePermissionProfile,
+            initialTurnsPage);
+    }
+
+    private static CodexTurnsPage? ParseTurnsPage(JsonElement result, string propertyName)
+    {
+        if (TryGetObject(result, propertyName) is not { } page)
+        {
+            return null;
+        }
+
+        var turns = new List<JKToolKit.CodexSDK.AppServer.ThreadRead.CodexTurn>();
+        if (TryGetArray(page, "data") is { } data)
+        {
+            foreach (var item in data.EnumerateArray())
+            {
+                var turn = JKToolKit.CodexSDK.AppServer.ThreadRead.CodexTurn.TryParse(item);
+                if (turn is not null)
+                {
+                    turns.Add(turn);
+                }
+            }
+        }
+
+        return new CodexTurnsPage
+        {
+            Data = turns,
+            NextCursor = GetStringOrNull(page, "nextCursor") ?? GetStringOrNull(page, "next_cursor"),
+            BackwardsCursor = GetStringOrNull(page, "backwardsCursor") ?? GetStringOrNull(page, "backwards_cursor"),
+            Raw = page.Clone()
+        };
     }
 
     public static CodexThreadReadResult ParseReadResult(JsonElement result, string fallbackThreadId)

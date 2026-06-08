@@ -1,3 +1,4 @@
+using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -9,7 +10,12 @@ public sealed partial class CodexAppServerClient
         {
             ThreadId = options.ThreadId,
             ExpectedTurnId = options.ExpectedTurnId,
-            Input = options.Input.Select(i => i.Wire).ToArray()
+            ClientUserMessageId = options.ClientUserMessageId,
+            Input = options.Input.Select(i => i.Wire).ToArray(),
+            ResponsesApiClientMetadata = options.ResponsesApiClientMetadata,
+            AdditionalContext = CodexAppServerWireBuilders.BuildAdditionalContext(
+                options.AdditionalContext,
+                nameof(TurnSteerOptions.AdditionalContext))
         };
 
     internal static ReviewStartParams BuildReviewStartParams(ReviewStartOptions options) =>

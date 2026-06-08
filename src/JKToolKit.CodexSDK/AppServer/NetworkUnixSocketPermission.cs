@@ -24,6 +24,11 @@ public readonly record struct NetworkUnixSocketPermission
     public static NetworkUnixSocketPermission Allow => new("allow");
 
     /// <summary>
+    /// Gets the <c>deny</c> permission.
+    /// </summary>
+    public static NetworkUnixSocketPermission Deny => new("deny");
+
+    /// <summary>
     /// Gets the <c>none</c> permission.
     /// </summary>
     public static NetworkUnixSocketPermission None => new("none");

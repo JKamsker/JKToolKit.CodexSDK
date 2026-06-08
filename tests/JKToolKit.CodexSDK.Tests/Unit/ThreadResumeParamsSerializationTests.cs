@@ -36,4 +36,26 @@ public sealed class ThreadResumeParamsSerializationTests
         json.Should().Contain("\"runtimeWorkspaceRoots\":[\"C:/repo\"]");
         json.Should().Contain("\"permissions\":\"profile-1\"");
     }
+
+    [Fact]
+    public void Serialize_WritesInitialTurnsPage()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadResumeParams
+            {
+                ThreadId = "thr_123",
+                InitialTurnsPage = new ThreadResumeInitialTurnsPageParams
+                {
+                    Limit = 25,
+                    SortDirection = "desc",
+                    ItemsView = "summary"
+                }
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"initialTurnsPage\":{")
+            .And.Contain("\"limit\":25")
+            .And.Contain("\"sortDirection\":\"desc\"")
+            .And.Contain("\"itemsView\":\"summary\"");
+    }
 }

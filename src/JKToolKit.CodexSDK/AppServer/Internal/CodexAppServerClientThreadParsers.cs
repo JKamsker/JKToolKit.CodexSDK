@@ -81,6 +81,10 @@ internal static class CodexAppServerClientThreadParsers
             : (CodexServiceTier?)null;
         var ephemeral = GetBool(primary, secondary, "ephemeral");
         var sourceKind = GetSourceKind(primary, secondary);
+        var parentThreadId =
+            GetString(primary, secondary, "parentThreadId") ??
+            GetSourceParentThreadId(primary) ??
+            GetSourceParentThreadId(secondary);
         var gitInfo = ParseGitInfo(primary, secondary);
         var cliVersion = GetString(primary, secondary, "cliVersion");
         var agentNickname = GetString(primary, secondary, "agentNickname");
@@ -105,6 +109,7 @@ internal static class CodexAppServerClientThreadParsers
             ServiceTier = serviceTier,
             Ephemeral = ephemeral,
             SourceKind = sourceKind,
+            ParentThreadId = parentThreadId,
             GitInfo = gitInfo,
             CliVersion = cliVersion,
             AgentNickname = agentNickname,
@@ -237,6 +242,23 @@ internal static class CodexAppServerClientThreadParsers
         }
 
         return null;
+    }
+
+    private static string? GetSourceParentThreadId(JsonElement sourceOwner)
+    {
+        if (TryGetObject(sourceOwner, "source") is not { } source ||
+            TryGetObject(source, "subAgent") is not { } subAgent)
+        {
+            return null;
+        }
+
+        var threadSpawn =
+            TryGetObject(subAgent, "threadSpawn") ??
+            TryGetObject(subAgent, "thread_spawn");
+
+        return threadSpawn is { } spawn
+            ? GetStringOrNull(spawn, "parentThreadId") ?? GetStringOrNull(spawn, "parent_thread_id")
+            : null;
     }
 
     private static CodexThreadGitInfo? ParseGitInfo(JsonElement primary, JsonElement secondary)

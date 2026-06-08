@@ -19,4 +19,22 @@ public sealed partial class CodexAppServerClient
     /// </summary>
     public Task<RemoteControlStatusResult> ReadRemoteControlStatusAsync(CancellationToken ct = default) =>
         _remoteControlClient.ReadStatusAsync(ct);
+
+    /// <summary>
+    /// Starts remote-control pairing.
+    /// </summary>
+    public Task<RemoteControlPairingStartResult> StartRemoteControlPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct = default) =>
+        _remoteControlClient.StartPairingAsync(options, ct);
+
+    /// <summary>
+    /// Lists remote-control client grants.
+    /// </summary>
+    public Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct = default) =>
+        _remoteControlClient.ListClientsAsync(options, ct);
+
+    /// <summary>
+    /// Revokes a remote-control client grant.
+    /// </summary>
+    public Task<RemoteControlClientsRevokeResult> RevokeRemoteControlClientAsync(RemoteControlClientsRevokeOptions options, CancellationToken ct = default) =>
+        _remoteControlClient.RevokeClientAsync(options, ct);
 }

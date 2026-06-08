@@ -21,6 +21,7 @@ public sealed class ConfigRequirementsParsingTests
         requirements.AllowedAskForApproval!.Select(a => a.Policy!.Value).Should().Equal("never", "on-request");
         requirements.AllowedApprovalsReviewers!.Should().Equal(CodexApprovalsReviewer.User, CodexApprovalsReviewer.AutoReview);
         requirements.AllowedSandboxModes!.Select(m => m.Value).Should().Equal("read-only", "workspace-write");
+        requirements.AllowedWindowsSandboxImplementations!.Select(m => m.Value).Should().Equal("elevated", "unelevated");
         requirements.AllowedPermissionProfileIds!.Should().Equal(":read-only", "managed");
         requirements.AllowedWebSearchModes!.Select(m => m.Value).Should().Equal("disabled", "cached", "live");
         requirements.FeatureRequirements.Should().NotBeNull();
@@ -41,6 +42,9 @@ public sealed class ConfigRequirementsParsingTests
 #pragma warning restore CS0618
         requirements.Network.Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
         requirements.Network.Raw.TryGetProperty("dangerouslyAllowNonLoopbackAdmin", out _).Should().BeTrue();
+        requirements.Network.UnixSockets.Should().NotBeNull();
+        requirements.Network.UnixSockets!["/tmp/codex.sock"].Should().Be(NetworkUnixSocketPermission.Allow);
+        requirements.Network.UnixSockets["/tmp/blocked.sock"].Should().Be(NetworkUnixSocketPermission.Deny);
 
         requirements.Raw.TryGetProperty("unknownTopLevelField", out _).Should().BeTrue();
     }

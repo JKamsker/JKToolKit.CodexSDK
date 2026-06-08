@@ -130,13 +130,11 @@ public sealed record class ThreadResumeParams
     public string? Personality { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether to persist additional rollout event variants required to reconstruct a richer
-    /// thread history on subsequent resume/fork/read (experimental).
+    /// Gets optional turn-page bootstrap parameters for the resume response.
     /// </summary>
     /// <remarks>
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
-    [JsonPropertyName("persistExtendedHistory")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public bool PersistExtendedHistory { get; init; }
+    [JsonPropertyName("initialTurnsPage")]
+    public ThreadResumeInitialTurnsPageParams? InitialTurnsPage { get; init; }
 }

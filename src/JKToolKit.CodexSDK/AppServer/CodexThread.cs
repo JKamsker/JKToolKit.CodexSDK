@@ -69,6 +69,11 @@ public sealed record class CodexThread
     public ActivePermissionProfileInfo? ActivePermissionProfile { get; }
 
     /// <summary>
+    /// Gets the optional initial turns page returned by <c>thread/resume</c>, when requested.
+    /// </summary>
+    public CodexTurnsPage? InitialTurnsPage { get; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the lifecycle response.
     /// </summary>
     public JsonElement Raw { get; }
@@ -89,7 +94,8 @@ public sealed record class CodexThread
         CodexReasoningEffort? reasoningEffort = null,
         IReadOnlyList<string>? runtimeWorkspaceRoots = null,
         IReadOnlyList<string>? instructionSources = null,
-        ActivePermissionProfileInfo? activePermissionProfile = null)
+        ActivePermissionProfileInfo? activePermissionProfile = null,
+        CodexTurnsPage? initialTurnsPage = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Thread = thread ?? new CodexThreadSummary
@@ -107,6 +113,7 @@ public sealed record class CodexThread
         RuntimeWorkspaceRoots = runtimeWorkspaceRoots ?? Array.Empty<string>();
         InstructionSources = instructionSources ?? Array.Empty<string>();
         ActivePermissionProfile = activePermissionProfile;
+        InitialTurnsPage = initialTurnsPage;
         Raw = raw;
     }
 }

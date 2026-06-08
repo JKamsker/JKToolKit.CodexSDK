@@ -15,6 +15,12 @@ public sealed record class TurnStartParams
     public required string ThreadId { get; init; }
 
     /// <summary>
+    /// Gets an optional client-provided id for the user message item created by this turn.
+    /// </summary>
+    [JsonPropertyName("clientUserMessageId")]
+    public string? ClientUserMessageId { get; init; }
+
+    /// <summary>
     /// Gets the input items for the turn (wire payloads).
     /// </summary>
     /// <remarks>
@@ -24,6 +30,18 @@ public sealed record class TurnStartParams
     /// </remarks>
     [JsonPropertyName("input")]
     public required IReadOnlyList<object> Input { get; init; }
+
+    /// <summary>
+    /// Gets optional turn-scoped Responses API client metadata.
+    /// </summary>
+    [JsonPropertyName("responsesapiClientMetadata")]
+    public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadata { get; init; }
+
+    /// <summary>
+    /// Gets optional client-provided context fragments keyed by opaque source identifier.
+    /// </summary>
+    [JsonPropertyName("additionalContext")]
+    public IReadOnlyDictionary<string, TurnAdditionalContextEntryParams>? AdditionalContext { get; init; }
 
     /// <summary>
     /// Gets an optional working directory override for this turn and subsequent turns.

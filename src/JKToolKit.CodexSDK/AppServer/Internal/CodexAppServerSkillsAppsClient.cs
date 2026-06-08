@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -41,6 +42,33 @@ internal sealed class CodexAppServerSkillsAppsClient
         {
             Entries = entries,
             Skills = CodexAppServerClientSkillsAppsParsers.ParseSkillsListSkills(entries),
+            Raw = result
+        };
+    }
+
+    public async Task<SkillsExtraRootsSetResult> SetSkillsExtraRootsAsync(SkillsExtraRootsSetOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.ExtraRoots);
+
+        for (var i = 0; i < options.ExtraRoots.Count; i++)
+        {
+            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(
+                options.ExtraRoots[i],
+                nameof(options),
+                $"{nameof(options.ExtraRoots)}[{i}]");
+        }
+
+        var result = await _sendRequestAsync(
+            "skills/extraRoots/set",
+            new UpstreamV2.SkillsExtraRootsSetParams
+            {
+                ExtraRoots = options.ExtraRoots.ToArray()
+            },
+            ct);
+
+        return new SkillsExtraRootsSetResult
+        {
             Raw = result
         };
     }

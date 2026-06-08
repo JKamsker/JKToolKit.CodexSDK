@@ -87,11 +87,13 @@ public sealed class ApprovalHandlersTests
     public async Task AlwaysApproveHandler_GrantsRequestedPermissions()
     {
         var handler = new AlwaysApproveHandler();
-        var request = JsonDocument.Parse("""{"threadId":"thr","turnId":"turn","itemId":"item","permissions":{"fileSystem":{"write":["C:/repo"]}}}""").RootElement;
+        var request = JsonDocument.Parse("""{"threadId":"thr","turnId":"turn","itemId":"item","environmentId":"env-1","permissions":{"fileSystem":{"write":["C:/repo"]}}}""").RootElement;
 
         var payload = await handler.HandleAsync("item/permissions/requestApproval", request, ct: default);
         var response = JsonSerializer.Deserialize<PermissionsRequestApprovalResponse>(payload.GetRawText())!;
+        var parsedRequest = JsonSerializer.Deserialize<PermissionsRequestApprovalParams>(request.GetRawText())!;
 
+        parsedRequest.EnvironmentId.Should().Be("env-1");
         response.Scope.Should().Be(PermissionGrantScope.Turn);
         response.Permissions.GetProperty("fileSystem").GetProperty("write")[0].GetString().Should().Be("C:/repo");
     }

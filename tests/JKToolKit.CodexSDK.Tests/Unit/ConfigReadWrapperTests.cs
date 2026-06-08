@@ -34,7 +34,12 @@ public sealed class ConfigReadWrapperTests
                 model = new
                 {
                     name = new { type = "user", file = "C:/Users/me/.codex/config.toml", profile = "work" },
-                    version = "1"
+                    version = "1",
+                    enterprise = new
+                    {
+                        name = new { type = "enterpriseManaged", id = "ent-1", name = "Enterprise Policy" },
+                        version = "2"
+                    }
                 }
             },
             layers = new object[]
@@ -44,6 +49,13 @@ public sealed class ConfigReadWrapperTests
                     name = new { type = "user", file = "C:/Users/me/.codex/config.toml" },
                     version = "1",
                     config = new { model = "gpt-5.2-codex" },
+                    disabledReason = (string?)null
+                },
+                new
+                {
+                    name = new { type = "enterpriseManaged", id = "ent-1", name = "Enterprise Policy" },
+                    version = "2",
+                    config = new { approval_policy = "never" },
                     disabledReason = (string?)null
                 }
             }
@@ -86,6 +98,10 @@ public sealed class ConfigReadWrapperTests
         result.McpServers["docs"].BearerTokenEnvVar.Should().Be("MCP_TOKEN");
         result.McpServers["docs"].Enabled.Should().BeTrue();
         result.Origins!["model"].Name.Profile.Should().Be("work");
+        result.Origins["model"].Raw.TryGetProperty("enterprise", out _).Should().BeTrue();
+        result.Layers![1].Name.Type.Should().Be("enterpriseManaged");
+        result.Layers[1].Name.Id.Should().Be("ent-1");
+        result.Layers[1].Name.Name.Should().Be("Enterprise Policy");
     }
 
     private sealed class FakeProcess : IStdioProcess

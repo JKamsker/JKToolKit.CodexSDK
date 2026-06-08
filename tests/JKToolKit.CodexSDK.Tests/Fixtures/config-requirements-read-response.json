@@ -3,6 +3,7 @@
     "allowedApprovalPolicies": ["never", "on-request"],
     "allowedApprovalsReviewers": ["user", "auto_review"],
     "allowedSandboxModes": ["read-only", "workspace-write"],
+    "allowedWindowsSandboxImplementations": ["elevated", "unelevated"],
     "allowedPermissions": [":read-only", "managed"],
     "allowedWebSearchModes": ["disabled", "cached", "live"],
     "featureRequirements": {
@@ -29,6 +30,10 @@
       "allowedDomains": ["example.com"],
       "deniedDomains": ["bad.example"],
       "allowUnixSockets": ["/var/run/docker.sock"],
+      "unixSockets": {
+        "/tmp/codex.sock": "allow",
+        "/tmp/blocked.sock": "deny"
+      },
       "allowLocalBinding": true,
       "unknownField": "preserve"
     },

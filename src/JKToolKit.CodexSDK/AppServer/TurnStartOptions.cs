@@ -16,6 +16,27 @@ public sealed class TurnStartOptions
     public IReadOnlyList<TurnInputItem> Input { get; set; } = Array.Empty<TurnInputItem>();
 
     /// <summary>
+    /// Gets or sets an optional client-provided id for the user message item created by this turn.
+    /// </summary>
+    public string? ClientUserMessageId { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional turn-scoped Responses API client metadata.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadata { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional client-provided context fragments keyed by opaque source identifier.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public IReadOnlyDictionary<string, TurnAdditionalContextEntry>? AdditionalContext { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional working directory for the turn.
     /// </summary>
     /// <remarks>
@@ -160,6 +181,9 @@ public sealed class TurnStartOptions
         return new TurnStartOptions
         {
             Input = Input,
+            ClientUserMessageId = ClientUserMessageId,
+            ResponsesApiClientMetadata = ResponsesApiClientMetadata,
+            AdditionalContext = AdditionalContext,
             Cwd = Cwd,
             RuntimeWorkspaceRoots = RuntimeWorkspaceRoots,
             Environments = Environments,

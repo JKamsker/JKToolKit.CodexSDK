@@ -185,12 +185,18 @@ before sending the request:
 - `thread/resume.history`
 - `thread/resume.path`
 - `turn/start.collaborationMode`
+- `turn/start.responsesapiClientMetadata`
+- `turn/start.additionalContext`
+- `turn/steer.responsesapiClientMetadata`
+- `turn/steer.additionalContext`
 - `thread/start.experimentalRawEvents` (when `true`)
 - `thread/start.dynamicTools` (when non-empty)
+- `thread/resume.initialTurnsPage`
 - `thread/fork.path`
-- `thread/start.persistExtendedHistory` (when `true`; descriptor: `thread/start.persistFullHistory`)
-- `thread/resume.persistExtendedHistory` (when `true`; descriptor: `thread/resume.persistFullHistory`)
-- `thread/fork.persistExtendedHistory` (when `true`; descriptor: `thread/fork.persistFullHistory`)
+
+`ThreadStartOptions.PersistExtendedHistory`, `ThreadResumeOptions.PersistExtendedHistory`, and
+`ThreadForkOptions.PersistExtendedHistory` are retained only as ignored source-compatibility switches.
+Current upstream no longer accepts the legacy persist-history wire fields.
 
 ### Known experimental-gated methods (blocked by default)
 

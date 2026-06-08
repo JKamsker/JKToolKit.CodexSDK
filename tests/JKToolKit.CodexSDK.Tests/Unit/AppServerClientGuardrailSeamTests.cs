@@ -83,68 +83,6 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
-    public async Task StartThread_WithPersistExtendedHistory_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
-    {
-        var rpc = new FakeRpc();
-        await using var client = new CodexAppServerClient(
-            new CodexAppServerClientOptions(),
-            new FakeProcess(),
-            rpc,
-            NullLogger.Instance,
-            startExitWatcher: false);
-
-        var act = async () => await client.StartThreadAsync(new ThreadStartOptions
-        {
-            PersistExtendedHistory = true
-        });
-
-        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
-        rpc.RequestCount.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task ResumeThread_WithPersistExtendedHistory_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
-    {
-        var rpc = new FakeRpc();
-        await using var client = new CodexAppServerClient(
-            new CodexAppServerClientOptions(),
-            new FakeProcess(),
-            rpc,
-            NullLogger.Instance,
-            startExitWatcher: false);
-
-        var act = async () => await client.ResumeThreadAsync(new ThreadResumeOptions
-        {
-            ThreadId = "thr_1",
-            PersistExtendedHistory = true
-        });
-
-        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
-        rpc.RequestCount.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task ForkThread_WithPersistExtendedHistory_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
-    {
-        var rpc = new FakeRpc();
-        await using var client = new CodexAppServerClient(
-            new CodexAppServerClientOptions(),
-            new FakeProcess(),
-            rpc,
-            NullLogger.Instance,
-            startExitWatcher: false);
-
-        var act = async () => await client.ForkThreadAsync(new ThreadForkOptions
-        {
-            ThreadId = "thr_1",
-            PersistExtendedHistory = true
-        });
-
-        await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
-        rpc.RequestCount.Should().Be(0);
-    }
-
-    [Fact]
     public async Task ResumeThread_WithExperimentalPath_ThrowsBeforeSendingRequest()
     {
         var rpc = new FakeRpc();
@@ -272,8 +210,10 @@ public sealed class AppServerClientGuardrailSeamTests
 
         var p = (ThreadStartParams)rpc.LastParams!;
         p.DynamicTools.Should().BeEquivalentTo(new[] { tool });
-        p.PersistExtendedHistory.Should().BeTrue();
         p.SessionStartSource.Should().Be("clear");
+        JsonSerializer.Serialize(p, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().NotContain("persistExtendedHistory")
+            .And.NotContain("persistFullHistory");
     }
 
     [Fact]

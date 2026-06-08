@@ -43,6 +43,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.GetThreadGoalAsync),
         nameof(CodexAppServerClient.ClearThreadGoalAsync),
         nameof(CodexAppServerClient.ListSkillsAsync),
+        nameof(CodexAppServerClient.SetSkillsExtraRootsAsync),
         nameof(CodexAppServerClient.ListAppsAsync),
         nameof(CodexAppServerClient.ReadConfigRequirementsAsync),
         nameof(CodexAppServerClient.ReadRemoteSkillsAsync),
@@ -1009,6 +1010,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct) =>
             NotSupported<SkillsListResult>();
 
+        public Task<SkillsExtraRootsSetResult> SetSkillsExtraRootsAsync(SkillsExtraRootsSetOptions options, CancellationToken ct) =>
+            NotSupported<SkillsExtraRootsSetResult>();
+
         public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct) =>
             NotSupported<AppsListResult>();
 
@@ -1236,6 +1240,15 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<RemoteControlStatusResult> ReadRemoteControlStatusAsync(CancellationToken ct) =>
             NotSupported<RemoteControlStatusResult>();
+
+        public Task<RemoteControlPairingStartResult> StartRemoteControlPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct) =>
+            NotSupported<RemoteControlPairingStartResult>();
+
+        public Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct) =>
+            NotSupported<RemoteControlClientsListResult>();
+
+        public Task<RemoteControlClientsRevokeResult> RevokeRemoteControlClientAsync(RemoteControlClientsRevokeOptions options, CancellationToken ct) =>
+            NotSupported<RemoteControlClientsRevokeResult>();
 
         public Task<EnvironmentAddResult> AddEnvironmentAsync(EnvironmentAddOptions options, CancellationToken ct) =>
             NotSupported<EnvironmentAddResult>();

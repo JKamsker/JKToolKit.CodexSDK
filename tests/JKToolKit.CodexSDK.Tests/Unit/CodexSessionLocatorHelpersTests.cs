@@ -118,6 +118,8 @@ public sealed class CodexSessionLocatorHelpersTests
     [InlineData(null, null, true)]
     [InlineData("/repo", null, false)]
     [InlineData(null, "/repo", false)]
+    [InlineData(@"\\?\C:\repo", @"C:\repo", true)]
+    [InlineData(@"\\?\UNC\server\share\repo", @"\\server\share\repo", true)]
     public void NormalizedPathEquals_HandlesVariousPathForms(string? a, string? b, bool expected)
     {
         CodexSessionLocatorHelpers.NormalizedPathEquals(a, b).Should().Be(expected);

@@ -43,6 +43,12 @@ public sealed class McpServerWrappersTests
                 {
                     name = "docs",
                     authStatus = "notLoggedIn",
+                    serverInfo = new
+                    {
+                        name = "lookup-server",
+                        title = "Lookup Server",
+                        version = "1.0.0"
+                    },
                     tools = new
                     {
                         search = new { name = "search", description = "Search", inputSchema = new { type = "object" } }
@@ -64,6 +70,7 @@ public sealed class McpServerWrappersTests
                 typed.Cursor.Should().Be("0");
                 typed.Limit.Should().Be(10);
                 typed.Detail.Should().Be("toolsAndAuthOnly");
+                typed.ThreadId.Should().Be("thr_1");
             },
             Result = rawResult
         };
@@ -79,12 +86,15 @@ public sealed class McpServerWrappersTests
         {
             Cursor = "0",
             Limit = 10,
+            ThreadId = "thr_1",
             Detail = McpServerStatusDetail.ToolsAndAuthOnly
         });
 
         page.Servers.Should().HaveCount(1);
         page.Servers[0].Name.Should().Be("docs");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
+        page.Servers[0].ServerInfo.Should().NotBeNull();
+        page.Servers[0].ServerInfo!.Title.Should().Be("Lookup Server");
         page.Servers[0].Tools.Should().ContainSingle(t => t.Name == "search");
     }
 

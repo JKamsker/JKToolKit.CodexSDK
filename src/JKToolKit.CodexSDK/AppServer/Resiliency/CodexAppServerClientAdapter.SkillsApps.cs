@@ -4,6 +4,8 @@ internal partial interface ICodexAppServerClientAdapter
 {
     Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct);
 
+    Task<SkillsExtraRootsSetResult> SetSkillsExtraRootsAsync(SkillsExtraRootsSetOptions options, CancellationToken ct);
+
     Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct);
 
     Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct);
@@ -20,6 +22,8 @@ internal partial interface ICodexAppServerClientAdapter
 internal sealed partial class CodexAppServerClientAdapter
 {
     public Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct) => _inner.ListSkillsAsync(options, ct);
+
+    public Task<SkillsExtraRootsSetResult> SetSkillsExtraRootsAsync(SkillsExtraRootsSetOptions options, CancellationToken ct) => _inner.SetSkillsExtraRootsAsync(options, ct);
 
     public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct) => _inner.ListAppsAsync(options, ct);
 

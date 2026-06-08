@@ -20,6 +20,11 @@ public sealed class RemoteControlEnvironmentClientTests
 
         await act.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
         rpc.RequestCount.Should().Be(0);
+
+        var pairingAct = async () => await client.StartRemoteControlPairingAsync(new RemoteControlPairingStartOptions());
+
+        await pairingAct.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+        rpc.RequestCount.Should().Be(0);
     }
 
     [Fact]
@@ -51,6 +56,100 @@ public sealed class RemoteControlEnvironmentClientTests
 
         await client.ReadRemoteControlStatusAsync();
         rpc.LastMethod.Should().Be("remoteControl/status/read");
+    }
+
+    [Fact]
+    public async Task StartRemoteControlPairingAsync_WhenExperimentalEnabled_SendsExpectedParams_AndParsesResult()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "pairingCode": "pair-1",
+              "manualPairingCode": "123-456",
+              "environmentId": "env-1",
+              "expiresAt": 1770000000
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc, experimentalApi: true);
+
+        var result = await client.StartRemoteControlPairingAsync(new RemoteControlPairingStartOptions
+        {
+            ManualCode = true
+        });
+
+        rpc.LastMethod.Should().Be("remoteControl/pairing/start");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"manualCode\":true");
+        result.PairingCode.Should().Be("pair-1");
+        result.ManualPairingCode.Should().Be("123-456");
+        result.EnvironmentId.Should().Be("env-1");
+        result.ExpiresAt.Should().Be(1770000000);
+    }
+
+    [Fact]
+    public async Task ListRemoteControlClientsAsync_WhenExperimentalEnabled_SendsExpectedParams_AndParsesResult()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "data": [
+                {
+                  "clientId": "client-1",
+                  "displayName": "Phone",
+                  "deviceType": "phone",
+                  "platform": "ios",
+                  "osVersion": "18.0",
+                  "deviceModel": "iPhone",
+                  "appVersion": "1.2.3",
+                  "lastSeenAt": 1770000001
+                }
+              ],
+              "nextCursor": "next-1"
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc, experimentalApi: true);
+
+        var result = await client.ListRemoteControlClientsAsync(new RemoteControlClientsListOptions
+        {
+            EnvironmentId = "env-1",
+            Cursor = "cursor-1",
+            Limit = 25,
+            Order = RemoteControlClientsListOrder.Desc
+        });
+
+        rpc.LastMethod.Should().Be("remoteControl/client/list");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"environmentId\":\"env-1\"")
+            .And.Contain("\"cursor\":\"cursor-1\"")
+            .And.Contain("\"limit\":25")
+            .And.Contain("\"order\":\"desc\"");
+        result.Clients.Should().ContainSingle();
+        result.Clients[0].ClientId.Should().Be("client-1");
+        result.Clients[0].DisplayName.Should().Be("Phone");
+        result.Clients[0].LastSeenAt.Should().Be(1770000001);
+        result.NextCursor.Should().Be("next-1");
+    }
+
+    [Fact]
+    public async Task RevokeRemoteControlClientAsync_WhenExperimentalEnabled_SendsExpectedParams()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc, experimentalApi: true);
+
+        var result = await client.RevokeRemoteControlClientAsync(new RemoteControlClientsRevokeOptions
+        {
+            EnvironmentId = "env-1",
+            ClientId = "client-1"
+        });
+
+        rpc.LastMethod.Should().Be("remoteControl/client/revoke");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"environmentId\":\"env-1\"")
+            .And.Contain("\"clientId\":\"client-1\"");
+        result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
     }
 
     [Fact]

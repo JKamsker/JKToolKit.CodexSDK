@@ -27,6 +27,12 @@ public sealed record class PermissionsRequestApprovalParams
     public required string ItemId { get; init; }
 
     /// <summary>
+    /// Gets the optional environment identifier associated with the permission request.
+    /// </summary>
+    [JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; init; }
+
+    /// <summary>
     /// Gets the optional user-facing reason for the request.
     /// </summary>
     [JsonPropertyName("reason")]

@@ -33,6 +33,7 @@ public sealed class ThreadApiParsingTests
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
         threads[1].Path.Should().Contain("rollout-t_2");
         threads[1].SourceKind.Should().Be("subAgentThreadSpawn");
+        threads[1].ParentThreadId.Should().Be("t_parent");
         threads[1].AgentNickname.Should().Be("beta");
         threads[1].AgentRole.Should().Be("reviewer");
         threads[1].ServiceTier.Should().BeNull();
@@ -113,6 +114,44 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
+    public void ParseLifecycleThread_ParsesInitialTurnsPage()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "threadId": "t_resumed",
+              "initialTurnsPage": {
+                "data": [
+                  {
+                    "id": "turn_1",
+                    "status": "completed",
+                    "items": [
+                      {
+                        "id": "user_1",
+                        "type": "userMessage",
+                        "content": [
+                          { "type": "text", "text": "hello" }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "nextCursor": "next_1",
+                "backwardsCursor": "prev_1"
+              }
+            }
+            """);
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(doc.RootElement);
+
+        result.InitialTurnsPage.Should().NotBeNull();
+        result.InitialTurnsPage!.Data.Should().ContainSingle()
+            .Which.Id.Should().Be("turn_1");
+        result.InitialTurnsPage.NextCursor.Should().Be("next_1");
+        result.InitialTurnsPage.BackwardsCursor.Should().Be("prev_1");
+    }
+
+    [Fact]
     public void ParseReadResult_ReturnsThreadSummary()
     {
         var raw = JsonFixtures.Load("thread-read-response.json");
@@ -162,6 +201,9 @@ public sealed class ThreadApiParsingTests
         items.Should().Contain(x => x is CodexThreadItemEnteredReviewMode);
         items.Should().Contain(x => x is CodexThreadItemExitedReviewMode);
         items.Should().Contain(x => x is CodexThreadItemContextCompaction);
+
+        items.OfType<CodexThreadItemUserMessage>().Should().ContainSingle()
+            .Which.ClientId.Should().Be("client_msg_1");
 
         var command = items.OfType<CodexThreadItemCommandExecution>().Should().ContainSingle().Subject;
         command.Source.Should().Be(CodexCommandExecutionSource.UserShell);

@@ -57,7 +57,12 @@ internal sealed class CodexAppServerTurnsClient
         var turnStartParams = new TurnStartParams
         {
             ThreadId = threadId,
+            ClientUserMessageId = options.ClientUserMessageId,
             Input = options.Input.Select(i => i.Wire).ToArray(),
+            ResponsesApiClientMetadata = options.ResponsesApiClientMetadata,
+            AdditionalContext = CodexAppServerWireBuilders.BuildAdditionalContext(
+                options.AdditionalContext,
+                nameof(TurnStartOptions.AdditionalContext)),
             Cwd = options.Cwd,
             RuntimeWorkspaceRoots = options.RuntimeWorkspaceRoots,
             Environments = CodexAppServerWireBuilders.BuildEnvironments(
@@ -139,6 +144,8 @@ internal sealed class CodexAppServerTurnsClient
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
         if (string.IsNullOrWhiteSpace(options.ExpectedTurnId))
             throw new ArgumentException("ExpectedTurnId cannot be empty or whitespace.", nameof(options.ExpectedTurnId));
+
+        ExperimentalApiGuards.ValidateTurnSteer(options, experimentalApiEnabled: _experimentalApiEnabled());
 
         try
         {

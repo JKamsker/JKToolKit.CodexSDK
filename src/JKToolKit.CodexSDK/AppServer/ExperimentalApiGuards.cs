@@ -26,11 +26,6 @@ internal static class ExperimentalApiGuards
                 throw new CodexExperimentalApiRequiredException("thread/start.dynamicTools");
             }
 
-            if (options.PersistExtendedHistory)
-            {
-                throw new CodexExperimentalApiRequiredException("thread/start.persistFullHistory");
-            }
-
             if (options.RuntimeWorkspaceRoots is not null)
             {
                 throw new CodexExperimentalApiRequiredException("thread/start.runtimeWorkspaceRoots");
@@ -72,14 +67,14 @@ internal static class ExperimentalApiGuards
                 throw new CodexExperimentalApiRequiredException("thread/resume.path");
             }
 
-            if (options.PersistExtendedHistory)
-            {
-                throw new CodexExperimentalApiRequiredException("thread/resume.persistFullHistory");
-            }
-
             if (options.RuntimeWorkspaceRoots is not null)
             {
                 throw new CodexExperimentalApiRequiredException("thread/resume.runtimeWorkspaceRoots");
+            }
+
+            if (options.InitialTurnsPage is not null)
+            {
+                throw new CodexExperimentalApiRequiredException("thread/resume.initialTurnsPage");
             }
 
             if (!string.IsNullOrWhiteSpace(options.PermissionProfileId))
@@ -114,11 +109,6 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("askForApproval.granular");
         }
 
-        if (!experimentalApiEnabled && options.PersistExtendedHistory)
-        {
-            throw new CodexExperimentalApiRequiredException("thread/fork.persistFullHistory");
-        }
-
         if (!experimentalApiEnabled && options.RuntimeWorkspaceRoots is not null)
         {
             throw new CodexExperimentalApiRequiredException("thread/fork.runtimeWorkspaceRoots");
@@ -147,6 +137,16 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("turn/start.collaborationMode");
         }
 
+        if (!experimentalApiEnabled && options.ResponsesApiClientMetadata is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/start.responsesapiClientMetadata");
+        }
+
+        if (!experimentalApiEnabled && options.AdditionalContext is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/start.additionalContext");
+        }
+
         if (!experimentalApiEnabled && options.RuntimeWorkspaceRoots is not null)
         {
             throw new CodexExperimentalApiRequiredException("turn/start.runtimeWorkspaceRoots");
@@ -160,6 +160,19 @@ internal static class ExperimentalApiGuards
         if (!experimentalApiEnabled && !string.IsNullOrWhiteSpace(options.PermissionProfileId))
         {
             throw new CodexExperimentalApiRequiredException("turn/start.permissions");
+        }
+    }
+
+    internal static void ValidateTurnSteer(TurnSteerOptions options, bool experimentalApiEnabled)
+    {
+        if (!experimentalApiEnabled && options.ResponsesApiClientMetadata is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/steer.responsesapiClientMetadata");
+        }
+
+        if (!experimentalApiEnabled && options.AdditionalContext is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/steer.additionalContext");
         }
     }
 }

@@ -48,6 +48,12 @@ internal static class CodexAppServerClientConfigRequirementsParser
             .Select(m => m!.Value)
             .ToArray();
 
+        var allowedWindowsSandboxImplementations = GetOptionalStringArray(req, "allowedWindowsSandboxImplementations")
+            ?.Select(s => WindowsSandboxSetupMode.TryParse(s, out var m) ? m : (WindowsSandboxSetupMode?)null)
+            .Where(m => m.HasValue)
+            .Select(m => m!.Value)
+            .ToArray();
+
         var allowedApprovalsReviewers = GetOptionalStringArray(req, "allowedApprovalsReviewers")
             ?.Select(CodexApprovalsReviewerParser.ParseOrNull)
             .Where(r => r.HasValue)
@@ -80,6 +86,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowedAskForApproval = allowedAskForApprovalValues?.ToArray(),
             AllowedApprovalsReviewers = allowedApprovalsReviewers,
             AllowedSandboxModes = allowedSandboxModes,
+            AllowedWindowsSandboxImplementations = allowedWindowsSandboxImplementations,
             AllowedPermissionProfileIds = GetOptionalStringArray(req, "allowedPermissions"),
             AllowedWebSearchModes = allowedWebSearchModes,
             FeatureRequirements = featureRequirements,

@@ -32,4 +32,33 @@ public sealed class TurnStartParamsSerializationTests
         json.Should().Contain("\"environments\":[{\"environmentId\":\"env-1\",\"cwd\":\"C:/repo\"}]");
         json.Should().Contain("\"permissions\":\"profile-1\"");
     }
+
+    [Fact]
+    public void Serialize_WritesClientMetadataAndAdditionalContext()
+    {
+        var json = JsonSerializer.Serialize(
+            new TurnStartParams
+            {
+                ThreadId = "thr_123",
+                Input = [TurnInputItem.Text("hello")],
+                ClientUserMessageId = "msg_1",
+                ResponsesApiClientMetadata = new Dictionary<string, string>
+                {
+                    ["workspace_kind"] = "local"
+                },
+                AdditionalContext = new Dictionary<string, TurnAdditionalContextEntryParams>
+                {
+                    ["note"] = new()
+                    {
+                        Value = "extra context",
+                        Kind = "application"
+                    }
+                }
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"clientUserMessageId\":\"msg_1\"")
+            .And.Contain("\"responsesapiClientMetadata\":{\"workspace_kind\":\"local\"}")
+            .And.Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\"}}");
+    }
 }

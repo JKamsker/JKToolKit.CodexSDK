@@ -86,7 +86,8 @@ public sealed class ConfigRequirementsReadWrapperTests
                     },
                     unixSockets = new Dictionary<string, string>
                     {
-                        ["/tmp/codex.sock"] = "allow"
+                        ["/tmp/codex.sock"] = "allow",
+                        ["/tmp/blocked.sock"] = "deny"
                     }
                 }
             }
@@ -110,6 +111,7 @@ public sealed class ConfigRequirementsReadWrapperTests
         result.Requirements.Network.Domains["example.com"].Should().Be(NetworkDomainPermission.Deny);
         result.Requirements.Network.UnixSockets.Should().NotBeNull();
         result.Requirements.Network.UnixSockets!["/tmp/codex.sock"].Should().Be(NetworkUnixSocketPermission.Allow);
+        result.Requirements.Network.UnixSockets["/tmp/blocked.sock"].Should().Be(NetworkUnixSocketPermission.Deny);
     }
 
     private sealed class FakeProcess : IStdioProcess

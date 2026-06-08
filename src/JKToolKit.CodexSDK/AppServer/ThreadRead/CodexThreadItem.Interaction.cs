@@ -10,7 +10,13 @@ public sealed record class CodexThreadItemUserMessage(
     string Type,
     IReadOnlyList<JsonElement> ContentItems,
     JsonElement Raw)
-    : CodexThreadItem(Id, Type, Raw);
+    : CodexThreadItem(Id, Type, Raw)
+{
+    /// <summary>
+    /// Gets the optional client-provided user-message identifier.
+    /// </summary>
+    public string? ClientId { get; init; }
+}
 
 /// <summary>
 /// Represents a hook prompt item.

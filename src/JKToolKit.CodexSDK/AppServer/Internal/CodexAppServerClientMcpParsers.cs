@@ -37,6 +37,7 @@ internal static class CodexAppServerClientMcpParsers
                 {
                     Name = name,
                     AuthStatus = authStatus,
+                    ServerInfo = ParseServerInfo(item),
                     Tools = tools,
                     Resources = resources,
                     ResourceTemplates = templates,
@@ -50,6 +51,24 @@ internal static class CodexAppServerClientMcpParsers
             Servers = servers,
             NextCursor = GetStringOrNull(result, "nextCursor") ?? GetStringOrNull(result, "next_cursor"),
             Raw = result
+        };
+    }
+
+    private static McpServerImplementationInfo? ParseServerInfo(JsonElement statusObj)
+    {
+        if (TryGetObject(statusObj, "serverInfo") is not { } serverInfo)
+        {
+            return null;
+        }
+
+        return new McpServerImplementationInfo
+        {
+            Name = GetStringOrNull(serverInfo, "name"),
+            Version = GetStringOrNull(serverInfo, "version"),
+            Title = GetStringOrNull(serverInfo, "title"),
+            Description = GetStringOrNull(serverInfo, "description"),
+            WebsiteUrl = GetStringOrNull(serverInfo, "websiteUrl") ?? GetStringOrNull(serverInfo, "website_url"),
+            Raw = serverInfo.Clone()
         };
     }
 

@@ -7,6 +7,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<SkillsListResult> ListSkillsAsync(SkillsListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.ListSkillsAsync(options, token), ct);
 
+    public Task<SkillsExtraRootsSetResult> SetSkillsExtraRootsAsync(SkillsExtraRootsSetOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.SetSkillsExtraRootsAsync(options, token), ct);
+
     public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.ListAppsAsync(options, token), ct);
 

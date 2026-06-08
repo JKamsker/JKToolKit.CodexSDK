@@ -65,6 +65,9 @@ internal static class CodexThreadItemParser
     private static CodexThreadItem? ParseUserMessage(string id, string type, JsonElement element, JsonElement raw) =>
         TryGetRequiredArray(element, "content", out var content)
             ? new CodexThreadItemUserMessage(id, type, CloneElements(content), raw)
+            {
+                ClientId = CodexAppServerClientJson.GetStringOrNull(element, "clientId")
+            }
             : null;
 
     private static CodexThreadItem? ParseHookPrompt(string id, string type, JsonElement element, JsonElement raw)

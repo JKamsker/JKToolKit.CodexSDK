@@ -51,8 +51,7 @@ internal sealed class CodexAppServerThreadsClient
                 Personality = options.Personality,
                 Ephemeral = options.Ephemeral,
                 ExperimentalRawEvents = options.ExperimentalRawEvents,
-                DynamicTools = options.DynamicTools,
-                PersistExtendedHistory = options.PersistExtendedHistory
+                DynamicTools = options.DynamicTools
             },
             ct);
 
@@ -117,7 +116,9 @@ internal sealed class CodexAppServerThreadsClient
                 BaseInstructions = options.BaseInstructions,
                 DeveloperInstructions = options.DeveloperInstructions,
                 Personality = options.Personality,
-                PersistExtendedHistory = options.PersistExtendedHistory
+                InitialTurnsPage = CodexAppServerWireBuilders.BuildInitialTurnsPage(
+                    options.InitialTurnsPage,
+                    nameof(ThreadResumeOptions.InitialTurnsPage))
             },
             ct);
 
@@ -401,8 +402,7 @@ internal sealed class CodexAppServerThreadsClient
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
                 DeveloperInstructions = options.DeveloperInstructions,
-                Ephemeral = options.Ephemeral,
-                PersistExtendedHistory = options.PersistExtendedHistory
+                Ephemeral = options.Ephemeral
             },
             ct);
 

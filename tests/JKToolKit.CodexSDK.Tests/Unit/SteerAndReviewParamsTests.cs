@@ -14,7 +14,20 @@ public sealed class SteerAndReviewParamsTests
         {
             ThreadId = "thr_123",
             ExpectedTurnId = "turn_456",
-            Input = [TurnInputItem.Text("hello")]
+            Input = [TurnInputItem.Text("hello")],
+            ClientUserMessageId = "msg_1",
+            ResponsesApiClientMetadata = new Dictionary<string, string>
+            {
+                ["workspace_kind"] = "local"
+            },
+            AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry>
+            {
+                ["note"] = new()
+                {
+                    Value = "extra context",
+                    Kind = TurnAdditionalContextKind.Application
+                }
+            }
         });
 
         var json = JsonSerializer.Serialize(p, CodexAppServerClient.CreateDefaultSerializerOptions());
@@ -24,6 +37,9 @@ public sealed class SteerAndReviewParamsTests
         json.Should().Contain("\"input\":[");
         json.Should().Contain("\"type\":\"text\"");
         json.Should().Contain("\"text\":\"hello\"");
+        json.Should().Contain("\"clientUserMessageId\":\"msg_1\"");
+        json.Should().Contain("\"responsesapiClientMetadata\":{\"workspace_kind\":\"local\"}");
+        json.Should().Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\"}}");
     }
 
     [Fact]

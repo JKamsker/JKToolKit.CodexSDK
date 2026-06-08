@@ -297,6 +297,11 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
 
         Console.Error.WriteLine("Server request: item/permissions/requestApproval");
         Console.Error.WriteLine($"threadId={request.ThreadId} turnId={request.TurnId} itemId={request.ItemId}");
+        if (!string.IsNullOrWhiteSpace(request.EnvironmentId))
+        {
+            Console.Error.WriteLine($"environmentId={request.EnvironmentId}");
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Reason))
         {
             Console.Error.WriteLine($"reason={request.Reason}");

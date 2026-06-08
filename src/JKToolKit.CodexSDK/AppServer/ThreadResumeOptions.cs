@@ -135,11 +135,15 @@ public sealed class ThreadResumeOptions
     public string? Personality { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether to persist additional rollout event variants required to reconstruct
-    /// a richer thread history on subsequent resume/fork/read (experimental).
+    /// Gets or sets optional turn-page bootstrap settings for the resume response.
     /// </summary>
     /// <remarks>
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
+    public ThreadResumeInitialTurnsPageOptions? InitialTurnsPage { get; set; }
+
+    /// <summary>
+    /// Gets or sets a legacy compatibility switch that is ignored by current upstream app-server builds.
+    /// </summary>
     public bool PersistExtendedHistory { get; set; }
 }
