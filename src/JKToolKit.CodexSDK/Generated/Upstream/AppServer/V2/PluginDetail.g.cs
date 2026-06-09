@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginDetail
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("appTemplates")]
+    public System.Collections.Generic.ICollection<AppTemplateSummary> AppTemplates { get; set; } = new System.Collections.ObjectModel.Collection<AppTemplateSummary>();
+
     [System.Text.Json.Serialization.JsonPropertyName("apps")]
     public System.Collections.Generic.ICollection<AppSummary> Apps { get; set; } = new System.Collections.ObjectModel.Collection<AppSummary>();
 

@@ -23,8 +23,7 @@ internal partial class Model
     public AvailabilityNux? AvailabilityNux { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("defaultReasoningEffort")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ReasoningEffort>))]
-    public ReasoningEffort DefaultReasoningEffort { get; set; } = default!;
+    public string DefaultReasoningEffort { get; set; } = default!;
 
     /// <summary>
     /// Catalog default service tier id for this model, when one is configured.

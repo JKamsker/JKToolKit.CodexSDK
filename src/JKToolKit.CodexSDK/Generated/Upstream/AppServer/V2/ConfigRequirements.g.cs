@@ -22,8 +22,8 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowedApprovalPolicies")]
     public System.Collections.Generic.ICollection<AllowedApprovalPolicies>? AllowedApprovalPolicies { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("allowedPermissions")]
-    public System.Collections.Generic.ICollection<string>? AllowedPermissions { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("allowedPermissionProfiles")]
+    public System.Collections.Generic.IDictionary<string, bool>? AllowedPermissionProfiles { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("allowedSandboxModes")]
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
@@ -39,6 +39,9 @@ internal partial class ConfigRequirements
 
     [System.Text.Json.Serialization.JsonPropertyName("computerUse")]
     public ComputerUse? ComputerUse { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("defaultPermissions")]
+    public string? DefaultPermissions { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("enforceResidency")]
     public EnforceResidency? EnforceResidency { get; set; } = default!;

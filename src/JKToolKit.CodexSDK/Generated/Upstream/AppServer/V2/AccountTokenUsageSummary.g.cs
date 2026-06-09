@@ -10,14 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ReasoningEffortOption
+internal partial class AccountTokenUsageSummary
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string Description { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("currentStreakDays")]
+    public long? CurrentStreakDays { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
-    public string ReasoningEffort { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("lifetimeTokens")]
+    public long? LifetimeTokens { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("longestRunningTurnSec")]
+    public long? LongestRunningTurnSec { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("longestStreakDays")]
+    public long? LongestStreakDays { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("peakDailyTokens")]
+    public long? PeakDailyTokens { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
