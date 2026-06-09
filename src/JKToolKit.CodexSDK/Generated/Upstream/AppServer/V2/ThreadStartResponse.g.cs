@@ -37,7 +37,7 @@ internal partial class ThreadStartResponse
     public string ModelProvider { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
-    public ReasoningEffort4? ReasoningEffort { get; set; } = default!;
+    public ReasoningEffort3? ReasoningEffort { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
     public Sandbox2 Sandbox { get; set; } = default!;

@@ -10,14 +10,14 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ReasoningEffortOption
+internal partial class GetAccountTokenUsageResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string Description { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("dailyUsageBuckets")]
+    public System.Collections.Generic.ICollection<AccountTokenUsageDailyBucket>? DailyUsageBuckets { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
-    public string ReasoningEffort { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("summary")]
+    public AccountTokenUsageSummary Summary { get; set; } = new AccountTokenUsageSummary();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
