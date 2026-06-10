@@ -31,7 +31,9 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                RuntimeWorkspaceRoots = options.RuntimeWorkspaceRoots,
+                RuntimeWorkspaceRoots = CodexAppServerWireBuilders.BuildRuntimeWorkspaceRoots(
+                    options.RuntimeWorkspaceRoots,
+                    nameof(ThreadStartOptions.RuntimeWorkspaceRoots)),
                 Environments = CodexAppServerWireBuilders.BuildEnvironments(
                     options.Environments,
                     nameof(ThreadStartOptions.Environments)),
@@ -103,7 +105,9 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                RuntimeWorkspaceRoots = options.RuntimeWorkspaceRoots,
+                RuntimeWorkspaceRoots = CodexAppServerWireBuilders.BuildRuntimeWorkspaceRoots(
+                    options.RuntimeWorkspaceRoots,
+                    nameof(ThreadResumeOptions.RuntimeWorkspaceRoots)),
                 ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
                     options.ServiceTier,
                     options.ClearServiceTier,
@@ -394,7 +398,9 @@ internal sealed class CodexAppServerThreadsClient
                 Model = options.Model?.Value,
                 ModelProvider = options.ModelProvider,
                 Cwd = options.Cwd,
-                RuntimeWorkspaceRoots = options.RuntimeWorkspaceRoots,
+                RuntimeWorkspaceRoots = CodexAppServerWireBuilders.BuildRuntimeWorkspaceRoots(
+                    options.RuntimeWorkspaceRoots,
+                    nameof(ThreadForkOptions.RuntimeWorkspaceRoots)),
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 ApprovalsReviewer = options.ApprovalsReviewer,
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),

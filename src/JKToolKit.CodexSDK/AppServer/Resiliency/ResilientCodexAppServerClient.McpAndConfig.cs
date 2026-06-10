@@ -34,6 +34,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountRateLimitsAsync(token), ct);
 
+    public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountTokenUsageAsync(token), ct);
+
     public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ListModelsAsync(options, token), ct);
 

@@ -28,6 +28,18 @@ internal static class CodexAppServerWireBuilders
     internal static string BuildThreadIdOrPlaceholder(string? threadId) =>
         string.IsNullOrWhiteSpace(threadId) ? string.Empty : threadId;
 
+    internal static IReadOnlyList<string>? BuildRuntimeWorkspaceRoots(
+        IReadOnlyList<string>? runtimeWorkspaceRoots,
+        string argumentName)
+    {
+        CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(
+            runtimeWorkspaceRoots,
+            argumentName,
+            "RuntimeWorkspaceRoots");
+
+        return runtimeWorkspaceRoots;
+    }
+
     internal static IReadOnlyList<TurnEnvironmentParams>? BuildEnvironments(
         IReadOnlyList<TurnEnvironmentOptions>? environments,
         string argumentName)

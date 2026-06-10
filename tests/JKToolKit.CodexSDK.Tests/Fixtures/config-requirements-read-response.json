@@ -4,7 +4,11 @@
     "allowedApprovalsReviewers": ["user", "auto_review"],
     "allowedSandboxModes": ["read-only", "workspace-write"],
     "allowedWindowsSandboxImplementations": ["elevated", "unelevated"],
-    "allowedPermissions": [":read-only", "managed"],
+    "allowedPermissionProfiles": {
+      ":read-only": true,
+      "managed": false
+    },
+    "defaultPermissions": ":read-only",
     "allowedWebSearchModes": ["disabled", "cached", "live"],
     "featureRequirements": {
       "apps": true,

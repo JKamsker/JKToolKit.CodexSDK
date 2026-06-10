@@ -64,7 +64,9 @@ internal sealed class CodexAppServerTurnsClient
                 options.AdditionalContext,
                 nameof(TurnStartOptions.AdditionalContext)),
             Cwd = options.Cwd,
-            RuntimeWorkspaceRoots = options.RuntimeWorkspaceRoots,
+            RuntimeWorkspaceRoots = CodexAppServerWireBuilders.BuildRuntimeWorkspaceRoots(
+                options.RuntimeWorkspaceRoots,
+                nameof(TurnStartOptions.RuntimeWorkspaceRoots)),
             Environments = CodexAppServerWireBuilders.BuildEnvironments(
                 options.Environments,
                 nameof(TurnStartOptions.Environments)),

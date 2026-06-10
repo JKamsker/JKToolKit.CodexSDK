@@ -27,6 +27,12 @@ public sealed partial class CodexAppServerClient
         _remoteControlClient.StartPairingAsync(options, ct);
 
     /// <summary>
+    /// Reads whether a remote-control pairing code has been claimed.
+    /// </summary>
+    public Task<RemoteControlPairingStatusResult> ReadRemoteControlPairingStatusAsync(RemoteControlPairingStatusOptions options, CancellationToken ct = default) =>
+        _remoteControlClient.ReadPairingStatusAsync(options, ct);
+
+    /// <summary>
     /// Lists remote-control client grants.
     /// </summary>
     public Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct = default) =>

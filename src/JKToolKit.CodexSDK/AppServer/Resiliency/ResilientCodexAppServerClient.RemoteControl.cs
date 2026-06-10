@@ -16,6 +16,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<RemoteControlPairingStartResult> StartRemoteControlPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.RemoteControl, (c, token) => c.StartRemoteControlPairingAsync(options, token), ct);
 
+    public Task<RemoteControlPairingStatusResult> ReadRemoteControlPairingStatusAsync(RemoteControlPairingStatusOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.RemoteControl, (c, token) => c.ReadRemoteControlPairingStatusAsync(options, token), ct);
+
     public Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.RemoteControl, (c, token) => c.ListRemoteControlClientsAsync(options, token), ct);
 

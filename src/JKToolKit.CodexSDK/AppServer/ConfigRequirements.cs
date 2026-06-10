@@ -34,9 +34,19 @@ public sealed record class ConfigRequirements
     public IReadOnlyList<WindowsSandboxSetupMode>? AllowedWindowsSandboxImplementations { get; init; }
 
     /// <summary>
-    /// Gets the allow-list of named permission profiles, when present.
+    /// Gets the named permission-profile allow-list keyed by profile id, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? AllowedPermissionProfiles { get; init; }
+
+    /// <summary>
+    /// Gets the allow-list of named permission profile ids, when present.
     /// </summary>
     public IReadOnlyList<string>? AllowedPermissionProfileIds { get; init; }
+
+    /// <summary>
+    /// Gets the default permission profile id, when present.
+    /// </summary>
+    public string? DefaultPermissionProfileId { get; init; }
 
     /// <summary>
     /// Gets the allow-list of web search modes, when present.

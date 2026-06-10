@@ -56,6 +56,38 @@ internal sealed class CodexAppServerRemoteControlClient
         };
     }
 
+    public async Task<RemoteControlPairingStatusResult> ReadPairingStatusAsync(
+        RemoteControlPairingStatusOptions options,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        RequireExperimentalApi("remoteControl/pairing/status");
+
+        var hasPairingCode = !string.IsNullOrWhiteSpace(options.PairingCode);
+        var hasManualPairingCode = !string.IsNullOrWhiteSpace(options.ManualPairingCode);
+        if (hasPairingCode == hasManualPairingCode)
+        {
+            throw new ArgumentException(
+                "Exactly one of PairingCode or ManualPairingCode must be provided.",
+                nameof(options));
+        }
+
+        var result = await _sendRequestAsync(
+            "remoteControl/pairing/status",
+            new
+            {
+                pairingCode = hasPairingCode ? options.PairingCode : null,
+                manualPairingCode = hasManualPairingCode ? options.ManualPairingCode : null
+            },
+            ct);
+
+        return new RemoteControlPairingStatusResult
+        {
+            Claimed = CodexAppServerClientJson.GetRequiredBool(result, "claimed", "remoteControl/pairing/status response"),
+            Raw = result
+        };
+    }
+
     public async Task<RemoteControlClientsListResult> ListClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);

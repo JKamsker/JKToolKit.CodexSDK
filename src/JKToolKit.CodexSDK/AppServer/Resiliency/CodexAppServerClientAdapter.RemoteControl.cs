@@ -10,6 +10,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<RemoteControlPairingStartResult> StartRemoteControlPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct);
 
+    Task<RemoteControlPairingStatusResult> ReadRemoteControlPairingStatusAsync(RemoteControlPairingStatusOptions options, CancellationToken ct);
+
     Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct);
 
     Task<RemoteControlClientsRevokeResult> RevokeRemoteControlClientAsync(RemoteControlClientsRevokeOptions options, CancellationToken ct);
@@ -28,6 +30,9 @@ internal sealed partial class CodexAppServerClientAdapter
 
     public Task<RemoteControlPairingStartResult> StartRemoteControlPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct) =>
         _inner.StartRemoteControlPairingAsync(options, ct);
+
+    public Task<RemoteControlPairingStatusResult> ReadRemoteControlPairingStatusAsync(RemoteControlPairingStatusOptions options, CancellationToken ct) =>
+        _inner.ReadRemoteControlPairingStatusAsync(options, ct);
 
     public Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct) =>
         _inner.ListRemoteControlClientsAsync(options, ct);

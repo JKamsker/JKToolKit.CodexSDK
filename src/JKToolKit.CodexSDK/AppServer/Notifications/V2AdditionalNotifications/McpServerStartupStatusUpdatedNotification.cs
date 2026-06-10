@@ -8,6 +8,11 @@ namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 public sealed record class McpServerStartupStatusUpdatedNotification : AppServerNotification
 {
     /// <summary>
+    /// Gets the owning thread id, when the startup status is scoped to a thread.
+    /// </summary>
+    public string? ThreadId { get; }
+
+    /// <summary>
     /// Gets the MCP server name.
     /// </summary>
     public string Name { get; }
@@ -25,9 +30,15 @@ public sealed record class McpServerStartupStatusUpdatedNotification : AppServer
     /// <summary>
     /// Initializes a new instance of <see cref="McpServerStartupStatusUpdatedNotification"/>.
     /// </summary>
-    public McpServerStartupStatusUpdatedNotification(string Name, McpServerStartupState Status, string? Error, JsonElement Params)
+    public McpServerStartupStatusUpdatedNotification(
+        string Name,
+        McpServerStartupState Status,
+        string? Error,
+        JsonElement Params,
+        string? ThreadId = null)
         : base("mcpServer/startupStatus/updated", Params)
     {
+        this.ThreadId = ThreadId;
         this.Name = Name;
         this.Status = Status;
         this.Error = Error;

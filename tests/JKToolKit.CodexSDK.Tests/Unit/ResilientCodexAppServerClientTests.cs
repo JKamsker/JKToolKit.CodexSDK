@@ -54,6 +54,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ImportExternalAgentConfigAsync),
         nameof(CodexAppServerClient.ReadAccountAsync),
         nameof(CodexAppServerClient.ReadAccountRateLimitsAsync),
+        nameof(CodexAppServerClient.ReadAccountTokenUsageAsync),
         nameof(CodexAppServerClient.ListModelsAsync),
         nameof(CodexAppServerClient.ListExperimentalFeaturesAsync),
         nameof(CodexAppServerClient.WriteConfigValueAsync),
@@ -1061,6 +1062,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) =>
             NotSupported<AccountRateLimitsReadResult>();
 
+        public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) =>
+            NotSupported<AccountTokenUsageReadResult>();
+
         public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) =>
             NotSupported<ModelListResult>();
 
@@ -1243,6 +1247,9 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<RemoteControlPairingStartResult> StartRemoteControlPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct) =>
             NotSupported<RemoteControlPairingStartResult>();
+
+        public Task<RemoteControlPairingStatusResult> ReadRemoteControlPairingStatusAsync(RemoteControlPairingStatusOptions options, CancellationToken ct) =>
+            NotSupported<RemoteControlPairingStatusResult>();
 
         public Task<RemoteControlClientsListResult> ListRemoteControlClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct) =>
             NotSupported<RemoteControlClientsListResult>();

@@ -29,7 +29,7 @@ public sealed class ThreadStartOptions
     /// </summary>
     /// <remarks>
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
-    /// Relative paths are resolved by app-server against the effective thread working directory.
+    /// Paths must be absolute.
     /// </remarks>
     public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; set; }
 

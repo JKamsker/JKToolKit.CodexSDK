@@ -131,10 +131,13 @@ public sealed class AppServerNotificationMapperTests
         hookCompletedNotification.TurnId.Should().BeNull();
         hookCompletedNotification.RunInfo.CompletedAt.Should().Be(150);
 
-        var startupStatus = JsonDocument.Parse("""{"name":"server-1","status":"ready","error":null}""").RootElement;
-        AppServerNotificationMapper.Map("mcpServer/startupStatus/updated", startupStatus)
+        var startupStatus = JsonDocument.Parse("""{"threadId":"thr-1","name":"server-1","status":"ready","error":null}""").RootElement;
+        var startupNotification = AppServerNotificationMapper.Map("mcpServer/startupStatus/updated", startupStatus)
             .Should().BeOfType<McpServerStartupStatusUpdatedNotification>()
-            .Which.Status.Should().Be(McpServerStartupState.Ready);
+            .Which;
+
+        startupNotification.ThreadId.Should().Be("thr-1");
+        startupNotification.Status.Should().Be(McpServerStartupState.Ready);
 
         AppServerNotificationMapper.Map("skills/changed", JsonDocument.Parse("""{}""").RootElement)
             .Should().BeOfType<SkillsChangedNotification>();
@@ -178,6 +181,15 @@ public sealed class AppServerNotificationMapperTests
         goalNotification.Goal.Should().NotBeNull();
         goalNotification.Goal!.Status.Should().Be(ThreadGoalStatus.BudgetLimited);
         goalNotification.Goal.TokenBudget.Should().Be(100);
+
+        var moderationMetadata = JsonDocument.Parse("""{"threadId":"t1","turnId":"turn1","metadata":{"flagged":false,"categories":["safe"]}}""").RootElement;
+        var moderationNotification = AppServerNotificationMapper.Map("turn/moderationMetadata", moderationMetadata)
+            .Should().BeOfType<TurnModerationMetadataNotification>()
+            .Which;
+
+        moderationNotification.ThreadId.Should().Be("t1");
+        moderationNotification.TurnId.Should().Be("turn1");
+        moderationNotification.Metadata.GetProperty("flagged").GetBoolean().Should().BeFalse();
 
         AppServerNotificationMapper.Map("thread/goal/cleared", JsonDocument.Parse("""{"threadId":"t1"}""").RootElement)
             .Should().BeOfType<ThreadGoalClearedNotification>()
@@ -359,6 +371,13 @@ public sealed class AppServerNotificationMapperTests
         var typed = mapped.Should().BeOfType<AccountUpdatedNotification>().Subject;
         typed.AuthMode.Should().Be(CodexAuthMode.ChatGptAuthTokens);
         typed.PlanType.Should().Be(CodexPlanType.Unknown);
+
+        var patJson = JsonDocument.Parse("""{"authMode":"personalAccessToken","planType":"pro"}""").RootElement;
+
+        var patMapped = AppServerNotificationMapper.Map("account/updated", patJson);
+
+        patMapped.Should().BeOfType<AccountUpdatedNotification>()
+            .Which.AuthMode.Should().Be(CodexAuthMode.PersonalAccessToken);
     }
 
     [Fact]

@@ -140,6 +140,12 @@ internal static partial class AppServerNotificationMapper
                 Turn: GetAny(p, "turn"),
                 Params: p),
 
+            "turn/moderationMetadata" => new TurnModerationMetadataNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetString(p, "turnId") ?? string.Empty,
+                Metadata: GetAny(p, "metadata"),
+                Params: p),
+
             "turn/diff/updated" => new TurnDiffUpdatedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,

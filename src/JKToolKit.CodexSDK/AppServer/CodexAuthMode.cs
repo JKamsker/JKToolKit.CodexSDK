@@ -36,6 +36,11 @@ public readonly record struct CodexAuthMode
     public static CodexAuthMode ChatGptAuthTokens => new("chatgptAuthTokens");
 
     /// <summary>
+    /// Gets the <c>personalAccessToken</c> auth mode.
+    /// </summary>
+    public static CodexAuthMode PersonalAccessToken => new("personalAccessToken");
+
+    /// <summary>
     /// Parses an auth mode from a wire value.
     /// </summary>
     public static CodexAuthMode Parse(string value) => new(value);

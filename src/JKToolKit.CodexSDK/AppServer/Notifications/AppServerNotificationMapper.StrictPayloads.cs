@@ -73,7 +73,8 @@ internal static partial class AppServerNotificationMapper
             Name: name,
             Status: parsedStatus,
             Error: GetStringOrNull(p, "error"),
-            Params: p);
+            Params: p,
+            ThreadId: GetStringOrNull(p, "threadId"));
     }
 
     private static ServerRequestResolvedNotification? TryMapServerRequestResolved(JsonElement p)

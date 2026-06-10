@@ -22,7 +22,10 @@ public sealed class ConfigRequirementsParsingTests
         requirements.AllowedApprovalsReviewers!.Should().Equal(CodexApprovalsReviewer.User, CodexApprovalsReviewer.AutoReview);
         requirements.AllowedSandboxModes!.Select(m => m.Value).Should().Equal("read-only", "workspace-write");
         requirements.AllowedWindowsSandboxImplementations!.Select(m => m.Value).Should().Equal("elevated", "unelevated");
+        requirements.AllowedPermissionProfiles!.Should().ContainKey(":read-only").WhoseValue.Should().BeTrue();
+        requirements.AllowedPermissionProfiles.Should().ContainKey("managed").WhoseValue.Should().BeFalse();
         requirements.AllowedPermissionProfileIds!.Should().Equal(":read-only", "managed");
+        requirements.DefaultPermissionProfileId.Should().Be(":read-only");
         requirements.AllowedWebSearchModes!.Select(m => m.Value).Should().Equal("disabled", "cached", "live");
         requirements.FeatureRequirements.Should().NotBeNull();
         requirements.FeatureRequirements!["apps"].Should().BeTrue();
@@ -84,6 +87,25 @@ public sealed class ConfigRequirementsParsingTests
         granular.McpElicitations.Should().BeTrue();
         granular.SkillApproval.Should().BeTrue();
         granular.RequestPermissions.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ParseConfigRequirementsReadRequirements_PopulatesLegacyAllowedPermissionsFallback()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "requirements": {
+                "allowedPermissions": [":read-only", "managed"]
+              }
+            }
+            """);
+
+        var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(doc.RootElement, experimentalApiEnabled: true);
+
+        requirements.Should().NotBeNull();
+        requirements!.AllowedPermissionProfiles.Should().BeNull();
+        requirements.AllowedPermissionProfileIds!.Should().Equal(":read-only", "managed");
     }
 
     [Fact]

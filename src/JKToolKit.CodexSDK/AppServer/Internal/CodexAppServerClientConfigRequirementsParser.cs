@@ -67,6 +67,10 @@ internal static class CodexAppServerClientConfigRequirementsParser
             .ToArray();
 
         var featureRequirements = ParseBoolMap(req, "featureRequirements");
+        var allowedPermissionProfiles = ParseBoolMap(req, "allowedPermissionProfiles");
+        var allowedPermissionProfileIds = allowedPermissionProfiles is null
+            ? GetOptionalStringArray(req, "allowedPermissions")
+            : allowedPermissionProfiles.Keys.ToArray();
 
         CodexResidencyRequirement? residency = null;
         if (CodexResidencyRequirement.TryParse(GetStringOrNull(req, "enforceResidency"), out var r))
@@ -87,7 +91,9 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowedApprovalsReviewers = allowedApprovalsReviewers,
             AllowedSandboxModes = allowedSandboxModes,
             AllowedWindowsSandboxImplementations = allowedWindowsSandboxImplementations,
-            AllowedPermissionProfileIds = GetOptionalStringArray(req, "allowedPermissions"),
+            AllowedPermissionProfiles = allowedPermissionProfiles,
+            AllowedPermissionProfileIds = allowedPermissionProfileIds,
+            DefaultPermissionProfileId = GetStringOrNull(req, "defaultPermissions"),
             AllowedWebSearchModes = allowedWebSearchModes,
             FeatureRequirements = featureRequirements,
             AllowManagedHooksOnly = GetBoolOrNull(req, "allowManagedHooksOnly"),
