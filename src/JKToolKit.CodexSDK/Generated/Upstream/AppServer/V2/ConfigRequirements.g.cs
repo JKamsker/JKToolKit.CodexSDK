@@ -19,6 +19,9 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowManagedHooksOnly")]
     public bool? AllowManagedHooksOnly { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("allowRemoteControl")]
+    public bool? AllowRemoteControl { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("allowedApprovalPolicies")]
     public System.Collections.Generic.ICollection<AllowedApprovalPolicies>? AllowedApprovalPolicies { get; set; } = default!;
 

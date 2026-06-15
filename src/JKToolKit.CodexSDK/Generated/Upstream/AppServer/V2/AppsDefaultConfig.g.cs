@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class AppsDefaultConfig
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
+    public Approvals_reviewer2? Approvals_reviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("destructive_enabled")]
     public bool? Destructive_enabled { get; set; } = true;
 

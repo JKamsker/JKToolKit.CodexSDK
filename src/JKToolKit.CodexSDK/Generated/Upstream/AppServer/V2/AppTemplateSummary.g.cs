@@ -16,6 +16,9 @@ internal partial class AppTemplateSummary
     [System.Text.Json.Serialization.JsonPropertyName("canonicalConnectorId")]
     public string? CanonicalConnectorId { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("category")]
+    public string? Category { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string? Description { get; set; } = default!;
 

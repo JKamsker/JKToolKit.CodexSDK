@@ -10,19 +10,16 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ThreadSource
+internal partial class ThreadSource
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"user")]
-    User = 0,
+    private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
-
-    [System.Runtime.Serialization.EnumMember(Value = @"subagent")]
-    Subagent = 1,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"memory_consolidation")]
-    Memory_consolidation = 2,
-
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+    {
+        get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+        set { _additionalProperties = value; }
+    }
 
 }
