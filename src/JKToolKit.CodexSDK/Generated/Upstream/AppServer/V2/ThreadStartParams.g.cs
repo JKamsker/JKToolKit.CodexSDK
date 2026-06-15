@@ -62,7 +62,7 @@ internal partial class ThreadStartParams
     /// Optional client-supplied analytics source classification for this thread.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("threadSource")]
-    public ThreadSource4? ThreadSource { get; set; } = default!;
+    public ThreadSource3? ThreadSource { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

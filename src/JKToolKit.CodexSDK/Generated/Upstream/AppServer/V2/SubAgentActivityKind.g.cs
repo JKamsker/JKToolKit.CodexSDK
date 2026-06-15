@@ -10,11 +10,19 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum AgentMessageInputContentType
+internal enum SubAgentActivityKind
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"input_text")]
-    Input_text = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"started")]
+    Started = 0,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"interacted")]
+    Interacted = 1,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"interrupted")]
+    Interrupted = 2,
 
 
 }

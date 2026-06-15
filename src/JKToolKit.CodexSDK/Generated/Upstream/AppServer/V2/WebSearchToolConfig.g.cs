@@ -20,7 +20,7 @@ internal partial class WebSearchToolConfig
     public Context_size? Context_size { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("location")]
-    public Location? Location { get; set; } = default!;
+    public Location2? Location { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

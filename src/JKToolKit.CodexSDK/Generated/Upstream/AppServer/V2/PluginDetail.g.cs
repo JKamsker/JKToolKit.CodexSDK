@@ -34,6 +34,9 @@ internal partial class PluginDetail
     [System.Text.Json.Serialization.JsonPropertyName("mcpServers")]
     public System.Collections.Generic.ICollection<string> McpServers { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("shareUrl")]
+    public string? ShareUrl { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("skills")]
     public System.Collections.Generic.ICollection<SkillSummary> Skills { get; set; } = new System.Collections.ObjectModel.Collection<SkillSummary>();
 

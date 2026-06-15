@@ -9,9 +9,21 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// A user-selected root that can expose one or more runtime capabilities.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class Location
+internal partial class SelectedCapabilityRoot
 {
+
+    /// <summary>
+    /// Stable identifier supplied by the capability selection platform.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("location")]
+    public Location Location { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

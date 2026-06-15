@@ -108,7 +108,7 @@ internal partial class Thread
     /// Optional analytics source classification for this thread.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("threadSource")]
-    public ThreadSource2? ThreadSource { get; set; } = default!;
+    public ThreadSource? ThreadSource { get; set; } = default!;
 
     /// <summary>
     /// Only populated on `thread/resume`, `thread/rollback`, `thread/fork`, and `thread/read` (when `includeTurns` is true) responses. For all other responses and notifications returning a Thread, the turns field will be an empty list.
