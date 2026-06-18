@@ -29,4 +29,8 @@ internal enum PluginListMarketplaceKind
     SharedWithMe = 3,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"created-by-me-remote")]
+    CreatedByMeRemote = 4,
+
+
 }

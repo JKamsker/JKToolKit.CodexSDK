@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class GetAccountRateLimitsResponse
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("rateLimitResetCredits")]
+    public RateLimitResetCredits? RateLimitResetCredits { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("rateLimits")]
     public RateLimitSnapshot RateLimits { get; set; } = new RateLimitSnapshot();
 
