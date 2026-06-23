@@ -20,7 +20,7 @@ internal partial class ExternalAgentConfigDetectParams
     public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
 
     /// <summary>
-    /// If true, include detection under the user's home (~/.claude, ~/.codex, etc.).
+    /// If true, include detection under the user's home directory.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("includeHome")]
     public bool? IncludeHome { get; set; } = default!;

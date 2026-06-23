@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ExternalAgentConfigImportCompletedNotification
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("importId")]
+    public string ImportId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("itemTypeResults")]
+    public System.Collections.Generic.ICollection<ExternalAgentConfigImportTypeResult> ItemTypeResults { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportTypeResult>();
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

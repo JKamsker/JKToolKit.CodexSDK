@@ -10,11 +10,12 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportResponse
+internal partial class ConsumeAccountRateLimitResetCreditResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("importId")]
-    public string ImportId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("outcome")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Outcome>))]
+    public Outcome Outcome { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

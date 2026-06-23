@@ -14,6 +14,12 @@ internal partial class PermissionProfileSummary
 {
 
     /// <summary>
+    /// Whether the effective requirements allow selecting this profile.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("allowed")]
+    public bool Allowed { get; set; } = default!;
+
+    /// <summary>
     /// Optional user-facing description for display in clients.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("description")]

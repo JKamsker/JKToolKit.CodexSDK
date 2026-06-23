@@ -10,11 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportResponse
+internal partial class ExternalAgentConfigImportHistory
 {
+
+    [System.Text.Json.Serialization.JsonPropertyName("completedAtMs")]
+    public long CompletedAtMs { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("failures")]
+    public System.Collections.Generic.ICollection<ExternalAgentConfigImportItemTypeFailure> Failures { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportItemTypeFailure>();
 
     [System.Text.Json.Serialization.JsonPropertyName("importId")]
     public string ImportId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("successes")]
+    public System.Collections.Generic.ICollection<ExternalAgentConfigImportItemTypeSuccess> Successes { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportItemTypeSuccess>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -9,12 +9,17 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Internal Responses API passthrough metadata copied into underlying chat messages.
+/// <br/>
+/// <br/>Responses API strongly types this payload. Do not modify it without first getting API approval and making the corresponding Responses API change.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportResponse
+internal partial class InternalChatMessageMetadataPassthrough
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("importId")]
-    public string ImportId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("turn_id")]
+    public string? Turn_id { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -92,6 +92,12 @@ internal partial class Thread
     public string Preview { get; set; } = default!;
 
     /// <summary>
+    /// Unix timestamp (in seconds) used for thread recency ordering.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("recencyAt")]
+    public long? RecencyAt { get; set; } = default!;
+
+    /// <summary>
     /// Session id shared by threads that belong to the same session tree.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("sessionId")]
