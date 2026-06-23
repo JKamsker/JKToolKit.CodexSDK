@@ -10,15 +10,25 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportParams
+internal partial class ExternalAgentConfigImportItemTypeFailure
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("migrationItems")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigMigrationItem> MigrationItems { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigMigrationItem>();
+    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
+    public string? Cwd { get; set; } = default!;
 
-    /// <summary>
-    /// Source product that produced the migration items. Missing means unspecified.
-    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("errorType")]
+    public string? ErrorType { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("failureStage")]
+    public string FailureStage { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("itemType")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ExternalAgentConfigMigrationItemType>))]
+    public ExternalAgentConfigMigrationItemType ItemType { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("message")]
+    public string Message { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     public string? Source { get; set; } = default!;
 

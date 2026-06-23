@@ -21,8 +21,12 @@ internal enum WebSearchMode
     Cached = 1,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"indexed")]
+    Indexed = 2,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"live")]
-    Live = 2,
+    Live = 3,
 
 
 }

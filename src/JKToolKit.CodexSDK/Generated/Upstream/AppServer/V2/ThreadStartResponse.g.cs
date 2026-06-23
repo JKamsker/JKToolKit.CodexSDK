@@ -25,7 +25,7 @@ internal partial class ThreadStartResponse
     public string Cwd { get; set; } = default!;
 
     /// <summary>
-    /// Instruction source files currently loaded for this thread.
+    /// Environment-native paths to instruction source files currently loaded for this thread.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("instructionSources")]
     public System.Collections.Generic.ICollection<string>? InstructionSources { get; set; } = default!;

@@ -21,4 +21,8 @@ internal enum ConversationTextRole
     Developer = 1,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"assistant")]
+    Assistant = 2,
+
+
 }

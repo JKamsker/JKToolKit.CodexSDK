@@ -10,19 +10,19 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ThreadSortKey
+internal enum WorkspaceMessageType
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"created_at")]
-    Created_at = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"headline")]
+    Headline = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"updated_at")]
-    Updated_at = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"announcement")]
+    Announcement = 1,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"recency_at")]
-    Recency_at = 2,
+    [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
+    Unknown = 2,
 
 
 }
