@@ -53,10 +53,22 @@ internal partial class PluginInterface
     public Logo? Logo { get; set; } = default!;
 
     /// <summary>
+    /// Local dark-mode logo path, resolved from the installed plugin package.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("logoDark")]
+    public LogoDark? LogoDark { get; set; } = default!;
+
+    /// <summary>
     /// Remote logo URL from the plugin catalog.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("logoUrl")]
     public string? LogoUrl { get; set; } = default!;
+
+    /// <summary>
+    /// Remote dark-mode logo URL from the plugin catalog.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("logoUrlDark")]
+    public string? LogoUrlDark { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("longDescription")]
     public string? LongDescription { get; set; } = default!;

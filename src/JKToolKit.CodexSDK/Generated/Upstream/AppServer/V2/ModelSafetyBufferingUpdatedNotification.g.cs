@@ -13,11 +13,17 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ModelSafetyBufferingUpdatedNotification
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("fasterModel")]
+    public string? FasterModel { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("model")]
     public string Model { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("reasons")]
     public System.Collections.Generic.ICollection<string> Reasons { get; set; } = new System.Collections.ObjectModel.Collection<string>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("showBufferingUi")]
+    public bool ShowBufferingUi { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
