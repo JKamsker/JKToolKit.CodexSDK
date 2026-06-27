@@ -14,7 +14,15 @@ permissions:
   issues: read
   pull-requests: read
 
+strict: false
+
 network: defaults
+
+sandbox:
+  agent:
+    args:
+      - --env-file
+      - /tmp/gh-aw/codex-openai-agent.env
 
 tools:
   github:
@@ -27,24 +35,26 @@ tools:
 safe-outputs:
   mentions: false
   allowed-github-references: []
-  threat-detection:
-    enabled: true
-    steps:
-      - name: Start Codex endpoint relay
-        id: start-codex-endpoint-relay
-        env:
-          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
-        run: bash .github/scripts/start_codex_openai_relay.sh
-    post-steps:
-      - name: Stop Codex endpoint relay
-        if: always()
-        run: bash .github/scripts/stop_codex_openai_relay.sh
+  threat-detection: false
   create-issue:
     title-prefix: "[repo-status] "
     labels: [report, daily-status]
     close-older-issues: true
 engine:
   id: codex
+  args:
+    - -c
+    - model_provider=repo-openai-proxy
+    - -c
+    - model_providers.repo-openai-proxy.name=OpenAI
+    - -c
+    - model_providers.repo-openai-proxy.base_url=http://host.docker.internal
+    - -c
+    - model_providers.repo-openai-proxy.env_key=OPENAI_API_KEY
+    - -c
+    - model_providers.repo-openai-proxy.wire_api=responses
+    - -c
+    - model_providers.repo-openai-proxy.supports_websockets=false
   env:
     OPENAI_BASE_URL: "http://host.docker.internal"
 
@@ -53,6 +63,8 @@ pre-agent-steps:
     id: start-codex-endpoint-relay
     env:
       CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
+      CODEX_API_KEY: ${{ secrets.CODEX_API_KEY || secrets.OPENAI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.CODEX_API_KEY }}
     run: bash .github/scripts/start_codex_openai_relay.sh
 
 post-steps:

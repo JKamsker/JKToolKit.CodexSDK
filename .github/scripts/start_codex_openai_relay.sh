@@ -6,8 +6,29 @@ if [ -z "${CODEX_LB_BASE_URL:-}" ]; then
   exit 1
 fi
 
+codex_key="${CODEX_API_KEY:-${OPENAI_API_KEY:-}}"
+openai_key="${OPENAI_API_KEY:-$codex_key}"
+if [ -z "$codex_key" ]; then
+  echo "::error::CODEX_API_KEY or OPENAI_API_KEY secret is required for Codex."
+  exit 1
+fi
+
+case "$codex_key$openai_key" in
+  *$'\n'*|*$'\r'*)
+    echo "::error::Codex API key secrets must not contain newlines."
+    exit 1
+    ;;
+esac
+
 echo "::add-mask::${CODEX_LB_BASE_URL}"
+echo "::add-mask::${codex_key}"
+echo "::add-mask::${openai_key}"
 mkdir -p /tmp/gh-aw
+umask 077
+{
+  printf 'CODEX_API_KEY=%s\n' "$codex_key"
+  printf 'OPENAI_API_KEY=%s\n' "$openai_key"
+} > /tmp/gh-aw/codex-openai-agent.env
 
 export CODEX_OPENAI_RELAY_HOST="${CODEX_OPENAI_RELAY_HOST:-0.0.0.0}"
 export CODEX_OPENAI_RELAY_PORT="${CODEX_OPENAI_RELAY_PORT:-80}"
