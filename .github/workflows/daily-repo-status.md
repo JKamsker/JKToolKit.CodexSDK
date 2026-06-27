@@ -48,15 +48,19 @@ engine:
     - -c
     - model_providers.repo-openai-proxy.name=OpenAI
     - -c
-    - model_providers.repo-openai-proxy.base_url=http://host.docker.internal
+    - chatgpt_base_url=http://host.docker.internal
     - -c
-    - model_providers.repo-openai-proxy.env_key=CODEX_API_KEY
+    - model_providers.repo-openai-proxy.base_url=http://host.docker.internal/backend-api/codex
+    - -c
+    - model_providers.repo-openai-proxy.env_key=OPENAI_API_KEY
     - -c
     - model_providers.repo-openai-proxy.wire_api=responses
     - -c
+    - model_providers.repo-openai-proxy.requires_openai_auth=true
+    - -c
     - model_providers.repo-openai-proxy.supports_websockets=false
   env:
-    OPENAI_BASE_URL: "http://host.docker.internal"
+    OPENAI_BASE_URL: "http://host.docker.internal/backend-api/codex"
 
 pre-agent-steps:
   - name: Start Codex endpoint relay

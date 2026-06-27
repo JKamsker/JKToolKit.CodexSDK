@@ -26,6 +26,16 @@ HOP_BY_HOP_HEADERS: Final[set[str]] = {
     "transfer-encoding",
     "upgrade",
 }
+DEFAULT_CODEX_BASE_PATH: Final[str] = "/backend-api/codex"
+
+
+def normalize_base_path(value: str) -> str:
+    path = value.strip().rstrip("/")
+    if not path:
+        return ""
+    if not path.startswith("/"):
+        path = f"/{path}"
+    return path
 
 
 def parse_upstream() -> tuple[str, str, int, str]:
@@ -40,7 +50,11 @@ def parse_upstream() -> tuple[str, str, int, str]:
         raise RuntimeError("CODEX_LB_BASE_URL must not contain credentials")
 
     default_port = 443 if parsed.scheme == "https" else 80
-    base_path = parsed.path.rstrip("/")
+    base_path = normalize_base_path(parsed.path)
+    if not base_path:
+        base_path = normalize_base_path(
+            os.environ.get("CODEX_LB_DEFAULT_BASE_PATH", DEFAULT_CODEX_BASE_PATH)
+        )
     return parsed.scheme, parsed.hostname, parsed.port or default_port, base_path
 
 
@@ -50,7 +64,12 @@ UPSTREAM_SCHEME, UPSTREAM_HOST, UPSTREAM_PORT, UPSTREAM_BASE_PATH = parse_upstre
 def join_upstream_path(request_target: str) -> str:
     incoming = urlsplit(request_target)
     path = incoming.path or "/"
-    if UPSTREAM_BASE_PATH:
+    if (
+        UPSTREAM_BASE_PATH
+        and path != UPSTREAM_BASE_PATH
+        and not path.startswith(f"{UPSTREAM_BASE_PATH}/")
+        and not path.startswith("/backend-api/")
+    ):
         path = f"{UPSTREAM_BASE_PATH}{path}"
     if incoming.query:
         path = f"{path}?{incoming.query}"

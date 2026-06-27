@@ -7,7 +7,7 @@ if [ -z "${CODEX_LB_BASE_URL:-}" ]; then
 fi
 
 codex_key="${CODEX_API_KEY:-${OPENAI_API_KEY:-}}"
-openai_key="$codex_key"
+openai_key="${OPENAI_API_KEY:-$codex_key}"
 if [ -z "$codex_key" ]; then
   echo "::error::CODEX_API_KEY or OPENAI_API_KEY secret is required for Codex."
   exit 1
