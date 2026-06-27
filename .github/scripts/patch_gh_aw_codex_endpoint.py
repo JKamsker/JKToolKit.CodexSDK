@@ -18,6 +18,8 @@ CONFIG_WRITE = '> "${RUNNER_TEMP}/gh-aw/awf-config.json"'
 AWF_SCHEMA = "awf-config.schema.json"
 AWF_COMMAND = "sudo -E awf --config"
 PATCH_MARKER = "Patch gh-aw OpenAI proxy target from CODEX_LB_BASE_URL"
+CODEX_CONFIG_HEREDOC = 'cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_'
+REASONING_EFFORT_LINE = 'model_reasoning_effort = "high"'
 CODEX_ENDPOINT_ENV = "          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}"
 DETECTION_UPLOAD_STEP = "      - name: Upload threat detection log"
 DETECTION_REDACTION_MARKER = "Redact Codex endpoint detection artifacts"
@@ -159,6 +161,26 @@ def insert_endpoint_env(lines: list[str]) -> tuple[list[str], int]:
     return patched, insertions
 
 
+def insert_codex_reasoning_effort(lines: list[str]) -> tuple[list[str], int]:
+    patched: list[str] = []
+    insertions = 0
+
+    for index, line in enumerate(lines):
+        patched.append(line)
+        if CODEX_CONFIG_HEREDOC not in line:
+            continue
+
+        lookahead = "\n".join(lines[index + 1 : index + 12])
+        if REASONING_EFFORT_LINE in lookahead:
+            continue
+
+        indent = line[: len(line) - len(line.lstrip())]
+        patched.append(f"{indent}{REASONING_EFFORT_LINE}")
+        insertions += 1
+
+    return patched, insertions
+
+
 def insert_detection_redaction(lines: list[str]) -> tuple[list[str], int]:
     marker_line = f"      - name: {DETECTION_REDACTION_MARKER}"
     if marker_line in lines:
@@ -204,8 +226,11 @@ def patch_lockfile(path: Path) -> bool:
             awf_patch_count += 1
 
     lines, env_count = insert_endpoint_env(lines)
+    lines, reasoning_effort_count = insert_codex_reasoning_effort(lines)
     lines, detection_redaction_count = insert_detection_redaction(lines)
     lines = [line.rstrip() for line in lines]
+    while lines and lines[-1] == "":
+        lines.pop()
 
     if snippet_count == 0 and PATCH_MARKER not in "\n".join(lines):
         raise RuntimeError(f"{path} was not patched; no AWF config write was found")
@@ -213,6 +238,8 @@ def patch_lockfile(path: Path) -> bool:
         raise RuntimeError(f"{path} was not patched; no AWF command was updated")
     if "CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}" not in "\n".join(lines):
         raise RuntimeError(f"{path} was not patched; CODEX_LB_BASE_URL env is missing")
+    if REASONING_EFFORT_LINE not in "\n".join(lines):
+        raise RuntimeError(f"{path} was not patched; Codex reasoning effort is missing")
 
     patched_text = "\n".join(lines) + "\n"
     if patched_text == text:
@@ -221,6 +248,7 @@ def patch_lockfile(path: Path) -> bool:
     print(
         f"patched {path}: snippets={snippet_count}, "
         f"awf_commands={awf_patch_count}, env_blocks={env_count}, "
+        f"reasoning_effort_blocks={reasoning_effort_count}, "
         f"detection_redaction_steps={detection_redaction_count}"
     )
     return True

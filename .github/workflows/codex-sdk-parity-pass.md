@@ -67,9 +67,73 @@ safe-outputs:
 
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
+# The same compile script also injects model_reasoning_effort = "high" into
+# the generated Codex config so the model remains controlled by GH_AW_* vars.
 engine: codex
 
 post-steps:
+  - name: Check whether parity validation is required
+    id: parity-validation-guard
+    shell: bash
+    run: |
+      set -euo pipefail
+      outputs="/tmp/gh-aw/safeoutputs.jsonl"
+      should_validate=false
+      if [ -s "$outputs" ] && grep -Eq '"type":"(create_pull_request|push_to_pull_request_branch)"' "$outputs"; then
+        should_validate=true
+      fi
+      echo "should_validate=${should_validate}" >> "$GITHUB_OUTPUT"
+
+  - name: Setup .NET for parity validation
+    if: steps.parity-validation-guard.outputs.should_validate == 'true'
+    uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: 10.0.x
+
+  - name: Materialize safe-output patch for validation
+    if: steps.parity-validation-guard.outputs.should_validate == 'true'
+    shell: bash
+    run: |
+      set -euo pipefail
+      base_sha="${GITHUB_SHA:-}"
+      current_sha="$(git rev-parse HEAD)"
+      has_workspace_changes=false
+      git diff --quiet || has_workspace_changes=true
+      git diff --cached --quiet || has_workspace_changes=true
+
+      if [ "$has_workspace_changes" = false ] && [ -n "$base_sha" ] && [ "$current_sha" = "$base_sha" ]; then
+        shopt -s nullglob
+        patches=(/tmp/gh-aw/aw-*.patch)
+        if [ "${#patches[@]}" -eq 0 ]; then
+          echo "::error::Safe output requested code changes, but the agent left no workspace changes and produced no patch artifact."
+          exit 1
+        fi
+        if [ "${#patches[@]}" -gt 1 ]; then
+          printf '::error::Expected one safe-output patch, found %s: %s\n' "${#patches[@]}" "${patches[*]}"
+          exit 1
+        fi
+        git apply --check "${patches[0]}"
+        git apply "${patches[0]}"
+      fi
+
+      git status --short
+
+  - name: Restore parity validation dependencies
+    if: steps.parity-validation-guard.outputs.should_validate == 'true'
+    run: dotnet restore JKToolKit.CodexSDK.sln
+
+  - name: Verify generated DTOs before safe output
+    if: steps.parity-validation-guard.outputs.should_validate == 'true'
+    run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release --no-restore -- check
+
+  - name: Build before safe output
+    if: steps.parity-validation-guard.outputs.should_validate == 'true'
+    run: dotnet build JKToolKit.CodexSDK.sln --configuration Release --no-restore
+
+  - name: Test before safe output
+    if: steps.parity-validation-guard.outputs.should_validate == 'true'
+    run: dotnet test JKToolKit.CodexSDK.sln --configuration Release --no-build
+
   - name: Redact Codex endpoint artifacts
     if: always()
     env:
@@ -147,6 +211,12 @@ When changes are needed:
 10. Use the `push_to_pull_request_branch` safe-output tool to update the triggering PR branch.
 
 Do not use raw `git push`.
+
+## Validation Before Safe Output
+
+Do not request `create_pull_request` or `push_to_pull_request_branch` until the local workspace passes the required validation commands for the changes you made.
+
+The workflow also enforces this after the agent runs: if a safe-output write is requested, post-steps materialize the proposed patch if needed and run restore, generated DTO check, build, and full tests before safe outputs are processed. If those checks fail, the workflow run must fail instead of creating or updating a red pull request.
 
 ## Scheduled And Other Manual Runs
 
