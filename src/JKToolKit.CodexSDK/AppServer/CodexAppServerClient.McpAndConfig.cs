@@ -34,6 +34,15 @@ public sealed partial class CodexAppServerClient
         _configClient.ImportExternalAgentConfigAsync(migrationItems, ct);
 
     /// <summary>
+    /// Reads external agent configuration import histories.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>externalAgentConfig/import/readHistories</c>.
+    /// </remarks>
+    public Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct = default) =>
+        _configClient.ReadExternalAgentConfigImportHistoriesAsync(ct);
+
+    /// <summary>
     /// Reads account information.
     /// </summary>
     /// <remarks>
@@ -59,6 +68,26 @@ public sealed partial class CodexAppServerClient
     /// </remarks>
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default) =>
         _configClient.ReadAccountRateLimitsAsync(ct);
+
+    /// <summary>
+    /// Consumes an available account rate-limit reset credit.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/rateLimitResetCredit/consume</c>.
+    /// </remarks>
+    public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+        AccountRateLimitResetCreditConsumeOptions options,
+        CancellationToken ct = default) =>
+        _configClient.ConsumeAccountRateLimitResetCreditAsync(options, ct);
+
+    /// <summary>
+    /// Reads workspace messages for the current account.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/workspaceMessages/read</c>.
+    /// </remarks>
+    public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct = default) =>
+        _configClient.ReadWorkspaceMessagesAsync(ct);
 
     /// <summary>
     /// Starts the Windows sandbox setup flow.
@@ -323,4 +352,3 @@ public sealed class WindowsSandboxSetupStartOptions
         }
     }
 }
-

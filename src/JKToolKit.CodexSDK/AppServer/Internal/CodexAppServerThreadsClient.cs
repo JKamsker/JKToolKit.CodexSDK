@@ -168,6 +168,7 @@ internal sealed class CodexAppServerThreadsClient
                 SourceKinds = options.SourceKinds,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,
+                ParentThreadId = options.ParentThreadId,
             },
             ct);
 
@@ -433,6 +434,22 @@ internal sealed class CodexAppServerThreadsClient
             ct);
 
         return new ThreadArchiveResult
+        {
+            Raw = result
+        };
+    }
+
+    public async Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await _sendRequestAsync(
+            "thread/delete",
+            new UpstreamV2.ThreadDeleteParams { ThreadId = threadId },
+            ct);
+
+        return new ThreadDeleteResult
         {
             Raw = result
         };

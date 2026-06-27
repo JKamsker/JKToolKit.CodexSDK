@@ -72,6 +72,42 @@ public sealed class AppServerThreadManagementClientTests
     }
 
     [Fact]
+    public async Task ListThreads_SendsParentThreadAndRecencySort()
+    {
+        using var doc = JsonDocument.Parse("""{"data":[],"nextCursor":null}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        await client.ListThreadsAsync(new ThreadListOptions
+        {
+            ParentThreadId = "parent-1",
+            SortKey = "recencyAt"
+        });
+
+        rpc.LastMethod.Should().Be("thread/list");
+        var json = JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
+        json.Should().Contain("\"parentThreadId\":\"parent-1\"")
+            .And.Contain("\"sortKey\":\"recencyAt\"");
+    }
+
+    [Fact]
+    public async Task DeleteThreadAsync_SendsThreadDelete()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.DeleteThreadAsync("thr_1");
+
+        rpc.LastMethod.Should().Be("thread/delete");
+        var json = JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
+        json.Should().Contain("\"threadId\":\"thr_1\"");
+        result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    [Fact]
     public async Task UpdateThreadSettings_WhenExperimentalDisabled_ThrowsBeforeSendingRequest()
     {
         var rpc = new FailingRpc();

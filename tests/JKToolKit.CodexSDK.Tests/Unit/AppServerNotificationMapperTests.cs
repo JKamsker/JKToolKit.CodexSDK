@@ -378,6 +378,33 @@ public sealed class AppServerNotificationMapperTests
 
         patMapped.Should().BeOfType<AccountUpdatedNotification>()
             .Which.AuthMode.Should().Be(CodexAuthMode.PersonalAccessToken);
+
+        var bedrockJson = JsonDocument.Parse("""{"authMode":"bedrockApiKey"}""").RootElement;
+
+        AppServerNotificationMapper.Map("account/updated", bedrockJson)
+            .Should().BeOfType<AccountUpdatedNotification>()
+            .Which.AuthMode.Should().Be(CodexAuthMode.BedrockApiKey);
+    }
+
+    [Fact]
+    public void Map_0142Notifications_ToTypedRecords()
+    {
+        AppServerNotificationMapper.Map("thread/deleted", JsonDocument.Parse("""{"threadId":"thr_1"}""").RootElement)
+            .Should().BeOfType<ThreadDeletedNotification>()
+            .Which.ThreadId.Should().Be("thr_1");
+
+        var buffering = JsonDocument.Parse("""{"threadId":"thr_1","turnId":"turn_1","model":"gpt-5","useCases":["chat"],"reasons":["safety"],"showBufferingUi":true,"fasterModel":"gpt-5-mini"}""").RootElement;
+        var bufferingNotification = AppServerNotificationMapper.Map("model/safetyBuffering/updated", buffering)
+            .Should().BeOfType<ModelSafetyBufferingUpdatedNotification>()
+            .Which;
+
+        bufferingNotification.ShowBufferingUi.Should().BeTrue();
+        bufferingNotification.FasterModel.Should().Be("gpt-5-mini");
+
+        var progress = JsonDocument.Parse("""{"itemTypeResults":[{"itemType":"CONFIG","successes":[],"failures":[]}]}""").RootElement;
+        AppServerNotificationMapper.Map("externalAgentConfig/import/progress", progress)
+            .Should().BeOfType<ExternalAgentConfigImportProgressNotification>()
+            .Which.ItemTypeResults.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
     [Fact]
@@ -428,4 +455,3 @@ public sealed class AppServerNotificationMapperTests
         mapped.Should().ContainSingle(x => x is UnknownNotification);
     }
 }
-

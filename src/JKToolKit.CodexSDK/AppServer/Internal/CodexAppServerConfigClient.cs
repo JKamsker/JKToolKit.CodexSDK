@@ -110,6 +110,63 @@ internal sealed partial class CodexAppServerConfigClient
         };
     }
 
+    public async Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+        AccountRateLimitResetCreditConsumeOptions options,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "account/rateLimitResetCredit/consume",
+            new { options.CreditType },
+            ct);
+
+        return new AccountRateLimitResetCreditConsumeResult
+        {
+            Outcome = CodexAppServerClientJson.GetStringOrNull(result, "outcome")
+                ?? CodexAppServerClientJson.GetStringOrNull(result, "type"),
+            RateLimitResetCredits = CodexAppServerClientJson.TryGetElement(result, "rateLimitResetCredits")?.Clone(),
+            Raw = result
+        };
+    }
+
+    public async Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct = default)
+    {
+        var result = await _sendRequestAsync(
+            "account/workspaceMessages/read",
+            null,
+            ct);
+
+        var messagesArray = CodexAppServerClientJson.TryGetArray(result, "messages")
+            ?? throw new InvalidOperationException("account/workspaceMessages/read response missing required array property 'messages'.");
+
+        var messages = new List<WorkspaceMessage>();
+        foreach (var item in messagesArray.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("account/workspaceMessages/read messages[] entries must be objects.");
+            }
+
+            messages.Add(new WorkspaceMessage
+            {
+                Id = CodexAppServerClientJson.GetStringOrNull(item, "id"),
+                WorkspaceId = CodexAppServerClientJson.GetStringOrNull(item, "workspaceId"),
+                MessageType = CodexAppServerClientJson.GetStringOrNull(item, "messageType")
+                    ?? CodexAppServerClientJson.GetStringOrNull(item, "type"),
+                Message = CodexAppServerClientJson.GetStringOrNull(item, "message")
+                    ?? CodexAppServerClientJson.GetStringOrNull(item, "text"),
+                Raw = item.Clone()
+            });
+        }
+
+        return new WorkspaceMessagesReadResult
+        {
+            Messages = messages,
+            Raw = result
+        };
+    }
+
     public async Task<RemoteSkillsReadResult> ReadRemoteSkillsAsync(CancellationToken ct = default)
     {
         var emptyParams = new { };
@@ -301,6 +358,40 @@ internal sealed partial class CodexAppServerConfigClient
             ct);
     }
 
+    public async Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct = default)
+    {
+        var result = await _sendRequestAsync(
+            "externalAgentConfig/import/readHistories",
+            null,
+            ct);
+
+        var dataArray = CodexAppServerClientJson.TryGetArray(result, "data")
+            ?? throw new InvalidOperationException("externalAgentConfig/import/readHistories response missing required array property 'data'.");
+
+        var histories = new List<ExternalAgentConfigImportHistory>();
+        foreach (var item in dataArray.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("externalAgentConfig/import/readHistories data[] entries must be objects.");
+            }
+
+            histories.Add(new ExternalAgentConfigImportHistory
+            {
+                ImportedAt = CodexAppServerClientJson.GetStringOrNull(item, "importedAt"),
+                Successes = CloneArray(item, "successes"),
+                Failures = CloneArray(item, "failures"),
+                Raw = item.Clone()
+            });
+        }
+
+        return new ExternalAgentConfigImportHistoriesReadResult
+        {
+            Data = histories,
+            Raw = result
+        };
+    }
+
     public Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default) =>
         StartWindowsSandboxSetupAsync(
             new WindowsSandboxSetupStartOptions(WindowsSandboxSetupMode.Parse(mode)),
@@ -351,6 +442,23 @@ internal sealed partial class CodexAppServerConfigClient
         }
 
         return value.Value.GetString();
+    }
+
+    private static IReadOnlyList<JsonElement> CloneArray(JsonElement obj, string propertyName)
+    {
+        var array = CodexAppServerClientJson.TryGetArray(obj, propertyName);
+        if (array is null)
+        {
+            return Array.Empty<JsonElement>();
+        }
+
+        var values = new List<JsonElement>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            values.Add(item.Clone());
+        }
+
+        return values;
     }
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)

@@ -217,6 +217,48 @@ public sealed class AuthAccountConfigWrappersTests
     }
 
     [Fact]
+    public async Task ReadAccountAsync_ParsesChatGptWithoutEmail_AndBedrockAccount()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/read",
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                account = new
+                {
+                    type = "chatgpt",
+                    email = (string?)null,
+                    planType = "pro"
+                },
+                requiresOpenaiAuth = false
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var chatgptAccount = await client.ReadAccountAsync();
+
+        var chatgpt = chatgptAccount.AccountInfo.Should().BeOfType<CodexChatGptAccountInfo>().Subject;
+        chatgpt.Email.Should().BeNull();
+        chatgpt.PlanType.Should().Be(CodexPlanType.Pro);
+
+        rpc.Result = JsonSerializer.SerializeToElement(new
+        {
+            account = new
+            {
+                type = "amazonBedrock",
+                credentialSource = "codexManaged"
+            },
+            requiresOpenaiAuth = false
+        });
+
+        var bedrockAccount = await client.ReadAccountAsync();
+
+        bedrockAccount.AccountInfo.Should().BeOfType<CodexAmazonBedrockAccountInfo>()
+            .Which.CredentialSource.Should().Be("codexManaged");
+    }
+
+    [Fact]
     public async Task ReadAccountAsync_MissingRequiredBool_Throws()
     {
         var rpc = new FakeRpc
@@ -272,6 +314,105 @@ public sealed class AuthAccountConfigWrappersTests
         result.RateLimitsByLimitId.Should().NotBeNull();
         result.RateLimitsByLimitId!.Should().ContainKey("codex");
         result.RateLimitsByLimitId!["secondary"].GetProperty("limitId").GetString().Should().Be("secondary");
+    }
+
+    [Fact]
+    public async Task ConsumeAccountRateLimitResetCreditAsync_CallsExpectedMethod_AndParsesResponse()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            outcome = "consumed",
+            rateLimitResetCredits = new
+            {
+                available = 1
+            }
+        });
+
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/rateLimitResetCredit/consume",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p, CodexAppServerClient.CreateDefaultSerializerOptions());
+                json.GetProperty("creditType").GetString().Should().Be("monthly");
+            },
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ConsumeAccountRateLimitResetCreditAsync(new AccountRateLimitResetCreditConsumeOptions
+        {
+            CreditType = "monthly"
+        });
+
+        result.Outcome.Should().Be("consumed");
+        result.RateLimitResetCredits.Should().NotBeNull();
+        result.RateLimitResetCredits!.Value.GetProperty("available").GetInt32().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ReadWorkspaceMessagesAsync_CallsExpectedMethod_AndParsesMessages()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            messages = new[]
+            {
+                new
+                {
+                    id = "msg-1",
+                    workspaceId = "ws-1",
+                    messageType = "info",
+                    message = "hello"
+                }
+            }
+        });
+
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/workspaceMessages/read",
+            AssertParams = p => p.Should().BeNull(),
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadWorkspaceMessagesAsync();
+
+        result.Messages.Should().ContainSingle()
+            .Which.Message.Should().Be("hello");
+    }
+
+    [Fact]
+    public async Task ReadExternalAgentConfigImportHistoriesAsync_CallsExpectedMethod_AndParsesHistories()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            data = new[]
+            {
+                new
+                {
+                    importedAt = "2026-06-27T00:00:00Z",
+                    successes = new[] { new { itemType = "CONFIG" } },
+                    failures = Array.Empty<object>()
+                }
+            }
+        });
+
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "externalAgentConfig/import/readHistories",
+            AssertParams = p => p.Should().BeNull(),
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadExternalAgentConfigImportHistoriesAsync();
+
+        result.Data.Should().ContainSingle();
+        result.Data[0].ImportedAt.Should().Be("2026-06-27T00:00:00Z");
+        result.Data[0].Successes.Should().ContainSingle();
     }
 
     [Fact]

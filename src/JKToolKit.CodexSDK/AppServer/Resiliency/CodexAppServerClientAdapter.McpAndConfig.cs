@@ -24,6 +24,12 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct);
 
+    Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(AccountRateLimitResetCreditConsumeOptions options, CancellationToken ct);
+
+    Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct);
+
+    Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct);
+
     Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct);
 
     Task<ModelListResult> ListModelsAsync(CancellationToken ct);
@@ -82,6 +88,12 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) => _inner.ReadAccountRateLimitsAsync(ct);
 
     public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) => _inner.ReadAccountTokenUsageAsync(ct);
+
+    public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(AccountRateLimitResetCreditConsumeOptions options, CancellationToken ct) => _inner.ConsumeAccountRateLimitResetCreditAsync(options, ct);
+
+    public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) => _inner.ReadWorkspaceMessagesAsync(ct);
+
+    public Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct) => _inner.ReadExternalAgentConfigImportHistoriesAsync(ct);
 
     public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) => _inner.ListModelsAsync(options, ct);
 

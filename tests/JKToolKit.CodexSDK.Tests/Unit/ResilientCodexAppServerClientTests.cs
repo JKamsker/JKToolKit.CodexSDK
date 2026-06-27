@@ -35,6 +35,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.CleanThreadBackgroundTerminalsAsync),
         nameof(CodexAppServerClient.ForkThreadAsync),
         nameof(CodexAppServerClient.ArchiveThreadAsync),
+        nameof(CodexAppServerClient.DeleteThreadAsync),
         nameof(CodexAppServerClient.UnarchiveThreadAsync),
         nameof(CodexAppServerClient.SetThreadNameAsync),
         nameof(CodexAppServerClient.ListPermissionProfilesAsync),
@@ -55,6 +56,9 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ReadAccountAsync),
         nameof(CodexAppServerClient.ReadAccountRateLimitsAsync),
         nameof(CodexAppServerClient.ReadAccountTokenUsageAsync),
+        nameof(CodexAppServerClient.ConsumeAccountRateLimitResetCreditAsync),
+        nameof(CodexAppServerClient.ReadWorkspaceMessagesAsync),
+        nameof(CodexAppServerClient.ReadExternalAgentConfigImportHistoriesAsync),
         nameof(CodexAppServerClient.ListModelsAsync),
         nameof(CodexAppServerClient.ListExperimentalFeaturesAsync),
         nameof(CodexAppServerClient.WriteConfigValueAsync),
@@ -987,6 +991,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<ThreadArchiveResult>();
 
+        public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct) =>
+            NotSupported<ThreadDeleteResult>();
+
         public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<CodexThread>();
 
@@ -1064,6 +1071,15 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) =>
             NotSupported<AccountTokenUsageReadResult>();
+
+        public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(AccountRateLimitResetCreditConsumeOptions options, CancellationToken ct) =>
+            NotSupported<AccountRateLimitResetCreditConsumeResult>();
+
+        public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) =>
+            NotSupported<WorkspaceMessagesReadResult>();
+
+        public Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct) =>
+            NotSupported<ExternalAgentConfigImportHistoriesReadResult>();
 
         public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) =>
             NotSupported<ModelListResult>();

@@ -69,6 +69,10 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
+            "thread/deleted" => new ThreadDeletedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
             "thread/unarchived" => new ThreadUnarchivedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
@@ -144,6 +148,16 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
                 Metadata: GetAny(p, "metadata"),
+                Params: p),
+
+            "model/safetyBuffering/updated" => new ModelSafetyBufferingUpdatedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetString(p, "turnId") ?? string.Empty,
+                Model: GetStringOrNull(p, "model"),
+                UseCases: GetAny(p, "useCases"),
+                Reasons: GetAny(p, "reasons"),
+                ShowBufferingUi: GetBool(p, "showBufferingUi"),
+                FasterModel: GetStringOrNull(p, "fasterModel"),
                 Params: p),
 
             "turn/diff/updated" => new TurnDiffUpdatedNotification(
@@ -234,6 +248,14 @@ internal static partial class AppServerNotificationMapper
                     installationId: GetStringOrNull(p, "installationId"),
                     environmentId: GetStringOrNull(p, "environmentId"),
                     @params: p),
+
+            "externalAgentConfig/import/progress" => new ExternalAgentConfigImportProgressNotification(
+                ItemTypeResults: GetAny(p, "itemTypeResults"),
+                Params: p),
+
+            "externalAgentConfig/import/completed" => new ExternalAgentConfigImportCompletedNotification(
+                ItemTypeResults: GetAny(p, "itemTypeResults"),
+                Params: p),
 
             "skills/changed" => new SkillsChangedNotification(
                 @params: p),

@@ -41,8 +41,12 @@ public sealed class ThreadListOptions
     public string? Cursor { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional sort key, if supported upstream (for example, <c>created_at</c> or <c>updated_at</c>).
+    /// Gets or sets an optional sort key, if supported upstream (for example, <c>createdAt</c>, <c>updatedAt</c>, or <c>recencyAt</c>).
     /// </summary>
     public string? SortKey { get; set; }
-}
 
+    /// <summary>
+    /// Gets or sets an optional parent thread filter.
+    /// </summary>
+    public string? ParentThreadId { get; set; }
+}

@@ -30,6 +30,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct);
 
+    Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct);
+
     Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct);
 
     Task SetThreadNameAsync(string threadId, string name, CancellationToken ct);
@@ -74,6 +76,8 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct) => _inner.ForkThreadAsync(options, ct);
 
     public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct) => _inner.ArchiveThreadAsync(threadId, ct);
+
+    public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct) => _inner.DeleteThreadAsync(threadId, ct);
 
     public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) => _inner.UnarchiveThreadAsync(threadId, ct);
 
