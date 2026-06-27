@@ -25,17 +25,22 @@ def run_git(args: list[str], cwd: Path) -> str | None:
     return output or None
 
 
-def read_first_non_comment_line(path: Path) -> str | None:
+def read_version_marker(path: Path) -> dict[str, str | None]:
     if not path.is_file():
-        return None
+        return {"api": None, "integration": None}
 
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        return line
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"api": None, "integration": None}
 
-    return None
+    if not isinstance(payload, dict):
+        return {"api": None, "integration": None}
+
+    return {
+        "api": payload.get("api") if isinstance(payload.get("api"), str) else None,
+        "integration": payload.get("integration") if isinstance(payload.get("integration"), str) else None,
+    }
 
 
 def find_repo_root(start: Path) -> Path:
@@ -44,12 +49,12 @@ def find_repo_root(start: Path) -> Path:
         candidate = candidate.parent
 
     for current in (candidate, *candidate.parents):
-        if (current / ".git").exists() and (current / "UPSTREAM_CODEX_VERSION.txt").exists():
+        if (current / ".git").exists() and (current / "UPSTREAM_CODEX_VERSION.json").exists():
             return current
 
     raise FileNotFoundError(
         "Could not find the repo root from the provided path. Expected .git and "
-        "UPSTREAM_CODEX_VERSION.txt in the same directory."
+        "UPSTREAM_CODEX_VERSION.json in the same directory."
     )
 
 
@@ -96,12 +101,19 @@ def main() -> int:
 
     external_codex = repo_root / "external" / "codex"
     package_json = external_codex / "codex-cli" / "package.json"
-    version_pin = repo_root / "UPSTREAM_CODEX_VERSION.txt"
+    version_marker = repo_root / "UPSTREAM_CODEX_VERSION.json"
+    marker = read_version_marker(version_marker)
 
     context = {
         "repoRoot": str(repo_root),
         "branch": run_git(["rev-parse", "--abbrev-ref", "HEAD"], repo_root),
-        "pinnedVersion": read_first_non_comment_line(version_pin),
+        "versionMarker": {
+            "path": str(version_marker),
+            "api": marker["api"],
+            "integration": marker["integration"],
+        },
+        "pinnedVersion": marker["api"],
+        "integrationVersion": marker["integration"],
         "externalCodex": {
             "path": str(external_codex),
             "headSha": run_git(["rev-parse", "HEAD"], external_codex),

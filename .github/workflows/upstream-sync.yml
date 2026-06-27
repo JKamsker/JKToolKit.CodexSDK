@@ -41,7 +41,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          PINNED="$(tr -d '\r' < UPSTREAM_CODEX_VERSION.txt | head -n 1 | xargs)"
+          PINNED="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          marker = json.loads(Path("UPSTREAM_CODEX_VERSION.json").read_text(encoding="utf-8"))
+          pinned = marker.get("api")
+          if not isinstance(pinned, str) or not pinned.strip():
+              raise SystemExit("UPSTREAM_CODEX_VERSION.json must contain a non-empty api version")
+          print(pinned.strip())
+          PY
+          )"
           LATEST="$(npm view @openai/codex version | xargs)"
 
           echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
@@ -56,10 +66,21 @@ jobs:
       - name: Update pin + submodule
         if: steps.versions.outputs.up_to_date != 'true'
         shell: bash
+        env:
+          LATEST_CODEX_VERSION: ${{ steps.versions.outputs.latest }}
         run: |
           set -euo pipefail
 
-          echo "${{ steps.versions.outputs.latest }}" > UPSTREAM_CODEX_VERSION.txt
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          marker_path = Path("UPSTREAM_CODEX_VERSION.json")
+          marker = json.loads(marker_path.read_text(encoding="utf-8"))
+          marker["api"] = os.environ["LATEST_CODEX_VERSION"]
+          marker_path.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
+          PY
 
           git -C external/codex fetch --tags --force
           git -C external/codex checkout "rust-v${{ steps.versions.outputs.latest }}"

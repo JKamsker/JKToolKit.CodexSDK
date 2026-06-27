@@ -1,7 +1,7 @@
 <#
     Runs the full JKToolKit.CodexSDK test suite against an official Codex CLI release
     downloaded via GitHub CLI. By default, the Codex version is read from
-    UPSTREAM_CODEX_VERSION.txt and the gated E2E/smoke tests are enabled.
+    UPSTREAM_CODEX_VERSION.json and the gated E2E/smoke tests are enabled.
 #>
 [CmdletBinding()]
 param(
@@ -38,17 +38,18 @@ function Get-UpstreamCodexVersion {
         [string]$RepoRootPath
     )
 
-    $versionFile = Join-Path $RepoRootPath 'UPSTREAM_CODEX_VERSION.txt'
+    $versionFile = Join-Path $RepoRootPath 'UPSTREAM_CODEX_VERSION.json'
     if (-not (Test-Path -LiteralPath $versionFile)) {
-        throw "UPSTREAM_CODEX_VERSION.txt not found: $versionFile"
+        throw "UPSTREAM_CODEX_VERSION.json not found: $versionFile"
     }
 
-    $version = (Get-Content -LiteralPath $versionFile | Select-Object -First 1).Trim()
+    $marker = Get-Content -Raw -LiteralPath $versionFile | ConvertFrom-Json
+    $version = [string]$marker.api
     if ([string]::IsNullOrWhiteSpace($version)) {
-        throw "UPSTREAM_CODEX_VERSION.txt does not contain a version."
+        throw "UPSTREAM_CODEX_VERSION.json does not contain an api version."
     }
 
-    return $version
+    return $version.Trim()
 }
 
 function Get-WindowsAssetName {

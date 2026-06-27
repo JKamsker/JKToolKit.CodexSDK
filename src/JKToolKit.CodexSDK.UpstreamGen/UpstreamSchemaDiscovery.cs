@@ -6,7 +6,7 @@ namespace JKToolKit.CodexSDK.UpstreamGen;
 
 internal static class UpstreamSchemaDiscovery
 {
-    private const string UpstreamCodexVersionPinFileName = "UPSTREAM_CODEX_VERSION.txt";
+    private const string UpstreamCodexVersionMarkerFileName = "UPSTREAM_CODEX_VERSION.json";
 
     internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -45,7 +45,7 @@ internal static class UpstreamSchemaDiscovery
         }
 
         var (codexVersion, codexPackageJsonPath) = TryGetCodexCliVersion(repoRoot);
-        var (pinnedVersion, pinnedVersionPath) = TryGetPinnedCodexVersion(repoRoot);
+        var (apiVersion, markerPath) = TryGetApiCodexVersion(repoRoot);
 
         var normalized = ComputeNormalizedSha256AndBytes(schemaPath);
 
@@ -54,8 +54,8 @@ internal static class UpstreamSchemaDiscovery
             SchemaPath = MakeRepoRelativePath(repoRoot, schemaPath),
             SchemaByteCount = normalized.NormalizedByteCount,
             SchemaSha256 = normalized.Sha256,
-            CodexCliVersion = pinnedVersion ?? codexVersion,
-            CodexCliVersionPinPath = pinnedVersionPath is null ? null : MakeRepoRelativePath(repoRoot, pinnedVersionPath),
+            CodexCliVersion = apiVersion ?? codexVersion,
+            CodexCliVersionPinPath = markerPath is null ? null : MakeRepoRelativePath(repoRoot, markerPath),
             CodexCliPackageJsonPath = codexPackageJsonPath is null ? null : MakeRepoRelativePath(repoRoot, codexPackageJsonPath),
         };
     }
@@ -129,31 +129,35 @@ internal static class UpstreamSchemaDiscovery
         return output.AsSpan(0, outIndex).ToArray();
     }
 
-    private static (string? Version, string? VersionPinPath) TryGetPinnedCodexVersion(string repoRoot)
+    private static (string? Version, string? MarkerPath) TryGetApiCodexVersion(string repoRoot)
     {
-        var versionPath = Path.Combine(repoRoot, UpstreamCodexVersionPinFileName);
-        if (!File.Exists(versionPath))
+        var markerPath = Path.Combine(repoRoot, UpstreamCodexVersionMarkerFileName);
+        if (!File.Exists(markerPath))
         {
             return (null, null);
         }
 
-        foreach (var rawLine in File.ReadLines(versionPath))
+        using var doc = JsonDocument.Parse(File.ReadAllText(markerPath));
+        if (doc.RootElement.ValueKind != JsonValueKind.Object)
         {
-            var line = rawLine.Trim();
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-
-            if (line.StartsWith('#'))
-            {
-                continue;
-            }
-
-            return (line, versionPath);
+            throw new InvalidDataException($"{UpstreamCodexVersionMarkerFileName} must contain a JSON object.");
         }
 
-        return (null, null);
+        if (!doc.RootElement.TryGetProperty("api", out var apiVersionProperty) ||
+            apiVersionProperty.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidDataException(
+                $"{UpstreamCodexVersionMarkerFileName} must contain a non-empty string property named 'api'.");
+        }
+
+        var apiVersion = apiVersionProperty.GetString();
+        if (string.IsNullOrWhiteSpace(apiVersion))
+        {
+            throw new InvalidDataException(
+                $"{UpstreamCodexVersionMarkerFileName} must contain a non-empty string property named 'api'.");
+        }
+
+        return (apiVersion.Trim(), markerPath);
     }
 
     private static (string? Version, string? PackageJsonPath) TryGetCodexCliVersion(string repoRoot)

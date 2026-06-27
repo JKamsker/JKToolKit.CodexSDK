@@ -2,7 +2,7 @@
 
 ## Upstream pin and schema generation
 
-- `UPSTREAM_CODEX_VERSION.txt`
+- `UPSTREAM_CODEX_VERSION.json`
 - `external/codex/`
 - `docs/upstreamgen.md`
 - `.github/workflows/upstream-sync.yml`

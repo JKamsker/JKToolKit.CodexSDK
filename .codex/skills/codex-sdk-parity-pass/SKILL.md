@@ -1,6 +1,6 @@
 ---
 name: codex-sdk-parity-pass
-description: Research and implement repo-specific parity updates between JKToolKit.CodexSDK and the vendored upstream Codex CLI in `external/codex`. Use when `UPSTREAM_CODEX_VERSION.txt` or `external/codex` changes, when a user asks what changed in codex-cli since the last parity pass, or when you need to audit and fix drift in exec-mode, app-server DTOs/parsers, docs, tests, or generated schema interop.
+description: Research and implement repo-specific parity updates between JKToolKit.CodexSDK and the vendored upstream Codex CLI in `external/codex`. Use when `UPSTREAM_CODEX_VERSION.json` or `external/codex` changes, when a user asks what changed in codex-cli since the last parity pass, or when you need to audit and fix drift in exec-mode, app-server DTOs/parsers, docs, tests, or generated schema interop.
 ---
 
 # Codex SDK Parity Pass
@@ -34,7 +34,8 @@ Use this skill to upgrade this repository after upstream `codex-cli` changes. Re
   - `git -C external/codex log --oneline rust-v<from>..rust-v<to>`
   - `git -C external/codex diff --stat rust-v<from>..rust-v<to>`
 - Release notes are only a starting point. Verify behavior by reading the touched upstream source in `external/codex/codex-cli` and `external/codex/codex-rs`.
-- If the target version is newer than the vendored submodule, keep `UPSTREAM_CODEX_VERSION.txt` and `external/codex` on the same version line.
+- If the API target version is newer than the vendored submodule, keep `UPSTREAM_CODEX_VERSION.json` `api` and `external/codex` on the same version line.
+- Use `UPSTREAM_CODEX_VERSION.json` `integration` as the last deeper SDK parity baseline and update it only after the handwritten parity pass is validated.
 
 ### 3. Audit the highest-risk surfaces first
 

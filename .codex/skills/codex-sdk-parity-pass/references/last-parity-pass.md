@@ -10,7 +10,7 @@
 ## What the pass accomplished
 
 - Bumped `external/codex` to `rust-v0.118.0`
-- Updated `UPSTREAM_CODEX_VERSION.txt` to `0.118.0`
+- Updated the then-current upstream version marker to `0.118.0`
 - Regenerated upstream DTOs and then fixed schema/codegen fallout
 - Repeatedly audited SDK behavior against the vendored upstream until no actionable drift remained
 - Fixed Linux CI issues caused by Windows-style path assumptions in tests and fixtures

@@ -5,7 +5,7 @@ This runbook describes how to run a **6-agent, read-only** audit of this reposit
 ## Goals
 
 - Find potential bugs, missing validations, race conditions, and protocol mismatches.
-- Compare this SDK’s behavior against the pinned upstream (`UPSTREAM_CODEX_VERSION.txt` + `external/codex`).
+- Compare this SDK’s behavior against the pinned upstream (`UPSTREAM_CODEX_VERSION.json` + `external/codex`).
 - Produce **actionable** findings: file references + concrete fix ideas + tests to add.
 
 ## Hard rules (strict)
@@ -17,7 +17,7 @@ This runbook describes how to run a **6-agent, read-only** audit of this reposit
 ## Prerequisites
 
 - Submodule is present: `external/codex/`
-- Upstream pin is known: `UPSTREAM_CODEX_VERSION.txt` (example: `0.105.0`)
+- Upstream API pin is known: `UPSTREAM_CODEX_VERSION.json` `api` (example: `0.105.0`)
 - You can run searches in the repo (`rg`) and view files.
 
 ## Per-run artifact (recommended)
@@ -36,7 +36,7 @@ Template:
 - Runner: <name>
 - Branch: <branch>
 - HEAD: <sha>
-- Upstream pin: <contents of UPSTREAM_CODEX_VERSION.txt>
+- Upstream API pin: <UPSTREAM_CODEX_VERSION.json api>
 - external/codex HEAD: <sha or tag>
 
 ## Agents
@@ -70,7 +70,7 @@ Require every finding to include:
 
 Run 6 agents in parallel with **high reasoning**, using the prompts below.
 
-Before you start, replace `<PIN>` with the actual value from `UPSTREAM_CODEX_VERSION.txt` (example: `0.105.0`).
+Before you start, replace `<PIN>` with the actual `api` value from `UPSTREAM_CODEX_VERSION.json` (example: `0.105.0`).
 
 ### Agent 1 — Exec CLI args + process launch (exec/review)
 
