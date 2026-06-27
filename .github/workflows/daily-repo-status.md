@@ -50,7 +50,7 @@ engine:
     - -c
     - model_providers.repo-openai-proxy.base_url=http://host.docker.internal
     - -c
-    - model_providers.repo-openai-proxy.env_key=OPENAI_API_KEY
+    - model_providers.repo-openai-proxy.env_key=CODEX_API_KEY
     - -c
     - model_providers.repo-openai-proxy.wire_api=responses
     - -c
