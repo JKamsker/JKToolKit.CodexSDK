@@ -6,6 +6,19 @@ description: |
 
 on:
   workflow_dispatch:
+    inputs:
+      upstream_sync_pr:
+        description: "Set to true when upstream-sync dispatches this for its update PR."
+        required: false
+        default: "false"
+      upstream_version:
+        description: "The @openai/codex version from the upstream-sync PR."
+        required: false
+        default: ""
+      upstream_pr:
+        description: "The upstream-sync pull request number, when available."
+        required: false
+        default: ""
   schedule:
     # GitHub Actions cron uses UTC. These runs are one hour after the
     # 09:00 UTC and 21:00 UTC Upstream Sync runs.
@@ -71,7 +84,8 @@ Use the local skill at `.codex/skills/codex-sdk-parity-pass` for this run.
 This workflow exists to keep `JKToolKit.CodexSDK` aligned with the vendored upstream Codex CLI in `external/codex`. It should normally do useful work only when one of these conditions is true:
 
 1. The run was triggered by an upstream Codex sync pull request, for example a PR titled `chore(upstream): bump @openai/codex to <version>`.
-2. `UPSTREAM_CODEX_VERSION.txt` names a Codex version whose tag commit does not match the checked-out `external/codex` submodule commit.
+2. The run was dispatched by `Upstream Sync (@openai/codex)` with `github.event.inputs.upstream_sync_pr` set to `true`.
+3. `UPSTREAM_CODEX_VERSION.txt` names a Codex version whose tag commit does not match the checked-out `external/codex` submodule commit.
 
 ## First: Decide Whether A Pass Is Needed
 
@@ -95,14 +109,14 @@ test "$expected" = "$actual"
 
 No-op if all of these are true:
 
-- this is not a relevant pull request run,
+- this is not a relevant pull request run or upstream-sync dispatch,
 - the version pin and submodule commit already match,
 - generated upstream DTO/schema checks are clean,
 - and there is no confirmed SDK drift from the upstream delta.
 
 When no-oping, leave the workspace unchanged and emit a concise explanation in the final output. Do not create a pull request and do not push to a pull request branch.
 
-## Pull Request Runs
+## Pull Request And Upstream-Sync Dispatch Runs
 
 On `pull_request` events, only make changes when the triggering PR is an upstream Codex sync PR or clearly changes upstream Codex inputs:
 
@@ -110,6 +124,8 @@ On `pull_request` events, only make changes when the triggering PR is an upstrea
 - the `external/codex` submodule
 - generated upstream schema/DTO files
 - upstream generator code
+
+On `workflow_dispatch` events with `github.event.inputs.upstream_sync_pr == 'true'`, treat the run as the same upstream-sync PR path. Use `github.event.inputs.upstream_version` and `github.event.inputs.upstream_pr` as hints, but verify the actual checked-out `UPSTREAM_CODEX_VERSION.txt`, `external/codex` submodule, and PR state from git/GitHub before making changes.
 
 If the PR is from a fork, no-op; this workflow is only intended to repair same-repository upstream-sync branches.
 
@@ -127,9 +143,9 @@ When changes are needed:
 
 Do not use raw `git push`.
 
-## Scheduled And Manual Runs
+## Scheduled And Other Manual Runs
 
-On `schedule` or `workflow_dispatch`, use the version/submodule mismatch check above as the primary trigger.
+On `schedule` or manual `workflow_dispatch` runs where `github.event.inputs.upstream_sync_pr` is not `true`, use the version/submodule mismatch check above as the primary trigger.
 
 If the default branch has a mismatch:
 
