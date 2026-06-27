@@ -59,9 +59,6 @@ engine:
     - model_providers.repo-openai-proxy.requires_openai_auth=true
     - -c
     - model_providers.repo-openai-proxy.supports_websockets=false
-  env:
-    OPENAI_BASE_URL: "http://host.docker.internal/backend-api/codex"
-
 pre-agent-steps:
   - name: Start Codex endpoint relay
     id: start-codex-endpoint-relay
