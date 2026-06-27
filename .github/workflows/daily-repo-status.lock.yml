@@ -792,12 +792,11 @@ jobs:
           mkdir -p /tmp/gh-aw/mcp-config
           cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_47d4538748fe3213_EOF
 
-          model_provider = "codex-lb"
+          model_provider = "openai-proxy"
 
-          [model_providers.codex-lb]
-          name = "Codex LB"
-          base_url = "${CODEX_LB_BASE_URL}"
-          wire_api = "responses"
+          [model_providers.openai-proxy]
+          name = "OpenAI AWF proxy"
+          base_url = "http://172.30.0.30:10000"
           env_key = "OPENAI_API_KEY"
           supports_websockets = false
           [shell_environment_policy]
@@ -807,7 +806,7 @@ jobs:
           awk '
             BEGIN { skip_openai_proxy = 0 }
             /^[[:space:]]*model_provider[[:space:]]*=/ { next }
-            /^\[model_providers\.(openai-proxy|codex-lb)\][[:space:]]*$/ { skip_openai_proxy = 1; next }
+            /^\[model_providers\.openai-proxy\][[:space:]]*$/ { skip_openai_proxy = 1; next }
             /^\[/ { skip_openai_proxy = 0 }
             !skip_openai_proxy { print }
           ' "${RUNNER_TEMP}/gh-aw/mcp-config/config.toml" >> "/tmp/gh-aw/mcp-config/config.toml"
@@ -851,15 +850,27 @@ jobs:
           from pathlib import Path
           from urllib.parse import urlparse
 
-          host = urlparse(os.environ["CODEX_LB_BASE_URL"].strip()).hostname
-          if not host:
-              raise SystemExit("CODEX_LB_BASE_URL must be an absolute URL with a hostname")
+          endpoint = os.environ["CODEX_LB_BASE_URL"].strip().rstrip("/")
+          parsed = urlparse(endpoint)
+          if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+              raise SystemExit("CODEX_LB_BASE_URL must be an absolute HTTP(S) URL with only a hostname, optional port, and optional path")
+          host = parsed.hostname
+          target_host = parsed.netloc
+          base_path = parsed.path.rstrip("/")
+          print(f"::add-mask::{endpoint}")
           print(f"::add-mask::{host}")
+          print(f"::add-mask::{target_host}")
           config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"
           config = json.loads(config_path.read_text())
           allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])
           if host not in allow_domains:
               allow_domains.append(host)
+          openai_target = config.setdefault("apiProxy", {}).setdefault("targets", {}).setdefault("openai", {})
+          openai_target["host"] = target_host
+          if base_path:
+              openai_target["basePath"] = base_path
+          else:
+              openai_target.pop("basePath", None)
           config_path.write_text(json.dumps(config, separators=(",", ":"), ensure_ascii=False) + "\n")
           PY
           cp "${RUNNER_TEMP}/gh-aw/awf-config.json" /tmp/gh-aw/awf-config.json
@@ -1041,6 +1052,44 @@ jobs:
           if [ ! -f /tmp/gh-aw/agent_output.json ]; then
             echo '{"items":[]}' > /tmp/gh-aw/agent_output.json
           fi
+      - name: Redact Codex endpoint artifacts
+        if: always()
+        env:
+          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          endpoint = os.environ.get("CODEX_LB_BASE_URL", "").strip().rstrip("/")
+          parsed = urlparse(endpoint)
+          candidates = {value for value in (endpoint, parsed.netloc, parsed.hostname) if value}
+          if parsed.hostname and parsed.port:
+              candidates.add(f"{parsed.hostname}:{parsed.port}")
+          replacements = [(value.encode(), b"[REDACTED_CODEX_LB]") for value in candidates]
+          if not replacements:
+              raise SystemExit(0)
+
+          root = Path("/tmp/gh-aw")
+          if not root.exists():
+              raise SystemExit(0)
+
+          for path in root.rglob("*"):
+              if not path.is_file():
+                  continue
+              try:
+                  data = path.read_bytes()
+              except OSError:
+                  continue
+              if b"\0" in data[:4096]:
+                  continue
+              redacted = data
+              for needle, replacement in replacements:
+                  redacted = redacted.replace(needle, replacement)
+              if redacted != data:
+                  path.write_bytes(redacted)
+          PY
       - name: Upload agent artifacts
         if: always()
         continue-on-error: true
@@ -1504,11 +1553,10 @@ jobs:
           # Sync converter output to writable CODEX_HOME for Codex
           mkdir -p /tmp/gh-aw/mcp-config
           cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_f48e0018706875a8_EOF
-          model_provider = "codex-lb"
-          [model_providers.codex-lb]
-          name = "Codex LB"
-          base_url = "${CODEX_LB_BASE_URL}"
-          wire_api = "responses"
+          model_provider = "openai-proxy"
+          [model_providers.openai-proxy]
+          name = "OpenAI AWF proxy"
+          base_url = "http://172.30.0.30:10000"
           env_key = "OPENAI_API_KEY"
           supports_websockets = false
           [shell_environment_policy]
@@ -1518,7 +1566,7 @@ jobs:
           awk '
             BEGIN { skip_openai_proxy = 0 }
             /^[[:space:]]*model_provider[[:space:]]*=/ { next }
-            /^\[model_providers\.(openai-proxy|codex-lb)\][[:space:]]*$/ { skip_openai_proxy = 1; next }
+            /^\[model_providers\.openai-proxy\][[:space:]]*$/ { skip_openai_proxy = 1; next }
             /^\[/ { skip_openai_proxy = 0 }
             !skip_openai_proxy { print }
           ' "${RUNNER_TEMP}/gh-aw/mcp-config/config.toml" >> "/tmp/gh-aw/mcp-config/config.toml"
@@ -1543,15 +1591,27 @@ jobs:
           from pathlib import Path
           from urllib.parse import urlparse
 
-          host = urlparse(os.environ["CODEX_LB_BASE_URL"].strip()).hostname
-          if not host:
-              raise SystemExit("CODEX_LB_BASE_URL must be an absolute URL with a hostname")
+          endpoint = os.environ["CODEX_LB_BASE_URL"].strip().rstrip("/")
+          parsed = urlparse(endpoint)
+          if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+              raise SystemExit("CODEX_LB_BASE_URL must be an absolute HTTP(S) URL with only a hostname, optional port, and optional path")
+          host = parsed.hostname
+          target_host = parsed.netloc
+          base_path = parsed.path.rstrip("/")
+          print(f"::add-mask::{endpoint}")
           print(f"::add-mask::{host}")
+          print(f"::add-mask::{target_host}")
           config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"
           config = json.loads(config_path.read_text())
           allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])
           if host not in allow_domains:
               allow_domains.append(host)
+          openai_target = config.setdefault("apiProxy", {}).setdefault("targets", {}).setdefault("openai", {})
+          openai_target["host"] = target_host
+          if base_path:
+              openai_target["basePath"] = base_path
+          else:
+              openai_target.pop("basePath", None)
           config_path.write_text(json.dumps(config, separators=(",", ":"), ensure_ascii=False) + "\n")
           PY
           cp "${RUNNER_TEMP}/gh-aw/awf-config.json" /tmp/gh-aw/awf-config.json
@@ -1610,6 +1670,44 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/parse_token_usage.cjs');
             await main();
+      - name: Redact Codex endpoint detection artifacts
+        if: always() && steps.detection_guard.outputs.run_detection == 'true'
+        env:
+          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          endpoint = os.environ.get("CODEX_LB_BASE_URL", "").strip().rstrip("/")
+          parsed = urlparse(endpoint)
+          candidates = {value for value in (endpoint, parsed.netloc, parsed.hostname) if value}
+          if parsed.hostname and parsed.port:
+              candidates.add(f"{parsed.hostname}:{parsed.port}")
+          replacements = [(value.encode(), b"[REDACTED_CODEX_LB]") for value in candidates]
+          if not replacements:
+              raise SystemExit(0)
+
+          root = Path("/tmp/gh-aw/threat-detection")
+          if not root.exists():
+              raise SystemExit(0)
+
+          for path in root.rglob("*"):
+              if not path.is_file():
+                  continue
+              try:
+                  data = path.read_bytes()
+              except OSError:
+                  continue
+              if b"\0" in data[:4096]:
+                  continue
+              redacted = data
+              for needle, replacement in replacements:
+                  redacted = redacted.replace(needle, replacement)
+              if redacted != data:
+                  path.write_bytes(redacted)
+          PY
       - name: Upload threat detection log
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
