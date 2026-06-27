@@ -1621,7 +1621,39 @@ jobs:
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         env:
           CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
-        run: python3 .github/scripts/redact_codex_endpoint_artifacts.py /tmp/gh-aw/threat-detection
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          replacement = b"[REDACTED_CODEX_LB]"
+          endpoint = os.environ.get("CODEX_LB_BASE_URL", "").strip().rstrip("/")
+          if not endpoint:
+              raise SystemExit(0)
+          parsed = urlparse(endpoint)
+          needles = {value for value in (endpoint, parsed.netloc, parsed.hostname) if value}
+          if parsed.hostname and parsed.port:
+              needles.add(f"{parsed.hostname}:{parsed.port}")
+          ordered_needles = [needle.encode() for needle in sorted(needles, key=len, reverse=True)]
+          redacted_count = 0
+          for path in Path("/tmp/gh-aw/threat-detection").rglob("*"):
+              if not path.is_file():
+                  continue
+              try:
+                  data = path.read_bytes()
+              except OSError:
+                  continue
+              if b"\0" in data[:4096]:
+                  continue
+              redacted = data
+              for needle in ordered_needles:
+                  redacted = redacted.replace(needle, replacement)
+              if redacted != data:
+                  path.write_bytes(redacted)
+                  redacted_count += 1
+          print(f"Redacted Codex endpoint detection artifacts: {redacted_count} file(s)")
+          PY
       - name: Upload threat detection log
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

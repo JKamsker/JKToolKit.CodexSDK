@@ -56,6 +56,46 @@ PATCH_SNIPPET = [
     "PY",
 ]
 
+DETECTION_REDACTION_STEP = [
+    f"      - name: {DETECTION_REDACTION_MARKER}",
+    "        if: always() && steps.detection_guard.outputs.run_detection == 'true'",
+    "        env:",
+    "          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}",
+    "        run: |",
+    "          python3 - <<'PY'",
+    "          import os",
+    "          from pathlib import Path",
+    "          from urllib.parse import urlparse",
+    "",
+    '          replacement = b"[REDACTED_CODEX_LB]"',
+    '          endpoint = os.environ.get("CODEX_LB_BASE_URL", "").strip().rstrip("/")',
+    "          if not endpoint:",
+    "              raise SystemExit(0)",
+    "          parsed = urlparse(endpoint)",
+    "          needles = {value for value in (endpoint, parsed.netloc, parsed.hostname) if value}",
+    "          if parsed.hostname and parsed.port:",
+    '              needles.add(f"{parsed.hostname}:{parsed.port}")',
+    "          ordered_needles = [needle.encode() for needle in sorted(needles, key=len, reverse=True)]",
+    "          redacted_count = 0",
+    '          for path in Path("/tmp/gh-aw/threat-detection").rglob("*"):',
+    "              if not path.is_file():",
+    "                  continue",
+    "              try:",
+    "                  data = path.read_bytes()",
+    "              except OSError:",
+    "                  continue",
+    '              if b"\\0" in data[:4096]:',
+    "                  continue",
+    "              redacted = data",
+    "              for needle in ordered_needles:",
+    "                  redacted = redacted.replace(needle, replacement)",
+    "              if redacted != data:",
+    "                  path.write_bytes(redacted)",
+    "                  redacted_count += 1",
+    '          print(f"Redacted Codex endpoint detection artifacts: {redacted_count} file(s)")',
+    "          PY",
+]
+
 
 def insert_runtime_patch(lines: list[str]) -> tuple[list[str], int]:
     patched: list[str] = []
@@ -120,22 +160,30 @@ def insert_endpoint_env(lines: list[str]) -> tuple[list[str], int]:
 
 
 def insert_detection_redaction(lines: list[str]) -> tuple[list[str], int]:
-    if any(DETECTION_REDACTION_MARKER in line for line in lines):
-        return lines, 0
+    marker_line = f"      - name: {DETECTION_REDACTION_MARKER}"
+    if marker_line in lines:
+        patched: list[str] = []
+        replaced = False
+        index = 0
+        while index < len(lines):
+            if lines[index] != marker_line:
+                patched.append(lines[index])
+                index += 1
+                continue
+
+            patched.extend(DETECTION_REDACTION_STEP)
+            replaced = True
+            index += 1
+            while index < len(lines) and not lines[index].startswith("      - name: "):
+                index += 1
+
+        return patched, int(replaced)
 
     patched: list[str] = []
     insertions = 0
     for line in lines:
         if line == DETECTION_UPLOAD_STEP:
-            patched.extend(
-                [
-                    f"      - name: {DETECTION_REDACTION_MARKER}",
-                    "        if: always() && steps.detection_guard.outputs.run_detection == 'true'",
-                    "        env:",
-                    "          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}",
-                    "        run: python3 .github/scripts/redact_codex_endpoint_artifacts.py /tmp/gh-aw/threat-detection",
-                ]
-            )
+            patched.extend(DETECTION_REDACTION_STEP)
             insertions += 1
         patched.append(line)
     return patched, insertions
