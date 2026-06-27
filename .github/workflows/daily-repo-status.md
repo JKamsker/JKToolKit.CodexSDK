@@ -14,15 +14,7 @@ permissions:
   issues: read
   pull-requests: read
 
-strict: false
-
 network: defaults
-
-sandbox:
-  agent:
-    args:
-      - --env-file
-      - /tmp/gh-aw/codex-openai-agent.env
 
 tools:
   github:
@@ -35,43 +27,20 @@ tools:
 safe-outputs:
   mentions: false
   allowed-github-references: []
-  threat-detection: false
   create-issue:
     title-prefix: "[repo-status] "
     labels: [report, daily-status]
     close-older-issues: true
-engine:
-  id: codex
-  args:
-    - -c
-    - model_provider=repo-openai-proxy
-    - -c
-    - model_providers.repo-openai-proxy.name=OpenAI
-    - -c
-    - chatgpt_base_url=http://host.docker.internal
-    - -c
-    - model_providers.repo-openai-proxy.base_url=http://host.docker.internal/backend-api/codex
-    - -c
-    - model_providers.repo-openai-proxy.env_key=OPENAI_API_KEY
-    - -c
-    - model_providers.repo-openai-proxy.wire_api=responses
-    - -c
-    - model_providers.repo-openai-proxy.requires_openai_auth=true
-    - -c
-    - model_providers.repo-openai-proxy.supports_websockets=false
-pre-agent-steps:
-  - name: Start Codex endpoint relay
-    id: start-codex-endpoint-relay
-    env:
-      CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
-      CODEX_API_KEY: ${{ secrets.CODEX_API_KEY || secrets.OPENAI_API_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.CODEX_API_KEY }}
-    run: bash .github/scripts/start_codex_openai_relay.sh
+# Use .github/scripts/compile_gh_aw.py after editing this workflow. The wrapper
+# keeps CODEX_LB_BASE_URL in secrets while patching gh-aw's generated AWF target.
+engine: codex
 
 post-steps:
-  - name: Stop Codex endpoint relay
+  - name: Redact Codex endpoint artifacts
     if: always()
-    run: bash .github/scripts/stop_codex_openai_relay.sh
+    env:
+      CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
+    run: python3 .github/scripts/redact_codex_endpoint_artifacts.py
 
 source: githubnext/agentics/workflows/repo-status.md@1c6668b751c51af8571f01204ceffb19362e0f66
 ---
