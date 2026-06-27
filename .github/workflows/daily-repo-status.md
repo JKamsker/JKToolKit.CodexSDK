@@ -27,11 +27,38 @@ tools:
 safe-outputs:
   mentions: false
   allowed-github-references: []
+  threat-detection:
+    enabled: true
+    steps:
+      - name: Start Codex endpoint relay
+        id: start-codex-endpoint-relay
+        env:
+          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
+        run: bash .github/scripts/start_codex_openai_relay.sh
+    post-steps:
+      - name: Stop Codex endpoint relay
+        if: always()
+        run: bash .github/scripts/stop_codex_openai_relay.sh
   create-issue:
     title-prefix: "[repo-status] "
     labels: [report, daily-status]
     close-older-issues: true
-engine: codex
+engine:
+  id: codex
+  env:
+    OPENAI_BASE_URL: "http://host.docker.internal"
+
+pre-agent-steps:
+  - name: Start Codex endpoint relay
+    id: start-codex-endpoint-relay
+    env:
+      CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}
+    run: bash .github/scripts/start_codex_openai_relay.sh
+
+post-steps:
+  - name: Stop Codex endpoint relay
+    if: always()
+    run: bash .github/scripts/stop_codex_openai_relay.sh
 
 source: githubnext/agentics/workflows/repo-status.md@1c6668b751c51af8571f01204ceffb19362e0f66
 ---
