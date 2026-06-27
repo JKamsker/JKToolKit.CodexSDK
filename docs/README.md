@@ -13,6 +13,7 @@ JKToolKit.CodexSDK ships as a core NuGet package with three integration modes fo
 | [Microsoft Agent Framework Adapter](AgentFramework.md) | Use Codex as an Agent Framework `AIAgent` and expose `AIFunction` tools |
 | [Upstream Sync](upstreamgen.md) | How upstream JSON Schema → internal wire DTOs are generated + kept in sync |
 | [Manual Testing Runbook](Runbooks/Manual-Testing/README.md) | Step-by-step manual verification of all SDK features (via the demo app + scratch snippets) |
+| [gh-aw Custom Endpoint Runbook](Runbooks/GhAwCustomEndpoint.md) | How to compile gh-aw workflows so the secret-backed load balancer endpoint is used |
 
 ## Optional Packages
 

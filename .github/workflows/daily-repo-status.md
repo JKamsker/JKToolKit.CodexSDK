@@ -31,8 +31,8 @@ safe-outputs:
     title-prefix: "[repo-status] "
     labels: [report, daily-status]
     close-older-issues: true
-# Use .github/scripts/compile_gh_aw.py after editing this workflow. The wrapper
-# keeps CODEX_LB_BASE_URL in secrets while patching gh-aw's generated AWF target.
+# Use .github/scripts/compile_gh_aw.py after editing this workflow. See
+# docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
 engine: codex
 
 post-steps:
