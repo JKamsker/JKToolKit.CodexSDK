@@ -4,6 +4,16 @@ description: |
   the gh-aw parity automation.
 
 on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Parity pull request number to replay existing CodeRabbit comments for."
+        required: false
+        default: ""
+      review_id:
+        description: "Optional CodeRabbit pull request review id to focus on."
+        required: false
+        default: ""
   pull_request_review:
     types: [submitted, edited]
   bots:
@@ -11,14 +21,27 @@ on:
     - "coderabbitai[bot]"
 
 if: >
-  (github.event.review.user.login == 'coderabbitai' || github.event.review.user.login == 'coderabbitai[bot]') &&
-  (github.event.review.state == 'commented' || github.event.review.state == 'COMMENTED') &&
-  github.event.pull_request.state == 'open' &&
-  startsWith(github.event.pull_request.title, '[parity] ') &&
-  github.event.pull_request.user.login == 'github-actions[bot]' &&
-  startsWith(github.event.pull_request.head.ref, 'parity/codex-') &&
-  contains(toJSON(github.event.pull_request.labels.*.name), '"automation"') &&
-  contains(toJSON(github.event.pull_request.labels.*.name), '"parity"')
+  (
+    github.event_name == 'workflow_dispatch' &&
+    (
+      github.event.inputs.pr_number != '' ||
+      (
+        fromJSON(github.event.inputs.aw_context || '{}').item_type == 'pull_request' &&
+        fromJSON(github.event.inputs.aw_context || '{}').item_number != ''
+      )
+    )
+  ) ||
+  (
+    github.event_name == 'pull_request_review' &&
+    (github.event.review.user.login == 'coderabbitai' || github.event.review.user.login == 'coderabbitai[bot]') &&
+    (github.event.review.state == 'commented' || github.event.review.state == 'COMMENTED') &&
+    github.event.pull_request.state == 'open' &&
+    startsWith(github.event.pull_request.title, '[parity] ') &&
+    github.event.pull_request.user.login == 'github-actions[bot]' &&
+    startsWith(github.event.pull_request.head.ref, 'parity/codex-') &&
+    contains(toJSON(github.event.pull_request.labels.*.name), '"automation"') &&
+    contains(toJSON(github.event.pull_request.labels.*.name), '"parity"')
+  )
 
 permissions:
   contents: read
@@ -128,9 +151,10 @@ post-steps:
 Fix actionable CodeRabbit findings on an existing gh-aw parity pull request.
 
 This workflow should only do useful work when it was triggered by a CodeRabbit
-pull request review on an open parity PR created by the gh-aw parity workflow.
-The compiled workflow also guards this before activation, but verify it yourself
-before changing code:
+pull request review on an open parity PR created by the gh-aw parity workflow,
+or when it was manually dispatched to replay existing CodeRabbit comments for
+such a PR. The compiled workflow also guards this before activation where it can,
+but verify it yourself before changing code:
 
 - the triggering review author is `coderabbitai` or `coderabbitai[bot]`,
 - the pull request title starts with `[parity] `,
@@ -139,6 +163,19 @@ before changing code:
 - the pull request has both `automation` and `parity` labels.
 
 If any guard does not hold, leave the workspace unchanged and emit a `noop`.
+
+## Manual Replay Runs
+
+On `workflow_dispatch`, determine the target PR from
+`github.event.inputs.pr_number` or the pull request number in
+`github.event.inputs.aw_context`. Use `github.event.inputs.review_id` when it is
+set; otherwise use the newest CodeRabbit review on that PR.
+
+Manual replay runs exist to process CodeRabbit comments that were created before
+this workflow existed. Treat them the same as a fresh CodeRabbit review event:
+inspect the target PR, verify the PR guardrails above, read the selected or
+newest CodeRabbit review, and read all unresolved CodeRabbit inline review
+comments before editing.
 
 ## Task
 
