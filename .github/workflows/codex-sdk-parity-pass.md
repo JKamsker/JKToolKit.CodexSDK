@@ -68,7 +68,7 @@ safe-outputs:
   create-pull-request:
     title-prefix: "[parity] "
     labels: [automation, parity]
-    draft: true
+    draft: false
     max: 1
     if-no-changes: "ignore"
     protected-files: fallback-to-issue
