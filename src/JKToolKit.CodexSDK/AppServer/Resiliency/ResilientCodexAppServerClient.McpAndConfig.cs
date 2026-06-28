@@ -34,6 +34,17 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountRateLimitsAsync(token), ct);
 
+    public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+        string idempotencyKey,
+        CancellationToken ct = default) =>
+        ExecuteAsync(
+            CodexAppServerOperationKind.Configuration,
+            (c, token) => c.ConsumeAccountRateLimitResetCreditAsync(idempotencyKey, token),
+            ct);
+
+    public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadWorkspaceMessagesAsync(token), ct);
+
     public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountTokenUsageAsync(token), ct);
 

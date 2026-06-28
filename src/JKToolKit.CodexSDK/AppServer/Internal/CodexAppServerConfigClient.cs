@@ -106,6 +106,7 @@ internal sealed partial class CodexAppServerConfigClient
         {
             RateLimits = rateLimits.HasValue ? rateLimits.Value.Clone() : EmptyObject(),
             RateLimitsByLimitId = rateLimitsByLimitId,
+            RateLimitResetCredits = ParseRateLimitResetCredits(result),
             Raw = result
         };
     }

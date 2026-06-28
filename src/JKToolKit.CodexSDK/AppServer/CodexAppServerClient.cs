@@ -304,6 +304,16 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.ArchiveThreadAsync(threadId, ct);
 
     /// <summary>
+    /// Deletes a thread.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>thread/delete</c>. The app-server emits
+    /// <c>thread/deleted</c> when the delete is observed.
+    /// </remarks>
+    public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.DeleteThreadAsync(threadId, ct);
+
+    /// <summary>
     /// Unarchives a thread.
     /// </summary>
     public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default) =>
