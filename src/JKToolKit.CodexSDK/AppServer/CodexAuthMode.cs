@@ -41,6 +41,11 @@ public readonly record struct CodexAuthMode
     public static CodexAuthMode PersonalAccessToken => new("personalAccessToken");
 
     /// <summary>
+    /// Gets the <c>bedrockApiKey</c> auth mode.
+    /// </summary>
+    public static CodexAuthMode BedrockApiKey => new("bedrockApiKey");
+
+    /// <summary>
     /// Parses an auth mode from a wire value.
     /// </summary>
     public static CodexAuthMode Parse(string value) => new(value);

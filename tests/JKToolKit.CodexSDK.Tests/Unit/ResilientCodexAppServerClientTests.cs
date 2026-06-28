@@ -486,7 +486,7 @@ public sealed class ResilientCodexAppServerClientTests
             ImportExternalAgentConfigAsyncImpl = (_, _) =>
             {
                 invoked.Add(nameof(ICodexAppServerClientAdapter.ImportExternalAgentConfigAsync));
-                return Task.CompletedTask;
+                return Task.FromResult(new ExternalAgentConfigImportResult { Raw = EmptyJson() });
             },
             ReloadMcpServersAsyncImpl = _ =>
             {
@@ -868,7 +868,7 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Func<string, CancellationToken, Task>? CompactThreadAsyncImpl { get; init; }
 
-        public Func<IReadOnlyList<ExternalAgentConfigMigrationItem>, CancellationToken, Task>? ImportExternalAgentConfigAsyncImpl { get; init; }
+        public Func<IReadOnlyList<ExternalAgentConfigMigrationItem>, CancellationToken, Task<ExternalAgentConfigImportResult>>? ImportExternalAgentConfigAsyncImpl { get; init; }
 
         public Func<CancellationToken, Task>? ReloadMcpServersAsyncImpl { get; init; }
 
@@ -981,11 +981,24 @@ public sealed class ResilientCodexAppServerClientTests
         public Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct) =>
             NotSupported();
 
+        public Task<ThreadBackgroundTerminalListPage> ListThreadBackgroundTerminalsAsync(
+            ThreadBackgroundTerminalListOptions options,
+            CancellationToken ct) =>
+            NotSupported<ThreadBackgroundTerminalListPage>();
+
+        public Task<ThreadBackgroundTerminalTerminateResult> TerminateThreadBackgroundTerminalAsync(
+            ThreadBackgroundTerminalTerminateOptions options,
+            CancellationToken ct) =>
+            NotSupported<ThreadBackgroundTerminalTerminateResult>();
+
         public Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct) =>
             NotSupported<CodexThread>();
 
         public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<ThreadArchiveResult>();
+
+        public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct) =>
+            NotSupported<ThreadDeleteResult>();
 
         public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<CodexThread>();
@@ -1050,8 +1063,11 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct) =>
             NotSupported<ExternalAgentConfigDetectResult>();
 
-        public Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct) =>
-            ImportExternalAgentConfigAsyncImpl?.Invoke(migrationItems, ct) ?? Task.CompletedTask;
+        public Task<ExternalAgentConfigImportResult> ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct) =>
+            ImportExternalAgentConfigAsyncImpl?.Invoke(migrationItems, ct) ?? NotSupported<ExternalAgentConfigImportResult>();
+
+        public Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct) =>
+            NotSupported<ExternalAgentConfigImportHistoriesReadResult>();
 
         public Task<AccountReadResult> ReadAccountAsync(AccountReadOptions options, CancellationToken ct) =>
             NotSupported<AccountReadResult>();
@@ -1061,6 +1077,14 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) =>
             NotSupported<AccountRateLimitsReadResult>();
+
+        public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+            AccountRateLimitResetCreditConsumeOptions options,
+            CancellationToken ct) =>
+            NotSupported<AccountRateLimitResetCreditConsumeResult>();
+
+        public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) =>
+            NotSupported<WorkspaceMessagesReadResult>();
 
         public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) =>
             NotSupported<AccountTokenUsageReadResult>();

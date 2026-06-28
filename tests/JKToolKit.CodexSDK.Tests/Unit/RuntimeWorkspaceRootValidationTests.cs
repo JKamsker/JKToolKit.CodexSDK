@@ -68,6 +68,29 @@ public sealed class RuntimeWorkspaceRootValidationTests
         await AssertRelativeRootRejected(act, rpc);
     }
 
+    [Fact]
+    public async Task StartTurnAsync_AllowsEnvironmentNativeRelativeCwd()
+    {
+        using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            Environments =
+            [
+                new TurnEnvironmentOptions
+                {
+                    EnvironmentId = "env-1",
+                    Cwd = "relative/repo"
+                }
+            ]
+        });
+
+        rpc.LastMethod.Should().Be("turn/start");
+        rpc.LastParams.Should().NotBeNull();
+    }
+
     private static async Task AssertRelativeRootRejected(Func<Task> act, GuardRpc rpc)
     {
         await act.Should().ThrowAsync<ArgumentException>()
@@ -106,6 +129,31 @@ public sealed class RuntimeWorkspaceRootValidationTests
         {
             RequestCount++;
             throw new InvalidOperationException("Relative runtime workspace roots should be rejected before JSON-RPC is called.");
+        }
+
+        public Task SendNotificationAsync(string method, object? @params, CancellationToken ct) =>
+            Task.CompletedTask;
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class RecordingRpc : IJsonRpcConnection
+    {
+        public string? LastMethod { get; private set; }
+        public object? LastParams { get; private set; }
+        public required JsonElement Result { get; init; }
+
+#pragma warning disable CS0067
+        public event Func<JsonRpcNotification, ValueTask>? OnNotification;
+#pragma warning restore CS0067
+
+        public Func<JsonRpcRequest, ValueTask<JsonRpcResponse>>? OnServerRequest { get; set; }
+
+        public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
+        {
+            LastMethod = method;
+            LastParams = @params;
+            return Task.FromResult(Result);
         }
 
         public Task SendNotificationAsync(string method, object? @params, CancellationToken ct) =>

@@ -106,6 +106,7 @@ internal sealed partial class CodexAppServerConfigClient
         {
             RateLimits = rateLimits.HasValue ? rateLimits.Value.Clone() : EmptyObject(),
             RateLimitsByLimitId = rateLimitsByLimitId,
+            RateLimitResetCredits = ParseRateLimitResetCredits(result),
             Raw = result
         };
     }
@@ -284,7 +285,7 @@ internal sealed partial class CodexAppServerConfigClient
         };
     }
 
-    public async Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
+    public async Task<ExternalAgentConfigImportResult> ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(migrationItems);
 
@@ -295,10 +296,30 @@ internal sealed partial class CodexAppServerConfigClient
                 throw new ArgumentException($"Migration item at index {i} cannot be null.", nameof(migrationItems));
         }
 
-        _ = await _sendRequestAsync(
+        var result = await _sendRequestAsync(
             "externalAgentConfig/import",
             new ExternalAgentConfigImportParams { MigrationItems = migrationItems },
             ct);
+
+        return new ExternalAgentConfigImportResult
+        {
+            ImportId = CodexAppServerClientJson.GetStringOrNull(result, "importId"),
+            Raw = result
+        };
+    }
+
+    public async Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct = default)
+    {
+        var result = await _sendRequestAsync(
+            "externalAgentConfig/import/readHistories",
+            null,
+            ct);
+
+        return new ExternalAgentConfigImportHistoriesReadResult
+        {
+            Data = ParseExternalAgentConfigImportHistories(result),
+            Raw = result
+        };
     }
 
     public Task<bool> StartWindowsSandboxSetupAsync(string mode, CancellationToken ct = default) =>
@@ -351,6 +372,64 @@ internal sealed partial class CodexAppServerConfigClient
         }
 
         return value.Value.GetString();
+    }
+
+    private static RateLimitResetCreditsSummary? ParseRateLimitResetCredits(JsonElement result)
+    {
+        var credits = CodexAppServerClientJson.TryGetObject(result, "rateLimitResetCredits");
+        if (credits is null)
+        {
+            return null;
+        }
+
+        return new RateLimitResetCreditsSummary
+        {
+            AvailableCount = CodexAppServerClientJson.GetInt64OrNull(credits.Value, "availableCount") ?? 0,
+            Raw = credits.Value.Clone()
+        };
+    }
+
+    private static IReadOnlyList<ExternalAgentConfigImportHistory> ParseExternalAgentConfigImportHistories(JsonElement result)
+    {
+        var dataArray = CodexAppServerClientJson.TryGetArray(result, "data")
+            ?? throw new InvalidOperationException("externalAgentConfig/import/readHistories response missing required array property 'data'.");
+
+        var histories = new List<ExternalAgentConfigImportHistory>();
+        foreach (var item in dataArray.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("externalAgentConfig/import/readHistories data[] entries must be objects.");
+            }
+
+            histories.Add(new ExternalAgentConfigImportHistory
+            {
+                ImportId = CodexAppServerClientJson.GetRequiredString(item, "importId", "externalAgentConfig/import/readHistories data[]"),
+                CompletedAtMs = CodexAppServerClientJson.GetInt64OrNull(item, "completedAtMs") ?? 0,
+                Successes = CloneArray(item, "successes"),
+                Failures = CloneArray(item, "failures"),
+                Raw = item.Clone()
+            });
+        }
+
+        return histories;
+    }
+
+    private static IReadOnlyList<JsonElement> CloneArray(JsonElement obj, string propertyName)
+    {
+        var array = CodexAppServerClientJson.TryGetArray(obj, propertyName);
+        if (array is null)
+        {
+            return Array.Empty<JsonElement>();
+        }
+
+        var values = new List<JsonElement>();
+        foreach (var item in array.Value.EnumerateArray())
+        {
+            values.Add(item.Clone());
+        }
+
+        return values;
     }
 
     private static bool IsUnknownVariant(JsonRpcRemoteException ex, string method)

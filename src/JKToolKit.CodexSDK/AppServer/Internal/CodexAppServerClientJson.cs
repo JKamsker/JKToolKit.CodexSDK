@@ -252,6 +252,27 @@ internal static class CodexAppServerClientJson
         return null;
     }
 
+    public static double? GetDoubleOrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out var value))
+        {
+            return value;
+        }
+
+        if (p.ValueKind == JsonValueKind.String &&
+            double.TryParse(p.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
     public static long GetRequiredInt64(JsonElement obj, string propertyName, string? context = null)
     {
         if (obj.ValueKind != JsonValueKind.Object ||
@@ -299,4 +320,3 @@ internal static class CodexAppServerClientJson
         return $"Missing required property '{propertyName}' on {target}.";
     }
 }
-

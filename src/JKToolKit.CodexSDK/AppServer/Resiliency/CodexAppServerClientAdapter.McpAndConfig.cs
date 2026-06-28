@@ -14,13 +14,21 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct);
 
-    Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct);
+    Task<ExternalAgentConfigImportResult> ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct);
+
+    Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct);
 
     Task<AccountReadResult> ReadAccountAsync(AccountReadOptions options, CancellationToken ct);
 
     Task<AccountReadResult> ReadAccountAsync(CancellationToken ct);
 
     Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct);
+
+    Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+        AccountRateLimitResetCreditConsumeOptions options,
+        CancellationToken ct);
+
+    Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct);
 
     Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct);
 
@@ -73,13 +81,21 @@ internal sealed partial class CodexAppServerClientAdapter
 
     public Task<ExternalAgentConfigDetectResult> DetectExternalAgentConfigAsync(ExternalAgentConfigDetectOptions options, CancellationToken ct) => _inner.DetectExternalAgentConfigAsync(options, ct);
 
-    public Task ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct) => _inner.ImportExternalAgentConfigAsync(migrationItems, ct);
+    public Task<ExternalAgentConfigImportResult> ImportExternalAgentConfigAsync(IReadOnlyList<ExternalAgentConfigMigrationItem> migrationItems, CancellationToken ct) => _inner.ImportExternalAgentConfigAsync(migrationItems, ct);
+
+    public Task<ExternalAgentConfigImportHistoriesReadResult> ReadExternalAgentConfigImportHistoriesAsync(CancellationToken ct) => _inner.ReadExternalAgentConfigImportHistoriesAsync(ct);
 
     public Task<AccountReadResult> ReadAccountAsync(AccountReadOptions options, CancellationToken ct) => _inner.ReadAccountAsync(options, ct);
 
     public Task<AccountReadResult> ReadAccountAsync(CancellationToken ct) => _inner.ReadAccountAsync(ct);
 
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) => _inner.ReadAccountRateLimitsAsync(ct);
+
+    public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+        AccountRateLimitResetCreditConsumeOptions options,
+        CancellationToken ct) => _inner.ConsumeAccountRateLimitResetCreditAsync(options, ct);
+
+    public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) => _inner.ReadWorkspaceMessagesAsync(ct);
 
     public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) => _inner.ReadAccountTokenUsageAsync(ct);
 

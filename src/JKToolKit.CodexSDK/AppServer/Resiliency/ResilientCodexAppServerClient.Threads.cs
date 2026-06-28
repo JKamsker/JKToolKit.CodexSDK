@@ -40,11 +40,24 @@ public sealed partial class ResilientCodexAppServerClient
     public Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.CleanThreadBackgroundTerminalsAsync(threadId, token), ct);
 
+    public Task<ThreadBackgroundTerminalListPage> ListThreadBackgroundTerminalsAsync(
+        ThreadBackgroundTerminalListOptions options,
+        CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ListThreadBackgroundTerminalsAsync(options, token), ct);
+
+    public Task<ThreadBackgroundTerminalTerminateResult> TerminateThreadBackgroundTerminalAsync(
+        ThreadBackgroundTerminalTerminateOptions options,
+        CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.TerminateThreadBackgroundTerminalAsync(options, token), ct);
+
     public Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ForkThreadAsync(options, token), ct);
 
     public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ArchiveThreadAsync(threadId, token), ct);
+
+    public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.DeleteThreadAsync(threadId, token), ct);
 
     public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.UnarchiveThreadAsync(threadId, token), ct);

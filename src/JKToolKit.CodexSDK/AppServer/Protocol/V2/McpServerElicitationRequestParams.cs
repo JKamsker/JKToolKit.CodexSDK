@@ -75,6 +75,11 @@ public enum McpServerElicitationMode
     Form = 0,
 
     /// <summary>
+    /// OpenAI form input with raw JSON Schema payload.
+    /// </summary>
+    OpenAiForm = 2,
+
+    /// <summary>
     /// Browser or URL-based continuation.
     /// </summary>
     Url = 1
@@ -132,6 +137,7 @@ internal sealed class McpServerElicitationModeJsonConverter : JsonConverter<McpS
         reader.GetString() switch
         {
             "form" => McpServerElicitationMode.Form,
+            "openai/form" => McpServerElicitationMode.OpenAiForm,
             "url" => McpServerElicitationMode.Url,
             var value => throw new JsonException($"Unknown MCP elicitation mode '{value}'.")
         };
@@ -141,6 +147,7 @@ internal sealed class McpServerElicitationModeJsonConverter : JsonConverter<McpS
         writer.WriteStringValue(value switch
         {
             McpServerElicitationMode.Form => "form",
+            McpServerElicitationMode.OpenAiForm => "openai/form",
             McpServerElicitationMode.Url => "url",
             _ => throw new JsonException($"Unknown MCP elicitation mode '{value}'.")
         });

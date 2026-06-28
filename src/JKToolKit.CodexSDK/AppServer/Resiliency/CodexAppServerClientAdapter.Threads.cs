@@ -26,9 +26,19 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct);
 
+    Task<ThreadBackgroundTerminalListPage> ListThreadBackgroundTerminalsAsync(
+        ThreadBackgroundTerminalListOptions options,
+        CancellationToken ct);
+
+    Task<ThreadBackgroundTerminalTerminateResult> TerminateThreadBackgroundTerminalAsync(
+        ThreadBackgroundTerminalTerminateOptions options,
+        CancellationToken ct);
+
     Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct);
 
     Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct);
+
+    Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct);
 
     Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct);
 
@@ -71,9 +81,19 @@ internal sealed partial class CodexAppServerClientAdapter
 
     public Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct) => _inner.CleanThreadBackgroundTerminalsAsync(threadId, ct);
 
+    public Task<ThreadBackgroundTerminalListPage> ListThreadBackgroundTerminalsAsync(
+        ThreadBackgroundTerminalListOptions options,
+        CancellationToken ct) => _inner.ListThreadBackgroundTerminalsAsync(options, ct);
+
+    public Task<ThreadBackgroundTerminalTerminateResult> TerminateThreadBackgroundTerminalAsync(
+        ThreadBackgroundTerminalTerminateOptions options,
+        CancellationToken ct) => _inner.TerminateThreadBackgroundTerminalAsync(options, ct);
+
     public Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct) => _inner.ForkThreadAsync(options, ct);
 
     public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct) => _inner.ArchiveThreadAsync(threadId, ct);
+
+    public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct) => _inner.DeleteThreadAsync(threadId, ct);
 
     public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) => _inner.UnarchiveThreadAsync(threadId, ct);
 

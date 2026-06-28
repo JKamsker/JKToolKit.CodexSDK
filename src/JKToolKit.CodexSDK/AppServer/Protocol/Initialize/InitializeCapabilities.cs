@@ -22,6 +22,13 @@ public sealed record class InitializeCapabilities
     public bool RequestAttestation { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the client can handle OpenAI form MCP elicitation requests.
+    /// </summary>
+    [JsonPropertyName("mcpServerOpenaiFormElicitation")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool McpServerOpenAiFormElicitation { get; init; }
+
+    /// <summary>
     /// Gets an optional list of notification method names to opt out of.
     /// </summary>
     [JsonPropertyName("optOutNotificationMethods")]

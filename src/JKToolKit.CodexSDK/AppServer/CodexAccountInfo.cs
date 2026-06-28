@@ -30,8 +30,17 @@ public sealed record class CodexApiKeyAccountInfo(JsonElement Raw) : CodexAccoun
 /// <summary>
 /// Represents managed ChatGPT account state.
 /// </summary>
-public sealed record class CodexChatGptAccountInfo(string Email, CodexPlanType PlanType, JsonElement Raw) : CodexAccountInfo(Raw)
+public sealed record class CodexChatGptAccountInfo(string? Email, CodexPlanType PlanType, JsonElement Raw) : CodexAccountInfo(Raw)
 {
     /// <inheritdoc />
     public override string Type => "chatgpt";
+}
+
+/// <summary>
+/// Represents Amazon Bedrock account state.
+/// </summary>
+public sealed record class CodexAmazonBedrockAccountInfo(string CredentialSource, JsonElement Raw) : CodexAccountInfo(Raw)
+{
+    /// <inheritdoc />
+    public override string Type => "amazonBedrock";
 }

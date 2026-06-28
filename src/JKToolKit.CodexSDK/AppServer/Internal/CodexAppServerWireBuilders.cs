@@ -61,8 +61,6 @@ internal static class CodexAppServerWireBuilders
                 throw new ArgumentException("EnvironmentId cannot be empty or whitespace.", argumentName);
             }
 
-            CodexAppServerPathValidation.ValidateRequiredAbsolutePath(environment.Cwd, argumentName, "Environment Cwd");
-
             result[i] = new TurnEnvironmentParams
             {
                 EnvironmentId = environment.EnvironmentId,

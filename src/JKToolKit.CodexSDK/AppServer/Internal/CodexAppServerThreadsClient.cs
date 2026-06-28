@@ -5,7 +5,7 @@ using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
-internal sealed class CodexAppServerThreadsClient
+internal sealed partial class CodexAppServerThreadsClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;
@@ -168,6 +168,7 @@ internal sealed class CodexAppServerThreadsClient
                 SourceKinds = options.SourceKinds,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,
+                ParentThreadId = options.ParentThreadId,
             },
             ct);
 
@@ -362,22 +363,6 @@ internal sealed class CodexAppServerThreadsClient
         return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, id);
     }
 
-    public async Task CleanThreadBackgroundTerminalsAsync(string threadId, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(threadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
-
-        if (!_experimentalApiEnabled())
-        {
-            throw new CodexExperimentalApiRequiredException("thread/backgroundTerminals/clean");
-        }
-
-        _ = await _sendRequestAsync(
-            "thread/backgroundTerminals/clean",
-            new ThreadBackgroundTerminalsCleanParams { ThreadId = threadId },
-            ct);
-    }
-
     public async Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -438,6 +423,22 @@ internal sealed class CodexAppServerThreadsClient
         };
     }
 
+    public async Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
+
+        var result = await _sendRequestAsync(
+            "thread/delete",
+            new UpstreamV2.ThreadDeleteParams { ThreadId = threadId },
+            ct);
+
+        return new ThreadDeleteResult
+        {
+            Raw = result
+        };
+    }
+
     public async Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(threadId))
@@ -464,4 +465,5 @@ internal sealed class CodexAppServerThreadsClient
             new UpstreamV2.ThreadSetNameParams { ThreadId = threadId, Name = name },
             ct);
     }
+
 }

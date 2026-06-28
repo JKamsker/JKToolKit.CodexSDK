@@ -253,6 +253,10 @@ public sealed class AuthAccountConfigWrappersTests
             {
                 codex = new { limitId = "codex" },
                 secondary = new { limitId = "secondary" }
+            },
+            rateLimitResetCredits = new
+            {
+                availableCount = 2L
             }
         });
 
@@ -272,6 +276,68 @@ public sealed class AuthAccountConfigWrappersTests
         result.RateLimitsByLimitId.Should().NotBeNull();
         result.RateLimitsByLimitId!.Should().ContainKey("codex");
         result.RateLimitsByLimitId!["secondary"].GetProperty("limitId").GetString().Should().Be("secondary");
+        result.RateLimitResetCredits.Should().NotBeNull();
+        result.RateLimitResetCredits!.AvailableCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ConsumeAccountRateLimitResetCreditAsync_CallsExpectedMethod_AndParsesOutcome()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/rateLimitResetCredit/consume",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.Serialize(p, CodexAppServerClient.CreateDefaultSerializerOptions());
+                json.Should().Contain("\"idempotencyKey\":\"reset-1\"");
+            },
+            Result = JsonSerializer.SerializeToElement(new { outcome = "reset" })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ConsumeAccountRateLimitResetCreditAsync(new AccountRateLimitResetCreditConsumeOptions
+        {
+            IdempotencyKey = "reset-1"
+        });
+
+        result.Outcome.Should().Be("reset");
+    }
+
+    [Fact]
+    public async Task ReadWorkspaceMessagesAsync_CallsExpectedMethod_AndParsesMessages()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/workspaceMessages/read",
+            AssertParams = p => p.Should().BeNull(),
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                featureEnabled = true,
+                messages = new[]
+                {
+                    new
+                    {
+                        messageId = "msg-1",
+                        messageType = "headline",
+                        messageBody = "Workspace headline",
+                        createdAt = 123L,
+                        archivedAt = (long?)null
+                    }
+                }
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadWorkspaceMessagesAsync();
+
+        result.FeatureEnabled.Should().BeTrue();
+        result.Messages.Should().ContainSingle();
+        result.Messages[0].MessageId.Should().Be("msg-1");
+        result.Messages[0].MessageType.Should().Be("headline");
+        result.Messages[0].CreatedAt.Should().Be(123);
+        result.Messages[0].ArchivedAt.Should().BeNull();
     }
 
     [Fact]

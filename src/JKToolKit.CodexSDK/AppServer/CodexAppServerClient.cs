@@ -95,10 +95,11 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
 
         var experimentalApi = capabilities.ExperimentalApi;
         var requestAttestation = capabilities.RequestAttestation;
+        var mcpServerOpenAiFormElicitation = capabilities.McpServerOpenAiFormElicitation;
         var optOut = capabilities.OptOutNotificationMethods;
         var hasOptOut = optOut is { Count: > 0 };
 
-        if (!experimentalApi && !requestAttestation && !hasOptOut)
+        if (!experimentalApi && !requestAttestation && !mcpServerOpenAiFormElicitation && !hasOptOut)
         {
             return null;
         }
@@ -107,6 +108,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         {
             ExperimentalApi = experimentalApi,
             RequestAttestation = requestAttestation,
+            McpServerOpenAiFormElicitation = mcpServerOpenAiFormElicitation,
             OptOutNotificationMethods = hasOptOut ? optOut : null
         };
     }
@@ -292,6 +294,22 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.CleanThreadBackgroundTerminalsAsync(threadId, ct);
 
     /// <summary>
+    /// Lists running background terminals associated with the thread (experimental).
+    /// </summary>
+    public Task<ThreadBackgroundTerminalListPage> ListThreadBackgroundTerminalsAsync(
+        ThreadBackgroundTerminalListOptions options,
+        CancellationToken ct = default) =>
+        _threadsClient.ListThreadBackgroundTerminalsAsync(options, ct);
+
+    /// <summary>
+    /// Terminates a single running background terminal associated with the thread (experimental).
+    /// </summary>
+    public Task<ThreadBackgroundTerminalTerminateResult> TerminateThreadBackgroundTerminalAsync(
+        ThreadBackgroundTerminalTerminateOptions options,
+        CancellationToken ct = default) =>
+        _threadsClient.TerminateThreadBackgroundTerminalAsync(options, ct);
+
+    /// <summary>
     /// Forks a thread.
     /// </summary>
     public Task<CodexThread> ForkThreadAsync(ThreadForkOptions options, CancellationToken ct = default) =>
@@ -302,6 +320,12 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// </summary>
     public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         _threadsClient.ArchiveThreadAsync(threadId, ct);
+
+    /// <summary>
+    /// Permanently deletes a thread.
+    /// </summary>
+    public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct = default) =>
+        _threadsClient.DeleteThreadAsync(threadId, ct);
 
     /// <summary>
     /// Unarchives a thread.

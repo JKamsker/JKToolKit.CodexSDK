@@ -54,4 +54,10 @@ public sealed record class ThreadListParams
     /// </summary>
     [JsonPropertyName("sortKey")]
     public string? SortKey { get; init; }
+
+    /// <summary>
+    /// Gets an optional direct parent thread filter, if supported upstream.
+    /// </summary>
+    [JsonPropertyName("parentThreadId")]
+    public string? ParentThreadId { get; init; }
 }

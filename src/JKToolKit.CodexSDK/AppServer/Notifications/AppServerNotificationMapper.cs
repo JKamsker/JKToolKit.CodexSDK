@@ -69,6 +69,10 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
+            "thread/deleted" => new ThreadDeletedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
             "thread/unarchived" => new ThreadUnarchivedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
@@ -146,6 +150,16 @@ internal static partial class AppServerNotificationMapper
                 Metadata: GetAny(p, "metadata"),
                 Params: p),
 
+            "model/safetyBuffering/updated" => new ModelSafetyBufferingUpdatedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetString(p, "turnId") ?? string.Empty,
+                Model: GetString(p, "model") ?? string.Empty,
+                UseCases: GetStringArray(p, "useCases"),
+                Reasons: GetStringArray(p, "reasons"),
+                ShowBufferingUi: GetBool(p, "showBufferingUi"),
+                FasterModel: GetStringOrNull(p, "fasterModel"),
+                Params: p),
+
             "turn/diff/updated" => new TurnDiffUpdatedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
@@ -220,6 +234,7 @@ internal static partial class AppServerNotificationMapper
 
             "account/rateLimits/updated" => new AccountRateLimitsUpdatedNotification(
                 RateLimits: GetAny(p, "rateLimits"),
+                RateLimitResetCredits: GetOptionalAny(p, "rateLimitResetCredits"),
                 Params: p),
 
             "app/list/updated" => new AppListUpdatedNotification(
@@ -234,6 +249,16 @@ internal static partial class AppServerNotificationMapper
                     installationId: GetStringOrNull(p, "installationId"),
                     environmentId: GetStringOrNull(p, "environmentId"),
                     @params: p),
+
+            "externalAgentConfig/import/progress" => new ExternalAgentConfigImportProgressNotification(
+                ImportId: GetString(p, "importId") ?? string.Empty,
+                ItemTypeResults: GetClonedArray(p, "itemTypeResults"),
+                Params: p),
+
+            "externalAgentConfig/import/completed" => new ExternalAgentConfigImportCompletedNotification(
+                ImportId: GetString(p, "importId") ?? string.Empty,
+                ItemTypeResults: GetClonedArray(p, "itemTypeResults"),
+                Params: p),
 
             "skills/changed" => new SkillsChangedNotification(
                 @params: p),
@@ -422,6 +447,22 @@ internal static partial class AppServerNotificationMapper
             {
                 list.Add(item.GetString() ?? string.Empty);
             }
+        }
+
+        return list;
+    }
+
+    private static IReadOnlyList<JsonElement> GetClonedArray(JsonElement obj, string propertyName)
+    {
+        if (!obj.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<JsonElement>();
+        }
+
+        var list = new List<JsonElement>();
+        foreach (var item in prop.EnumerateArray())
+        {
+            list.Add(item.Clone());
         }
 
         return list;

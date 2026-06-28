@@ -19,8 +19,11 @@ internal static class CodexAppServerAccountParsers
         {
             "apiKey" => new CodexApiKeyAccountInfo(account.Clone()),
             "chatgpt" => new CodexChatGptAccountInfo(
-                Email: GetRequiredString(account, "email", context),
+                Email: GetStringOrNull(account, "email"),
                 PlanType: CodexPlanType.Parse(GetRequiredString(account, "planType", context)),
+                Raw: account.Clone()),
+            "amazonBedrock" => new CodexAmazonBedrockAccountInfo(
+                CredentialSource: GetStringOrNull(account, "credentialSource") ?? "awsManaged",
                 Raw: account.Clone()),
             _ => throw new InvalidOperationException(
                 $"{context} returned unsupported account type '{type}'. Raw result: {account}")

@@ -11,7 +11,7 @@ public sealed record class TurnEnvironmentOptions
     public required string EnvironmentId { get; init; }
 
     /// <summary>
-    /// Gets the absolute working directory for the environment.
+    /// Gets the environment-native working directory.
     /// </summary>
     public required string Cwd { get; init; }
 }

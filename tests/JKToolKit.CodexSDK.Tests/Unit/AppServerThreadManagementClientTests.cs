@@ -153,6 +153,77 @@ public sealed class AppServerThreadManagementClientTests
         clear.Cleared.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task DeleteThreadAsync_SendsThreadDelete()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.DeleteThreadAsync("thr_1");
+
+        rpc.LastMethod.Should().Be("thread/delete");
+        var json = JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
+        json.Should().Contain("\"threadId\":\"thr_1\"");
+        result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    [Fact]
+    public async Task BackgroundTerminalMethods_RequireExperimentalApi_AndParseResponses()
+    {
+        using var listDoc = JsonDocument.Parse("""
+        {
+          "data": [
+            {
+              "itemId": "item_1",
+              "processId": "proc_1",
+              "command": "npm test",
+              "cwd": "/workspace",
+              "osPid": 42,
+              "cpuPercent": 12.5,
+              "rssKb": 2048
+            }
+          ],
+          "nextCursor": "next-1"
+        }
+        """);
+        var rpc = new RecordingRpc { Result = listDoc.RootElement };
+
+        await using var disabledClient = CreateClient(rpc, experimentalApi: false);
+        var disabledAct = async () => await disabledClient.ListThreadBackgroundTerminalsAsync(new ThreadBackgroundTerminalListOptions
+        {
+            ThreadId = "thr_1"
+        });
+        await disabledAct.Should().ThrowAsync<CodexExperimentalApiRequiredException>();
+
+        await using var client = CreateClient(rpc, experimentalApi: true);
+
+        var page = await client.ListThreadBackgroundTerminalsAsync(new ThreadBackgroundTerminalListOptions
+        {
+            ThreadId = "thr_1",
+            Limit = 10
+        });
+
+        rpc.LastMethod.Should().Be("thread/backgroundTerminals/list");
+        page.Data.Should().ContainSingle();
+        page.Data[0].ProcessId.Should().Be("proc_1");
+        page.Data[0].CpuPercent.Should().Be(12.5);
+        page.NextCursor.Should().Be("next-1");
+
+        using var terminateDoc = JsonDocument.Parse("""{"terminated":true}""");
+        rpc.Result = terminateDoc.RootElement;
+
+        var terminated = await client.TerminateThreadBackgroundTerminalAsync(new ThreadBackgroundTerminalTerminateOptions
+        {
+            ThreadId = "thr_1",
+            ProcessId = "proc_1"
+        });
+
+        rpc.LastMethod.Should().Be("thread/backgroundTerminals/terminate");
+        terminated.Terminated.Should().BeTrue();
+    }
+
     private static CodexAppServerClient CreateClient(IJsonRpcConnection rpc, bool experimentalApi = false) =>
         new(
             new CodexAppServerClientOptions { ExperimentalApi = experimentalApi },

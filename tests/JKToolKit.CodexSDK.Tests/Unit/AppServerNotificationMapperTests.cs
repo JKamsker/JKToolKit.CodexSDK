@@ -203,6 +203,34 @@ public sealed class AppServerNotificationMapperTests
 
         settingsNotification.Cwd.Should().Be("C:/repo");
         settingsNotification.Model.Should().Be("gpt-5");
+
+        AppServerNotificationMapper.Map("thread/deleted", JsonDocument.Parse("""{"threadId":"t1"}""").RootElement)
+            .Should().BeOfType<ThreadDeletedNotification>()
+            .Which.ThreadId.Should().Be("t1");
+
+        var safetyBuffering = JsonDocument.Parse(
+            """{"threadId":"t1","turnId":"turn1","model":"gpt-5","useCases":["cyber"],"reasons":["policy"],"showBufferingUi":true,"fasterModel":"gpt-5-mini"}""").RootElement;
+        var safetyNotification = AppServerNotificationMapper.Map("model/safetyBuffering/updated", safetyBuffering)
+            .Should().BeOfType<ModelSafetyBufferingUpdatedNotification>()
+            .Which;
+
+        safetyNotification.UseCases.Should().Equal("cyber");
+        safetyNotification.Reasons.Should().Equal("policy");
+        safetyNotification.ShowBufferingUi.Should().BeTrue();
+        safetyNotification.FasterModel.Should().Be("gpt-5-mini");
+
+        var importProgress = JsonDocument.Parse("""{"importId":"import-1","itemTypeResults":[{"itemType":"instructions"}]}""").RootElement;
+        var importNotification = AppServerNotificationMapper.Map("externalAgentConfig/import/progress", importProgress)
+            .Should().BeOfType<ExternalAgentConfigImportProgressNotification>()
+            .Which;
+
+        importNotification.ImportId.Should().Be("import-1");
+        importNotification.ItemTypeResults.Should().ContainSingle();
+
+        var importCompleted = JsonDocument.Parse("""{"importId":"import-1","itemTypeResults":[]}""").RootElement;
+        AppServerNotificationMapper.Map("externalAgentConfig/import/completed", importCompleted)
+            .Should().BeOfType<ExternalAgentConfigImportCompletedNotification>()
+            .Which.ImportId.Should().Be("import-1");
     }
 
     [Fact]
@@ -428,4 +456,3 @@ public sealed class AppServerNotificationMapperTests
         mapped.Should().ContainSingle(x => x is UnknownNotification);
     }
 }
-

@@ -13,11 +13,17 @@ public sealed record class AccountRateLimitsUpdatedNotification : AppServerNotif
     public JsonElement RateLimits { get; }
 
     /// <summary>
+    /// Gets the optional reset-credit summary payload.
+    /// </summary>
+    public JsonElement? RateLimitResetCredits { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="AccountRateLimitsUpdatedNotification"/>.
     /// </summary>
-    public AccountRateLimitsUpdatedNotification(JsonElement RateLimits, JsonElement Params)
+    public AccountRateLimitsUpdatedNotification(JsonElement RateLimits, JsonElement? RateLimitResetCredits, JsonElement Params)
         : base("account/rateLimits/updated", Params)
     {
         this.RateLimits = RateLimits;
+        this.RateLimitResetCredits = RateLimitResetCredits;
     }
 }

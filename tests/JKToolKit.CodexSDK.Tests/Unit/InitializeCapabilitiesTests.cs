@@ -131,6 +131,18 @@ public sealed class InitializeCapabilitiesTests
     }
 
     [Fact]
+    public void NormalizeCapabilities_PreservesOpenAiFormElicitation()
+    {
+        var normalized = CodexAppServerClient.NormalizeCapabilities(new InitializeCapabilities
+        {
+            McpServerOpenAiFormElicitation = true
+        });
+
+        normalized.Should().NotBeNull();
+        normalized!.McpServerOpenAiFormElicitation.Should().BeTrue();
+    }
+
+    [Fact]
     public void InitializeParams_Serialization_OmitsCapabilities_WhenNull()
     {
         var json = JsonSerializer.Serialize(
