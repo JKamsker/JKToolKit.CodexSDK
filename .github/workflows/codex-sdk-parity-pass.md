@@ -19,6 +19,18 @@ on:
         description: "The upstream-sync pull request number, when available."
         required: false
         default: ""
+      repair_attempt:
+        description: "Internal repair attempt number after a validation-gate failure."
+        required: false
+        default: "0"
+      repair_source_run:
+        description: "The workflow run that failed validation and requested this repair attempt."
+        required: false
+        default: ""
+      repair_source_job:
+        description: "The job in the source run that failed validation."
+        required: false
+        default: ""
   schedule:
     # GitHub Actions cron uses UTC. These runs are one hour after the
     # 09:00 UTC and 21:00 UTC Upstream Sync runs.
@@ -86,6 +98,46 @@ post-steps:
         should_validate=true
       fi
       echo "should_validate=${should_validate}" >> "$GITHUB_OUTPUT"
+
+  - name: Record parity repair context
+    if: always()
+    shell: bash
+    env:
+      REPAIR_ATTEMPT: ${{ github.event.inputs.repair_attempt || '0' }}
+      REPAIR_SOURCE_RUN: ${{ github.event.inputs.repair_source_run || '' }}
+      UPSTREAM_SYNC_PR: ${{ github.event.inputs.upstream_sync_pr || '' }}
+      UPSTREAM_VERSION: ${{ github.event.inputs.upstream_version || '' }}
+      UPSTREAM_PR: ${{ github.event.inputs.upstream_pr || github.event.pull_request.number || '' }}
+    run: |
+      set -euo pipefail
+
+      attempt="${REPAIR_ATTEMPT:-0}"
+      if ! [[ "$attempt" =~ ^[0-9]+$ ]]; then
+        attempt=0
+      fi
+
+      upstream_sync_pr="${UPSTREAM_SYNC_PR:-false}"
+      upstream_version="${UPSTREAM_VERSION:-}"
+      upstream_pr="${UPSTREAM_PR:-}"
+
+      if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
+        pr_number="$(python3 -c 'import json, os; event=json.load(open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8")); print((event.get("pull_request") or {}).get("number") or "")')"
+        pr_title="$(python3 -c 'import json, os; event=json.load(open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8")); print((event.get("pull_request") or {}).get("title") or "")')"
+        upstream_pr="${upstream_pr:-$pr_number}"
+        if [[ "$pr_title" == chore\(upstream\):\ bump\ @openai/codex* ]]; then
+          upstream_sync_pr=true
+        fi
+      fi
+
+      if [ -z "$upstream_sync_pr" ]; then
+        upstream_sync_pr=false
+      fi
+
+      echo "parity_repair_context.repair_attempt=${attempt}"
+      echo "parity_repair_context.repair_source_run=${REPAIR_SOURCE_RUN:-}"
+      echo "parity_repair_context.upstream_sync_pr=${upstream_sync_pr}"
+      echo "parity_repair_context.upstream_version=${upstream_version}"
+      echo "parity_repair_context.upstream_pr=${upstream_pr}"
 
   - name: Setup .NET for parity validation
     if: steps.parity-validation-guard.outputs.should_validate == 'true'
@@ -219,7 +271,21 @@ Do not use raw `git push`.
 
 Do not request `create_pull_request` or `push_to_pull_request_branch` until the local workspace passes the required validation commands for the changes you made.
 
+Completing the main parity task includes making CI likely to pass. Do not stop after writing code or composing a PR. Run the CI-equivalent validation locally, fix any restore, generated DTO, build, or test failures, and only request safe output once the same commit is expected to pass hosted CI.
+
 The workflow also enforces this after the agent runs: if a safe-output write is requested, post-steps materialize the proposed patch if needed and run restore, generated DTO check, build, and full tests before safe outputs are processed. If those checks fail, the workflow run must fail instead of creating or updating a red pull request.
+
+## Repair Dispatch Runs
+
+On `workflow_dispatch` events with `github.event.inputs.repair_attempt` greater than `0`, this run was automatically dispatched because a previous parity attempt requested safe output but failed the validation gate before safe outputs were processed.
+
+For repair runs:
+
+1. Inspect `github.event.inputs.repair_source_run` with `gh run view` and focus on the failing validation step: restore, generated DTO check, build, or test.
+2. Treat the failure log as the first bug report. Reproduce and fix the validation failure before doing any unrelated parity exploration.
+3. Run the same validation commands again after the fix.
+4. Do not request safe output until validation passes and hosted CI is expected to pass.
+5. Stop after the third repair attempt. If `repair_attempt` is `3` and validation still cannot pass, use `report_incomplete` with the exact remaining blocker instead of creating a PR.
 
 ## Scheduled And Other Manual Runs
 
