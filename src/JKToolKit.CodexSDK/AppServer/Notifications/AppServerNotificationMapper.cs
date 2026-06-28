@@ -69,6 +69,10 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
+            "thread/deleted" => new ThreadDeletedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
             "thread/unarchived" => new ThreadUnarchivedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
@@ -105,6 +109,16 @@ internal static partial class AppServerNotificationMapper
                 FromModel: GetString(p, "fromModel") ?? string.Empty,
                 ToModel: GetString(p, "toModel") ?? string.Empty,
                 Reason: GetString(p, "reason") ?? string.Empty,
+                Params: p),
+
+            "model/safetyBuffering/updated" => new ModelSafetyBufferingUpdatedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                TurnId: GetString(p, "turnId") ?? string.Empty,
+                Model: GetString(p, "model") ?? string.Empty,
+                UseCases: GetStringArray(p, "useCases"),
+                Reasons: GetStringArray(p, "reasons"),
+                ShowBufferingUi: GetBool(p, "showBufferingUi"),
+                FasterModel: GetStringOrNull(p, "fasterModel"),
                 Params: p),
 
             "turn/started" => new TurnStartedNotification(

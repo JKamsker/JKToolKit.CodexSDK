@@ -11,6 +11,96 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AccountTokenUsageWrappersTests
 {
     [Fact]
+    public async Task ReadAccountRateLimitsAsync_ParsesRateLimitResetCredits()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            rateLimits = new
+            {
+                primary = new
+                {
+                    usedPercent = 25
+                }
+            },
+            rateLimitResetCredits = new
+            {
+                availableCount = 2L
+            }
+        });
+        var rpc = new FakeRpc
+        {
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadAccountRateLimitsAsync();
+
+        rpc.LastMethod.Should().Be("account/rateLimits/read");
+        result.RateLimitResetCredits.Should().NotBeNull();
+        result.RateLimitResetCredits!.AvailableCount.Should().Be(2);
+        result.RateLimitResetCredits.Raw.GetProperty("availableCount").GetInt64().Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ConsumeAccountRateLimitResetCreditAsync_CallsExpectedMethod_AndParsesOutcome()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            outcome = "alreadyRedeemed"
+        });
+        var rpc = new FakeRpc
+        {
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ConsumeAccountRateLimitResetCreditAsync("attempt-1");
+
+        rpc.LastMethod.Should().Be("account/rateLimitResetCredit/consume");
+        JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"idempotencyKey\":\"attempt-1\"");
+        result.Outcome.Should().Be("alreadyRedeemed");
+        result.OutcomeKind.Should().Be(AccountRateLimitResetCreditConsumeOutcome.AlreadyRedeemed);
+    }
+
+    [Fact]
+    public async Task ReadWorkspaceMessagesAsync_CallsExpectedMethod_AndParsesMessages()
+    {
+        var rawResult = JsonSerializer.SerializeToElement(new
+        {
+            featureEnabled = true,
+            messages = new[]
+            {
+                new
+                {
+                    messageId = "msg-1",
+                    messageType = "headline",
+                    messageBody = "Notice",
+                    createdAt = 100L,
+                    archivedAt = (long?)null
+                }
+            }
+        });
+        var rpc = new FakeRpc
+        {
+            Result = rawResult
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadWorkspaceMessagesAsync();
+
+        rpc.LastMethod.Should().Be("account/workspaceMessages/read");
+        result.FeatureEnabled.Should().BeTrue();
+        result.Messages.Should().ContainSingle();
+        result.Messages[0].MessageId.Should().Be("msg-1");
+        result.Messages[0].MessageKind.Should().Be(WorkspaceMessageKind.Headline);
+        result.Messages[0].CreatedAt.Should().Be(100);
+    }
+
+    [Fact]
     public async Task ReadAccountTokenUsageAsync_CallsExpectedMethod_AndParsesResponse()
     {
         var rawResult = JsonSerializer.SerializeToElement(new

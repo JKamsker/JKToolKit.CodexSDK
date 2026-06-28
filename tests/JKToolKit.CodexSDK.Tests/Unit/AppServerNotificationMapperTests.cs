@@ -195,6 +195,10 @@ public sealed class AppServerNotificationMapperTests
             .Should().BeOfType<ThreadGoalClearedNotification>()
             .Which.ThreadId.Should().Be("t1");
 
+        AppServerNotificationMapper.Map("thread/deleted", JsonDocument.Parse("""{"threadId":"t1"}""").RootElement)
+            .Should().BeOfType<ThreadDeletedNotification>()
+            .Which.ThreadId.Should().Be("t1");
+
         var settingsUpdated = JsonDocument.Parse(
             """{"threadId":"t1","threadSettings":{"cwd":"C:/repo","model":"gpt-5","serviceTier":"fast"}}""").RootElement;
         var settingsNotification = AppServerNotificationMapper.Map("thread/settings/updated", settingsUpdated)
@@ -203,6 +207,18 @@ public sealed class AppServerNotificationMapperTests
 
         settingsNotification.Cwd.Should().Be("C:/repo");
         settingsNotification.Model.Should().Be("gpt-5");
+
+        var safetyBuffering = JsonDocument.Parse(
+            """{"threadId":"t1","turnId":"turn1","model":"gpt-5.1","useCases":["policy"],"reasons":["review"],"showBufferingUi":true,"fasterModel":"gpt-5-mini"}""").RootElement;
+        var safetyNotification = AppServerNotificationMapper.Map("model/safetyBuffering/updated", safetyBuffering)
+            .Should().BeOfType<ModelSafetyBufferingUpdatedNotification>()
+            .Which;
+
+        safetyNotification.Model.Should().Be("gpt-5.1");
+        safetyNotification.UseCases.Should().Equal("policy");
+        safetyNotification.Reasons.Should().Equal("review");
+        safetyNotification.ShowBufferingUi.Should().BeTrue();
+        safetyNotification.FasterModel.Should().Be("gpt-5-mini");
     }
 
     [Fact]
@@ -428,4 +444,3 @@ public sealed class AppServerNotificationMapperTests
         mapped.Should().ContainSingle(x => x is UnknownNotification);
     }
 }
-

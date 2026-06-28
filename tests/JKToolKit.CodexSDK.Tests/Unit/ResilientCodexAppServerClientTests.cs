@@ -987,6 +987,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<ThreadArchiveResult>();
 
+        public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct) =>
+            NotSupported<ThreadDeleteResult>();
+
         public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<CodexThread>();
 
@@ -1061,6 +1064,12 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) =>
             NotSupported<AccountRateLimitsReadResult>();
+
+        public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(string idempotencyKey, CancellationToken ct) =>
+            NotSupported<AccountRateLimitResetCreditConsumeResult>();
+
+        public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) =>
+            NotSupported<WorkspaceMessagesReadResult>();
 
         public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) =>
             NotSupported<AccountTokenUsageReadResult>();

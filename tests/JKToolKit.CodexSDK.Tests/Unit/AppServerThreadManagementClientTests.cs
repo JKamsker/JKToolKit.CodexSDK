@@ -13,6 +13,22 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AppServerThreadManagementClientTests
 {
     [Fact]
+    public async Task DeleteThread_SendsThreadDelete()
+    {
+        using var doc = JsonDocument.Parse("""{}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.DeleteThreadAsync("thr_1");
+
+        rpc.LastMethod.Should().Be("thread/delete");
+        JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"threadId\":\"thr_1\"");
+        result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    [Fact]
     public async Task ListPermissionProfiles_SendsPermissionProfileList_AndParsesPage()
     {
         using var doc = JsonDocument.Parse("""

@@ -46,6 +46,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<ThreadArchiveResult> ArchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ArchiveThreadAsync(threadId, token), ct);
 
+    public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.DeleteThreadAsync(threadId, token), ct);
+
     public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.UnarchiveThreadAsync(threadId, token), ct);
 

@@ -61,6 +61,27 @@ public sealed partial class CodexAppServerClient
         _configClient.ReadAccountRateLimitsAsync(ct);
 
     /// <summary>
+    /// Consumes one earned account rate-limit reset credit.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/rateLimitResetCredit/consume</c>. Reuse the same
+    /// <paramref name="idempotencyKey"/> when retrying one logical reset attempt.
+    /// </remarks>
+    public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(
+        string idempotencyKey,
+        CancellationToken ct = default) =>
+        _configClient.ConsumeAccountRateLimitResetCreditAsync(idempotencyKey, ct);
+
+    /// <summary>
+    /// Reads active workspace messages for the signed-in account.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/workspaceMessages/read</c>.
+    /// </remarks>
+    public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct = default) =>
+        _configClient.ReadWorkspaceMessagesAsync(ct);
+
+    /// <summary>
     /// Starts the Windows sandbox setup flow.
     /// </summary>
     /// <remarks>
@@ -210,6 +231,11 @@ public sealed record class AccountRateLimitsReadResult
     public IReadOnlyDictionary<string, JsonElement>? RateLimitsByLimitId { get; init; }
 
     /// <summary>
+    /// Gets earned rate-limit reset credit information when the backend reports it.
+    /// </summary>
+    public RateLimitResetCreditsSummary? RateLimitResetCredits { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the response.
     /// </summary>
     public required JsonElement Raw { get; init; }
@@ -323,4 +349,3 @@ public sealed class WindowsSandboxSetupStartOptions
         }
     }
 }
-
