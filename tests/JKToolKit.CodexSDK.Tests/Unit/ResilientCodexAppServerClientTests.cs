@@ -35,6 +35,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.CleanThreadBackgroundTerminalsAsync),
         nameof(CodexAppServerClient.ForkThreadAsync),
         nameof(CodexAppServerClient.ArchiveThreadAsync),
+        nameof(CodexAppServerClient.DeleteThreadAsync),
         nameof(CodexAppServerClient.UnarchiveThreadAsync),
         nameof(CodexAppServerClient.SetThreadNameAsync),
         nameof(CodexAppServerClient.ListPermissionProfilesAsync),
@@ -54,6 +55,8 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ImportExternalAgentConfigAsync),
         nameof(CodexAppServerClient.ReadAccountAsync),
         nameof(CodexAppServerClient.ReadAccountRateLimitsAsync),
+        nameof(CodexAppServerClient.ConsumeAccountRateLimitResetCreditAsync),
+        nameof(CodexAppServerClient.ReadWorkspaceMessagesAsync),
         nameof(CodexAppServerClient.ReadAccountTokenUsageAsync),
         nameof(CodexAppServerClient.ListModelsAsync),
         nameof(CodexAppServerClient.ListExperimentalFeaturesAsync),
@@ -483,10 +486,35 @@ public sealed class ResilientCodexAppServerClientTests
                 invoked.Add(nameof(ICodexAppServerClientAdapter.CompactThreadAsync));
                 return Task.CompletedTask;
             },
+            DeleteThreadAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.DeleteThreadAsync));
+                return Task.FromResult(new ThreadDeleteResult { Raw = EmptyJson() });
+            },
             ImportExternalAgentConfigAsyncImpl = (_, _) =>
             {
                 invoked.Add(nameof(ICodexAppServerClientAdapter.ImportExternalAgentConfigAsync));
                 return Task.CompletedTask;
+            },
+            ConsumeAccountRateLimitResetCreditAsyncImpl = (_, _) =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.ConsumeAccountRateLimitResetCreditAsync));
+                return Task.FromResult(new AccountRateLimitResetCreditConsumeResult
+                {
+                    Outcome = "reset",
+                    OutcomeKind = AccountRateLimitResetCreditConsumeOutcome.Reset,
+                    Raw = EmptyJson()
+                });
+            },
+            ReadWorkspaceMessagesAsyncImpl = _ =>
+            {
+                invoked.Add(nameof(ICodexAppServerClientAdapter.ReadWorkspaceMessagesAsync));
+                return Task.FromResult(new WorkspaceMessagesReadResult
+                {
+                    FeatureEnabled = true,
+                    Messages = [],
+                    Raw = EmptyJson()
+                });
             },
             ReloadMcpServersAsyncImpl = _ =>
             {
@@ -572,7 +600,10 @@ public sealed class ResilientCodexAppServerClientTests
         await using var client = await CreateResilientAsync(factory, new CodexAppServerResilienceOptions());
 
         await client.CompactThreadAsync("thread-1");
+        _ = await client.DeleteThreadAsync("thread-1");
         await client.ImportExternalAgentConfigAsync([]);
+        _ = await client.ConsumeAccountRateLimitResetCreditAsync("reset-1");
+        _ = await client.ReadWorkspaceMessagesAsync();
         await client.ReloadMcpServersAsync();
         await client.StartFuzzyFileSearchSessionAsync("session-1", ["C:\\repo"]);
         _ = await client.ThreadShellCommandAsync(new ThreadShellCommandOptions { ThreadId = "thread-1", Command = "dir" });
@@ -603,7 +634,10 @@ public sealed class ResilientCodexAppServerClientTests
         steerResult.Should().Be("steered");
         invoked.Should().ContainInOrder(
             nameof(ICodexAppServerClientAdapter.CompactThreadAsync),
+            nameof(ICodexAppServerClientAdapter.DeleteThreadAsync),
             nameof(ICodexAppServerClientAdapter.ImportExternalAgentConfigAsync),
+            nameof(ICodexAppServerClientAdapter.ConsumeAccountRateLimitResetCreditAsync),
+            nameof(ICodexAppServerClientAdapter.ReadWorkspaceMessagesAsync),
             nameof(ICodexAppServerClientAdapter.ReloadMcpServersAsync),
             nameof(ICodexAppServerClientAdapter.StartFuzzyFileSearchSessionAsync),
             nameof(ICodexAppServerClientAdapter.ThreadShellCommandAsync),
@@ -868,7 +902,13 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Func<string, CancellationToken, Task>? CompactThreadAsyncImpl { get; init; }
 
+        public Func<string, CancellationToken, Task<ThreadDeleteResult>>? DeleteThreadAsyncImpl { get; init; }
+
         public Func<IReadOnlyList<ExternalAgentConfigMigrationItem>, CancellationToken, Task>? ImportExternalAgentConfigAsyncImpl { get; init; }
+
+        public Func<string, CancellationToken, Task<AccountRateLimitResetCreditConsumeResult>>? ConsumeAccountRateLimitResetCreditAsyncImpl { get; init; }
+
+        public Func<CancellationToken, Task<WorkspaceMessagesReadResult>>? ReadWorkspaceMessagesAsyncImpl { get; init; }
 
         public Func<CancellationToken, Task>? ReloadMcpServersAsyncImpl { get; init; }
 
@@ -988,7 +1028,7 @@ public sealed class ResilientCodexAppServerClientTests
             NotSupported<ThreadArchiveResult>();
 
         public Task<ThreadDeleteResult> DeleteThreadAsync(string threadId, CancellationToken ct) =>
-            NotSupported<ThreadDeleteResult>();
+            DeleteThreadAsyncImpl?.Invoke(threadId, ct) ?? NotSupported<ThreadDeleteResult>();
 
         public Task<CodexThread> UnarchiveThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<CodexThread>();
@@ -1066,10 +1106,10 @@ public sealed class ResilientCodexAppServerClientTests
             NotSupported<AccountRateLimitsReadResult>();
 
         public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(string idempotencyKey, CancellationToken ct) =>
-            NotSupported<AccountRateLimitResetCreditConsumeResult>();
+            ConsumeAccountRateLimitResetCreditAsyncImpl?.Invoke(idempotencyKey, ct) ?? NotSupported<AccountRateLimitResetCreditConsumeResult>();
 
         public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) =>
-            NotSupported<WorkspaceMessagesReadResult>();
+            ReadWorkspaceMessagesAsyncImpl?.Invoke(ct) ?? NotSupported<WorkspaceMessagesReadResult>();
 
         public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) =>
             NotSupported<AccountTokenUsageReadResult>();

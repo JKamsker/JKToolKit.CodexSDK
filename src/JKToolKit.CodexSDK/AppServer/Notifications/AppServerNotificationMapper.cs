@@ -69,9 +69,12 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
-            "thread/deleted" => new ThreadDeletedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Params: p),
+            "thread/deleted" when TryGetRequiredString(p, "threadId", out var deletedThreadId)
+                => new ThreadDeletedNotification(
+                    ThreadId: deletedThreadId,
+                    Params: p),
+
+            "thread/deleted" => new UnknownNotification(method, p),
 
             "thread/unarchived" => new ThreadUnarchivedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
@@ -111,15 +114,22 @@ internal static partial class AppServerNotificationMapper
                 Reason: GetString(p, "reason") ?? string.Empty,
                 Params: p),
 
-            "model/safetyBuffering/updated" => new ModelSafetyBufferingUpdatedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Model: GetString(p, "model") ?? string.Empty,
-                UseCases: GetStringArray(p, "useCases"),
-                Reasons: GetStringArray(p, "reasons"),
-                ShowBufferingUi: GetBool(p, "showBufferingUi"),
-                FasterModel: GetStringOrNull(p, "fasterModel"),
-                Params: p),
+            "model/safetyBuffering/updated" when
+                TryGetRequiredString(p, "threadId", out var safetyBufferingThreadId) &&
+                TryGetRequiredString(p, "turnId", out var safetyBufferingTurnId) &&
+                TryGetRequiredString(p, "model", out var safetyBufferingModel) &&
+                TryGetRequiredBool(p, "showBufferingUi", out var showBufferingUi)
+                => new ModelSafetyBufferingUpdatedNotification(
+                    ThreadId: safetyBufferingThreadId,
+                    TurnId: safetyBufferingTurnId,
+                    Model: safetyBufferingModel,
+                    UseCases: GetStringArray(p, "useCases"),
+                    Reasons: GetStringArray(p, "reasons"),
+                    ShowBufferingUi: showBufferingUi,
+                    FasterModel: GetStringOrNull(p, "fasterModel"),
+                    Params: p),
+
+            "model/safetyBuffering/updated" => new UnknownNotification(method, p),
 
             "turn/started" => new TurnStartedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,

@@ -214,6 +214,8 @@ public sealed class AppServerNotificationMapperTests
             .Should().BeOfType<ModelSafetyBufferingUpdatedNotification>()
             .Which;
 
+        safetyNotification.ThreadId.Should().Be("t1");
+        safetyNotification.TurnId.Should().Be("turn1");
         safetyNotification.Model.Should().Be("gpt-5.1");
         safetyNotification.UseCases.Should().Equal("policy");
         safetyNotification.Reasons.Should().Equal("review");
@@ -227,6 +229,21 @@ public sealed class AppServerNotificationMapperTests
         var invalid = JsonDocument.Parse("""{"processId":"p1","stream":"stdout"}""").RootElement;
 
         AppServerNotificationMapper.Map("command/exec/outputDelta", invalid)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Theory]
+    [InlineData("thread/deleted", "{}")]
+    [InlineData("thread/deleted", """{"threadId":123}""")]
+    [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","model":"gpt-5.1","showBufferingUi":"true"}""")]
+    [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","showBufferingUi":true}""")]
+    public void Map_NewlyTypedNotificationMethods_WithMalformedRequiredFields_ReturnsUnknown(
+        string method,
+        string json)
+    {
+        var invalid = JsonDocument.Parse(json).RootElement;
+
+        AppServerNotificationMapper.Map(method, invalid)
             .Should().BeOfType<UnknownNotification>();
     }
 
