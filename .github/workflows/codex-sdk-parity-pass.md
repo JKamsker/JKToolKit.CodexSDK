@@ -42,7 +42,10 @@ checkout:
   fetch-depth: 0
   submodules: recursive
 
-network: defaults
+network:
+  allowed:
+    - defaults
+    - dotnet
 
 tools:
   github:
