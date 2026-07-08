@@ -14,6 +14,12 @@ internal partial class ConsumeAccountRateLimitResetCreditParams
 {
 
     /// <summary>
+    /// Opaque reset-credit identifier to redeem. When omitted, the backend selects the next available credit.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("creditId")]
+    public string? CreditId { get; set; } = default!;
+
+    /// <summary>
     /// Identifies one logical reset attempt. A UUID is recommended; reuse the same value when retrying that attempt.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("idempotencyKey")]

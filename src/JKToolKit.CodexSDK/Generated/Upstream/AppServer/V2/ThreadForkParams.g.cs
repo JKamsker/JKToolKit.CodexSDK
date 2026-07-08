@@ -45,6 +45,14 @@ internal partial class ThreadForkParams
     public bool? Ephemeral { get; set; } = default!;
 
     /// <summary>
+    /// Optional last turn id to fork through, inclusive.
+    /// <br/>
+    /// <br/>When specified, turns after `last_turn_id` are omitted from the fork. The referenced turn cannot be in progress.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("lastTurnId")]
+    public string? LastTurnId { get; set; } = default!;
+
+    /// <summary>
     /// Configuration overrides for the forked thread, if any.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("model")]

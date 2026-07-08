@@ -16,6 +16,9 @@ internal partial class McpServerStatusUpdatedNotification
     [System.Text.Json.Serialization.JsonPropertyName("error")]
     public string? Error { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("failureReason")]
+    public FailureReason? FailureReason { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 

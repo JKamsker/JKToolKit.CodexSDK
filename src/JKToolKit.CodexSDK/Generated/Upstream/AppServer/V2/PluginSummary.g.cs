@@ -31,6 +31,9 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<PluginInstallPolicy>))]
     public PluginInstallPolicy InstallPolicy { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("installPolicySource")]
+    public InstallPolicySource? InstallPolicySource { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("installed")]
     public bool Installed { get; set; } = default!;
 
@@ -63,6 +66,12 @@ internal partial class PluginSummary
 
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     public Source Source { get; set; } = default!;
+
+    /// <summary>
+    /// Version advertised by the remote marketplace backend when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("version")]
+    public string? Version { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

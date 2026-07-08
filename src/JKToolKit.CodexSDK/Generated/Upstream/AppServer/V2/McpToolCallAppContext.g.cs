@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class McpToolCallAppContext
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("actionName")]
+    public string? ActionName { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("appName")]
+    public string? AppName { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("connectorId")]
     public string ConnectorId { get; set; } = default!;
 
@@ -21,6 +27,9 @@ internal partial class McpToolCallAppContext
 
     [System.Text.Json.Serialization.JsonPropertyName("resourceUri")]
     public string? ResourceUri { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("templateId")]
+    public string? TemplateId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

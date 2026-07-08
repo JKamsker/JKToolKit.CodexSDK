@@ -28,6 +28,12 @@ internal partial class AppInfo
     [System.Text.Json.Serialization.JsonPropertyName("distributionChannel")]
     public string? DistributionChannel { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("iconAssets")]
+    public System.Collections.Generic.IDictionary<string, string>? IconAssets { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("iconDarkAssets")]
+    public System.Collections.Generic.IDictionary<string, string>? IconDarkAssets { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 

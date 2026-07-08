@@ -31,6 +31,9 @@ internal partial class Turn
     [System.Text.Json.Serialization.JsonPropertyName("error")]
     public Error? Error { get; set; } = default!;
 
+    /// <summary>
+    /// Identifier for this turn. Codex-generated turn IDs are UUIDv7.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 

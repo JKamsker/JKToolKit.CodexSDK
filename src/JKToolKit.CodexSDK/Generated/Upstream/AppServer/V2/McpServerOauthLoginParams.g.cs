@@ -19,6 +19,9 @@ internal partial class McpServerOauthLoginParams
     [System.Text.Json.Serialization.JsonPropertyName("scopes")]
     public System.Collections.Generic.ICollection<string>? Scopes { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("timeoutSecs")]
     public long? TimeoutSecs { get; set; } = default!;
 
