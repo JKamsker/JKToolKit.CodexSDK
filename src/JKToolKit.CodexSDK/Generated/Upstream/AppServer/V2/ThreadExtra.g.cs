@@ -10,10 +10,10 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Controls the effective multi-agent delegation instructions for a turn. `custom` means the configured mode hint defines the policy instead of a built-in policy.
+/// Extra app-server data for a thread.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class MultiAgentMode
+internal partial class ThreadExtra
 {
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;

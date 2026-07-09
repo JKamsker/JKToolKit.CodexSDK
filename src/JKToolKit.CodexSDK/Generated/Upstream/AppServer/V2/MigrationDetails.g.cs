@@ -28,6 +28,9 @@ internal partial class MigrationDetails
     [System.Text.Json.Serialization.JsonPropertyName("sessions")]
     public System.Collections.Generic.ICollection<SessionMigration>? Sessions { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("skills")]
+    public System.Collections.Generic.ICollection<SkillMigration>? Skills { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("subagents")]
     public System.Collections.Generic.ICollection<SubagentMigration>? Subagents { get; set; } = default!;
 

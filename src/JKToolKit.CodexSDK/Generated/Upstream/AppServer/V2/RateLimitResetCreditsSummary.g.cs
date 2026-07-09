@@ -16,6 +16,14 @@ internal partial class RateLimitResetCreditsSummary
     [System.Text.Json.Serialization.JsonPropertyName("availableCount")]
     public long AvailableCount { get; set; } = default!;
 
+    /// <summary>
+    /// Detail rows for available reset credits, when the backend provides them.
+    /// <br/>
+    /// <br/>`null` means only `availableCount` is known, while an empty array means details were fetched and no available credits were returned. The backend may cap this list, so its length can be less than `availableCount`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("credits")]
+    public System.Collections.Generic.ICollection<RateLimitResetCredit>? Credits { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

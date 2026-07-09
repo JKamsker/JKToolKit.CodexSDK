@@ -52,6 +52,9 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("featureRequirements")]
     public System.Collections.Generic.IDictionary<string, bool>? FeatureRequirements { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("models")]
+    public Models? Models { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

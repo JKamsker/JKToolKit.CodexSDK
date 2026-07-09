@@ -58,6 +58,9 @@ internal partial class Thread
     [System.Text.Json.Serialization.JsonPropertyName("gitInfo")]
     public GitInfo2? GitInfo { get; set; } = default!;
 
+    /// <summary>
+    /// Identifier for this thread. Codex-generated thread IDs are UUIDv7.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 
