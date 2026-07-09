@@ -184,7 +184,7 @@ jobs:
   ci:
     name: Trigger CI for final PR branch
     needs: [sync, parity]
-    if: needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none'
+    if: ${{ !cancelled() && needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none' }}
     runs-on: ubuntu-latest
     steps:
       - name: Trigger CI
