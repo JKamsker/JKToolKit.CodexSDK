@@ -13,6 +13,20 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class McpServerWrappersTests
 {
     [Fact]
+    public void McpServerStartupFailureReason_DefaultAndFailedTryParse_AreSafe()
+    {
+        var defaultReason = default(McpServerStartupFailureReason);
+
+        defaultReason.Value.Should().BeEmpty();
+        ((string)defaultReason).Should().BeEmpty();
+        defaultReason.ToString().Should().BeEmpty();
+
+        McpServerStartupFailureReason.TryParse(null, out var parsed).Should().BeFalse();
+        parsed.Should().Be(defaultReason);
+        parsed.Value.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ReloadMcpServersAsync_CallsExpectedMethod()
     {
         var rpc = new FakeRpc

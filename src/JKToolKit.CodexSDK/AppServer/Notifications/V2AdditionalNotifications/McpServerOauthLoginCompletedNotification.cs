@@ -30,6 +30,14 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     /// <summary>
     /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
     /// </summary>
+    public McpServerOauthLoginCompletedNotification(string Name, bool Success, string? Error, JsonElement Params)
+        : this(Name, null, Success, Error, Params)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
+    /// </summary>
     public McpServerOauthLoginCompletedNotification(string Name, string? ThreadId, bool Success, string? Error, JsonElement Params)
         : base("mcpServer/oauthLogin/completed", Params)
     {

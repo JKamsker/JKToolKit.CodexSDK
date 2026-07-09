@@ -63,17 +63,19 @@ public sealed record class McpServerStatusInfo
 /// </summary>
 public readonly record struct McpServerStartupFailureReason
 {
+    private readonly string? _value;
+
     /// <summary>
-    /// Gets the underlying wire value.
+    /// Gets the underlying wire value, or an empty string for an uninitialized value.
     /// </summary>
-    public string Value { get; }
+    public string Value => _value ?? string.Empty;
 
     private McpServerStartupFailureReason(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("MCP server startup failure reason cannot be empty or whitespace.", nameof(value));
 
-        Value = value;
+        _value = value;
     }
 
     /// <summary>
