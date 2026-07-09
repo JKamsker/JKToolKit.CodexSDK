@@ -32,11 +32,11 @@ public sealed class McpServerParamsSerializationTests
         };
 
         var json = JsonSerializer.Serialize(
-            new McpServerOauthLoginParams { Name = "my-server", TimeoutSecs = 30 },
+            new McpServerOauthLoginParams { Name = "my-server", ThreadId = "thr_1", TimeoutSecs = 30 },
             options);
 
         json.Should().Contain("\"name\":\"my-server\"");
+        json.Should().Contain("\"threadId\":\"thr_1\"");
         json.Should().Contain("\"timeoutSecs\":30");
     }
 }
-

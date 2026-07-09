@@ -142,12 +142,14 @@ public sealed class PluginClientTests
                     {
                       "id": "plug-remote",
                       "remotePluginId": "remote-1",
+                      "version": "4.5.6",
                       "localVersion": "1.2.3",
                       "name": "Remote Plugin",
                       "installed": false,
                       "enabled": true,
                       "authPolicy": "ON_USE",
                       "installPolicy": "AVAILABLE",
+                      "installPolicySource": "IMPLICIT_CANONICAL_APP",
                       "availability": "AVAILABLE",
                       "keywords": ["remote"],
                       "shareContext": {
@@ -192,7 +194,10 @@ public sealed class PluginClientTests
         marketplace.Path.Should().BeNull();
         var plugin = marketplace.Plugins.Should().ContainSingle().Subject;
         plugin.RemotePluginId.Should().Be("remote-1");
+        plugin.Version.Should().Be("4.5.6");
         plugin.LocalVersion.Should().Be("1.2.3");
+        plugin.InstallPolicySource.Should().Be("IMPLICIT_CANONICAL_APP");
+        plugin.InstallPolicySourceValue.Should().Be(PluginInstallPolicySource.ImplicitCanonicalApp);
         plugin.SourceInfo.Type.Should().Be(PluginSourceType.Remote);
         plugin.SourceInfo.Path.Should().BeNull();
         plugin.ShareContext.Should().NotBeNull();

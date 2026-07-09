@@ -39,6 +39,11 @@ public sealed record class PluginSummaryDescriptor
     public string? RemotePluginId { get; init; }
 
     /// <summary>
+    /// Gets the remote marketplace version when available.
+    /// </summary>
+    public string? Version { get; init; }
+
+    /// <summary>
     /// Gets the local materialized plugin version when available.
     /// </summary>
     public string? LocalVersion { get; init; }
@@ -72,6 +77,16 @@ public sealed record class PluginSummaryDescriptor
     /// Gets the typed plugin install policy when the marketplace provides one.
     /// </summary>
     public required PluginInstallPolicy InstallPolicyValue { get; init; }
+
+    /// <summary>
+    /// Gets the plugin install policy source when upstream reports one.
+    /// </summary>
+    public string? InstallPolicySource { get; init; }
+
+    /// <summary>
+    /// Gets the typed plugin install policy source when upstream reports one.
+    /// </summary>
+    public PluginInstallPolicySource? InstallPolicySourceValue { get; init; }
 
     /// <summary>
     /// Gets the plugin availability state.
