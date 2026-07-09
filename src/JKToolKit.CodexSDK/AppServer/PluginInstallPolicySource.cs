@@ -3,6 +3,9 @@ namespace JKToolKit.CodexSDK.AppServer;
 /// <summary>
 /// Represents the source of a plugin install policy when upstream reports one.
 /// </summary>
+/// <remarks>
+/// Known values are exposed as static properties. Unknown non-empty wire values are preserved for forward compatibility.
+/// </remarks>
 public readonly record struct PluginInstallPolicySource
 {
     private readonly string? _value;
@@ -31,7 +34,7 @@ public readonly record struct PluginInstallPolicySource
     public static PluginInstallPolicySource ImplicitCanonicalApp => new("IMPLICIT_CANONICAL_APP");
 
     /// <summary>
-    /// Parses a plugin install policy source from a wire value.
+    /// Parses a plugin install policy source from a known or future wire value.
     /// </summary>
     public static PluginInstallPolicySource Parse(string value) => new(value);
 
