@@ -73,6 +73,7 @@ internal sealed class CodexAppServerMcpClient
             new McpServerOauthLoginParams
             {
                 Name = options.Name,
+                ThreadId = options.ThreadId,
                 Scopes = options.Scopes,
                 TimeoutSecs = options.TimeoutSeconds
             },
@@ -81,4 +82,3 @@ internal sealed class CodexAppServerMcpClient
         return CodexAppServerClientMcpParsers.ParseMcpServerOauthLoginResult(result);
     }
 }
-

@@ -35,6 +35,20 @@ public sealed class ThreadForkParamsSerializationTests
     }
 
     [Fact]
+    public void Serialize_IncludesLastTurnId_WhenSet()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadForkParams
+            {
+                ThreadId = "thr_123",
+                LastTurnId = "turn_456"
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"lastTurnId\":\"turn_456\"");
+    }
+
+    [Fact]
     public async Task ForkThreadAsync_MapsSandbox_FromOptionsToWireParams()
     {
         ThreadForkParams? captured = null;
@@ -60,6 +74,32 @@ public sealed class ThreadForkParamsSerializationTests
         captured.Should().NotBeNull();
         captured!.ThreadId.Should().Be("thr_source");
         captured.Sandbox.Should().Be("workspace-write");
+    }
+
+    [Fact]
+    public async Task ForkThreadAsync_MapsLastTurnId_FromOptionsToWireParams()
+    {
+        ThreadForkParams? captured = null;
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_new"}""");
+        var response = doc.RootElement.Clone();
+
+        var client = new CodexAppServerThreadsClient(
+            sendRequestAsync: (method, @params, _) =>
+            {
+                method.Should().Be("thread/fork");
+                captured = @params.Should().BeOfType<ThreadForkParams>().Subject;
+                return Task.FromResult(response);
+            },
+            experimentalApiEnabled: () => true);
+
+        _ = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            LastTurnId = "turn_456"
+        });
+
+        captured.Should().NotBeNull();
+        captured!.LastTurnId.Should().Be("turn_456");
     }
 
     [Fact]

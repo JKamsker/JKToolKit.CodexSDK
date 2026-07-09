@@ -112,12 +112,14 @@ internal static partial class CodexAppServerClientPluginParsers
     internal static PluginSummaryDescriptor ParsePluginSummary(JsonElement item)
     {
         var availability = CodexAppServerClientJson.GetStringOrNull(item, "availability") ?? PluginAvailability.Available.Value;
+        var installPolicySource = CodexAppServerClientJson.GetStringOrNull(item, "installPolicySource");
 
         return new PluginSummaryDescriptor
         {
             Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin summary"),
             Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin summary"),
             RemotePluginId = CodexAppServerClientJson.GetStringOrNull(item, "remotePluginId"),
+            Version = CodexAppServerClientJson.GetStringOrNull(item, "version"),
             LocalVersion = CodexAppServerClientJson.GetStringOrNull(item, "localVersion"),
             Installed = CodexAppServerClientJson.GetRequiredBool(item, "installed", "plugin summary"),
             Enabled = CodexAppServerClientJson.GetRequiredBool(item, "enabled", "plugin summary"),
@@ -125,6 +127,10 @@ internal static partial class CodexAppServerClientPluginParsers
             AuthPolicyValue = ParseRequiredPluginAuthPolicy(item, "authPolicy", "plugin summary"),
             InstallPolicy = CodexAppServerClientJson.GetRequiredString(item, "installPolicy", "plugin summary"),
             InstallPolicyValue = ParseRequiredPluginInstallPolicy(item, "installPolicy", "plugin summary"),
+            InstallPolicySource = installPolicySource,
+            InstallPolicySourceValue = PluginInstallPolicySource.TryParse(installPolicySource, out var parsedSource)
+                ? (PluginInstallPolicySource?)parsedSource
+                : null,
             Availability = availability,
             AvailabilityValue = PluginAvailability.Parse(availability),
             ShareContext = CodexAppServerClientPluginShareParsers.ParseShareContextOrNull(item),

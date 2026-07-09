@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
   actions: write
 
 concurrency:
@@ -18,26 +19,83 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      existing_pr_exists: ${{ steps.existing-pr.outputs.exists }}
+      pull_request_operation: ${{ steps.cpr.outputs.pull-request-operation }}
+      upstream_branch: automation/upstream-codex-${{ steps.latest.outputs.latest }}
+      upstream_pr: ${{ steps.cpr.outputs.pull-request-number }}
+      upstream_version: ${{ steps.latest.outputs.latest }}
+      up_to_date: ${{ steps.versions.outputs.up_to_date }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
+      - name: Resolve latest Codex version
+        id: latest
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest="$(npm view @openai/codex version | xargs)"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Check for an existing upstream PR
+        id: existing-pr
+        uses: actions/github-script@v7
+        env:
+          UPSTREAM_VERSION: ${{ steps.latest.outputs.latest }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const branch = `automation/upstream-codex-${process.env.UPSTREAM_VERSION}`;
+            const title = `chore(upstream): bump @openai/codex to ${process.env.UPSTREAM_VERSION}`;
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              base: "master",
+              per_page: 100,
+            });
+            const existing = pulls.find(
+              pull => pull.head.ref === branch || pull.title === title,
+            );
+
+            core.setOutput("exists", existing ? "true" : "false");
+            core.setOutput("number", existing?.number ?? "");
+            core.setOutput("url", existing?.html_url ?? "");
+
+            if (existing) {
+              core.notice(`Upstream PR #${existing.number} already exists for ${process.env.UPSTREAM_VERSION}; skipping this run.`);
+            }
+
+      - name: Report existing upstream PR
+        if: steps.existing-pr.outputs.exists == 'true'
+        env:
+          EXISTING_PR_NUMBER: ${{ steps.existing-pr.outputs.number }}
+          EXISTING_PR_URL: ${{ steps.existing-pr.outputs.url }}
+        run: |
+          echo "Skipping upstream sync because PR #${EXISTING_PR_NUMBER} already exists: ${EXISTING_PR_URL}"
+
+      - name: Checkout
+        if: steps.existing-pr.outputs.exists != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
       - name: Setup .NET
+        if: steps.existing-pr.outputs.exists != 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
 
       - name: Resolve Codex Versions
+        if: steps.existing-pr.outputs.exists != 'true'
         id: versions
         shell: bash
+        env:
+          LATEST_CODEX_VERSION: ${{ steps.latest.outputs.latest }}
         run: |
           set -euo pipefail
 
@@ -52,7 +110,7 @@ jobs:
           print(pinned.strip())
           PY
           )"
-          LATEST="$(npm view @openai/codex version | xargs)"
+          LATEST="$LATEST_CODEX_VERSION"
 
           echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
           echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
@@ -64,7 +122,7 @@ jobs:
           fi
 
       - name: Update pin + submodule
-        if: steps.versions.outputs.up_to_date != 'true'
+        if: steps.existing-pr.outputs.exists != 'true' && steps.versions.outputs.up_to_date != 'true'
         shell: bash
         env:
           LATEST_CODEX_VERSION: ${{ steps.versions.outputs.latest }}
@@ -86,18 +144,19 @@ jobs:
           git -C external/codex checkout "rust-v${{ steps.versions.outputs.latest }}"
 
       - name: Regenerate DTOs
-        if: steps.versions.outputs.up_to_date != 'true'
+        if: steps.existing-pr.outputs.exists != 'true' && steps.versions.outputs.up_to_date != 'true'
         run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- generate
 
       - name: Verify Generated DTOs
-        if: steps.versions.outputs.up_to_date != 'true'
+        if: steps.existing-pr.outputs.exists != 'true' && steps.versions.outputs.up_to_date != 'true'
         run: dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check
 
       - name: Create pull request
-        if: steps.versions.outputs.up_to_date != 'true'
+        if: steps.existing-pr.outputs.exists != 'true' && steps.versions.outputs.up_to_date != 'true'
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
+          base: master
           branch: automation/upstream-codex-${{ steps.versions.outputs.latest }}
           commit-message: "chore(upstream): bump @openai/codex to ${{ steps.versions.outputs.latest }}"
           title: "chore(upstream): bump @openai/codex to ${{ steps.versions.outputs.latest }}"
@@ -107,17 +166,34 @@ jobs:
             - Previous: ${{ steps.versions.outputs.pinned }}
             - Latest: ${{ steps.versions.outputs.latest }}
 
-            CI is dispatched on the update branch after this PR is created. If upstream removed or changed a handwritten SDK surface, fix the branch in the PR instead of letting the scheduled sync fail before a PR exists.
+            The dynamic parity pass runs on this branch next, then CI is dispatched against the resulting head commit. If upstream removed or changed a handwritten SDK surface, fix the branch in the PR instead of letting the scheduled sync fail before a PR exists.
           delete-branch: true
 
-      - name: Trigger CI for PR branch
-        if: steps.versions.outputs.up_to_date != 'true' && steps.cpr.outputs.pull-request-operation != 'none'
+  parity:
+    name: Run dynamic Codex SDK parity pass
+    needs: sync
+    if: needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none'
+    uses: ./.github/workflows/codex-sdk-parity-pass.lock.yml
+    with:
+      upstream_sync_pr: true
+      upstream_version: ${{ needs.sync.outputs.upstream_version }}
+      upstream_pr: ${{ needs.sync.outputs.upstream_pr }}
+      upstream_ref: ${{ needs.sync.outputs.upstream_branch }}
+    secrets: inherit
+
+  ci:
+    name: Trigger CI for final PR branch
+    needs: [sync, parity]
+    if: ${{ !cancelled() && needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger CI
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
           script: |
             const workflowId = "ci.yml";
-            const ref = "automation/upstream-codex-${{ steps.versions.outputs.latest }}";
+            const ref = "${{ needs.sync.outputs.upstream_branch }}";
 
             core.info(`Dispatching ${workflowId} on ${ref}`);
 
@@ -126,27 +202,4 @@ jobs:
               repo: context.repo.repo,
               workflow_id: workflowId,
               ref,
-            });
-
-      - name: Trigger Codex SDK parity pass
-        if: steps.versions.outputs.up_to_date != 'true' && steps.cpr.outputs.pull-request-operation != 'none'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const workflowId = "codex-sdk-parity-pass.lock.yml";
-            const ref = "automation/upstream-codex-${{ steps.versions.outputs.latest }}";
-
-            core.info(`Dispatching ${workflowId} on ${ref}`);
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: workflowId,
-              ref,
-              inputs: {
-                upstream_sync_pr: "true",
-                upstream_version: "${{ steps.versions.outputs.latest }}",
-                upstream_pr: "${{ steps.cpr.outputs.pull-request-number }}",
-              },
             });

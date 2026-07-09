@@ -13,6 +13,20 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class McpServerWrappersTests
 {
     [Fact]
+    public void McpServerStartupFailureReason_DefaultAndFailedTryParse_AreSafe()
+    {
+        var defaultReason = default(McpServerStartupFailureReason);
+
+        defaultReason.Value.Should().BeEmpty();
+        ((string)defaultReason).Should().BeEmpty();
+        defaultReason.ToString().Should().BeEmpty();
+
+        McpServerStartupFailureReason.TryParse(null, out var parsed).Should().BeFalse();
+        parsed.Should().Be(defaultReason);
+        parsed.Value.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ReloadMcpServersAsync_CallsExpectedMethod()
     {
         var rpc = new FakeRpc
@@ -43,6 +57,9 @@ public sealed class McpServerWrappersTests
                 {
                     name = "docs",
                     authStatus = "notLoggedIn",
+                    status = "failed",
+                    error = "reauth required",
+                    failureReason = "reauthenticationRequired",
                     serverInfo = new
                     {
                         name = "lookup-server",
@@ -93,6 +110,9 @@ public sealed class McpServerWrappersTests
         page.Servers.Should().HaveCount(1);
         page.Servers[0].Name.Should().Be("docs");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
+        page.Servers[0].StartupStatus.Should().Be("failed");
+        page.Servers[0].Error.Should().Be("reauth required");
+        page.Servers[0].FailureReason.Should().Be(McpServerStartupFailureReason.ReauthenticationRequired);
         page.Servers[0].ServerInfo.Should().NotBeNull();
         page.Servers[0].ServerInfo!.Title.Should().Be("Lookup Server");
         page.Servers[0].Tools.Should().ContainSingle(t => t.Name == "search");
@@ -171,6 +191,7 @@ public sealed class McpServerWrappersTests
                 p.Should().BeOfType<McpServerOauthLoginParams>();
                 var typed = (McpServerOauthLoginParams)p!;
                 typed.Name.Should().Be("my-server");
+                typed.ThreadId.Should().Be("thr_1");
                 typed.TimeoutSecs.Should().Be(30);
                 typed.Scopes.Should().BeNull();
             },
@@ -187,6 +208,7 @@ public sealed class McpServerWrappersTests
         var result = await client.StartMcpServerOauthLoginAsync(new McpServerOauthLoginOptions
         {
             Name = "my-server",
+            ThreadId = "thr_1",
             TimeoutSeconds = 30
         });
 

@@ -13,6 +13,11 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     public string Name { get; }
 
     /// <summary>
+    /// Gets the thread id that the OAuth flow belongs to, when upstream reports one.
+    /// </summary>
+    public string? ThreadId { get; }
+
+    /// <summary>
     /// Gets a value indicating whether the login succeeded.
     /// </summary>
     public bool Success { get; }
@@ -26,9 +31,18 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
     /// </summary>
     public McpServerOauthLoginCompletedNotification(string Name, bool Success, string? Error, JsonElement Params)
+        : this(Name, null, Success, Error, Params)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
+    /// </summary>
+    public McpServerOauthLoginCompletedNotification(string Name, string? ThreadId, bool Success, string? Error, JsonElement Params)
         : base("mcpServer/oauthLogin/completed", Params)
     {
         this.Name = Name;
+        this.ThreadId = ThreadId;
         this.Success = Success;
         this.Error = Error;
     }

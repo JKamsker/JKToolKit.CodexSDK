@@ -20,6 +20,14 @@ public sealed class ThreadForkOptions
     public string? ThreadId { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional last turn id to fork through, inclusive.
+    /// </summary>
+    /// <remarks>
+    /// When set, upstream omits turns after this id from the fork. The referenced turn cannot be in progress.
+    /// </remarks>
+    public string? LastTurnId { get; set; }
+
+    /// <summary>
     /// [UNSTABLE] Gets or sets a rollout path to fork from (experimental-gated in newer upstream Codex builds).
     /// </summary>
     public string? Path { get; set; }
@@ -119,4 +127,3 @@ public sealed class ThreadForkOptions
     /// </summary>
     public bool PersistExtendedHistory { get; set; }
 }
-

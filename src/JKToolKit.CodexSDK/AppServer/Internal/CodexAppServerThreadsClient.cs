@@ -390,6 +390,7 @@ internal sealed class CodexAppServerThreadsClient
                 ThreadId = string.IsNullOrWhiteSpace(options.Path)
                     ? CodexAppServerWireBuilders.BuildThreadIdOrPlaceholder(options.ThreadId)
                     : string.Empty,
+                LastTurnId = options.LastTurnId,
                 Path = options.Path,
                 ServiceTier = CodexAppServerWireBuilders.BuildServiceTier(
                     options.ServiceTier,

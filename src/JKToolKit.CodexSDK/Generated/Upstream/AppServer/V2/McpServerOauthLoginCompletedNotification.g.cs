@@ -22,6 +22,9 @@ internal partial class McpServerOauthLoginCompletedNotification
     [System.Text.Json.Serialization.JsonPropertyName("success")]
     public bool Success { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

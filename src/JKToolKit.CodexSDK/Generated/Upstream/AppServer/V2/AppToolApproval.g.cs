@@ -21,8 +21,12 @@ internal enum AppToolApproval
     Prompt = 1,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"writes")]
+    Writes = 2,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"approve")]
-    Approve = 2,
+    Approve = 3,
 
 
 }

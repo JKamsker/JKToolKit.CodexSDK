@@ -234,6 +234,7 @@ internal static partial class AppServerNotificationMapper
 
             "mcpServer/oauthLogin/completed" => new McpServerOauthLoginCompletedNotification(
                 Name: GetString(p, "name") ?? string.Empty,
+                ThreadId: GetStringOrNull(p, "threadId"),
                 Success: GetBool(p, "success"),
                 Error: GetStringOrNull(p, "error"),
                 Params: p),

@@ -5,18 +5,60 @@ description: |
   the default branch ever has an upstream API/submodule or integration mismatch.
 
 on:
+  workflow_call:
+    inputs:
+      upstream_sync_pr:
+        description: "Set to true when upstream-sync calls this for its update PR."
+        required: false
+        default: false
+        type: boolean
+      upstream_version:
+        description: "The @openai/codex version from the upstream-sync PR."
+        required: false
+        default: ""
+        type: string
+      upstream_pr:
+        description: "The upstream-sync pull request number, when available."
+        required: false
+        default: ""
+        type: string
+      upstream_ref:
+        description: "The upstream-sync branch to inspect and update."
+        required: false
+        default: ""
+        type: string
+      repair_attempt:
+        description: "Internal repair attempt number after a validation-gate failure."
+        required: false
+        default: "0"
+        type: string
+      repair_source_run:
+        description: "The workflow run that failed validation and requested this repair attempt."
+        required: false
+        default: ""
+        type: string
+      repair_source_job:
+        description: "The job in the source run that failed validation."
+        required: false
+        default: ""
+        type: string
   workflow_dispatch:
     inputs:
       upstream_sync_pr:
         description: "Set to true when upstream-sync dispatches this for its update PR."
         required: false
-        default: "false"
+        default: false
+        type: boolean
       upstream_version:
         description: "The @openai/codex version from the upstream-sync PR."
         required: false
         default: ""
       upstream_pr:
         description: "The upstream-sync pull request number, when available."
+        required: false
+        default: ""
+      upstream_ref:
+        description: "The upstream-sync branch to inspect and update."
         required: false
         default: ""
       repair_attempt:
@@ -51,6 +93,7 @@ permissions:
   issues: read
 
 checkout:
+  ref: ${{ inputs.upstream_ref || github.event.pull_request.head.ref || github.ref }}
   fetch-depth: 0
   submodules: recursive
 
@@ -73,7 +116,7 @@ safe-outputs:
     if-no-changes: "ignore"
     protected-files: fallback-to-issue
   push-to-pull-request-branch:
-    target: triggering
+    target: ${{ inputs.upstream_pr || 'triggering' }}
     required-title-prefix: "chore(upstream): bump @openai/codex"
     max: 1
     if-no-changes: "ignore"
@@ -103,11 +146,12 @@ post-steps:
     if: always()
     shell: bash
     env:
-      REPAIR_ATTEMPT: ${{ github.event.inputs.repair_attempt || '0' }}
-      REPAIR_SOURCE_RUN: ${{ github.event.inputs.repair_source_run || '' }}
-      UPSTREAM_SYNC_PR: ${{ github.event.inputs.upstream_sync_pr || '' }}
-      UPSTREAM_VERSION: ${{ github.event.inputs.upstream_version || '' }}
-      UPSTREAM_PR: ${{ github.event.inputs.upstream_pr || github.event.pull_request.number || '' }}
+      REPAIR_ATTEMPT: ${{ inputs.repair_attempt || '0' }}
+      REPAIR_SOURCE_RUN: ${{ inputs.repair_source_run || '' }}
+      UPSTREAM_SYNC_PR: ${{ inputs.upstream_sync_pr || '' }}
+      UPSTREAM_VERSION: ${{ inputs.upstream_version || '' }}
+      UPSTREAM_PR: ${{ inputs.upstream_pr || github.event.pull_request.number || '' }}
+      UPSTREAM_REF: ${{ inputs.upstream_ref || github.event.pull_request.head.ref || github.ref_name || '' }}
     run: |
       set -euo pipefail
 
@@ -138,6 +182,7 @@ post-steps:
       echo "parity_repair_context.upstream_sync_pr=${upstream_sync_pr}"
       echo "parity_repair_context.upstream_version=${upstream_version}"
       echo "parity_repair_context.upstream_pr=${upstream_pr}"
+      echo "parity_repair_context.upstream_ref=${UPSTREAM_REF:-}"
 
   - name: Setup .NET for parity validation
     if: steps.parity-validation-guard.outputs.should_validate == 'true'
@@ -203,7 +248,7 @@ Use the local skill at `.codex/skills/codex-sdk-parity-pass` for this run.
 This workflow exists to keep `JKToolKit.CodexSDK` aligned with the vendored upstream Codex CLI in `external/codex`. It should normally do useful work only when one of these conditions is true:
 
 1. The run was triggered by an upstream Codex sync pull request, for example a PR titled `chore(upstream): bump @openai/codex to <version>`.
-2. The run was dispatched by `Upstream Sync (@openai/codex)` with `github.event.inputs.upstream_sync_pr` set to `true`.
+2. The run was called or dispatched by `Upstream Sync (@openai/codex)` with `inputs.upstream_sync_pr` set to `true`.
 3. `UPSTREAM_CODEX_VERSION.json` has an `api` version whose tag commit does not match the checked-out `external/codex` submodule commit.
 4. `UPSTREAM_CODEX_VERSION.json` has different `api` and `integration` versions, which means generated API artifacts are ahead of the deeper SDK parity baseline.
 
@@ -239,7 +284,7 @@ No-op if all of these are true:
 
 When no-oping, leave the workspace unchanged and emit a concise explanation in the final output. Do not create a pull request and do not push to a pull request branch.
 
-## Pull Request And Upstream-Sync Dispatch Runs
+## Pull Request And Upstream-Sync Runs
 
 On `pull_request` events, only make changes when the triggering PR is an upstream Codex sync PR or clearly changes upstream Codex inputs:
 
@@ -248,7 +293,7 @@ On `pull_request` events, only make changes when the triggering PR is an upstrea
 - generated upstream schema/DTO files
 - upstream generator code
 
-On `workflow_dispatch` events with `github.event.inputs.upstream_sync_pr == 'true'`, treat the run as the same upstream-sync PR path. Use `github.event.inputs.upstream_version` and `github.event.inputs.upstream_pr` as hints, but verify the actual checked-out `UPSTREAM_CODEX_VERSION.json`, `external/codex` submodule, and PR state from git/GitHub before making changes.
+On `workflow_call` or `workflow_dispatch` events with `inputs.upstream_sync_pr == true`, treat the run as the same upstream-sync PR path. Use `inputs.upstream_version`, `inputs.upstream_pr`, and `inputs.upstream_ref` as hints, but verify the actual checked-out `UPSTREAM_CODEX_VERSION.json`, `external/codex` submodule, and PR state from git/GitHub before making changes.
 
 If the PR is from a fork, no-op; this workflow is only intended to repair same-repository upstream-sync branches.
 
@@ -277,11 +322,11 @@ The workflow also enforces this after the agent runs: if a safe-output write is 
 
 ## Repair Dispatch Runs
 
-On `workflow_dispatch` events with `github.event.inputs.repair_attempt` greater than `0`, this run was automatically dispatched because a previous parity attempt requested safe output but failed the validation gate before safe outputs were processed.
+When `inputs.repair_attempt` is greater than `0`, this run was automatically dispatched because a previous parity attempt requested safe output but failed the validation gate before safe outputs were processed.
 
 For repair runs:
 
-1. Inspect `github.event.inputs.repair_source_run` with `gh run view` and focus on the failing validation step: restore, generated DTO check, build, or test.
+1. Inspect `inputs.repair_source_run` with `gh run view` and focus on the failing validation step: restore, generated DTO check, build, or test.
 2. Treat the failure log as the first bug report. Reproduce and fix the validation failure before doing any unrelated parity exploration.
 3. Run the same validation commands again after the fix.
 4. Do not request safe output until validation passes and hosted CI is expected to pass.
@@ -289,7 +334,7 @@ For repair runs:
 
 ## Scheduled And Other Manual Runs
 
-On `schedule` or manual `workflow_dispatch` runs where `github.event.inputs.upstream_sync_pr` is not `true`, use the API/submodule mismatch and API/integration mismatch checks above as the primary triggers.
+On `schedule` or manual `workflow_dispatch` runs where `inputs.upstream_sync_pr` is not `true`, use the API/submodule mismatch and API/integration mismatch checks above as the primary triggers.
 
 If the default branch has an API/submodule mismatch:
 

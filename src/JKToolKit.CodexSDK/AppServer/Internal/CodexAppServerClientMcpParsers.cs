@@ -37,6 +37,11 @@ internal static class CodexAppServerClientMcpParsers
                 {
                     Name = name,
                     AuthStatus = authStatus,
+                    StartupStatus = GetStringOrNull(item, "status"),
+                    Error = GetStringOrNull(item, "error"),
+                    FailureReason = McpServerStartupFailureReason.TryParse(GetStringOrNull(item, "failureReason"), out var failureReason)
+                        ? (McpServerStartupFailureReason?)failureReason
+                        : null,
                     ServerInfo = ParseServerInfo(item),
                     Tools = tools,
                     Resources = resources,

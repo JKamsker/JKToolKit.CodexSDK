@@ -2,7 +2,7 @@ name: Codex SDK Parity Repair Dispatch
 
 on:
   workflow_run:
-    workflows: ["Codex SDK Parity Pass"]
+    workflows: ["Codex SDK Parity Pass", "Upstream Sync (@openai/codex)"]
     types: [completed]
 
 permissions:

@@ -14,6 +14,12 @@ public sealed record class McpServerOauthLoginParams
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets the thread id that the OAuth flow belongs to, when scoped to a thread.
+    /// </summary>
+    [JsonPropertyName("threadId")]
+    public string? ThreadId { get; init; }
+
+    /// <summary>
     /// Gets optional OAuth scopes to request.
     /// </summary>
     [JsonPropertyName("scopes")]
@@ -25,4 +31,3 @@ public sealed record class McpServerOauthLoginParams
     [JsonPropertyName("timeoutSecs")]
     public long? TimeoutSecs { get; init; }
 }
-

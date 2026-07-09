@@ -139,6 +139,18 @@ public sealed class AppServerNotificationMapperTests
         startupNotification.ThreadId.Should().Be("thr-1");
         startupNotification.Status.Should().Be(McpServerStartupState.Ready);
 
+        var oauthCompleted = JsonDocument.Parse("""{"threadId":"thr-1","name":"server-1","success":true,"error":null}""").RootElement;
+        var oauthNotification = AppServerNotificationMapper.Map("mcpServer/oauthLogin/completed", oauthCompleted)
+            .Should().BeOfType<McpServerOauthLoginCompletedNotification>()
+            .Which;
+
+        oauthNotification.ThreadId.Should().Be("thr-1");
+
+        var oauthCompletedWithoutThread = JsonDocument.Parse("""{"name":"server-1","success":true,"error":null}""").RootElement;
+        AppServerNotificationMapper.Map("mcpServer/oauthLogin/completed", oauthCompletedWithoutThread)
+            .Should().BeOfType<McpServerOauthLoginCompletedNotification>()
+            .Which.ThreadId.Should().BeNull();
+
         AppServerNotificationMapper.Map("skills/changed", JsonDocument.Parse("""{}""").RootElement)
             .Should().BeOfType<SkillsChangedNotification>();
 

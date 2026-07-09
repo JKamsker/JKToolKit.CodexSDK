@@ -11,6 +11,11 @@ public sealed class McpServerOauthLoginOptions
     public required string Name { get; set; }
 
     /// <summary>
+    /// Gets or sets the thread id that the OAuth flow belongs to, when scoped to a thread.
+    /// </summary>
+    public string? ThreadId { get; set; }
+
+    /// <summary>
     /// Gets or sets optional OAuth scopes to request (overrides server defaults).
     /// </summary>
     public IReadOnlyList<string>? Scopes { get; set; }
@@ -20,4 +25,3 @@ public sealed class McpServerOauthLoginOptions
     /// </summary>
     public long? TimeoutSeconds { get; set; }
 }
-

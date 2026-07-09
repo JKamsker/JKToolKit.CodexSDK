@@ -21,6 +21,12 @@ public sealed record class ThreadForkParams
     public required string ThreadId { get; init; }
 
     /// <summary>
+    /// Gets an optional last turn id to fork through, inclusive.
+    /// </summary>
+    [JsonPropertyName("lastTurnId")]
+    public string? LastTurnId { get; init; }
+
+    /// <summary>
     /// Gets an optional rollout path to fork from (experimental-gated in newer upstream Codex builds).
     /// </summary>
     [JsonPropertyName("path")]

@@ -28,6 +28,7 @@ class RepairContext:
     upstream_sync_pr: str
     upstream_version: str
     upstream_pr: str
+    upstream_ref: str
 
 
 def run_gh(args: list[str], *, capture: bool = True) -> str:
@@ -57,7 +58,8 @@ def load_source_run(source_run_id: str) -> dict[str, Any]:
 
 def find_agent_job(run: dict[str, Any]) -> dict[str, Any] | None:
     for job in run.get("jobs") or []:
-        if job.get("name") == "agent":
+        job_name = str(job.get("name") or "")
+        if job_name.rsplit("/", maxsplit=1)[-1].strip() == "agent":
             return job
     return None
 
@@ -103,6 +105,7 @@ def parse_repair_context(log_text: str) -> RepairContext:
         upstream_sync_pr=values.get("upstream_sync_pr") or "false",
         upstream_version=values.get("upstream_version") or "",
         upstream_pr=values.get("upstream_pr") or "",
+        upstream_ref=values.get("upstream_ref") or "",
     )
 
 
@@ -138,6 +141,8 @@ def dispatch_repair(
         f"upstream_version={context.upstream_version}",
         "-f",
         f"upstream_pr={context.upstream_pr}",
+        "-f",
+        f"upstream_ref={context.upstream_ref}",
         "-f",
         f"repair_attempt={next_attempt}",
         "-f",
