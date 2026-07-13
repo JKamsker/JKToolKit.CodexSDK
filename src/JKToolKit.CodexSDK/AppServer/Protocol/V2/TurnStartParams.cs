@@ -113,7 +113,7 @@ public sealed record class TurnStartParams
     /// Gets an optional reasoning effort override for this turn and subsequent turns (wire value).
     /// </summary>
     /// <remarks>
-    /// Known values include <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, and <c>xhigh</c>.
+    /// Known values include <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, <c>max</c>, and <c>ultra</c>.
     /// </remarks>
     [JsonPropertyName("effort")]
     public string? Effort { get; init; }
