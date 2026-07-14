@@ -53,6 +53,16 @@ public readonly record struct CodexReasoningEffort
     public static CodexReasoningEffort XHigh => new("xhigh");
 
     /// <summary>
+    /// Gets the max reasoning effort level.
+    /// </summary>
+    public static CodexReasoningEffort Max => new("max");
+
+    /// <summary>
+    /// Gets the ultra reasoning effort level.
+    /// </summary>
+    public static CodexReasoningEffort Ultra => new("ultra");
+
+    /// <summary>
     /// Creates a CodexReasoningEffort from a string value.
     /// </summary>
     /// <param name="value">The effort level identifier.</param>

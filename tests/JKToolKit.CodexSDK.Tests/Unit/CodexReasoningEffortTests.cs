@@ -49,6 +49,26 @@ public class CodexReasoningEffortTests
     }
 
     [Fact]
+    public void Predefined_Max_HasCorrectValue()
+    {
+        // Act
+        var effort = CodexReasoningEffort.Max;
+
+        // Assert
+        effort.Value.Should().Be("max");
+    }
+
+    [Fact]
+    public void Predefined_Ultra_HasCorrectValue()
+    {
+        // Act
+        var effort = CodexReasoningEffort.Ultra;
+
+        // Assert
+        effort.Value.Should().Be("ultra");
+    }
+
+    [Fact]
     public void Parse_CustomValue_Works()
     {
         // Arrange
@@ -179,6 +199,8 @@ public class CodexReasoningEffortTests
         var medium = CodexReasoningEffort.Medium;
         var high = CodexReasoningEffort.High;
         var xhigh = CodexReasoningEffort.XHigh;
+        var max = CodexReasoningEffort.Max;
+        var ultra = CodexReasoningEffort.Ultra;
 
         // Assert
         low.Should().NotBe(medium);
@@ -187,6 +209,8 @@ public class CodexReasoningEffortTests
         xhigh.Should().NotBe(high);
         xhigh.Should().NotBe(medium);
         xhigh.Should().NotBe(low);
+        max.Should().NotBe(xhigh);
+        ultra.Should().NotBe(max);
     }
 
     [Fact]
@@ -197,5 +221,7 @@ public class CodexReasoningEffortTests
         CodexReasoningEffort.Parse("medium").Should().Be(CodexReasoningEffort.Medium);
         CodexReasoningEffort.Parse("high").Should().Be(CodexReasoningEffort.High);
         CodexReasoningEffort.Parse("xhigh").Should().Be(CodexReasoningEffort.XHigh);
+        CodexReasoningEffort.Parse("max").Should().Be(CodexReasoningEffort.Max);
+        CodexReasoningEffort.Parse("ultra").Should().Be(CodexReasoningEffort.Ultra);
     }
 }
