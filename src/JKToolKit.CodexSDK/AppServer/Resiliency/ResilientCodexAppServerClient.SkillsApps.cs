@@ -13,6 +13,12 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.ListAppsAsync(options, token), ct);
 
+    public Task<AppsReadResult> ReadAppsAsync(AppsReadOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.ReadAppsAsync(options, token), ct);
+
+    public Task<AppsInstalledResult> ReadInstalledAppsAsync(AppsInstalledOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.ReadInstalledAppsAsync(options, token), ct);
+
     public Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.SkillsAndApps, (c, token) => c.ReadConfigRequirementsAsync(token), ct);
 

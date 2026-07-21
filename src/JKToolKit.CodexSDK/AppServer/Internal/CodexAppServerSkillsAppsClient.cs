@@ -104,4 +104,64 @@ internal sealed class CodexAppServerSkillsAppsClient
             Raw = result
         };
     }
+
+    public async Task<AppsReadResult> ReadAppsAsync(AppsReadOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.AppIds);
+
+        if (options.AppIds.Count == 0)
+        {
+            throw new ArgumentException("AppIds cannot be empty.", nameof(options));
+        }
+
+        if (options.AppIds.Count > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.AppIds.Count, "AppIds cannot contain more than 100 entries.");
+        }
+
+        for (var i = 0; i < options.AppIds.Count; i++)
+        {
+            if (string.IsNullOrWhiteSpace(options.AppIds[i]))
+            {
+                throw new ArgumentException($"AppIds[{i}] cannot be empty or whitespace.", nameof(options));
+            }
+        }
+
+        var result = await _sendRequestAsync(
+            "app/read",
+            new UpstreamV2.AppsReadParams
+            {
+                AppIds = options.AppIds.ToArray(),
+                IncludeTools = options.IncludeTools ? true : null
+            },
+            ct);
+
+        return new AppsReadResult
+        {
+            Apps = CodexAppServerClientSkillsAppsParsers.ParseAppsReadApps(result),
+            MissingAppIds = CodexAppServerClientJson.GetOptionalStringArray(result, "missingAppIds") ?? Array.Empty<string>(),
+            Raw = result
+        };
+    }
+
+    public async Task<AppsInstalledResult> ReadInstalledAppsAsync(AppsInstalledOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "app/installed",
+            new UpstreamV2.AppsInstalledParams
+            {
+                ThreadId = options.ThreadId,
+                ForceRefresh = options.ForceRefresh ? true : null
+            },
+            ct);
+
+        return new AppsInstalledResult
+        {
+            Apps = CodexAppServerClientSkillsAppsParsers.ParseInstalledApps(result),
+            Raw = result
+        };
+    }
 }
