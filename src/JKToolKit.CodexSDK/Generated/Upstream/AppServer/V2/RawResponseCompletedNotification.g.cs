@@ -9,15 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Internal-only notification containing the exact usage from one upstream Responses API completion.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportHistoriesReadResponse
+internal partial class RawResponseCompletedNotification
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("connectors")]
-    public System.Collections.Generic.ICollection<ExternalAgentImportedConnectorCandidate> Connectors { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentImportedConnectorCandidate>();
+    [System.Text.Json.Serialization.JsonPropertyName("responseId")]
+    public string ResponseId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("data")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistory> Data { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistory>();
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("turnId")]
+    public string TurnId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("usage")]
+    public Usage? Usage { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

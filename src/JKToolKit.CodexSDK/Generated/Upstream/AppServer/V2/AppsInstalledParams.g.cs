@@ -9,15 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Read the committed installed connector runtime snapshot.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportHistoriesReadResponse
+internal partial class AppsInstalledParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("connectors")]
-    public System.Collections.Generic.ICollection<ExternalAgentImportedConnectorCandidate> Connectors { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentImportedConnectorCandidate>();
+    /// <summary>
+    /// When true and Apps are permitted, refresh and publish the hosted connector runtime tool snapshot first.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("forceRefresh")]
+    public bool? ForceRefresh { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("data")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistory> Data { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistory>();
+    /// <summary>
+    /// Optional loaded thread id used to evaluate effective app configuration.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

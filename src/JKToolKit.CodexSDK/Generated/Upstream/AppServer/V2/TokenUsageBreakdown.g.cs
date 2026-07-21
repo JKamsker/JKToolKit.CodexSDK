@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class TokenUsageBreakdown
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("cacheWriteInputTokens")]
+    public long? CacheWriteInputTokens { get; set; } = 0L;
+
     [System.Text.Json.Serialization.JsonPropertyName("cachedInputTokens")]
     public long CachedInputTokens { get; set; } = default!;
 

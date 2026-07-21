@@ -10,19 +10,19 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum RealtimeConversationVersion
+internal enum CodexResponseHandoffMode
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"v1")]
-    V1 = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"thinking")]
+    Thinking = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"v2")]
-    V2 = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"commentary")]
+    Commentary = 1,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"v3")]
-    V3 = 2,
+    [System.Runtime.Serialization.EnumMember(Value = @"bemTags")]
+    BemTags = 2,
 
 
 }

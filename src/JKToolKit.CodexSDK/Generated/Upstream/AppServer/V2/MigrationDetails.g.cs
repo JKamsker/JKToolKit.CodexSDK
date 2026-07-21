@@ -22,6 +22,9 @@ internal partial class MigrationDetails
     [System.Text.Json.Serialization.JsonPropertyName("mcpServers")]
     public System.Collections.Generic.ICollection<McpServerMigration>? McpServers { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("memory")]
+    public System.Collections.Generic.ICollection<string>? Memory { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("plugins")]
     public System.Collections.Generic.ICollection<PluginsMigration>? Plugins { get; set; } = default!;
 

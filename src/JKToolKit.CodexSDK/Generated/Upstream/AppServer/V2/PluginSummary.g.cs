@@ -49,6 +49,9 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonPropertyName("localVersion")]
     public string? LocalVersion { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("mustShowInstallationInterstitial")]
+    public bool? MustShowInstallationInterstitial { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 

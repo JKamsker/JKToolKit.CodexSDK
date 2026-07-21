@@ -25,6 +25,18 @@ internal partial class ExternalAgentConfigDetectParams
     [System.Text.Json.Serialization.JsonPropertyName("includeHome")]
     public bool? IncludeHome { get; set; } = default!;
 
+    /// <summary>
+    /// Optional migration-source selector. Missing or unrecognized values use the default source.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("migrationSource")]
+    public string? MigrationSource { get; set; } = default!;
+
+    /// <summary>
+    /// Deprecated field retained for compatibility. This field is ignored; use `migrationSource` to select the migration source.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("source")]
+    public string? Source { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

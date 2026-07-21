@@ -32,6 +32,9 @@ internal partial class ExternalAgentConfigImportItemTypeFailure
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     public string? Source { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("subErrorType")]
+    public string? SubErrorType { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

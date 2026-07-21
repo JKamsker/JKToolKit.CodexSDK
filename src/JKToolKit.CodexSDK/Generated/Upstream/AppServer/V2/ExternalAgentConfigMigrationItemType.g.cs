@@ -45,8 +45,12 @@ internal enum ExternalAgentConfigMigrationItemType
     COMMANDS = 7,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"MEMORY")]
+    MEMORY = 8,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"SESSIONS")]
-    SESSIONS = 8,
+    SESSIONS = 9,
 
 
 }

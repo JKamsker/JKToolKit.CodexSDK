@@ -9,15 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// EXPERIMENTAL - read metadata for specific apps/connectors.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportHistoriesReadResponse
+internal partial class AppsReadParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("connectors")]
-    public System.Collections.Generic.ICollection<ExternalAgentImportedConnectorCandidate> Connectors { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentImportedConnectorCandidate>();
+    /// <summary>
+    /// App ids to read. The server accepts at most 100 ids and deduplicates repeated ids while preserving their first-request order.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("appIds")]
+    public System.Collections.Generic.ICollection<string> AppIds { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("data")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistory> Data { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistory>();
+    /// <summary>
+    /// When true, include display-only public tool summaries in the returned metadata.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("includeTools")]
+    public bool? IncludeTools { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

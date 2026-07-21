@@ -9,15 +9,18 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// EXPERIMENTAL - app/read response.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportHistoriesReadResponse
+internal partial class AppsReadResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("connectors")]
-    public System.Collections.Generic.ICollection<ExternalAgentImportedConnectorCandidate> Connectors { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentImportedConnectorCandidate>();
+    [System.Text.Json.Serialization.JsonPropertyName("apps")]
+    public System.Collections.Generic.ICollection<ConnectorMetadata> Apps { get; set; } = new System.Collections.ObjectModel.Collection<ConnectorMetadata>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("data")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistory> Data { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistory>();
+    [System.Text.Json.Serialization.JsonPropertyName("missingAppIds")]
+    public System.Collections.Generic.ICollection<string> MissingAppIds { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

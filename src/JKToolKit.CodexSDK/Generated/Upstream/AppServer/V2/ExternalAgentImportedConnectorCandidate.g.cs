@@ -10,14 +10,18 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportHistoriesReadResponse
+internal partial class ExternalAgentImportedConnectorCandidate
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("connectors")]
-    public System.Collections.Generic.ICollection<ExternalAgentImportedConnectorCandidate> Connectors { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentImportedConnectorCandidate>();
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("data")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistory> Data { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistory>();
+    [System.Text.Json.Serialization.JsonPropertyName("sessionCount")]
+    public int SessionCount { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("source")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ExternalAgentImportedConnectorSource>))]
+    public ExternalAgentImportedConnectorSource Source { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
