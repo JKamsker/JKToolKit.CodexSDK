@@ -118,6 +118,29 @@ internal static partial class AppServerNotificationMapper
         return new CommandExecutionOutputDeltaNotification(threadId, turnId, itemId, delta, p);
     }
 
+    private static RawResponseCompletedNotification? TryMapRawResponseCompleted(JsonElement p)
+    {
+        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
+            !TryGetRequiredString(p, "turnId", out var turnId) ||
+            !TryGetRequiredString(p, "responseId", out var responseId))
+        {
+            return null;
+        }
+
+        return new RawResponseCompletedNotification(threadId, turnId, responseId, GetOptionalAny(p, "usage"), p);
+    }
+
+    private static ThreadEnvironmentConnectionNotification? TryMapThreadEnvironmentConnection(string method, JsonElement p)
+    {
+        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
+            !TryGetRequiredString(p, "environmentId", out var environmentId))
+        {
+            return null;
+        }
+
+        return new ThreadEnvironmentConnectionNotification(method, threadId, environmentId, p);
+    }
+
     private static ItemAutoApprovalReviewStartedNotification? TryMapAutoApprovalReviewStarted(JsonElement p)
     {
         if (!TryGetRequiredString(p, "threadId", out var threadId) ||

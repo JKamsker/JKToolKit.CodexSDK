@@ -17,7 +17,13 @@ internal partial class ExternalAgentConfigImportParams
     public System.Collections.Generic.ICollection<ExternalAgentConfigMigrationItem> MigrationItems { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigMigrationItem>();
 
     /// <summary>
-    /// Source product that produced the migration items. Missing means unspecified.
+    /// Migration-source selector used to produce the migration items. Pass the same value to detection and import; missing or unrecognized values use the default source.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("migrationSource")]
+    public string? MigrationSource { get; set; } = default!;
+
+    /// <summary>
+    /// Optional identifier for the product that initiated the import.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("source")]
     public string? Source { get; set; } = default!;

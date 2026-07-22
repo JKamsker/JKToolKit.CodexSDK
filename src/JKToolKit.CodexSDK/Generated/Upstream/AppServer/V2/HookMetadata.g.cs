@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class HookMetadata
 {
 
+    /// <summary>
+    /// Configured `additionalContext` spill threshold. `null` uses 2,500 tokens; `0` disables spilling.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("additionalContextLimit")]
+    public int? AdditionalContextLimit { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("command")]
     public string? Command { get; set; } = default!;
 

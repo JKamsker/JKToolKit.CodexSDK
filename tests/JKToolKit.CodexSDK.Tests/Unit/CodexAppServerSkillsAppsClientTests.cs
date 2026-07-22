@@ -216,6 +216,152 @@ public sealed class CodexAppServerSkillsAppsClientTests
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
+    [Fact]
+    public async Task ReadAppsAsync_SendsCurrentUpstreamParams_AndParsesResponse()
+    {
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("app/read");
+                var typed = @params.Should().BeOfType<UpstreamV2.AppsReadParams>().Which;
+                typed.AppIds.Should().Equal("app-a", "app-b");
+                typed.IncludeTools.Should().BeTrue();
+
+                return Task.FromResult(JsonDocument.Parse(
+                    """
+                    {
+                      "apps": [
+                        {
+                          "id": "app-a",
+                          "name": "App A",
+                          "description": "Reads things",
+                          "iconUrl": "https://example.test/a.png",
+                          "iconUrlDark": "https://example.test/a-dark.png",
+                          "distributionChannel": "curated",
+                          "installUrl": "https://example.test/install",
+                          "pluginDisplayNames": ["Plugin A"],
+                          "toolSummaries": [
+                            {
+                              "name": "lookup",
+                              "title": "Lookup",
+                              "description": "Finds data"
+                            }
+                          ]
+                        }
+                      ],
+                      "missingAppIds": ["app-b"]
+                    }
+                    """).RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        var result = await client.ReadAppsAsync(new AppsReadOptions
+        {
+            AppIds = ["app-a", "app-b"],
+            IncludeTools = true
+        });
+
+        result.MissingAppIds.Should().Equal("app-b");
+        var app = result.Apps.Should().ContainSingle().Subject;
+        app.Id.Should().Be("app-a");
+        app.Name.Should().Be("App A");
+        app.Description.Should().Be("Reads things");
+        app.IconUrl.Should().Be("https://example.test/a.png");
+        app.IconUrlDark.Should().Be("https://example.test/a-dark.png");
+        app.DistributionChannel.Should().Be("curated");
+        app.InstallUrl.Should().Be("https://example.test/install");
+        app.PluginDisplayNames.Should().Equal("Plugin A");
+        var tool = app.ToolSummaries.Should().ContainSingle().Subject;
+        tool.Name.Should().Be("lookup");
+        tool.Title.Should().Be("Lookup");
+        tool.Description.Should().Be("Finds data");
+    }
+
+    [Fact]
+    public async Task ReadAppsAsync_OmitsIncludeTools_WhenFalse()
+    {
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("app/read");
+                var typed = @params.Should().BeOfType<UpstreamV2.AppsReadParams>().Which;
+                typed.AppIds.Should().Equal("app-a");
+                typed.IncludeTools.Should().BeNull();
+
+                return Task.FromResult(JsonDocument.Parse("""{"apps":[],"missingAppIds":[]}""").RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        await client.ReadAppsAsync(new AppsReadOptions
+        {
+            AppIds = ["app-a"]
+        });
+    }
+
+    [Fact]
+    public async Task ReadAppsAsync_RejectsInvalidAppIds()
+    {
+        var client = new CodexAppServerSkillsAppsClient((_, _, _) =>
+            Task.FromResult(JsonDocument.Parse("""{"apps":[],"missingAppIds":[]}""").RootElement.Clone()));
+
+        var empty = async () => await client.ReadAppsAsync(new AppsReadOptions { AppIds = [] });
+        var blank = async () => await client.ReadAppsAsync(new AppsReadOptions { AppIds = ["app-a", " "] });
+
+        await empty.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*AppIds*");
+        await blank.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*AppIds[1]*");
+    }
+
+    [Fact]
+    public async Task ReadInstalledAppsAsync_SendsCurrentUpstreamParams_AndParsesResponse()
+    {
+        var rpc = new FakeRpc
+        {
+            SendRequestAsyncImpl = (method, @params, _) =>
+            {
+                method.Should().Be("app/installed");
+                var typed = @params.Should().BeOfType<UpstreamV2.AppsInstalledParams>().Which;
+                typed.ThreadId.Should().Be("thread-1");
+                typed.ForceRefresh.Should().BeTrue();
+
+                return Task.FromResult(JsonDocument.Parse(
+                    """
+                    {
+                      "apps": [
+                        {
+                          "id": "demo-app",
+                          "runtimeName": "Demo App",
+                          "enabled": true,
+                          "callable": false
+                        }
+                      ]
+                    }
+                    """).RootElement.Clone());
+            }
+        };
+
+        var client = new CodexAppServerSkillsAppsClient(rpc.SendRequestAsync);
+
+        var result = await client.ReadInstalledAppsAsync(new AppsInstalledOptions
+        {
+            ThreadId = "thread-1",
+            ForceRefresh = true
+        });
+
+        var app = result.Apps.Should().ContainSingle().Subject;
+        app.Id.Should().Be("demo-app");
+        app.RuntimeName.Should().Be("Demo App");
+        app.Enabled.Should().BeTrue();
+        app.Callable.Should().BeFalse();
+    }
+
     private sealed class FakeRpc
     {
         public Func<string, object?, CancellationToken, Task<JsonElement>>? SendRequestAsyncImpl { get; set; }

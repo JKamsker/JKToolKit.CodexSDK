@@ -28,6 +28,9 @@ internal partial class ManagedHooksRequirements
     [System.Text.Json.Serialization.JsonPropertyName("PreToolUse")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PreToolUse { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("SessionEnd")]
+    public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup>? SessionEnd { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("SessionStart")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> SessionStart { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 

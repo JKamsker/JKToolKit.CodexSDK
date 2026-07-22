@@ -21,4 +21,8 @@ internal enum PluginShareUpdateDiscoverability
     PRIVATE = 1,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"LISTED")]
+    LISTED = 2,
+
+
 }

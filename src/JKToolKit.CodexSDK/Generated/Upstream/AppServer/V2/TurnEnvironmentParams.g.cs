@@ -19,6 +19,12 @@ internal partial class TurnEnvironmentParams
     [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
     public string EnvironmentId { get; set; } = default!;
 
+    /// <summary>
+    /// Environment-native runtime workspace roots. Omitted defaults to `cwd`.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("runtimeWorkspaceRoots")]
+    public System.Collections.Generic.ICollection<string>? RuntimeWorkspaceRoots { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

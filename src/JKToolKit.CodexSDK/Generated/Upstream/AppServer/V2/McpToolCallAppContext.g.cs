@@ -28,9 +28,6 @@ internal partial class McpToolCallAppContext
     [System.Text.Json.Serialization.JsonPropertyName("resourceUri")]
     public string? ResourceUri { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("templateId")]
-    public string? TemplateId { get; set; } = default!;
-
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

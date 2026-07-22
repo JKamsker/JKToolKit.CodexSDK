@@ -46,6 +46,8 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ListSkillsAsync),
         nameof(CodexAppServerClient.SetSkillsExtraRootsAsync),
         nameof(CodexAppServerClient.ListAppsAsync),
+        nameof(CodexAppServerClient.ReadAppsAsync),
+        nameof(CodexAppServerClient.ReadInstalledAppsAsync),
         nameof(CodexAppServerClient.ReadConfigRequirementsAsync),
         nameof(CodexAppServerClient.ReadRemoteSkillsAsync),
         nameof(CodexAppServerClient.WriteRemoteSkillAsync),
@@ -1059,6 +1061,12 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<AppsListResult> ListAppsAsync(AppsListOptions options, CancellationToken ct) =>
             NotSupported<AppsListResult>();
+
+        public Task<AppsReadResult> ReadAppsAsync(AppsReadOptions options, CancellationToken ct) =>
+            NotSupported<AppsReadResult>();
+
+        public Task<AppsInstalledResult> ReadInstalledAppsAsync(AppsInstalledOptions options, CancellationToken ct) =>
+            NotSupported<AppsInstalledResult>();
 
         public Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct) =>
             NotSupported<ConfigRequirementsReadResult>();

@@ -109,6 +109,16 @@ public sealed class AppServerNotificationMapperTests
         commandExecNotification.Stream.Should().Be("stdout");
         commandExecNotification.StreamKind.Should().Be(CommandExecOutputStreamKind.Stdout);
 
+        var rawResponseCompleted = JsonDocument.Parse(
+            """{"threadId":"t1","turnId":"turn1","responseId":"resp_1","usage":{"totalTokens":10,"cacheWriteInputTokens":2}}""").RootElement;
+        var rawResponseNotification = AppServerNotificationMapper.Map("rawResponse/completed", rawResponseCompleted)
+            .Should().BeOfType<RawResponseCompletedNotification>()
+            .Which;
+
+        rawResponseNotification.ResponseId.Should().Be("resp_1");
+        rawResponseNotification.Usage.Should().NotBeNull();
+        rawResponseNotification.Usage!.Value.GetProperty("cacheWriteInputTokens").GetInt32().Should().Be(2);
+
         var fsChanged = JsonDocument.Parse($@"{{""watchId"":""w1"",""changedPaths"":[""{XPaths.JsonAbs("repo/a.txt")}"",""{XPaths.JsonAbs("repo/b.txt")}""]}}").RootElement;
         AppServerNotificationMapper.Map("fs/changed", fsChanged)
             .Should().BeOfType<FsChangedNotification>()
@@ -150,6 +160,19 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("mcpServer/oauthLogin/completed", oauthCompletedWithoutThread)
             .Should().BeOfType<McpServerOauthLoginCompletedNotification>()
             .Which.ThreadId.Should().BeNull();
+
+        var environmentConnected = JsonDocument.Parse("""{"threadId":"thread-1","environmentId":"env-1"}""").RootElement;
+        var environmentConnectedNotification = AppServerNotificationMapper.Map("thread/environment/connected", environmentConnected)
+            .Should().BeOfType<ThreadEnvironmentConnectionNotification>()
+            .Which;
+
+        environmentConnectedNotification.EnvironmentId.Should().Be("env-1");
+        environmentConnectedNotification.Connected.Should().BeTrue();
+
+        var environmentDisconnected = JsonDocument.Parse("""{"threadId":"thread-1","environmentId":"env-1"}""").RootElement;
+        AppServerNotificationMapper.Map("thread/environment/disconnected", environmentDisconnected)
+            .Should().BeOfType<ThreadEnvironmentConnectionNotification>()
+            .Which.Connected.Should().BeFalse();
 
         AppServerNotificationMapper.Map("skills/changed", JsonDocument.Parse("""{}""").RootElement)
             .Should().BeOfType<SkillsChangedNotification>();
@@ -249,6 +272,9 @@ public sealed class AppServerNotificationMapperTests
     [InlineData("thread/deleted", """{"threadId":123}""")]
     [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","model":"gpt-5.1","showBufferingUi":"true"}""")]
     [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","showBufferingUi":true}""")]
+    [InlineData("rawResponse/completed", """{"threadId":"t1","turnId":"turn1"}""")]
+    [InlineData("thread/environment/connected", """{"threadId":"t1","environmentId":123}""")]
+    [InlineData("thread/environment/disconnected", """{"threadId":123,"environmentId":"env-1"}""")]
     public void Map_NewlyTypedNotificationMethods_WithMalformedRequiredFields_ReturnsUnknown(
         string method,
         string json)

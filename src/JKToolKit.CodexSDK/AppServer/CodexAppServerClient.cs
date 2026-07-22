@@ -344,6 +344,18 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _skillsAppsClient.ListAppsAsync(options, ct);
 
     /// <summary>
+    /// Reads metadata for specific apps/connectors.
+    /// </summary>
+    public Task<AppsReadResult> ReadAppsAsync(AppsReadOptions options, CancellationToken ct = default) =>
+        _skillsAppsClient.ReadAppsAsync(options, ct);
+
+    /// <summary>
+    /// Reads the installed connector runtime snapshot.
+    /// </summary>
+    public Task<AppsInstalledResult> ReadInstalledAppsAsync(AppsInstalledOptions options, CancellationToken ct = default) =>
+        _skillsAppsClient.ReadInstalledAppsAsync(options, ct);
+
+    /// <summary>
     /// Reads the active configuration requirements constraints (for example from <c>requirements.toml</c> or MDM).
     /// </summary>
     public Task<ConfigRequirementsReadResult> ReadConfigRequirementsAsync(CancellationToken ct = default) =>

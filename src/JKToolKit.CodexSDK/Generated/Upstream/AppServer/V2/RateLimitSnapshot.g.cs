@@ -37,6 +37,12 @@ internal partial class RateLimitSnapshot
     [System.Text.Json.Serialization.JsonPropertyName("secondary")]
     public Secondary? Secondary { get; set; } = default!;
 
+    /// <summary>
+    /// Backend-reported spend-control state. `None` is unavailable, not a sparse-update recovery.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("spendControlReached")]
+    public bool? SpendControlReached { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

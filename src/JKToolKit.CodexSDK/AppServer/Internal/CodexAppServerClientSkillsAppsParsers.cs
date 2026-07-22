@@ -193,6 +193,63 @@ internal static class CodexAppServerClientSkillsAppsParsers
         return apps;
     }
 
+    public static IReadOnlyList<AppConnectorMetadata> ParseAppsReadApps(JsonElement appsReadResult)
+    {
+        var array = TryGetArray(appsReadResult, "apps")
+            ?? throw new InvalidOperationException("app/read returned no apps array.");
+
+        var apps = new List<AppConnectorMetadata>();
+        foreach (var item in array.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("app/read apps[] entries must be objects.");
+            }
+
+            apps.Add(new AppConnectorMetadata
+            {
+                Id = GetRequiredString(item, "id", "app/read apps[]"),
+                Name = GetRequiredString(item, "name", "app/read apps[]"),
+                Description = GetStringOrNull(item, "description"),
+                IconUrl = GetStringOrNull(item, "iconUrl"),
+                IconUrlDark = GetStringOrNull(item, "iconUrlDark"),
+                DistributionChannel = GetStringOrNull(item, "distributionChannel"),
+                InstallUrl = GetStringOrNull(item, "installUrl"),
+                PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames") ?? Array.Empty<string>(),
+                ToolSummaries = ParseAppToolSummaries(item),
+                Raw = item.Clone()
+            });
+        }
+
+        return apps;
+    }
+
+    public static IReadOnlyList<InstalledAppDescriptor> ParseInstalledApps(JsonElement appsInstalledResult)
+    {
+        var array = TryGetArray(appsInstalledResult, "apps")
+            ?? throw new InvalidOperationException("app/installed returned no apps array.");
+
+        var apps = new List<InstalledAppDescriptor>();
+        foreach (var item in array.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("app/installed apps[] entries must be objects.");
+            }
+
+            apps.Add(new InstalledAppDescriptor
+            {
+                Id = GetRequiredString(item, "id", "app/installed apps[]"),
+                RuntimeName = GetStringOrNull(item, "runtimeName"),
+                Enabled = GetRequiredBool(item, "enabled", "app/installed apps[]"),
+                Callable = GetRequiredBool(item, "callable", "app/installed apps[]"),
+                Raw = item.Clone()
+            });
+        }
+
+        return apps;
+    }
+
     public static IReadOnlyList<RemoteSkillDescriptor> ParseRemoteSkillsReadSkills(JsonElement remoteSkillsResult)
     {
         var array =
@@ -249,5 +306,32 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
         return result.Count == 0 ? null : result;
     }
-}
 
+    private static IReadOnlyList<AppToolSummaryDescriptor> ParseAppToolSummaries(JsonElement item)
+    {
+        var array = TryGetArray(item, "toolSummaries");
+        if (array is null)
+        {
+            return Array.Empty<AppToolSummaryDescriptor>();
+        }
+
+        var tools = new List<AppToolSummaryDescriptor>();
+        foreach (var tool in array.Value.EnumerateArray())
+        {
+            if (tool.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("app/read toolSummaries[] entries must be objects.");
+            }
+
+            tools.Add(new AppToolSummaryDescriptor
+            {
+                Name = GetRequiredString(tool, "name", "app/read toolSummaries[]"),
+                Title = GetStringOrNull(tool, "title"),
+                Description = GetRequiredString(tool, "description", "app/read toolSummaries[]"),
+                Raw = tool.Clone()
+            });
+        }
+
+        return tools;
+    }
+}

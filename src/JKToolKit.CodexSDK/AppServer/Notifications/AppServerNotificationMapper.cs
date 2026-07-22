@@ -202,6 +202,8 @@ internal static partial class AppServerNotificationMapper
                     CapReached: capReached,
                     Params: p),
 
+            "rawResponse/completed" => (AppServerNotification?)TryMapRawResponseCompleted(p) ?? new UnknownNotification(method, p),
+
             "rawResponseItem/completed" => new RawResponseItemCompletedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 TurnId: GetString(p, "turnId") ?? string.Empty,
@@ -246,6 +248,10 @@ internal static partial class AppServerNotificationMapper
             "account/rateLimits/updated" => new AccountRateLimitsUpdatedNotification(
                 RateLimits: GetAny(p, "rateLimits"),
                 Params: p),
+
+            "thread/environment/connected" => (AppServerNotification?)TryMapThreadEnvironmentConnection(method, p) ?? new UnknownNotification(method, p),
+
+            "thread/environment/disconnected" => (AppServerNotification?)TryMapThreadEnvironmentConnection(method, p) ?? new UnknownNotification(method, p),
 
             "app/list/updated" => new AppListUpdatedNotification(
                 apps: AppServerNotificationParsing.ParseAppsList(p),
