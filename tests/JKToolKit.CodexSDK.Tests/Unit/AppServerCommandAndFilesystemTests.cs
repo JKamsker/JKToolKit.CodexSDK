@@ -223,6 +223,7 @@ public sealed class AppServerCommandAndFilesystemTests
         var result = await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
         {
             ThreadId = "thr-1",
+            IsPinned = true,
             GitInfo = new ThreadGitInfoUpdate
             {
                 Branch = "main",
@@ -240,11 +241,12 @@ public sealed class AppServerCommandAndFilesystemTests
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"branch\":\"main\"")
             .And.Contain("\"sha\":null")
+            .And.Contain("\"isPinned\":true")
             .And.NotContain("originUrl");
     }
 
     [Fact]
-    public async Task UpdateThreadMetadataAsync_RequiresGitInfo()
+    public async Task UpdateThreadMetadataAsync_RequiresAtLeastOneMetadataPatch()
     {
         await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
 
@@ -254,7 +256,26 @@ public sealed class AppServerCommandAndFilesystemTests
         });
 
         await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*GitInfo is required*");
+            .WithMessage("*At least one metadata update must be set*");
+    }
+
+    [Fact]
+    public async Task UpdateThreadMetadataAsync_AllowsPinnedOnlyPatch()
+    {
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1","isPinned":true}}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var result = await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thr-1",
+            IsPinned = true
+        });
+
+        result.Thread.Thread.IsPinned.Should().BeTrue();
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"isPinned\":true")
+            .And.NotContain("gitInfo");
     }
 
     [Fact]

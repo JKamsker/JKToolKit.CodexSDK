@@ -127,6 +127,8 @@ internal static class CodexThreadItemParser
             !TryGetRequiredString(element, "cwd", out var cwd) ||
             !TryGetRequiredString(element, "status", out var statusValue) ||
             !TryGetOptionalString(element, "processId", out var processId) ||
+            !TryGetOptionalString(element, "pluginId", out var pluginId) ||
+            !TryGetOptionalString(element, "scriptPath", out var scriptPath) ||
             !TryGetOptionalString(element, "source", out var sourceValue) ||
             !TryGetOptionalString(element, "aggregatedOutput", out var aggregatedOutput) ||
             !TryGetOptionalInt32(element, "exitCode", out var exitCode) ||
@@ -148,7 +150,11 @@ internal static class CodexThreadItemParser
             aggregatedOutput,
             exitCode,
             durationMs,
-            raw);
+            raw)
+        {
+            PluginId = pluginId,
+            ScriptPath = scriptPath
+        };
     }
 
     private static CodexThreadItem? ParseFileChange(string id, string type, JsonElement element, JsonElement raw)

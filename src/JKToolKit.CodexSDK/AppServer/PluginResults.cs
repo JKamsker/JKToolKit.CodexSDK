@@ -18,6 +18,11 @@ public sealed class PluginListOptions
     public IReadOnlyList<PluginListMarketplaceKind>? MarketplaceKinds { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the server should bypass cached remote plugin catalog data.
+    /// </summary>
+    public bool ForceRefetch { get; set; }
+
+    /// <summary>
     /// Gets or sets a legacy value indicating whether remote marketplace sync should be forced.
     /// </summary>
     /// <remarks>

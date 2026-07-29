@@ -21,6 +21,9 @@ public sealed class ExternalAgentConfigWrappersTests
                 var json = JsonSerializer.SerializeToElement(p);
                 json.GetProperty("includeHome").GetBoolean().Should().BeTrue();
                 json.GetProperty("cwds").GetArrayLength().Should().Be(1);
+                json.GetProperty("maxSessionAgeDays").GetInt32().Should().Be(14);
+                json.GetProperty("maxSessions").GetInt32().Should().Be(25);
+                json.GetProperty("migrationSource").GetString().Should().Be("claude-code");
             },
             Result = JsonSerializer.SerializeToElement(new
             {
@@ -41,7 +44,10 @@ public sealed class ExternalAgentConfigWrappersTests
         var result = await client.DetectExternalAgentConfigAsync(new ExternalAgentConfigDetectOptions
         {
             IncludeHome = true,
-            Cwds = ["C:/repo"]
+            Cwds = ["C:/repo"],
+            MaxSessionAgeDays = 14,
+            MaxSessions = 25,
+            MigrationSource = "claude-code"
         });
 
         result.Items.Should().ContainSingle();

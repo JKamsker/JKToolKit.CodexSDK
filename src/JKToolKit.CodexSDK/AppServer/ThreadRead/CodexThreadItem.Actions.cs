@@ -19,7 +19,18 @@ public sealed record class CodexThreadItemCommandExecution(
     int? ExitCode,
     long? DurationMs,
     JsonElement Raw)
-    : CodexThreadItem(Id, Type, Raw);
+    : CodexThreadItem(Id, Type, Raw)
+{
+    /// <summary>
+    /// Gets the trusted plugin identifier associated with this command, when present.
+    /// </summary>
+    public string? PluginId { get; init; }
+
+    /// <summary>
+    /// Gets the plugin-relative script path associated with this command, when present.
+    /// </summary>
+    public string? ScriptPath { get; init; }
+}
 
 /// <summary>
 /// Represents a file change item.

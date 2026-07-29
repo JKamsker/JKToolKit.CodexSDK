@@ -14,6 +14,12 @@ public sealed record class ThreadListParams
     public bool? Archived { get; init; }
 
     /// <summary>
+    /// Gets an optional pinned filter.
+    /// </summary>
+    [JsonPropertyName("isPinned")]
+    public bool? IsPinned { get; init; }
+
+    /// <summary>
     /// Gets an optional working directory filter.
     /// </summary>
     [JsonPropertyName("cwd")]

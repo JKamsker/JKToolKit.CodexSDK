@@ -245,7 +245,10 @@ public sealed class CodexAppServerSkillsAppsClientTests
                             {
                               "name": "lookup",
                               "title": "Lookup",
-                              "description": "Finds data"
+                              "description": "Finds data",
+                              "isEnabled": false,
+                              "disabledReason": "requires auth",
+                              "isReadOnly": true
                             }
                           ]
                         }
@@ -278,6 +281,9 @@ public sealed class CodexAppServerSkillsAppsClientTests
         tool.Name.Should().Be("lookup");
         tool.Title.Should().Be("Lookup");
         tool.Description.Should().Be("Finds data");
+        tool.IsEnabled.Should().BeFalse();
+        tool.DisabledReason.Should().Be("requires auth");
+        tool.IsReadOnly.Should().BeTrue();
     }
 
     [Fact]

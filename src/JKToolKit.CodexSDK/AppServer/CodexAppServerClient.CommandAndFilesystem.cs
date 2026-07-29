@@ -63,15 +63,11 @@ public sealed partial class CodexAppServerClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
-        var gitInfoPatch = BuildGitInfoPatch(options.GitInfo);
+        var patch = BuildThreadMetadataPatch(options);
 
         var result = await _core.SendRequestAsync(
             "thread/metadata/update",
-            new
-            {
-                threadId = options.ThreadId,
-                gitInfo = gitInfoPatch
-            },
+            patch,
             ct).ConfigureAwait(false);
 
         return new ThreadMetadataUpdateResult
@@ -160,13 +156,33 @@ public sealed partial class CodexAppServerClient
     public Task<FsUnwatchResult> FsUnwatchAsync(FsUnwatchOptions options, CancellationToken ct = default) =>
         _filesystemClient.FsUnwatchAsync(options, ct);
 
-    private static object? BuildGitInfoPatch(ThreadGitInfoUpdate? gitInfo)
+    private static object BuildThreadMetadataPatch(ThreadMetadataUpdateOptions options)
     {
-        if (gitInfo is null)
+        var patch = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            throw new ArgumentException("GitInfo is required.", nameof(gitInfo));
+            ["threadId"] = options.ThreadId
+        };
+
+        if (options.GitInfo is { } gitInfo)
+        {
+            patch["gitInfo"] = BuildGitInfoPatch(gitInfo);
         }
 
+        if (options.IsPinned is { } isPinned)
+        {
+            patch["isPinned"] = isPinned;
+        }
+
+        if (patch.Count == 1)
+        {
+            throw new ArgumentException("At least one metadata update must be set.", nameof(options));
+        }
+
+        return patch;
+    }
+
+    private static object BuildGitInfoPatch(ThreadGitInfoUpdate gitInfo)
+    {
         var patch = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (gitInfo.UpdateBranch)
         {

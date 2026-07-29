@@ -21,7 +21,8 @@ internal sealed class CodexAppServerPluginsClient
             new
             {
                 cwds = options.Cwds,
-                marketplaceKinds = BuildMarketplaceKinds(options.MarketplaceKinds, nameof(options))
+                marketplaceKinds = BuildMarketplaceKinds(options.MarketplaceKinds, nameof(options)),
+                forceRefetch = options.ForceRefetch ? true : (bool?)null
             },
             ct);
 

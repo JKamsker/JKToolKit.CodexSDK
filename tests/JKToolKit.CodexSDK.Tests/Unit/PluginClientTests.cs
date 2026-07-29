@@ -120,11 +120,13 @@ public sealed class PluginClientTests
         await client.ListPluginsAsync(new PluginListOptions
         {
             ForceRemoteSync = true,
+            ForceRefetch = true,
             MarketplaceKinds = [PluginListMarketplaceKind.Local, PluginListMarketplaceKind.SharedWithMe]
         });
 
         var json = JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         json.Should().Contain("\"marketplaceKinds\":[\"local\",\"shared-with-me\"]");
+        json.Should().Contain("\"forceRefetch\":true");
         json.Should().NotContain("forceRemoteSync");
     }
 
@@ -159,6 +161,7 @@ public sealed class PluginClientTests
                         "shareUrl": "https://example.test/share",
                         "creatorAccountUserId": "user-1",
                         "creatorName": "Ada",
+                        "canPublishToWorkspace": true,
                         "sharePrincipals": [
                           {
                             "principalType": "user",
@@ -203,6 +206,7 @@ public sealed class PluginClientTests
         plugin.ShareContext.Should().NotBeNull();
         plugin.ShareContext!.RemoteVersion.Should().Be("4.5.6");
         plugin.ShareContext.Discoverability.Should().Be(PluginShareDiscoverability.Listed);
+        plugin.ShareContext.CanPublishToWorkspace.Should().BeTrue();
         plugin.ShareContext.SharePrincipals.Should().ContainSingle()
             .Which.Role.Should().Be(PluginSharePrincipalRole.Reader);
         plugin.Interface!.ScreenshotUrls.Should().Equal("https://example.test/shot.png");
@@ -256,14 +260,16 @@ public sealed class PluginClientTests
                     ""path"": ""{skillPath}"",
                     ""enabled"": true,
                     ""description"": ""desc"",
-                    ""interface"": {{
-                      ""displayName"": ""Skill A"",
-                      ""brandColor"": ""#abcdef"",
-                      ""defaultPrompt"": ""Explain the failing build"",
-                      ""iconLarge"": ""https://example.test/skill-large.png"",
-                      ""iconSmall"": ""https://example.test/skill-small.png"",
-                      ""shortDescription"": ""Skill short""
-                    }}
+                      ""interface"": {{
+                        ""displayName"": ""Skill A"",
+                        ""brandColor"": ""#abcdef"",
+                        ""defaultPrompt"": ""Explain the failing build"",
+                        ""iconLarge"": ""https://example.test/skill-large.png"",
+                        ""iconLargeUrl"": ""https://cdn.example.test/skill-large.png"",
+                        ""iconSmall"": ""https://example.test/skill-small.png"",
+                        ""iconSmallUrl"": ""https://cdn.example.test/skill-small.png"",
+                        ""shortDescription"": ""Skill short""
+                      }}
                   }}
                 ],
                 ""summary"": {{
@@ -313,6 +319,8 @@ public sealed class PluginClientTests
         result.Plugin.Skills[0].Interface.Should().NotBeNull();
         result.Plugin.Skills[0].Interface!.DisplayName.Should().Be("Skill A");
         result.Plugin.Skills[0].Interface!.DefaultPrompt.Should().Be("Explain the failing build");
+        result.Plugin.Skills[0].Interface!.IconLargeUrl.Should().Be("https://cdn.example.test/skill-large.png");
+        result.Plugin.Skills[0].Interface!.IconSmallUrl.Should().Be("https://cdn.example.test/skill-small.png");
         result.Plugin.Apps.Should().BeEmpty();
         result.Plugin.Hooks.Should().ContainSingle();
         result.Plugin.Hooks[0].Key.Should().Be("pre-tool");
@@ -546,7 +554,7 @@ public sealed class PluginClientTests
     [Fact]
     public async Task PluginShareMethods_SendExpectedParams_AndParseResponses()
     {
-        using var saveDoc = JsonDocument.Parse("""{"remotePluginId":"remote-1","shareUrl":"https://example.test/share"}""");
+        using var saveDoc = JsonDocument.Parse("""{"remotePluginId":"remote-1","shareUrl":"https://example.test/share","canPublishToWorkspace":true}""");
         var saveRpc = new RecordingRpc { Result = saveDoc.RootElement };
         await using var saveClient = CreateClient(saveRpc);
 
@@ -567,6 +575,7 @@ public sealed class PluginClientTests
 
         save.RemotePluginId.Should().Be("remote-1");
         save.ShareUrl.Should().Be("https://example.test/share");
+        save.CanPublishToWorkspace.Should().BeTrue();
         JsonSerializer.Serialize(saveRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"discoverability\":\"UNLISTED\"")
             .And.Contain("\"principalType\":\"user\"");

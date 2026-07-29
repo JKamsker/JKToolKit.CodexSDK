@@ -161,6 +161,7 @@ internal sealed class CodexAppServerThreadsClient
             new ThreadListParams
             {
                 Archived = options.Archived,
+                IsPinned = options.IsPinned,
                 Cwd = options.Cwd,
                 Limit = options.Limit,
                 ModelProviders = options.ModelProviders,

@@ -116,6 +116,21 @@ public sealed record class AppToolSummaryDescriptor
     public required string Description { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether this tool is enabled.
+    /// </summary>
+    public bool IsEnabled { get; init; }
+
+    /// <summary>
+    /// Gets the disabled reason when the tool is not enabled.
+    /// </summary>
+    public string? DisabledReason { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether this tool is read-only.
+    /// </summary>
+    public bool IsReadOnly { get; init; }
+
+    /// <summary>
     /// Gets the raw tool summary payload.
     /// </summary>
     public required JsonElement Raw { get; init; }

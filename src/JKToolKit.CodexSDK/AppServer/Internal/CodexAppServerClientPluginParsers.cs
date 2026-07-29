@@ -215,6 +215,8 @@ internal static partial class CodexAppServerClientPluginParsers
             BrandColor = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "brandColor"),
             IconSmall = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconSmall"),
             IconLarge = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconLarge"),
+            IconSmallUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconSmallUrl"),
+            IconLargeUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconLargeUrl"),
             Raw = interfaceObject.Clone()
         };
     }

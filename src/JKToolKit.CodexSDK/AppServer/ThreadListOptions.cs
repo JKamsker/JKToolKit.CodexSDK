@@ -11,6 +11,11 @@ public sealed class ThreadListOptions
     public bool? Archived { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional pinned filter.
+    /// </summary>
+    public bool? IsPinned { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional working directory filter.
     /// </summary>
     public string? Cwd { get; set; }
@@ -45,4 +50,3 @@ public sealed class ThreadListOptions
     /// </summary>
     public string? SortKey { get; set; }
 }
-
