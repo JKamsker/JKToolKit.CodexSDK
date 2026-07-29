@@ -20,6 +20,12 @@ internal partial class PluginListParams
     public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
 
     /// <summary>
+    /// Whether the client requests a fresh remote plugin catalog fetch.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("forceRefetch")]
+    public bool? ForceRefetch { get; set; } = default!;
+
+    /// <summary>
     /// Optional marketplace kind filter. When omitted, only local marketplaces are queried, plus the default remote catalog when enabled by feature flag.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("marketplaceKinds")]

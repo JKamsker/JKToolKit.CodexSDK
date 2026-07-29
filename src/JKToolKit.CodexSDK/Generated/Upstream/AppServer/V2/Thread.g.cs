@@ -65,6 +65,12 @@ internal partial class Thread
     public string Id { get; set; } = default!;
 
     /// <summary>
+    /// Whether the thread has been pinned by the user.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("isPinned")]
+    public bool? IsPinned { get; set; } = false;
+
+    /// <summary>
     /// Model provider used for this thread (for example, 'openai').
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]

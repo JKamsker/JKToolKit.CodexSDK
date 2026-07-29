@@ -10,17 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class PluginShareSaveResponse
+internal partial class ExternalAgentConfigImportHistoryRecordParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("canPublishToWorkspace")]
-    public bool? CanPublishToWorkspace { get; set; } = default!;
+    /// <summary>
+    /// Completed results grouped by imported item type.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("itemTypeResults")]
+    public System.Collections.Generic.ICollection<ExternalAgentConfigImportTypeResult> ItemTypeResults { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportTypeResult>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("remotePluginId")]
-    public string RemotePluginId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("shareUrl")]
-    public string ShareUrl { get; set; } = default!;
+    /// <summary>
+    /// Opaque provider identifier for the externally completed import.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("providerId")]
+    public string ProviderId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
