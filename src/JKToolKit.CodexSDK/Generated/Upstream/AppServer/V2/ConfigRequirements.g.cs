@@ -16,6 +16,9 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowAppshots")]
     public bool? AllowAppshots { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("allowLoginShell")]
+    public bool? AllowLoginShell { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("allowManagedHooksOnly")]
     public bool? AllowManagedHooksOnly { get; set; } = default!;
 
@@ -40,6 +43,12 @@ internal partial class ConfigRequirements
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
     public System.Collections.Generic.ICollection<WindowsSandboxSetupMode>? AllowedWindowsSandboxImplementations { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("browserUse")]
+    public BrowserUse? BrowserUse { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("checkForUpdateOnStartup")]
+    public bool? CheckForUpdateOnStartup { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("computerUse")]
     public ComputerUse? ComputerUse { get; set; } = default!;
 
@@ -52,8 +61,23 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("featureRequirements")]
     public System.Collections.Generic.IDictionary<string, bool>? FeatureRequirements { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("feedback")]
+    public Feedback? Feedback { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("logDir")]
+    public string? LogDir { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("modelCatalogJson")]
+    public string? ModelCatalogJson { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("models")]
     public Models? Models { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("sqliteHome")]
+    public string? SqliteHome { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("windowsSandboxPrivateDesktop")]
+    public bool? WindowsSandboxPrivateDesktop { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

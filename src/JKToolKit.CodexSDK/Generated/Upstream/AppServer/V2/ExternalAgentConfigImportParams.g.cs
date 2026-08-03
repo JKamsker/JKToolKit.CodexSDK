@@ -23,6 +23,12 @@ internal partial class ExternalAgentConfigImportParams
     public string? MigrationSource { get; set; } = default!;
 
     /// <summary>
+    /// Opaque provider identifier supplied by the caller for analytics attribution and import history display. This does not select the migration source.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("providerId")]
+    public string? ProviderId { get; set; } = default!;
+
+    /// <summary>
     /// Optional identifier for the product that initiated the import.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("source")]

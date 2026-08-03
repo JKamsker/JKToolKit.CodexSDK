@@ -26,6 +26,18 @@ internal partial class ExternalAgentConfigDetectParams
     public bool? IncludeHome { get; set; } = default!;
 
     /// <summary>
+    /// Maximum age in days for detected sessions. Missing values use the default limit.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("maxSessionAgeDays")]
+    public int? MaxSessionAgeDays { get; set; } = default!;
+
+    /// <summary>
+    /// Maximum number of sessions to detect. Missing values use the default limit.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("maxSessions")]
+    public int? MaxSessions { get; set; } = default!;
+
+    /// <summary>
     /// Optional migration-source selector. Missing or unrecognized values use the default source.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("migrationSource")]

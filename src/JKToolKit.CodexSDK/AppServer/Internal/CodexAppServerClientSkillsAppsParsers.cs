@@ -328,6 +328,9 @@ internal static class CodexAppServerClientSkillsAppsParsers
                 Name = GetRequiredString(tool, "name", "app/read toolSummaries[]"),
                 Title = GetStringOrNull(tool, "title"),
                 Description = GetRequiredString(tool, "description", "app/read toolSummaries[]"),
+                IsEnabled = GetBoolOrNull(tool, "isEnabled") ?? true,
+                DisabledReason = GetStringOrNull(tool, "disabledReason"),
+                IsReadOnly = GetBoolOrNull(tool, "isReadOnly") ?? false,
                 Raw = tool.Clone()
             });
         }

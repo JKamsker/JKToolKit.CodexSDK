@@ -19,6 +19,15 @@ internal partial class AppToolSummary
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string Description { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("disabledReason")]
+    public string? DisabledReason { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("isEnabled")]
+    public bool? IsEnabled { get; set; } = true;
+
+    [System.Text.Json.Serialization.JsonPropertyName("isReadOnly")]
+    public bool? IsReadOnly { get; set; } = false;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 

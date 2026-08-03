@@ -22,9 +22,6 @@ internal partial class AppMetadata
     [System.Text.Json.Serialization.JsonPropertyName("firstPartyRequiresInstall")]
     public bool? FirstPartyRequiresInstall { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("firstPartyType")]
-    public string? FirstPartyType { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("review")]
     public Review? Review { get; set; } = default!;
 

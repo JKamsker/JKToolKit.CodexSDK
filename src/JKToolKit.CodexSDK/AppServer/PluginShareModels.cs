@@ -95,6 +95,11 @@ public sealed record class PluginShareContextDescriptor
     public IReadOnlyList<PluginSharePrincipal>? SharePrincipals { get; init; }
 
     /// <summary>
+    /// Gets whether the current user can publish this plugin to the workspace.
+    /// </summary>
+    public bool? CanPublishToWorkspace { get; init; }
+
+    /// <summary>
     /// Gets the raw share context payload.
     /// </summary>
     public required JsonElement Raw { get; init; }

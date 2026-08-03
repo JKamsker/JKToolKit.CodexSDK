@@ -45,20 +45,24 @@ internal enum PlanType
     Business = 7,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"ent26")]
+    Ent26 = 8,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise_cbp_usage_based")]
-    Enterprise_cbp_usage_based = 8,
+    Enterprise_cbp_usage_based = 9,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise")]
-    Enterprise = 9,
+    Enterprise = 10,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"edu")]
-    Edu = 10,
+    Edu = 11,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 11,
+    Unknown = 12,
 
 
 }

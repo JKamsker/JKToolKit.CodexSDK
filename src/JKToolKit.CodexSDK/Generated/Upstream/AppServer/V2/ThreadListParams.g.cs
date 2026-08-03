@@ -32,6 +32,12 @@ internal partial class ThreadListParams
     public Cwd? Cwd { get; set; } = default!;
 
     /// <summary>
+    /// Optional pinned filter; when set, only threads matching this value are returned.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("isPinned")]
+    public bool? IsPinned { get; set; } = default!;
+
+    /// <summary>
     /// Optional page size; defaults to a reasonable server-side value.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("limit")]

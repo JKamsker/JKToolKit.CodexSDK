@@ -25,6 +25,11 @@ public sealed record class CodexThreadSummary
     public bool? Archived { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the thread is pinned, when present.
+    /// </summary>
+    public bool? IsPinned { get; init; }
+
+    /// <summary>
     /// Gets the upstream thread status type, when present.
     /// </summary>
     /// <remarks>

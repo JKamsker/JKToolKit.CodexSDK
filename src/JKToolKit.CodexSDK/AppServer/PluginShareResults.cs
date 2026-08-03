@@ -44,6 +44,11 @@ public sealed record class PluginShareSaveResult
     public required string ShareUrl { get; init; }
 
     /// <summary>
+    /// Gets whether the current user can publish this plugin to the workspace.
+    /// </summary>
+    public bool? CanPublishToWorkspace { get; init; }
+
+    /// <summary>
     /// Gets the raw response payload.
     /// </summary>
     public required JsonElement Raw { get; init; }

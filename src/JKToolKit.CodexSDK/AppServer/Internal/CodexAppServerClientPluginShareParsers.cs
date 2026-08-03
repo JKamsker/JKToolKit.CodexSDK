@@ -20,6 +20,7 @@ internal static class CodexAppServerClientPluginShareParsers
             CreatorAccountUserId = CodexAppServerClientJson.GetStringOrNull(context, "creatorAccountUserId"),
             CreatorName = CodexAppServerClientJson.GetStringOrNull(context, "creatorName"),
             SharePrincipals = ParseOptionalPrincipals(context, "sharePrincipals"),
+            CanPublishToWorkspace = CodexAppServerClientJson.GetBoolOrNull(context, "canPublishToWorkspace"),
             Raw = context.Clone()
         };
     }
@@ -29,6 +30,7 @@ internal static class CodexAppServerClientPluginShareParsers
         {
             RemotePluginId = CodexAppServerClientJson.GetRequiredString(result, "remotePluginId", "plugin/share/save response"),
             ShareUrl = CodexAppServerClientJson.GetRequiredString(result, "shareUrl", "plugin/share/save response"),
+            CanPublishToWorkspace = CodexAppServerClientJson.GetBoolOrNull(result, "canPublishToWorkspace"),
             Raw = result
         };
 

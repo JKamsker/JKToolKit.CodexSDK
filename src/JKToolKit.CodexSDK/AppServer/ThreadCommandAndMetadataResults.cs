@@ -43,6 +43,11 @@ public sealed class ThreadMetadataUpdateOptions
     /// Gets or sets the Git metadata patch to apply.
     /// </summary>
     public ThreadGitInfoUpdate? GitInfo { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the thread should be pinned.
+    /// </summary>
+    public bool? IsPinned { get; set; }
 }
 
 /// <summary>

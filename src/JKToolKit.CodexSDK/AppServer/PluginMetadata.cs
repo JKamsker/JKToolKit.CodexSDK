@@ -160,6 +160,16 @@ public sealed record class PluginSkillInterfaceMetadata
     public string? IconLarge { get; init; }
 
     /// <summary>
+    /// Gets the optional remote small icon URL from the plugin catalog.
+    /// </summary>
+    public string? IconSmallUrl { get; init; }
+
+    /// <summary>
+    /// Gets the optional remote large icon URL from the plugin catalog.
+    /// </summary>
+    public string? IconLargeUrl { get; init; }
+
+    /// <summary>
     /// Gets the raw skill interface payload.
     /// </summary>
     public required JsonElement Raw { get; init; }

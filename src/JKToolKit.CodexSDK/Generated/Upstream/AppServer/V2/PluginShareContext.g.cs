@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginShareContext
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("canPublishToWorkspace")]
+    public bool? CanPublishToWorkspace { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("creatorAccountUserId")]
     public string? CreatorAccountUserId { get; set; } = default!;
 

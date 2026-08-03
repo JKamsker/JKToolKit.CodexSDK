@@ -24,6 +24,7 @@ public sealed class ThreadApiParsingTests
         threads[0].ModelProvider.Should().Be("openai");
         threads[0].Preview.Should().Be("Preview One");
         threads[0].SourceKind.Should().Be("cli");
+        threads[0].IsPinned.Should().BeTrue();
         threads[0].TurnCount.Should().Be(1);
         threads[0].ServiceTier.Should().BeNull();
         var status = threads[0].Status;
@@ -208,6 +209,8 @@ public sealed class ThreadApiParsingTests
         var command = items.OfType<CodexThreadItemCommandExecution>().Should().ContainSingle().Subject;
         command.Source.Should().Be(CodexCommandExecutionSource.UserShell);
         command.WorkingDirectory.Should().Be("C:\\repo");
+        command.PluginId.Should().Be("plugin-a");
+        command.ScriptPath.Should().Be("scripts/status.sh");
         command.CommandActions.Should().ContainSingle().Which.Type.Should().Be("listFiles");
 
         var fileChange = items.OfType<CodexThreadItemFileChange>().Should().ContainSingle().Subject;
@@ -308,4 +311,3 @@ public sealed class ThreadApiParsingTests
         fork.ExtensionData.Should().ContainKey("unknown");
     }
 }
-

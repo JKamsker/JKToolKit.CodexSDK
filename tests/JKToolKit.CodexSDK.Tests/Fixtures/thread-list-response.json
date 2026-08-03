@@ -15,6 +15,7 @@
         "activeFlags": ["waitingOnUserInput"]
       },
       "ephemeral": false,
+      "isPinned": true,
       "source": "cli",
       "turns": [{ "id": "turn_1" }],
       "unknownField": { "x": 1 }

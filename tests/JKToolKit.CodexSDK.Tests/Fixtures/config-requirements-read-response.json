@@ -17,8 +17,20 @@
     },
     "allowManagedHooksOnly": true,
     "allowAppshots": false,
+    "allowLoginShell": true,
+    "checkForUpdateOnStartup": false,
+    "windowsSandboxPrivateDesktop": true,
+    "sqliteHome": "file:///home/user/.codex-state",
+    "logDir": "file:///home/user/.codex/log",
+    "modelCatalogJson": "file:///home/user/.codex/models.json",
     "computerUse": {
       "allowLockedComputerUse": true
+    },
+    "browserUse": {
+      "disableAutoReview": true
+    },
+    "feedback": {
+      "enabled": false
     },
     "hooks": {
       "managedDir": ".codex/hooks"

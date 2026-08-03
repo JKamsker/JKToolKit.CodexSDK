@@ -19,4 +19,22 @@ public sealed class ExternalAgentConfigDetectOptions
     [JsonPropertyName("includeHome")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool IncludeHome { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum age in days for detected sessions.
+    /// </summary>
+    [JsonPropertyName("maxSessionAgeDays")]
+    public int? MaxSessionAgeDays { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of sessions to detect.
+    /// </summary>
+    [JsonPropertyName("maxSessions")]
+    public int? MaxSessions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the migration-source selector.
+    /// </summary>
+    [JsonPropertyName("migrationSource")]
+    public string? MigrationSource { get; set; }
 }

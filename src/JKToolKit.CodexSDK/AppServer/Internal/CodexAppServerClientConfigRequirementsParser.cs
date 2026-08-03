@@ -98,6 +98,9 @@ internal static class CodexAppServerClientConfigRequirementsParser
             FeatureRequirements = featureRequirements,
             AllowManagedHooksOnly = GetBoolOrNull(req, "allowManagedHooksOnly"),
             AllowAppshots = GetBoolOrNull(req, "allowAppshots"),
+            AllowLoginShell = GetBoolOrNull(req, "allowLoginShell"),
+            CheckForUpdateOnStartup = GetBoolOrNull(req, "checkForUpdateOnStartup"),
+            WindowsSandboxPrivateDesktop = GetBoolOrNull(req, "windowsSandboxPrivateDesktop"),
             ComputerUse = TryGetObject(req, "computerUse") is { } computerUse
                 ? new ComputerUseRequirements
                 {
@@ -105,6 +108,23 @@ internal static class CodexAppServerClientConfigRequirementsParser
                     Raw = computerUse.Clone()
                 }
                 : null,
+            BrowserUse = TryGetObject(req, "browserUse") is { } browserUse
+                ? new BrowserUseRequirements
+                {
+                    DisableAutoReview = GetBoolOrNull(browserUse, "disableAutoReview"),
+                    Raw = browserUse.Clone()
+                }
+                : null,
+            Feedback = TryGetObject(req, "feedback") is { } feedback
+                ? new FeedbackRequirements
+                {
+                    Enabled = GetBoolOrNull(feedback, "enabled"),
+                    Raw = feedback.Clone()
+                }
+                : null,
+            SqliteHome = GetStringOrNull(req, "sqliteHome"),
+            LogDir = GetStringOrNull(req, "logDir"),
+            ModelCatalogJson = GetStringOrNull(req, "modelCatalogJson"),
             Hooks = TryGetObject(req, "hooks")?.Clone(),
             EnforceResidency = residency,
             Network = network,

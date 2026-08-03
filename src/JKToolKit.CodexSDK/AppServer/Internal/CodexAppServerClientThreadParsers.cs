@@ -70,6 +70,7 @@ internal static class CodexAppServerClientThreadParsers
         {
             archived = true;
         }
+        var isPinned = GetBool(primary, secondary, "isPinned");
         var createdAt = GetDateTimeOffset(primary, secondary, "createdAt");
         var updatedAt = GetDateTimeOffset(primary, secondary, "updatedAt");
         var cwd = GetString(primary, secondary, "cwd");
@@ -97,6 +98,7 @@ internal static class CodexAppServerClientThreadParsers
             ThreadId = threadId,
             Name = name,
             Archived = archived,
+            IsPinned = isPinned,
             StatusType = statusType,
             ActiveFlags = activeFlags,
             Preview = preview,
@@ -278,4 +280,3 @@ internal static class CodexAppServerClientThreadParsers
         };
     }
 }
-

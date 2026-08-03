@@ -57,6 +57,8 @@
             "command": "git status",
             "cwd": "C:\\repo",
             "processId": "123",
+            "pluginId": "plugin-a",
+            "scriptPath": "scripts/status.sh",
             "source": "userShell",
             "status": "completed",
             "commandActions": [

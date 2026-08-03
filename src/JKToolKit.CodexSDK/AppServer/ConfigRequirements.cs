@@ -69,9 +69,49 @@ public sealed record class ConfigRequirements
     public bool? AllowAppshots { get; init; }
 
     /// <summary>
+    /// Gets whether login shells are allowed by policy.
+    /// </summary>
+    public bool? AllowLoginShell { get; init; }
+
+    /// <summary>
+    /// Gets whether update checks should run on startup.
+    /// </summary>
+    public bool? CheckForUpdateOnStartup { get; init; }
+
+    /// <summary>
+    /// Gets whether the Windows sandbox should use a private desktop.
+    /// </summary>
+    public bool? WindowsSandboxPrivateDesktop { get; init; }
+
+    /// <summary>
     /// Gets computer-use requirements, when present.
     /// </summary>
     public ComputerUseRequirements? ComputerUse { get; init; }
+
+    /// <summary>
+    /// Gets browser-use requirements, when present.
+    /// </summary>
+    public BrowserUseRequirements? BrowserUse { get; init; }
+
+    /// <summary>
+    /// Gets feedback requirements, when present.
+    /// </summary>
+    public FeedbackRequirements? Feedback { get; init; }
+
+    /// <summary>
+    /// Gets the SQLite home path URI, when enforced by policy.
+    /// </summary>
+    public string? SqliteHome { get; init; }
+
+    /// <summary>
+    /// Gets the log directory path URI, when enforced by policy.
+    /// </summary>
+    public string? LogDir { get; init; }
+
+    /// <summary>
+    /// Gets the model catalog JSON path URI, when enforced by policy.
+    /// </summary>
+    public string? ModelCatalogJson { get; init; }
 
     /// <summary>
     /// Gets managed hook requirements as raw JSON, when present.
@@ -106,6 +146,38 @@ public sealed record class ComputerUseRequirements
     /// Gets whether locked-computer use is allowed.
     /// </summary>
     public bool? AllowLockedComputerUse { get; init; }
+
+    /// <summary>
+    /// Gets the raw JSON requirements payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents policy gates for browser-use flows.
+/// </summary>
+public sealed record class BrowserUseRequirements
+{
+    /// <summary>
+    /// Gets whether browser-use auto review should be disabled.
+    /// </summary>
+    public bool? DisableAutoReview { get; init; }
+
+    /// <summary>
+    /// Gets the raw JSON requirements payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents policy gates for feedback upload flows.
+/// </summary>
+public sealed record class FeedbackRequirements
+{
+    /// <summary>
+    /// Gets whether feedback uploads are enabled.
+    /// </summary>
+    public bool? Enabled { get; init; }
 
     /// <summary>
     /// Gets the raw JSON requirements payload.

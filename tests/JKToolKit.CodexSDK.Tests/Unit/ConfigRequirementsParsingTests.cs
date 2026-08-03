@@ -33,8 +33,18 @@ public sealed class ConfigRequirementsParsingTests
         requirements.FeatureRequirements.ContainsKey("ignoreMe").Should().BeFalse();
         requirements.AllowManagedHooksOnly.Should().BeTrue();
         requirements.AllowAppshots.Should().BeFalse();
+        requirements.AllowLoginShell.Should().BeTrue();
+        requirements.CheckForUpdateOnStartup.Should().BeFalse();
+        requirements.WindowsSandboxPrivateDesktop.Should().BeTrue();
+        requirements.SqliteHome.Should().Be("file:///home/user/.codex-state");
+        requirements.LogDir.Should().Be("file:///home/user/.codex/log");
+        requirements.ModelCatalogJson.Should().Be("file:///home/user/.codex/models.json");
         requirements.ComputerUse.Should().NotBeNull();
         requirements.ComputerUse!.AllowLockedComputerUse.Should().BeTrue();
+        requirements.BrowserUse.Should().NotBeNull();
+        requirements.BrowserUse!.DisableAutoReview.Should().BeTrue();
+        requirements.Feedback.Should().NotBeNull();
+        requirements.Feedback!.Enabled.Should().BeFalse();
         requirements.Hooks.Should().NotBeNull();
         requirements.EnforceResidency!.Value.Value.Should().Be("us");
 

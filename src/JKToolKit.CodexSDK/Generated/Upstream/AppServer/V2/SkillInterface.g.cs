@@ -25,8 +25,20 @@ internal partial class SkillInterface
     [System.Text.Json.Serialization.JsonPropertyName("iconLarge")]
     public IconLarge? IconLarge { get; set; } = default!;
 
+    /// <summary>
+    /// Remote large icon URL from the plugin catalog.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("iconLargeUrl")]
+    public string? IconLargeUrl { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("iconSmall")]
     public IconSmall? IconSmall { get; set; } = default!;
+
+    /// <summary>
+    /// Remote small icon URL from the plugin catalog.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("iconSmallUrl")]
+    public string? IconSmallUrl { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("shortDescription")]
     public string? ShortDescription { get; set; } = default!;
