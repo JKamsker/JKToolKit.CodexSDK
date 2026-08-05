@@ -52,6 +52,9 @@ internal partial class Model
     [System.Text.Json.Serialization.JsonPropertyName("model")]
     public string Model1 { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("modelSpecialty")]
+    public string? ModelSpecialty { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("serviceTiers")]
     public System.Collections.Generic.ICollection<ModelServiceTier>? ServiceTiers { get; set; } = default!;
 
