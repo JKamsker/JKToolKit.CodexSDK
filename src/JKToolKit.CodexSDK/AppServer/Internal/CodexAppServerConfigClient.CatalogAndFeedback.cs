@@ -144,6 +144,7 @@ internal sealed partial class CodexAppServerConfigClient
                 Model = model,
                 DisplayName = displayName,
                 Description = description,
+                ModelSpecialty = CodexAppServerClientJson.GetStringOrNull(item, "modelSpecialty"),
                 Hidden = CodexAppServerClientJson.GetBoolOrNull(item, "hidden") == true,
                 IsDefault = CodexAppServerClientJson.GetBoolOrNull(item, "isDefault") == true,
                 SupportsPersonality = CodexAppServerClientJson.GetBoolOrNull(item, "supportsPersonality") == true,

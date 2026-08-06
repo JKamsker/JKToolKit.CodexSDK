@@ -54,6 +54,7 @@ public sealed record class ModelListEntry
     public required string Model { get; init; }
     public string DisplayName { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
+    public string? ModelSpecialty { get; init; }
     public bool Hidden { get; init; }
     public bool IsDefault { get; init; }
     public bool SupportsPersonality { get; init; }

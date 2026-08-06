@@ -287,6 +287,7 @@ public sealed class AuthAccountConfigWrappersTests
                     model = "gpt-5.1-codex",
                     displayName = "GPT-5.1 Codex",
                     description = "Code model",
+                    modelSpecialty = "cyber",
                     hidden = false,
                     isDefault = true,
                     supportsPersonality = true,
@@ -336,6 +337,7 @@ public sealed class AuthAccountConfigWrappersTests
         result.NextCursor.Should().Be("cursor-2");
         result.Data.Should().ContainSingle();
         result.Data[0].Id.Should().Be("m1");
+        result.Data[0].ModelSpecialty.Should().Be("cyber");
         result.Data[0].SupportedReasoningEfforts.Should().HaveCount(2);
         result.Data[0].UpgradeInfo!.Model.Should().Be("gpt-5.2-codex");
     }
