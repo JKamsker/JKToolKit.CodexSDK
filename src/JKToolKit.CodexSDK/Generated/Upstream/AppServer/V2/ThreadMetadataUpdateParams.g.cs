@@ -19,12 +19,6 @@ internal partial class ThreadMetadataUpdateParams
     [System.Text.Json.Serialization.JsonPropertyName("gitInfo")]
     public GitInfo3? GitInfo { get; set; } = default!;
 
-    /// <summary>
-    /// Patch whether this thread is pinned. Omit to leave the stored value unchanged.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("isPinned")]
-    public bool? IsPinned { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
 

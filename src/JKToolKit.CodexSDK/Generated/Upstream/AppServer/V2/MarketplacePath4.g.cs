@@ -10,20 +10,8 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AccountLoginCompletedNotification
+internal partial class MarketplacePath4
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("error")]
-    public string? Error { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
-    public string? LoginId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("onboardingEntrypoint")]
-    public OnboardingEntrypoint? OnboardingEntrypoint { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("success")]
-    public bool Success { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

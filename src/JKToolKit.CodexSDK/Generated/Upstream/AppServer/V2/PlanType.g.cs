@@ -37,32 +37,40 @@ internal enum PlanType
     Team = 5,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"self_serve_business_prolite")]
+    Self_serve_business_prolite = 6,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"self_serve_business_usage_based")]
-    Self_serve_business_usage_based = 6,
+    Self_serve_business_usage_based = 7,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"business")]
-    Business = 7,
+    Business = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"ent26")]
-    Ent26 = 8,
+    Ent26 = 9,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"enterprise_cbp_automation")]
+    Enterprise_cbp_automation = 10,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise_cbp_usage_based")]
-    Enterprise_cbp_usage_based = 9,
+    Enterprise_cbp_usage_based = 11,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise")]
-    Enterprise = 10,
+    Enterprise = 12,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"edu")]
-    Edu = 11,
+    Edu = 13,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 12,
+    Unknown = 14,
 
 
 }

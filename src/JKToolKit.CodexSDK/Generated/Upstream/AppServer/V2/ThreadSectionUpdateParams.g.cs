@@ -9,21 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Parameters for updating an independently persisted thread section.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AccountLoginCompletedNotification
+internal partial class ThreadSectionUpdateParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("error")]
-    public string? Error { get; set; } = default!;
+    /// <summary>
+    /// The updated user-visible name of the section.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
-    public string? LoginId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("onboardingEntrypoint")]
-    public OnboardingEntrypoint? OnboardingEntrypoint { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("success")]
-    public bool Success { get; set; } = default!;
+    /// <summary>
+    /// The stable, server-generated identity of the section to update.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sectionId")]
+    public string SectionId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

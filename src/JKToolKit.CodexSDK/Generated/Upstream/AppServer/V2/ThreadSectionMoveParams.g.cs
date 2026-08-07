@@ -9,21 +9,30 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// Parameters for moving a thread within a server-owned section ordering.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportHistoryRecordParams
+internal partial class ThreadSectionMoveParams
 {
 
     /// <summary>
-    /// Completed results grouped by imported item type.
+    /// Existing thread to insert before; omission or null appends to the section.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("itemTypeResults")]
-    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistoryRecordTypeResultParams> ItemTypeResults { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistoryRecordTypeResultParams>();
+    [System.Text.Json.Serialization.JsonPropertyName("beforeThreadId")]
+    public string? BeforeThreadId { get; set; } = default!;
 
     /// <summary>
-    /// Opaque provider identifier for the externally completed import.
+    /// Destination section, or `null` to remove the thread from its section.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("providerId")]
-    public string ProviderId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("sectionId")]
+    public string? SectionId { get; set; } = default!;
+
+    /// <summary>
+    /// Thread to move into, within, or out of a section.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

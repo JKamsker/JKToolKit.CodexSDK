@@ -32,12 +32,6 @@ internal partial class ThreadListParams
     public Cwd? Cwd { get; set; } = default!;
 
     /// <summary>
-    /// Optional pinned filter; when set, only threads matching this value are returned.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("isPinned")]
-    public bool? IsPinned { get; set; } = default!;
-
-    /// <summary>
     /// Optional page size; defaults to a reasonable server-side value.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("limit")]
@@ -54,6 +48,12 @@ internal partial class ThreadListParams
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("searchTerm")]
     public string? SearchTerm { get; set; } = default!;
+
+    /// <summary>
+    /// Omit to include every section, set to `null` for unsectioned threads, or provide a section ID to return only threads in that section.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sectionId")]
+    public string? SectionId { get; set; } = default!;
 
     /// <summary>
     /// Optional sort direction; defaults to descending (newest first).
