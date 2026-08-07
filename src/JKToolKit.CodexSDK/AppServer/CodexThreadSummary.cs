@@ -27,7 +27,18 @@ public sealed record class CodexThreadSummary
     /// <summary>
     /// Gets a value indicating whether the thread is pinned, when present.
     /// </summary>
+    [Obsolete("Codex 0.147.0 replaced pinned thread metadata with thread sections.")]
     public bool? IsPinned { get; init; }
+
+    /// <summary>
+    /// Gets the section assigned to the thread, when present.
+    /// </summary>
+    public ThreadSectionDescriptor? Section { get; init; }
+
+    /// <summary>
+    /// Gets the timestamp when the thread entered its current section, when present.
+    /// </summary>
+    public DateTimeOffset? SectionEnteredAt { get; init; }
 
     /// <summary>
     /// Gets the upstream thread status type, when present.

@@ -71,6 +71,8 @@ internal static class CodexAppServerClientThreadParsers
             archived = true;
         }
         var isPinned = GetBool(primary, secondary, "isPinned");
+        var section = ParseThreadSection(TryGetObject(primary, "section") ?? TryGetObject(secondary, "section"));
+        var sectionEnteredAt = GetUnixSecondsDateTimeOffset(primary, secondary, "sectionEnteredAt");
         var createdAt = GetDateTimeOffset(primary, secondary, "createdAt");
         var updatedAt = GetDateTimeOffset(primary, secondary, "updatedAt");
         var cwd = GetString(primary, secondary, "cwd");
@@ -93,12 +95,15 @@ internal static class CodexAppServerClientThreadParsers
         var turns = CodexAppServerClientThreadTurnParsers.ParseTurns(primary, secondary);
         var turnCount = turns?.Count ?? GetArrayCount(primary, secondary, "turns");
 
-        return new CodexThreadSummary
+#pragma warning disable CS0618
+        var summary = new CodexThreadSummary
         {
             ThreadId = threadId,
             Name = name,
             Archived = archived,
             IsPinned = isPinned,
+            Section = section,
+            SectionEnteredAt = sectionEnteredAt,
             StatusType = statusType,
             ActiveFlags = activeFlags,
             Preview = preview,
@@ -121,11 +126,49 @@ internal static class CodexAppServerClientThreadParsers
             Raw = threadObject,
             Status = status
         };
+#pragma warning restore CS0618
+
+        return summary;
     }
 
     public static string? ExtractNextCursor(JsonElement listResult) =>
         GetStringOrNull(listResult, "nextCursor") ??
         GetStringOrNull(listResult, "cursor");
+
+    public static ThreadSectionListPage ParseThreadSectionListPage(JsonElement result)
+    {
+        var array = TryGetArray(result, "data")
+            ?? throw new InvalidOperationException("threadSection/list response must contain a data array.");
+        var sections = new List<ThreadSectionDescriptor>();
+        foreach (var item in array.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("threadSection/list data[] entries must be objects.");
+            }
+
+            sections.Add(ParseRequiredThreadSection(item, "threadSection/list data[]"));
+        }
+
+        return new ThreadSectionListPage
+        {
+            Sections = sections,
+            NextCursor = GetStringOrNull(result, "nextCursor"),
+            Raw = result
+        };
+    }
+
+    public static ThreadSectionResult ParseThreadSectionResult(JsonElement result, string methodName)
+    {
+        var section = TryGetObject(result, "section")
+            ?? throw new InvalidOperationException($"{methodName} response must contain a section object.");
+
+        return new ThreadSectionResult
+        {
+            Section = ParseRequiredThreadSection(section, $"{methodName} section"),
+            Raw = result
+        };
+    }
 
     public static IReadOnlyList<string> ParseThreadLoadedListThreadIds(JsonElement loadedListResult)
     {
@@ -181,6 +224,40 @@ internal static class CodexAppServerClientThreadParsers
 
     private static DateTimeOffset? GetDateTimeOffset(JsonElement primary, JsonElement secondary, string propertyName) =>
         GetDateTimeOffsetOrNull(primary, propertyName) ?? GetDateTimeOffsetOrNull(secondary, propertyName);
+
+    private static DateTimeOffset? GetUnixSecondsDateTimeOffset(JsonElement primary, JsonElement secondary, string propertyName)
+    {
+        var value = GetInt64OrNull(primary, propertyName) ?? GetInt64OrNull(secondary, propertyName);
+        return value is { } seconds ? DateTimeOffset.FromUnixTimeSeconds(seconds) : null;
+    }
+
+    private static long? GetInt64OrNull(JsonElement obj, string propertyName)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var p))
+        {
+            return null;
+        }
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.Number when p.TryGetInt64(out var i) => i,
+            JsonValueKind.String when long.TryParse(p.GetString(), out var i) => i,
+            _ => null
+        };
+    }
+
+    private static ThreadSectionDescriptor? ParseThreadSection(JsonElement? section) =>
+        section is { ValueKind: JsonValueKind.Object } value
+            ? ParseRequiredThreadSection(value, "thread section")
+            : null;
+
+    private static ThreadSectionDescriptor ParseRequiredThreadSection(JsonElement section, string context) =>
+        new()
+        {
+            Id = GetRequiredString(section, "id", context),
+            Name = GetRequiredString(section, "name", context),
+            Raw = section.Clone()
+        };
 
     private static int? GetArrayCount(JsonElement primary, JsonElement secondary, string propertyName)
     {

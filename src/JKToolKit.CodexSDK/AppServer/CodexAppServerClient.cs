@@ -247,6 +247,36 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         _threadsClient.ListThreadsAsync(options, ct);
 
     /// <summary>
+    /// Lists persisted thread sections.
+    /// </summary>
+    public Task<ThreadSectionListPage> ListThreadSectionsAsync(ThreadSectionListOptions options, CancellationToken ct = default) =>
+        _threadsClient.ListThreadSectionsAsync(options, ct);
+
+    /// <summary>
+    /// Creates a persisted thread section.
+    /// </summary>
+    public Task<ThreadSectionResult> CreateThreadSectionAsync(ThreadSectionCreateOptions options, CancellationToken ct = default) =>
+        _threadsClient.CreateThreadSectionAsync(options, ct);
+
+    /// <summary>
+    /// Updates a persisted thread section.
+    /// </summary>
+    public Task<ThreadSectionResult> UpdateThreadSectionAsync(ThreadSectionUpdateOptions options, CancellationToken ct = default) =>
+        _threadsClient.UpdateThreadSectionAsync(options, ct);
+
+    /// <summary>
+    /// Deletes a persisted thread section.
+    /// </summary>
+    public Task<ThreadSectionResult> DeleteThreadSectionAsync(ThreadSectionDeleteOptions options, CancellationToken ct = default) =>
+        _threadsClient.DeleteThreadSectionAsync(options, ct);
+
+    /// <summary>
+    /// Moves a thread into, within, or out of a section.
+    /// </summary>
+    public Task<ThreadSectionResult> MoveThreadToSectionAsync(ThreadSectionMoveOptions options, CancellationToken ct = default) =>
+        _threadsClient.MoveThreadToSectionAsync(options, ct);
+
+    /// <summary>
     /// Reads a thread by ID.
     /// </summary>
     public Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct = default) =>

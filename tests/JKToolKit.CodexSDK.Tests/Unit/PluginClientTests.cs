@@ -33,6 +33,7 @@ public sealed class PluginClientTests
                       ""id"": ""plug-1"",
                       ""name"": ""Plugin One"",
                       ""installed"": true,
+                      ""installedAt"": 1770000100,
                       ""enabled"": true,
                       ""authPolicy"": ""ON_INSTALL"",
                       ""installPolicy"": ""AVAILABLE"",
@@ -53,6 +54,8 @@ public sealed class PluginClientTests
                         ""screenshotUrls"": [""https://example.test/screenshot.png""]
                       }},
                       ""availability"": ""ENABLED"",
+                      ""disabledReason"": ""plan_not_eligible"",
+                      ""eligiblePlanTypes"": [""pro"", ""team""],
                       ""keywords"": [""review"", ""git""],
                       ""source"": {{
                         ""type"": ""local"",
@@ -77,6 +80,7 @@ public sealed class PluginClientTests
         result.Marketplaces[0].Plugins[0].Id.Should().Be("plug-1");
         result.Marketplaces[0].Plugins[0].AuthPolicyValue.Should().Be(PluginAuthPolicy.OnInstall);
         result.Marketplaces[0].Plugins[0].InstallPolicyValue.Should().Be(PluginInstallPolicy.Available);
+        result.Marketplaces[0].Plugins[0].InstalledAt.Should().Be(DateTimeOffset.FromUnixTimeSeconds(1770000100));
         result.Marketplaces[0].Plugins[0].Interface.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].Interface!.DisplayName.Should().Be("Plugin One Display");
         result.Marketplaces[0].Plugins[0].Interface!.Capabilities.Should().Equal("issues", "pull-requests");
@@ -87,6 +91,9 @@ public sealed class PluginClientTests
         result.Marketplaces[0].Plugins[0].Interface!.Screenshots.Should().Equal(screenshotPath);
         result.Marketplaces[0].Plugins[0].Interface!.ScreenshotUrls.Should().Equal("https://example.test/screenshot.png");
         result.Marketplaces[0].Plugins[0].AvailabilityValue.Should().Be(PluginAvailability.Available);
+        result.Marketplaces[0].Plugins[0].DisabledReason.Should().Be("plan_not_eligible");
+        result.Marketplaces[0].Plugins[0].DisabledReasonValue.Should().Be(PluginDisabledReason.PlanNotEligible);
+        result.Marketplaces[0].Plugins[0].EligiblePlanTypes.Should().Equal("pro", "team");
         result.Marketplaces[0].Plugins[0].Keywords.Should().Equal("review", "git");
         result.Marketplaces[0].Plugins[0].SourceInfo.Should().NotBeNull();
         result.Marketplaces[0].Plugins[0].SourceInfo!.Type.Should().Be(PluginSourceType.Local);
@@ -128,6 +135,59 @@ public sealed class PluginClientTests
         json.Should().Contain("\"marketplaceKinds\":[\"local\",\"shared-with-me\"]");
         json.Should().Contain("\"forceRefetch\":true");
         json.Should().NotContain("forceRemoteSync");
+    }
+
+    [Fact]
+    public async Task SearchPluginsAsync_SendsSearchParams_AndParsesResults()
+    {
+        var cwd = XPaths.JsonAbs("repo");
+        var marketplacePath = XPaths.JsonAbs("market");
+        using var doc = JsonDocument.Parse(
+            $@"{{
+              ""data"": [
+                {{
+                  ""marketplaceName"": ""official"",
+                  ""marketplacePath"": ""{marketplacePath}"",
+                  ""plugin"": {{
+                    ""id"": ""plug-1"",
+                    ""name"": ""Plugin One"",
+                    ""installed"": false,
+                    ""enabled"": false,
+                    ""authPolicy"": ""ON_USE"",
+                    ""installPolicy"": ""AVAILABLE"",
+                    ""availability"": ""AVAILABLE"",
+                    ""keywords"": [""calendar""],
+                    ""source"": {{ ""type"": ""remote"", ""url"": ""https://example.test/plugin"" }}
+                  }}
+                }}
+              ],
+              ""nextCursor"": ""cursor_2""
+            }}");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var result = await client.SearchPluginsAsync(new PluginSearchOptions
+        {
+            SearchTerm = "calendar",
+            Scope = PluginSearchScope.Global,
+            Cwds = [cwd],
+            Cursor = "cursor_1",
+            Limit = 12
+        });
+
+        result.Data.Should().ContainSingle();
+        result.Data[0].MarketplaceName.Should().Be("official");
+        result.Data[0].MarketplacePath.Should().Be(marketplacePath);
+        result.Data[0].Plugin.Id.Should().Be("plug-1");
+        result.NextCursor.Should().Be("cursor_2");
+        rpc.LastMethod.Should().Be("plugin/search");
+
+        var json = JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        json.Should().Contain("\"searchTerm\":\"calendar\"");
+        json.Should().Contain("\"scope\":\"global\"");
+        json.Should().Contain($"\"cwds\":[\"{cwd.Replace("\\", "\\\\", StringComparison.Ordinal)}\"]");
+        json.Should().Contain("\"cursor\":\"cursor_1\"");
+        json.Should().Contain("\"limit\":12");
     }
 
     [Fact]

@@ -47,6 +47,7 @@ public sealed class ThreadMetadataUpdateOptions
     /// <summary>
     /// Gets or sets whether the thread should be pinned.
     /// </summary>
+    [Obsolete("Codex 0.147.0 removed thread/metadata/update isPinned. Use MoveThreadToSectionAsync instead.")]
     public bool? IsPinned { get; set; }
 }
 

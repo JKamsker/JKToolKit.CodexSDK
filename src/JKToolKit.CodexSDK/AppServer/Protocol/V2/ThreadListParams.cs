@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
@@ -14,10 +15,10 @@ public sealed record class ThreadListParams
     public bool? Archived { get; init; }
 
     /// <summary>
-    /// Gets an optional pinned filter.
+    /// Gets an optional section filter. Omit to include every section; send JSON null to include only unsectioned threads.
     /// </summary>
-    [JsonPropertyName("isPinned")]
-    public bool? IsPinned { get; init; }
+    [JsonPropertyName("sectionId")]
+    public JsonElement? SectionId { get; init; }
 
     /// <summary>
     /// Gets an optional working directory filter.

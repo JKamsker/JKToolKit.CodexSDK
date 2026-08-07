@@ -183,3 +183,150 @@ public sealed record class PluginUninstallResult
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
+
+/// <summary>
+/// Represents the scope accepted by <c>plugin/search</c>.
+/// </summary>
+public readonly record struct PluginSearchScope
+{
+    /// <summary>
+    /// Gets the underlying wire value.
+    /// </summary>
+    public string Value { get; }
+
+    private PluginSearchScope(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("Plugin search scope cannot be empty or whitespace.", nameof(value));
+
+        Value = value;
+    }
+
+    /// <summary>
+    /// Searches the global plugin catalog.
+    /// </summary>
+    public static PluginSearchScope Global => new("global");
+
+    /// <summary>
+    /// Searches workspace-visible plugins.
+    /// </summary>
+    public static PluginSearchScope Workspace => new("workspace");
+
+    /// <summary>
+    /// Searches user-owned plugins.
+    /// </summary>
+    public static PluginSearchScope Personal => new("personal");
+
+    /// <summary>
+    /// Parses a plugin search scope from a wire value.
+    /// </summary>
+    public static PluginSearchScope Parse(string value) => new(value);
+
+    /// <summary>
+    /// Tries to parse a plugin search scope from a wire value.
+    /// </summary>
+    public static bool TryParse(string? value, out PluginSearchScope scope)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            scope = default;
+            return false;
+        }
+
+        scope = new PluginSearchScope(value);
+        return true;
+    }
+
+    /// <summary>
+    /// Converts a string to a <see cref="PluginSearchScope"/>.
+    /// </summary>
+    public static implicit operator PluginSearchScope(string value) => Parse(value);
+
+    /// <summary>
+    /// Converts a <see cref="PluginSearchScope"/> to its wire value.
+    /// </summary>
+    public static implicit operator string(PluginSearchScope scope) => scope.Value;
+
+    /// <summary>
+    /// Returns the underlying wire value.
+    /// </summary>
+    public override string ToString() => Value;
+}
+
+/// <summary>
+/// Options for <c>plugin/search</c>.
+/// </summary>
+public sealed class PluginSearchOptions
+{
+    /// <summary>
+    /// Gets or sets the required search term.
+    /// </summary>
+    public required string SearchTerm { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional search scope.
+    /// </summary>
+    public PluginSearchScope? Scope { get; set; }
+
+    /// <summary>
+    /// Gets or sets absolute working directories used to discover local marketplaces.
+    /// </summary>
+    public IReadOnlyList<string>? Cwds { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional cursor for paging remote results.
+    /// </summary>
+    public string? Cursor { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional page size.
+    /// </summary>
+    public int? Limit { get; set; }
+}
+
+/// <summary>
+/// Represents one <c>plugin/search</c> result.
+/// </summary>
+public sealed record class PluginSearchResult
+{
+    /// <summary>
+    /// Gets the matched plugin summary.
+    /// </summary>
+    public required PluginSummaryDescriptor Plugin { get; init; }
+
+    /// <summary>
+    /// Gets the marketplace name that produced the result.
+    /// </summary>
+    public required string MarketplaceName { get; init; }
+
+    /// <summary>
+    /// Gets the marketplace path, when available.
+    /// </summary>
+    public string? MarketplacePath { get; init; }
+
+    /// <summary>
+    /// Gets the raw result payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents a page returned by <c>plugin/search</c>.
+/// </summary>
+public sealed record class PluginSearchPage
+{
+    /// <summary>
+    /// Gets the returned plugin search results.
+    /// </summary>
+    public required IReadOnlyList<PluginSearchResult> Data { get; init; }
+
+    /// <summary>
+    /// Gets the next cursor token, if any.
+    /// </summary>
+    public string? NextCursor { get; init; }
+
+    /// <summary>
+    /// Gets the raw response payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}

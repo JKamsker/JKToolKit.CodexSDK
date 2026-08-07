@@ -26,6 +26,11 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.StartThreadAsync),
         nameof(CodexAppServerClient.ResumeThreadAsync),
         nameof(CodexAppServerClient.ListThreadsAsync),
+        nameof(CodexAppServerClient.ListThreadSectionsAsync),
+        nameof(CodexAppServerClient.CreateThreadSectionAsync),
+        nameof(CodexAppServerClient.UpdateThreadSectionAsync),
+        nameof(CodexAppServerClient.DeleteThreadSectionAsync),
+        nameof(CodexAppServerClient.MoveThreadToSectionAsync),
         nameof(CodexAppServerClient.SearchThreadsAsync),
         nameof(CodexAppServerClient.ReadThreadAsync),
         nameof(CodexAppServerClient.ListLoadedThreadsAsync),
@@ -83,6 +88,7 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.StartReviewAsync),
         nameof(CodexAppServerClient.ReviewAsync),
         nameof(CodexAppServerClient.ListPluginsAsync),
+        nameof(CodexAppServerClient.SearchPluginsAsync),
         nameof(CodexAppServerClient.ReadPluginAsync),
         nameof(CodexAppServerClient.InstallPluginAsync),
         nameof(CodexAppServerClient.UninstallPluginAsync),
@@ -999,6 +1005,21 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct) =>
             NotSupported<CodexThreadListPage>();
 
+        public Task<ThreadSectionListPage> ListThreadSectionsAsync(ThreadSectionListOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSectionListPage>();
+
+        public Task<ThreadSectionResult> CreateThreadSectionAsync(ThreadSectionCreateOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSectionResult>();
+
+        public Task<ThreadSectionResult> UpdateThreadSectionAsync(ThreadSectionUpdateOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSectionResult>();
+
+        public Task<ThreadSectionResult> DeleteThreadSectionAsync(ThreadSectionDeleteOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSectionResult>();
+
+        public Task<ThreadSectionResult> MoveThreadToSectionAsync(ThreadSectionMoveOptions options, CancellationToken ct) =>
+            NotSupported<ThreadSectionResult>();
+
         public Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct) =>
             NotSupported<ThreadSearchPage>();
 
@@ -1202,6 +1223,9 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<PluginListResult> ListPluginsAsync(PluginListOptions options, CancellationToken ct) =>
             NotSupported<PluginListResult>();
+
+        public Task<PluginSearchPage> SearchPluginsAsync(PluginSearchOptions options, CancellationToken ct) =>
+            NotSupported<PluginSearchPage>();
 
         public Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct) =>
             NotSupported<PluginReadResult>();

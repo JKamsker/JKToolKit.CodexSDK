@@ -16,6 +16,11 @@
       },
       "ephemeral": false,
       "isPinned": true,
+      "section": {
+        "id": "sec_1",
+        "name": "Work"
+      },
+      "sectionEnteredAt": 1770000700,
       "source": "cli",
       "turns": [{ "id": "turn_1" }],
       "unknownField": { "x": 1 }

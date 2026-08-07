@@ -7,6 +7,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<PluginListResult> ListPluginsAsync(PluginListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.ListPluginsAsync(options, token), ct);
 
+    public Task<PluginSearchPage> SearchPluginsAsync(PluginSearchOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.SearchPluginsAsync(options, token), ct);
+
     public Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.ReadPluginAsync(options, token), ct);
 
