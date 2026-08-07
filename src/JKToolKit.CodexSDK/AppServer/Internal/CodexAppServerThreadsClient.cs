@@ -5,7 +5,7 @@ using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
-internal sealed class CodexAppServerThreadsClient
+internal sealed partial class CodexAppServerThreadsClient
 {
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
     private readonly Func<bool> _experimentalApiEnabled;
@@ -161,7 +161,7 @@ internal sealed class CodexAppServerThreadsClient
             new ThreadListParams
             {
                 Archived = options.Archived,
-                IsPinned = options.IsPinned,
+                SectionId = BuildThreadListSectionId(options),
                 Cwd = options.Cwd,
                 Limit = options.Limit,
                 ModelProviders = options.ModelProviders,

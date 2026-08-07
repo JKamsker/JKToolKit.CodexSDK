@@ -29,6 +29,29 @@ internal sealed class CodexAppServerPluginsClient
         return CodexAppServerClientPluginParsers.ParsePluginListResult(result);
     }
 
+    public async Task<PluginSearchPage> SearchPluginsAsync(PluginSearchOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.SearchTerm))
+            throw new ArgumentException("SearchTerm cannot be empty or whitespace.", nameof(options));
+        ValidateOptionalWireValue(options.Scope?.Value, nameof(options.Scope), nameof(options));
+        CodexAppServerPathValidation.ValidateOptionalAbsolutePaths(options.Cwds, nameof(options), "Cwds");
+
+        var result = await _sendRequestAsync(
+            "plugin/search",
+            new
+            {
+                options.SearchTerm,
+                Scope = options.Scope?.Value,
+                options.Cwds,
+                options.Cursor,
+                options.Limit
+            },
+            ct);
+
+        return CodexAppServerClientPluginParsers.ParsePluginSearchPage(result);
+    }
+
     public async Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);

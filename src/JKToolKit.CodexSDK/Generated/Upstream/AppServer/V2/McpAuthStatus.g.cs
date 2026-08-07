@@ -13,20 +13,24 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal enum McpAuthStatus
 {
 
+    [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
+    Unknown = 0,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"unsupported")]
-    Unsupported = 0,
+    Unsupported = 1,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"notLoggedIn")]
-    NotLoggedIn = 1,
+    NotLoggedIn = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"bearerToken")]
-    BearerToken = 2,
+    BearerToken = 3,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"oAuth")]
-    OAuth = 3,
+    OAuth = 4,
 
 
 }

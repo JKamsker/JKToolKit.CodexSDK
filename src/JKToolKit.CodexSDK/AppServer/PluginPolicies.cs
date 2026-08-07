@@ -268,3 +268,72 @@ public readonly record struct PluginAvailability
     /// </summary>
     public override string ToString() => Value;
 }
+
+/// <summary>
+/// Represents a plugin disabled reason reported by plugin-service.
+/// </summary>
+public readonly record struct PluginDisabledReason
+{
+    /// <summary>
+    /// Gets the underlying wire value.
+    /// </summary>
+    public string Value { get; }
+
+    private PluginDisabledReason(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("Plugin disabled reason cannot be empty or whitespace.", nameof(value));
+
+        Value = value;
+    }
+
+    /// <summary>
+    /// Gets the admin-disabled reason.
+    /// </summary>
+    public static PluginDisabledReason DisabledByAdmin => new("disabled_by_admin");
+
+    /// <summary>
+    /// Gets the plan-not-eligible reason.
+    /// </summary>
+    public static PluginDisabledReason PlanNotEligible => new("plan_not_eligible");
+
+    /// <summary>
+    /// Gets the required-app-unavailable reason.
+    /// </summary>
+    public static PluginDisabledReason RequiredAppUnavailable => new("required_app_unavailable");
+
+    /// <summary>
+    /// Parses a plugin disabled reason from a wire value.
+    /// </summary>
+    public static PluginDisabledReason Parse(string value) => new(value);
+
+    /// <summary>
+    /// Tries to parse a plugin disabled reason from a wire value.
+    /// </summary>
+    public static bool TryParse(string? value, out PluginDisabledReason reason)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            reason = default;
+            return false;
+        }
+
+        reason = new PluginDisabledReason(value);
+        return true;
+    }
+
+    /// <summary>
+    /// Converts a string to a <see cref="PluginDisabledReason"/>.
+    /// </summary>
+    public static implicit operator PluginDisabledReason(string value) => Parse(value);
+
+    /// <summary>
+    /// Converts a <see cref="PluginDisabledReason"/> to its wire value.
+    /// </summary>
+    public static implicit operator string(PluginDisabledReason reason) => reason.Value;
+
+    /// <summary>
+    /// Returns the underlying wire value.
+    /// </summary>
+    public override string ToString() => Value;
+}

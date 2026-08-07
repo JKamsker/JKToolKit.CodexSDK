@@ -10,6 +10,16 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct);
 
+    Task<ThreadSectionListPage> ListThreadSectionsAsync(ThreadSectionListOptions options, CancellationToken ct);
+
+    Task<ThreadSectionResult> CreateThreadSectionAsync(ThreadSectionCreateOptions options, CancellationToken ct);
+
+    Task<ThreadSectionResult> UpdateThreadSectionAsync(ThreadSectionUpdateOptions options, CancellationToken ct);
+
+    Task<ThreadSectionResult> DeleteThreadSectionAsync(ThreadSectionDeleteOptions options, CancellationToken ct);
+
+    Task<ThreadSectionResult> MoveThreadToSectionAsync(ThreadSectionMoveOptions options, CancellationToken ct);
+
     Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct);
 
     Task<CodexThreadReadResult> ReadThreadAsync(string threadId, CancellationToken ct);
@@ -56,6 +66,21 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<CodexThread> ResumeThreadAsync(ThreadResumeOptions options, CancellationToken ct) => _inner.ResumeThreadAsync(options, ct);
 
     public Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct) => _inner.ListThreadsAsync(options, ct);
+
+    public Task<ThreadSectionListPage> ListThreadSectionsAsync(ThreadSectionListOptions options, CancellationToken ct) =>
+        _inner.ListThreadSectionsAsync(options, ct);
+
+    public Task<ThreadSectionResult> CreateThreadSectionAsync(ThreadSectionCreateOptions options, CancellationToken ct) =>
+        _inner.CreateThreadSectionAsync(options, ct);
+
+    public Task<ThreadSectionResult> UpdateThreadSectionAsync(ThreadSectionUpdateOptions options, CancellationToken ct) =>
+        _inner.UpdateThreadSectionAsync(options, ct);
+
+    public Task<ThreadSectionResult> DeleteThreadSectionAsync(ThreadSectionDeleteOptions options, CancellationToken ct) =>
+        _inner.DeleteThreadSectionAsync(options, ct);
+
+    public Task<ThreadSectionResult> MoveThreadToSectionAsync(ThreadSectionMoveOptions options, CancellationToken ct) =>
+        _inner.MoveThreadToSectionAsync(options, ct);
 
     public Task<ThreadSearchPage> SearchThreadsAsync(ThreadSearchOptions options, CancellationToken ct) => _inner.SearchThreadsAsync(options, ct);
 

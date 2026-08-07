@@ -213,6 +213,99 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task ListThreadsAsync_SendsSectionFilters()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };
+        await using var client = CreateClient(rpc);
+
+        await client.ListThreadsAsync(new ThreadListOptions { SectionId = "sec_1" });
+
+        rpc.LastMethod.Should().Be("thread/list");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"sectionId\":\"sec_1\"");
+
+        var unsectionedRpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };
+        await using var unsectionedClient = CreateClient(unsectionedRpc);
+
+        await unsectionedClient.ListThreadsAsync(new ThreadListOptions { UnsectionedOnly = true });
+
+        JsonSerializer.Serialize(unsectionedRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"sectionId\":null");
+    }
+
+    [Fact]
+    public async Task ThreadSectionMethods_SendExpectedMethods_AndParseSections()
+    {
+        using var listDoc = JsonDocument.Parse(
+            """
+            {
+              "data": [
+                { "id": "sec_1", "name": "Work" }
+              ],
+              "nextCursor": "next_1"
+            }
+            """);
+        var listRpc = new RecordingRpc { Result = listDoc.RootElement };
+        await using var listClient = CreateClient(listRpc);
+
+        var list = await listClient.ListThreadSectionsAsync(new ThreadSectionListOptions { Limit = 10 });
+
+        list.Sections.Should().ContainSingle().Which.Id.Should().Be("sec_1");
+        list.NextCursor.Should().Be("next_1");
+        listRpc.LastMethod.Should().Be("threadSection/list");
+
+        using var createDoc = JsonDocument.Parse("""{"section":{"id":"sec_2","name":"Personal"}}""");
+        var createRpc = new RecordingRpc { Result = createDoc.RootElement };
+        await using var createClient = CreateClient(createRpc);
+
+        var created = await createClient.CreateThreadSectionAsync(new ThreadSectionCreateOptions { Name = "Personal" });
+
+        created.Section.Should().NotBeNull();
+        created.Section!.Name.Should().Be("Personal");
+        createRpc.LastMethod.Should().Be("threadSection/create");
+
+        using var updateDoc = JsonDocument.Parse("""{"section":{"id":"sec_2","name":"Projects"}}""");
+        var updateRpc = new RecordingRpc { Result = updateDoc.RootElement };
+        await using var updateClient = CreateClient(updateRpc);
+
+        var updated = await updateClient.UpdateThreadSectionAsync(new ThreadSectionUpdateOptions
+        {
+            SectionId = "sec_2",
+            Name = "Projects"
+        });
+
+        updated.Section.Should().NotBeNull();
+        updated.Section!.Name.Should().Be("Projects");
+        updateRpc.LastMethod.Should().Be("threadSection/update");
+
+        var deleteRpc = new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement };
+        await using var deleteClient = CreateClient(deleteRpc);
+
+        await deleteClient.DeleteThreadSectionAsync(new ThreadSectionDeleteOptions { SectionId = "sec_2" });
+
+        deleteRpc.LastMethod.Should().Be("threadSection/delete");
+    }
+
+    [Fact]
+    public async Task MoveThreadToSectionAsync_SendsExplicitNullSectionId()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement };
+        await using var client = CreateClient(rpc);
+
+        await client.MoveThreadToSectionAsync(new ThreadSectionMoveOptions
+        {
+            ThreadId = "thr-1",
+            SectionId = null
+        });
+
+        rpc.LastMethod.Should().Be("thread/section/move");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"threadId\":\"thr-1\"")
+            .And.Contain("\"sectionId\":null")
+            .And.NotContain("beforeThreadId");
+    }
+
+    [Fact]
     public async Task UpdateThreadMetadataAsync_SendsPatchFlags_AndParsesThread()
     {
         using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1","gitInfo":{"branch":"main","originUrl":"https://example.invalid/repo.git","sha":"abc123"}}}""");
@@ -223,7 +316,6 @@ public sealed class AppServerCommandAndFilesystemTests
         var result = await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
         {
             ThreadId = "thr-1",
-            IsPinned = true,
             GitInfo = new ThreadGitInfoUpdate
             {
                 Branch = "main",
@@ -241,7 +333,7 @@ public sealed class AppServerCommandAndFilesystemTests
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"branch\":\"main\"")
             .And.Contain("\"sha\":null")
-            .And.Contain("\"isPinned\":true")
+            .And.NotContain("isPinned")
             .And.NotContain("originUrl");
     }
 
@@ -260,22 +352,20 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
-    public async Task UpdateThreadMetadataAsync_AllowsPinnedOnlyPatch()
+    public async Task UpdateThreadMetadataAsync_RejectsPinnedOnlyPatch()
     {
-        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1","isPinned":true}}""");
-        var rpc = new RecordingRpc { Result = doc.RootElement };
-        await using var client = CreateClient(rpc);
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
 
-        var result = await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        var act = async () => await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
         {
             ThreadId = "thr-1",
+#pragma warning disable CS0618
             IsPinned = true
+#pragma warning restore CS0618
         });
 
-        result.Thread.Thread.IsPinned.Should().BeTrue();
-        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
-            .Should().Contain("\"isPinned\":true")
-            .And.NotContain("gitInfo");
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*At least one metadata update must be set*");
     }
 
     [Fact]

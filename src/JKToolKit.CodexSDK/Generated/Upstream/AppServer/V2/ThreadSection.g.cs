@@ -9,21 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// An independently persisted, user-visible thread section.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AccountLoginCompletedNotification
+internal partial class ThreadSection
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("error")]
-    public string? Error { get; set; } = default!;
+    /// <summary>
+    /// Opaque UUIDv7 identity that remains stable when the section is renamed.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
-    public string? LoginId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("onboardingEntrypoint")]
-    public OnboardingEntrypoint? OnboardingEntrypoint { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("success")]
-    public bool Success { get; set; } = default!;
+    /// <summary>
+    /// The current user-visible section name.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -13,7 +13,18 @@ public sealed class ThreadListOptions
     /// <summary>
     /// Gets or sets an optional pinned filter.
     /// </summary>
+    [Obsolete("Codex 0.147.0 removed pinned thread filtering. Use SectionId or UnsectionedOnly instead.")]
     public bool? IsPinned { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional section identifier filter.
+    /// </summary>
+    public string? SectionId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether only threads without a section should be returned.
+    /// </summary>
+    public bool UnsectionedOnly { get; set; }
 
     /// <summary>
     /// Gets or sets an optional working directory filter.

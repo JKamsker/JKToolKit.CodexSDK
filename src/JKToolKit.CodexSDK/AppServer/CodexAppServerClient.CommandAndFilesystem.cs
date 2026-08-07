@@ -168,11 +168,6 @@ public sealed partial class CodexAppServerClient
             patch["gitInfo"] = BuildGitInfoPatch(gitInfo);
         }
 
-        if (options.IsPinned is { } isPinned)
-        {
-            patch["isPinned"] = isPinned;
-        }
-
         if (patch.Count == 1)
         {
             throw new ArgumentException("At least one metadata update must be set.", nameof(options));
