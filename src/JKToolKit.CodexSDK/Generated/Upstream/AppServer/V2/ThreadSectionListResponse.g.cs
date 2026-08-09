@@ -9,21 +9,21 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// One page of independently persisted thread sections.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class AccountLoginCompletedNotification
+internal partial class ThreadSectionListResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("error")]
-    public string? Error { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("data")]
+    public System.Collections.Generic.ICollection<ThreadSection> Data { get; set; } = new System.Collections.ObjectModel.Collection<ThreadSection>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
-    public string? LoginId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("onboardingEntrypoint")]
-    public OnboardingEntrypoint? OnboardingEntrypoint { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("success")]
-    public bool Success { get; set; } = default!;
+    /// <summary>
+    /// Opaque cursor for the next page, or `null` when no sections remain.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -109,10 +109,47 @@ internal static partial class CodexAppServerClientPluginParsers
         };
     }
 
+    public static PluginSearchPage ParsePluginSearchPage(JsonElement result)
+    {
+        var dataArray = CodexAppServerClientJson.TryGetArray(result, "data")
+            ?? throw new InvalidOperationException("plugin/search returned no data array.");
+
+        var data = new List<PluginSearchResult>();
+        foreach (var item in dataArray.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("plugin/search data[] entries must be objects.");
+            }
+
+            var plugin = CodexAppServerClientJson.TryGetObject(item, "plugin")
+                ?? throw new InvalidOperationException("plugin/search data[] entries must contain a plugin object.");
+
+            data.Add(new PluginSearchResult
+            {
+                Plugin = ParsePluginSummary(plugin),
+                MarketplaceName = CodexAppServerClientJson.GetRequiredString(item, "marketplaceName", "plugin/search data[]"),
+                MarketplacePath = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
+                    CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath"),
+                    "marketplacePath",
+                    "plugin/search data[]"),
+                Raw = item.Clone()
+            });
+        }
+
+        return new PluginSearchPage
+        {
+            Data = data,
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, "nextCursor"),
+            Raw = result
+        };
+    }
+
     internal static PluginSummaryDescriptor ParsePluginSummary(JsonElement item)
     {
         var availability = CodexAppServerClientJson.GetStringOrNull(item, "availability") ?? PluginAvailability.Available.Value;
         var installPolicySource = CodexAppServerClientJson.GetStringOrNull(item, "installPolicySource");
+        var disabledReason = CodexAppServerClientJson.GetStringOrNull(item, "disabledReason");
 
         return new PluginSummaryDescriptor
         {
@@ -122,6 +159,7 @@ internal static partial class CodexAppServerClientPluginParsers
             Version = CodexAppServerClientJson.GetStringOrNull(item, "version"),
             LocalVersion = CodexAppServerClientJson.GetStringOrNull(item, "localVersion"),
             Installed = CodexAppServerClientJson.GetRequiredBool(item, "installed", "plugin summary"),
+            InstalledAt = GetUnixSecondsDateTimeOffset(item, "installedAt"),
             Enabled = CodexAppServerClientJson.GetRequiredBool(item, "enabled", "plugin summary"),
             AuthPolicy = CodexAppServerClientJson.GetRequiredString(item, "authPolicy", "plugin summary"),
             AuthPolicyValue = ParseRequiredPluginAuthPolicy(item, "authPolicy", "plugin summary"),
@@ -133,6 +171,11 @@ internal static partial class CodexAppServerClientPluginParsers
                 : null,
             Availability = availability,
             AvailabilityValue = PluginAvailability.Parse(availability),
+            DisabledReason = disabledReason,
+            DisabledReasonValue = PluginDisabledReason.TryParse(disabledReason, out var parsedDisabledReason)
+                ? (PluginDisabledReason?)parsedDisabledReason
+                : null,
+            EligiblePlanTypes = CodexAppServerClientJson.GetOptionalStringArray(item, "eligiblePlanTypes"),
             ShareContext = CodexAppServerClientPluginShareParsers.ParseShareContextOrNull(item),
             Keywords = CodexAppServerClientJson.GetOptionalStringArray(item, "keywords") ?? Array.Empty<string>(),
             Interface = ParsePluginInterface(item),
@@ -253,6 +296,26 @@ internal static partial class CodexAppServerClientPluginParsers
 
     private static PluginSourceType ParseRequiredPluginSourceType(JsonElement item, string propertyName, string context) =>
         ParseRequiredTypedValue<PluginSourceType>(item, propertyName, context, PluginSourceType.TryParse);
+
+    private static DateTimeOffset? GetUnixSecondsDateTimeOffset(JsonElement item, string propertyName)
+    {
+        if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty(propertyName, out var property))
+        {
+            return null;
+        }
+
+        if (property.ValueKind == JsonValueKind.Number && property.TryGetInt64(out var seconds))
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(seconds);
+        }
+
+        if (property.ValueKind == JsonValueKind.String && long.TryParse(property.GetString(), out seconds))
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(seconds);
+        }
+
+        return null;
+    }
 
     private static T ParseRequiredTypedValue<T>(JsonElement item, string propertyName, string context, TryParseDelegate<T> tryParse)
         where T : struct

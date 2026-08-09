@@ -24,7 +24,14 @@ public sealed class ThreadApiParsingTests
         threads[0].ModelProvider.Should().Be("openai");
         threads[0].Preview.Should().Be("Preview One");
         threads[0].SourceKind.Should().Be("cli");
+#pragma warning disable CS0618
         threads[0].IsPinned.Should().BeTrue();
+#pragma warning restore CS0618
+        var section = threads[0].Section;
+        section.Should().NotBeNull();
+        section!.Id.Should().Be("sec_1");
+        section.Name.Should().Be("Work");
+        threads[0].SectionEnteredAt.Should().Be(DateTimeOffset.FromUnixTimeSeconds(1770000700));
         threads[0].TurnCount.Should().Be(1);
         threads[0].ServiceTier.Should().BeNull();
         var status = threads[0].Status;

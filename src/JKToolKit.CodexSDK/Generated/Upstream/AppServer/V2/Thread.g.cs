@@ -65,12 +65,6 @@ internal partial class Thread
     public string Id { get; set; } = default!;
 
     /// <summary>
-    /// Whether the thread has been pinned by the user.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("isPinned")]
-    public bool? IsPinned { get; set; } = false;
-
-    /// <summary>
     /// Model provider used for this thread (for example, 'openai').
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
@@ -105,6 +99,18 @@ internal partial class Thread
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("recencyAt")]
     public long? RecencyAt { get; set; } = default!;
+
+    /// <summary>
+    /// The independently persisted section selected for this thread, if any.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("section")]
+    public Section? Section { get; set; } = default!;
+
+    /// <summary>
+    /// Unix timestamp in seconds when the thread entered its current section.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sectionEnteredAt")]
+    public long? SectionEnteredAt { get; set; } = default!;
 
     /// <summary>
     /// Session id shared by threads that belong to the same session tree.

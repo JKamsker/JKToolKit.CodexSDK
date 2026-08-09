@@ -4,6 +4,8 @@ internal partial interface ICodexAppServerClientAdapter
 {
     Task<PluginListResult> ListPluginsAsync(PluginListOptions options, CancellationToken ct);
 
+    Task<PluginSearchPage> SearchPluginsAsync(PluginSearchOptions options, CancellationToken ct);
+
     Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct);
 
     Task<PluginInstallResult> InstallPluginAsync(PluginInstallOptions options, CancellationToken ct);
@@ -24,6 +26,9 @@ internal partial interface ICodexAppServerClientAdapter
 internal sealed partial class CodexAppServerClientAdapter
 {
     public Task<PluginListResult> ListPluginsAsync(PluginListOptions options, CancellationToken ct) => _inner.ListPluginsAsync(options, ct);
+
+    public Task<PluginSearchPage> SearchPluginsAsync(PluginSearchOptions options, CancellationToken ct) =>
+        _inner.SearchPluginsAsync(options, ct);
 
     public Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct) => _inner.ReadPluginAsync(options, ct);
 

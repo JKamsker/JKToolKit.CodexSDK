@@ -9,6 +9,12 @@ public sealed partial class CodexAppServerClient
         _pluginsClient.ListPluginsAsync(options, ct);
 
     /// <summary>
+    /// Searches plugin catalogs.
+    /// </summary>
+    public Task<PluginSearchPage> SearchPluginsAsync(PluginSearchOptions options, CancellationToken ct = default) =>
+        _pluginsClient.SearchPluginsAsync(options, ct);
+
+    /// <summary>
     /// Reads plugin details.
     /// </summary>
     public Task<PluginReadResult> ReadPluginAsync(PluginReadOptions options, CancellationToken ct = default) =>

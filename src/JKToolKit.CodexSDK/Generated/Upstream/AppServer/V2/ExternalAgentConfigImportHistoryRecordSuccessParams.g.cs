@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportItemTypeSuccess
+internal partial class ExternalAgentConfigImportHistoryRecordSuccessParams
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
@@ -27,7 +27,7 @@ internal partial class ExternalAgentConfigImportItemTypeSuccess
     public string? Target { get; set; } = default!;
 
     /// <summary>
-    /// Original title for an imported session; null for other item types.
+    /// Original title for an imported session, when available.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("title")]
     public string? Title { get; set; } = default!;

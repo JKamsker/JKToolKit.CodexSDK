@@ -54,6 +54,11 @@ public sealed record class PluginSummaryDescriptor
     public bool Installed { get; init; }
 
     /// <summary>
+    /// Gets the remote install timestamp, when upstream provides it.
+    /// </summary>
+    public DateTimeOffset? InstalledAt { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the installed plugin is enabled.
     /// </summary>
     public bool Enabled { get; init; }
@@ -97,6 +102,21 @@ public sealed record class PluginSummaryDescriptor
     /// Gets the typed plugin availability state.
     /// </summary>
     public required PluginAvailability AvailabilityValue { get; init; }
+
+    /// <summary>
+    /// Gets the disabled reason when plugin-service reports one.
+    /// </summary>
+    public string? DisabledReason { get; init; }
+
+    /// <summary>
+    /// Gets the typed disabled reason when plugin-service reports one.
+    /// </summary>
+    public PluginDisabledReason? DisabledReasonValue { get; init; }
+
+    /// <summary>
+    /// Gets raw eligible plan identifiers reported by plugin-service.
+    /// </summary>
+    public IReadOnlyList<string>? EligiblePlanTypes { get; init; }
 
     /// <summary>
     /// Gets remote sharing context associated with this plugin when available.

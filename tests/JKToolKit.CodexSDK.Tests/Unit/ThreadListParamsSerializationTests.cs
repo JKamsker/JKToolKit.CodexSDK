@@ -11,11 +11,31 @@ public sealed class ThreadListParamsSerializationTests
     public void Serialize_UsesLimitFieldName_NotPageSize()
     {
         var json = JsonSerializer.Serialize(
-            new ThreadListParams { Limit = 10, IsPinned = true },
+            new ThreadListParams { Limit = 10 },
             CodexAppServerClient.CreateDefaultSerializerOptions());
 
         json.Should().Contain("\"limit\":10");
-        json.Should().Contain("\"isPinned\":true");
+        json.Should().NotContain("isPinned");
         json.Should().NotContain("pageSize");
+    }
+
+    [Fact]
+    public void Serialize_WritesExplicitNullSectionFilter()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadListParams { SectionId = JsonSerializer.SerializeToElement((string?)null) },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"sectionId\":null");
+    }
+
+    [Fact]
+    public void Serialize_WritesSectionIdFilter()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadListParams { SectionId = JsonSerializer.SerializeToElement("sec_1") },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"sectionId\":\"sec_1\"");
     }
 }

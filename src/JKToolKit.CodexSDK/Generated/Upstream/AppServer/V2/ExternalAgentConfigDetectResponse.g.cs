@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ExternalAgentConfigDetectResponse
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("connectors")]
+    public System.Collections.Generic.ICollection<ExternalAgentDetectedConnectorCandidate>? Connectors { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("items")]
     public System.Collections.Generic.ICollection<ExternalAgentConfigMigrationItem> Items { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigMigrationItem>();
 

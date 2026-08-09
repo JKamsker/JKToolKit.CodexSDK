@@ -10,27 +10,18 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ExternalAgentConfigImportItemTypeSuccess
+internal partial class ExternalAgentConfigImportHistoryRecordTypeResultParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
-    public string? Cwd { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("failures")]
+    public System.Collections.Generic.ICollection<ExternalAgentConfigImportItemTypeFailure> Failures { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportItemTypeFailure>();
 
     [System.Text.Json.Serialization.JsonPropertyName("itemType")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ExternalAgentConfigMigrationItemType>))]
     public ExternalAgentConfigMigrationItemType ItemType { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("source")]
-    public string? Source { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("target")]
-    public string? Target { get; set; } = default!;
-
-    /// <summary>
-    /// Original title for an imported session; null for other item types.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("title")]
-    public string? Title { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("successes")]
+    public System.Collections.Generic.ICollection<ExternalAgentConfigImportHistoryRecordSuccessParams> Successes { get; set; } = new System.Collections.ObjectModel.Collection<ExternalAgentConfigImportHistoryRecordSuccessParams>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

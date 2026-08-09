@@ -21,6 +21,18 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Availability>))]
     public Availability? Availability { get; set; } = default!;
 
+    /// <summary>
+    /// Why the remote plugin is unavailable, when provided by plugin-service.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("disabledReason")]
+    public DisabledReason? DisabledReason { get; set; } = default!;
+
+    /// <summary>
+    /// Raw plugin-service plan identifiers eligible to install the plugin.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("eligiblePlanTypes")]
+    public System.Collections.Generic.ICollection<string>? EligiblePlanTypes { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = default!;
 
@@ -36,6 +48,12 @@ internal partial class PluginSummary
 
     [System.Text.Json.Serialization.JsonPropertyName("installed")]
     public bool Installed { get; set; } = default!;
+
+    /// <summary>
+    /// Unix timestamp in seconds when the remote plugin was installed, when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("installedAt")]
+    public long? InstalledAt { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("interface")]
     public Interface2? Interface { get; set; } = default!;
