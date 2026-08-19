@@ -10,11 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ConfigLayerSourceType
+internal enum ImageGenerationFailureType
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"packagedDefaults")]
-    PackagedDefaults = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"usageLimitExceeded")]
+    UsageLimitExceeded = 0,
 
 
 }

@@ -17,6 +17,12 @@ internal partial class ThreadSectionUpdateParams
 {
 
     /// <summary>
+    /// Omit to preserve appearance, use `null` to clear it, or provide a replacement.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("appearance")]
+    public Appearance3? Appearance { get; set; } = default!;
+
+    /// <summary>
     /// The updated user-visible name of the section.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("name")]

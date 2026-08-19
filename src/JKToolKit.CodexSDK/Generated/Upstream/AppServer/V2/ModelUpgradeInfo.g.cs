@@ -22,6 +22,12 @@ internal partial class ModelUpgradeInfo
     [System.Text.Json.Serialization.JsonPropertyName("modelLink")]
     public string? ModelLink { get; set; } = default!;
 
+    /// <summary>
+    /// Informational Unix timestamp for this upgrade's scheduled retirement, if known.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("retirementAt")]
+    public long? RetirementAt { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("upgradeCopy")]
     public string? UpgradeCopy { get; set; } = default!;
 

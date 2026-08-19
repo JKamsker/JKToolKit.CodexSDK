@@ -10,11 +10,19 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum ConfigLayerSourceType
+internal enum McpServerOauthClientRegistration
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"packagedDefaults")]
-    PackagedDefaults = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"auto")]
+    Auto = 0,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"cimd")]
+    Cimd = 1,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"dcr")]
+    Dcr = 2,
 
 
 }

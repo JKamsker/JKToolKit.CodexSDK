@@ -20,6 +20,9 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("pluginId")]
+    public string? PluginId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("resourceTemplates")]
     public System.Collections.Generic.ICollection<ResourceTemplate> ResourceTemplates { get; set; } = new System.Collections.ObjectModel.Collection<ResourceTemplate>();
 

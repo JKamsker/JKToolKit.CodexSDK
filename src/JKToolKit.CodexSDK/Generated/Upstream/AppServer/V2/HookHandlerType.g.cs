@@ -17,12 +17,16 @@ internal enum HookHandlerType
     Command = 0,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"mcpTool")]
+    McpTool = 1,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"prompt")]
-    Prompt = 1,
+    Prompt = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"agent")]
-    Agent = 2,
+    Agent = 3,
 
 
 }

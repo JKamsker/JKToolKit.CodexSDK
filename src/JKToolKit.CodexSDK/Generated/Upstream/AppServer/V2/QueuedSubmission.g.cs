@@ -10,20 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class GetAccountTokenUsageResponse
+internal partial class QueuedSubmission
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("dailyUsageBuckets")]
-    public System.Collections.Generic.ICollection<AccountTokenUsageDailyBucket>? DailyUsageBuckets { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("clientUserMessageId")]
+    public string ClientUserMessageId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("summary")]
-    public AccountTokenUsageSummary Summary { get; set; } = new AccountTokenUsageSummary();
+    [System.Text.Json.Serialization.JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
 
-    /// <summary>
-    /// Estimated usage when a thread was requested and its billing route is available.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("threadUsage")]
-    public ThreadUsage2? ThreadUsage { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("input")]
+    public System.Collections.Generic.ICollection<Input> Input { get; set; } = new System.Collections.ObjectModel.Collection<Input>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

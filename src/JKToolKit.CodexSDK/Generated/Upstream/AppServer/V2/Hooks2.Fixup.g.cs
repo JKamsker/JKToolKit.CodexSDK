@@ -9,11 +9,8 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Default configuration supplied with the installed Codex package.
-/// </summary>
-[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ConfigLayerSource
+[System.CodeDom.Compiler.GeneratedCode("JKToolKit.CodexSDK.UpstreamGen", "0.0.0")]
+internal partial class Hooks2
 {
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;

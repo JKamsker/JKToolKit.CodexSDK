@@ -19,9 +19,6 @@ internal partial class HookMetadata
     [System.Text.Json.Serialization.JsonPropertyName("additionalContextLimit")]
     public int? AdditionalContextLimit { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("command")]
-    public string? Command { get; set; } = default!;
-
     [System.Text.Json.Serialization.JsonPropertyName("currentHash")]
     public string CurrentHash { get; set; } = default!;
 
@@ -34,10 +31,6 @@ internal partial class HookMetadata
     [System.Text.Json.Serialization.JsonPropertyName("eventName")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookEventName>))]
     public HookEventName EventName { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("handlerType")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookHandlerType>))]
-    public HookHandlerType HandlerType { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("isManaged")]
     public bool IsManaged { get; set; } = default!;

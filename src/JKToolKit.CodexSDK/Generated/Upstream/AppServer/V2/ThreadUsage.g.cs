@@ -10,20 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class GetAccountTokenUsageResponse
+internal partial class ThreadUsage
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("dailyUsageBuckets")]
-    public System.Collections.Generic.ICollection<AccountTokenUsageDailyBucket>? DailyUsageBuckets { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("estimatedUsageCreditsMicros")]
+    public long EstimatedUsageCreditsMicros { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("summary")]
-    public AccountTokenUsageSummary Summary { get; set; } = new AccountTokenUsageSummary();
+    [System.Text.Json.Serialization.JsonPropertyName("estimatedUsageUsdMicros")]
+    public long? EstimatedUsageUsdMicros { get; set; } = default!;
 
-    /// <summary>
-    /// Estimated usage when a thread was requested and its billing route is available.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("threadUsage")]
-    public ThreadUsage2? ThreadUsage { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("groups")]
+    public System.Collections.Generic.ICollection<ThreadUsageBreakdownGroup> Groups { get; set; } = new System.Collections.ObjectModel.Collection<ThreadUsageBreakdownGroup>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

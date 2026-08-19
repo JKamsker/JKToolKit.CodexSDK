@@ -55,6 +55,12 @@ internal partial class Model
     [System.Text.Json.Serialization.JsonPropertyName("modelSpecialty")]
     public string? ModelSpecialty { get; set; } = default!;
 
+    /// <summary>
+    /// Multi-agent runtime declared by this model, when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("multiAgentVersion")]
+    public MultiAgentVersion2? MultiAgentVersion { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("serviceTiers")]
     public System.Collections.Generic.ICollection<ModelServiceTier>? ServiceTiers { get; set; } = default!;
 

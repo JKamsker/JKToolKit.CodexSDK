@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class PluginInstallParams
 {
 
+    /// <summary>
+    /// Client-generated identifier used to correlate one installation attempt.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("installAttemptId")]
+    public string? InstallAttemptId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("marketplacePath")]
     public MarketplacePath2? MarketplacePath { get; set; } = default!;
 

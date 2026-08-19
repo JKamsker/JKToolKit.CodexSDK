@@ -10,20 +10,14 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class GetAccountTokenUsageResponse
+internal partial class AutoReviewRequirements
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("dailyUsageBuckets")]
-    public System.Collections.Generic.ICollection<AccountTokenUsageDailyBucket>? DailyUsageBuckets { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("ignoreRules")]
+    public System.Collections.Generic.ICollection<string>? IgnoreRules { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("summary")]
-    public AccountTokenUsageSummary Summary { get; set; } = new AccountTokenUsageSummary();
-
-    /// <summary>
-    /// Estimated usage when a thread was requested and its billing route is available.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("threadUsage")]
-    public ThreadUsage2? ThreadUsage { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("requiredOnModels")]
+    public System.Collections.Generic.ICollection<string>? RequiredOnModels { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

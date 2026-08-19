@@ -28,6 +28,12 @@ internal partial class AppsReadParams
     [System.Text.Json.Serialization.JsonPropertyName("includeTools")]
     public bool? IncludeTools { get; set; } = default!;
 
+    /// <summary>
+    /// Optional loaded thread id used to evaluate effective app configuration.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
