@@ -43,6 +43,9 @@ internal partial class ConfigRequirements
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
     public System.Collections.Generic.ICollection<WindowsSandboxSetupMode>? AllowedWindowsSandboxImplementations { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("autoReview")]
+    public AutoReview? AutoReview { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("browserUse")]
     public BrowserUse? BrowserUse { get; set; } = default!;
 

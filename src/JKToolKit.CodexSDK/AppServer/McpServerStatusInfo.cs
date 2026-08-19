@@ -13,6 +13,11 @@ public sealed record class McpServerStatusInfo
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets the plugin id that owns this MCP server, when upstream reports one.
+    /// </summary>
+    public string? PluginId { get; init; }
+
+    /// <summary>
     /// Gets the parsed auth status.
     /// </summary>
     public McpAuthStatus AuthStatus { get; init; }

@@ -16,6 +16,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ThreadSectionCreateParams
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("appearance")]
+    public Appearance2? Appearance { get; set; } = default!;
+
     /// <summary>
     /// The user-visible name of the section.
     /// </summary>

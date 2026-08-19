@@ -256,8 +256,19 @@ internal static class CodexAppServerClientThreadParsers
         {
             Id = GetRequiredString(section, "id", context),
             Name = GetRequiredString(section, "name", context),
+            Appearance = ParseThreadSectionAppearance(TryGetObject(section, "appearance")),
             Raw = section.Clone()
         };
+
+    private static ThreadSectionAppearance? ParseThreadSectionAppearance(JsonElement? appearance) =>
+        appearance is { ValueKind: JsonValueKind.Object } value
+            ? new ThreadSectionAppearance
+            {
+                Color = GetStringOrNull(value, "color"),
+                Icon = GetStringOrNull(value, "icon"),
+                Raw = value.Clone()
+            }
+            : null;
 
     private static int? GetArrayCount(JsonElement primary, JsonElement secondary, string propertyName)
     {

@@ -13,8 +13,8 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal enum ConfigLayerSourceType
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"mdm")]
-    Mdm = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"packagedDefaults")]
+    PackagedDefaults = 0,
 
 
 }

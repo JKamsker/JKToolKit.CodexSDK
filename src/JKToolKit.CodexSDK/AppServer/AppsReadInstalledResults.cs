@@ -13,6 +13,11 @@ public sealed class AppsReadOptions
     public required IReadOnlyList<string> AppIds { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional loaded thread id used to evaluate effective app configuration.
+    /// </summary>
+    public string? ThreadId { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether display-only public tool summaries are included.
     /// </summary>
     public bool IncludeTools { get; set; }

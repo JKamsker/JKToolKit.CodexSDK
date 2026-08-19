@@ -19,6 +19,12 @@ internal partial class GetAccountTokenUsageResponse
     [System.Text.Json.Serialization.JsonPropertyName("summary")]
     public AccountTokenUsageSummary Summary { get; set; } = new AccountTokenUsageSummary();
 
+    /// <summary>
+    /// Estimated usage when a thread was requested and its billing route is available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadUsage")]
+    public ThreadUsage2? ThreadUsage { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

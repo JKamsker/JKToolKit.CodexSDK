@@ -20,6 +20,12 @@ public sealed record class McpServerOauthLoginParams
     public string? ThreadId { get; init; }
 
     /// <summary>
+    /// Gets a per-login OAuth client registration strategy.
+    /// </summary>
+    [JsonPropertyName("clientRegistration")]
+    public string? ClientRegistration { get; init; }
+
+    /// <summary>
     /// Gets optional OAuth scopes to request.
     /// </summary>
     [JsonPropertyName("scopes")]

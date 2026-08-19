@@ -17,6 +17,12 @@ internal partial class ThreadSection
 {
 
     /// <summary>
+    /// Optional appearance synchronized across clients.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("appearance")]
+    public Appearance? Appearance { get; set; } = default!;
+
+    /// <summary>
     /// Opaque UUIDv7 identity that remains stable when the section is renamed.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("id")]

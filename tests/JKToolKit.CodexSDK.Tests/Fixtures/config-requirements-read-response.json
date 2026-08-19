@@ -32,6 +32,10 @@
     "feedback": {
       "enabled": false
     },
+    "autoReview": {
+      "requiredOnModels": ["o4-mini"],
+      "ignoreRules": ["trusted-workspace"]
+    },
     "hooks": {
       "managedDir": ".codex/hooks"
     },

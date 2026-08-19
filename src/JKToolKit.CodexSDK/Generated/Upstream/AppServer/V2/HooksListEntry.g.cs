@@ -20,7 +20,7 @@ internal partial class HooksListEntry
     public System.Collections.Generic.ICollection<HookErrorInfo> Errors { get; set; } = new System.Collections.ObjectModel.Collection<HookErrorInfo>();
 
     [System.Text.Json.Serialization.JsonPropertyName("hooks")]
-    public System.Collections.Generic.ICollection<HookMetadata> Hooks { get; set; } = new System.Collections.ObjectModel.Collection<HookMetadata>();
+    public System.Collections.Generic.ICollection<Hooks2> Hooks { get; set; } = new System.Collections.ObjectModel.Collection<Hooks2>();
 
     [System.Text.Json.Serialization.JsonPropertyName("warnings")]
     public System.Collections.Generic.ICollection<string> Warnings { get; set; } = new System.Collections.ObjectModel.Collection<string>();

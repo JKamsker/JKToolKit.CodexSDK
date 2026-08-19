@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class McpServerOauthLoginParams
 {
 
+    /// <summary>
+    /// Registration strategy for this login only; omission selects automatic discovery.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("clientRegistration")]
+    public ClientRegistration? ClientRegistration { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 

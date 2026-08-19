@@ -4,11 +4,18 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 
 internal sealed partial class CodexAppServerConfigClient
 {
-    public async Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct = default)
+    public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct = default) =>
+        ReadAccountTokenUsageAsync(new AccountTokenUsageReadOptions(), ct);
+
+    public async Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(
+        AccountTokenUsageReadOptions options,
+        CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         var result = await _sendRequestAsync(
             "account/usage/read",
-            null,
+            string.IsNullOrWhiteSpace(options.ThreadId) ? null : new { options.ThreadId },
             ct);
 
         return ParseAccountTokenUsage(result);
@@ -30,6 +37,7 @@ internal sealed partial class CodexAppServerConfigClient
                 LongestStreakDays = CodexAppServerClientJson.GetInt64OrNull(summary, "longestStreakDays")
             },
             DailyUsageBuckets = ParseDailyUsageBuckets(result),
+            ThreadUsage = ParseThreadUsage(result),
             Raw = result
         };
     }
@@ -58,5 +66,56 @@ internal sealed partial class CodexAppServerConfigClient
         }
 
         return buckets;
+    }
+
+    private static AccountThreadUsage? ParseThreadUsage(JsonElement result)
+    {
+        if (CodexAppServerClientJson.TryGetObject(result, "threadUsage") is not { } usage)
+        {
+            return null;
+        }
+
+        return new AccountThreadUsage
+        {
+            ThreadId = CodexAppServerClientJson.GetStringOrNull(usage, "threadId"),
+            EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(usage, "estimatedUsageCreditsMicros"),
+            EstimatedUsageUsdMicros = CodexAppServerClientJson.GetInt64OrNull(usage, "estimatedUsageUsdMicros"),
+            Groups = ParseThreadUsageGroups(usage),
+            Raw = usage.Clone()
+        };
+    }
+
+    private static IReadOnlyList<AccountThreadUsageBreakdownGroup> ParseThreadUsageGroups(JsonElement usage)
+    {
+        var groupsArray = CodexAppServerClientJson.TryGetArray(usage, "groups");
+        if (groupsArray is null)
+        {
+            return Array.Empty<AccountThreadUsageBreakdownGroup>();
+        }
+
+        var groups = new List<AccountThreadUsageBreakdownGroup>();
+        foreach (var item in groupsArray.Value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            groups.Add(new AccountThreadUsageBreakdownGroup
+            {
+                Model = CodexAppServerClientJson.GetStringOrNull(item, "model"),
+                ReasoningEffort = CodexAppServerClientJson.GetStringOrNull(item, "reasoningEffort"),
+                Speed = CodexAppServerClientJson.GetStringOrNull(item, "speed"),
+                InputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "inputTokens"),
+                CachedInputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "cachedInputTokens"),
+                NetNewInputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "netNewInputTokens"),
+                OutputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "outputTokens"),
+                TotalTokens = CodexAppServerClientJson.GetInt64OrNull(item, "totalTokens"),
+                EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(item, "estimatedUsageCreditsMicros"),
+                Raw = item.Clone()
+            });
+        }
+
+        return groups;
     }
 }

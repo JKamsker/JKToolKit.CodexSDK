@@ -41,7 +41,7 @@ internal partial class TurnStartParams
     public Effort2? Effort { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("input")]
-    public System.Collections.Generic.ICollection<Content2> Input { get; set; } = new System.Collections.ObjectModel.Collection<Content2>();
+    public System.Collections.Generic.ICollection<Input> Input { get; set; } = new System.Collections.ObjectModel.Collection<Input>();
 
     /// <summary>
     /// Override the model for this turn and subsequent turns.

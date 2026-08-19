@@ -1143,6 +1143,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) =>
             NotSupported<AccountTokenUsageReadResult>();
 
+        public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(AccountTokenUsageReadOptions options, CancellationToken ct) =>
+            NotSupported<AccountTokenUsageReadResult>();
+
         public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) =>
             NotSupported<ModelListResult>();
 

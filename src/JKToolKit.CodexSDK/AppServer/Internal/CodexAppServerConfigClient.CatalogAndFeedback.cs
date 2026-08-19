@@ -148,6 +148,11 @@ internal sealed partial class CodexAppServerConfigClient
                 Hidden = CodexAppServerClientJson.GetBoolOrNull(item, "hidden") == true,
                 IsDefault = CodexAppServerClientJson.GetBoolOrNull(item, "isDefault") == true,
                 SupportsPersonality = CodexAppServerClientJson.GetBoolOrNull(item, "supportsPersonality") == true,
+                MultiAgentVersion = ModelMultiAgentVersion.TryParse(
+                    CodexAppServerClientJson.GetStringOrNull(item, "multiAgentVersion"),
+                    out var multiAgentVersion)
+                    ? multiAgentVersion
+                    : (ModelMultiAgentVersion?)null,
                 Upgrade = CodexAppServerClientJson.GetStringOrNull(item, "upgrade"),
                 DefaultReasoningEffort = defaultReasoningEffort,
                 AvailabilityNuxMessage = CodexAppServerClientJson.TryGetObject(item, "availabilityNux") is { } availabilityNux
@@ -315,7 +320,10 @@ internal sealed partial class CodexAppServerConfigClient
             Model = model,
             UpgradeCopy = CodexAppServerClientJson.GetStringOrNull(upgrade, "upgradeCopy"),
             ModelLink = CodexAppServerClientJson.GetStringOrNull(upgrade, "modelLink"),
-            MigrationMarkdown = CodexAppServerClientJson.GetStringOrNull(upgrade, "migrationMarkdown")
+            MigrationMarkdown = CodexAppServerClientJson.GetStringOrNull(upgrade, "migrationMarkdown"),
+            RetirementAt = CodexAppServerClientJson.GetInt64OrNull(upgrade, "retirementAt") is { } retirementAt
+                ? DateTimeOffset.FromUnixTimeSeconds(retirementAt)
+                : null
         };
     }
 

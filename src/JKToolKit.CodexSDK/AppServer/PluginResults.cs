@@ -120,6 +120,11 @@ public sealed class PluginInstallOptions
     public required string PluginName { get; set; }
 
     /// <summary>
+    /// Gets or sets a client-generated identifier used to correlate one installation attempt.
+    /// </summary>
+    public string? InstallAttemptId { get; set; }
+
+    /// <summary>
     /// Gets or sets a legacy value indicating whether remote marketplace sync should be forced.
     /// </summary>
     /// <remarks>

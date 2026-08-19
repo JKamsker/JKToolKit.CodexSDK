@@ -226,6 +226,7 @@ public sealed class CodexAppServerSkillsAppsClientTests
                 method.Should().Be("app/read");
                 var typed = @params.Should().BeOfType<UpstreamV2.AppsReadParams>().Which;
                 typed.AppIds.Should().Equal("app-a", "app-b");
+                typed.ThreadId.Should().Be("thr_1");
                 typed.IncludeTools.Should().BeTrue();
 
                 return Task.FromResult(JsonDocument.Parse(
@@ -264,6 +265,7 @@ public sealed class CodexAppServerSkillsAppsClientTests
         var result = await client.ReadAppsAsync(new AppsReadOptions
         {
             AppIds = ["app-a", "app-b"],
+            ThreadId = "thr_1",
             IncludeTools = true
         });
 

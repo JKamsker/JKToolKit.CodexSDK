@@ -27,7 +27,7 @@ internal sealed partial class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "threadSection/create",
-            new { options.Name },
+            BuildThreadSectionCreateParams(options),
             ct);
 
         return CodexAppServerClientThreadParsers.ParseThreadSectionResult(result, "threadSection/create");
@@ -41,11 +41,7 @@ internal sealed partial class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "threadSection/update",
-            new
-            {
-                options.SectionId,
-                options.Name
-            },
+            BuildThreadSectionUpdateParams(options),
             ct);
 
         return CodexAppServerClientThreadParsers.ParseThreadSectionResult(result, "threadSection/update");
@@ -100,6 +96,53 @@ internal sealed partial class CodexAppServerThreadsClient
 
         return values;
     }
+
+    private static Dictionary<string, object?> BuildThreadSectionCreateParams(ThreadSectionCreateOptions options)
+    {
+        var values = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["name"] = options.Name
+        };
+
+        if (options.Appearance is not null)
+        {
+            values["appearance"] = BuildThreadSectionAppearance(options.Appearance);
+        }
+
+        return values;
+    }
+
+    private static Dictionary<string, object?> BuildThreadSectionUpdateParams(ThreadSectionUpdateOptions options)
+    {
+        if (options.Appearance is not null && options.ClearAppearance)
+        {
+            throw new ArgumentException("Appearance and ClearAppearance cannot both be set.", nameof(options));
+        }
+
+        var values = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["sectionId"] = options.SectionId,
+            ["name"] = options.Name
+        };
+
+        if (options.ClearAppearance)
+        {
+            values["appearance"] = null;
+        }
+        else if (options.Appearance is not null)
+        {
+            values["appearance"] = BuildThreadSectionAppearance(options.Appearance);
+        }
+
+        return values;
+    }
+
+    private static Dictionary<string, object?> BuildThreadSectionAppearance(ThreadSectionAppearanceOptions appearance) =>
+        new(StringComparer.Ordinal)
+        {
+            ["color"] = appearance.Color,
+            ["icon"] = appearance.Icon
+        };
 
     private static JsonElement? BuildThreadListSectionId(ThreadListOptions options)
     {

@@ -120,6 +120,27 @@ public sealed class AccountTokenUsageWrappersTests
                     startDate = "2026-06-09",
                     tokens = 321L
                 }
+            },
+            threadUsage = new
+            {
+                threadId = "thr_1",
+                estimatedUsageCreditsMicros = 1000L,
+                estimatedUsageUsdMicros = 25L,
+                groups = new[]
+                {
+                    new
+                    {
+                        model = "gpt-5",
+                        reasoningEffort = "high",
+                        speed = "standard",
+                        inputTokens = 10L,
+                        cachedInputTokens = 2L,
+                        netNewInputTokens = 8L,
+                        outputTokens = 5L,
+                        totalTokens = 15L,
+                        estimatedUsageCreditsMicros = 1000L
+                    }
+                }
             }
         });
         var rpc = new FakeRpc
@@ -141,7 +162,29 @@ public sealed class AccountTokenUsageWrappersTests
         result.DailyUsageBuckets.Should().ContainSingle();
         result.DailyUsageBuckets![0].StartDate.Should().Be("2026-06-09");
         result.DailyUsageBuckets[0].Tokens.Should().Be(321);
+        result.ThreadUsage.Should().NotBeNull();
+        result.ThreadUsage!.ThreadId.Should().Be("thr_1");
+        result.ThreadUsage.EstimatedUsageCreditsMicros.Should().Be(1000);
+        result.ThreadUsage.EstimatedUsageUsdMicros.Should().Be(25);
+        result.ThreadUsage.Groups.Should().ContainSingle().Which.Model.Should().Be("gpt-5");
         result.Raw.GetProperty("summary").GetProperty("lifetimeTokens").GetInt64().Should().Be(1234);
+    }
+
+    [Fact]
+    public async Task ReadAccountTokenUsageAsync_SendsThreadId_WhenProvided()
+    {
+        var rpc = new FakeRpc
+        {
+            Result = JsonSerializer.SerializeToElement(new { summary = new { } })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.ReadAccountTokenUsageAsync(new AccountTokenUsageReadOptions { ThreadId = "thr_1" });
+
+        rpc.LastMethod.Should().Be("account/usage/read");
+        var json = JsonSerializer.SerializeToElement(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        json.GetProperty("threadId").GetString().Should().Be("thr_1");
     }
 
     [Fact]

@@ -299,13 +299,15 @@ public sealed class AuthAccountConfigWrappersTests
                         new { reasoningEffort = "medium", description = "Balanced" }
                     },
                     availabilityNux = new { message = "Available" },
+                    multiAgentVersion = "v2",
                     upgrade = "gpt-5.2-codex",
                     upgradeInfo = new
                     {
                         model = "gpt-5.2-codex",
                         upgradeCopy = "Upgrade",
                         modelLink = "https://example.test/model",
-                        migrationMarkdown = "Use the newer model."
+                        migrationMarkdown = "Use the newer model.",
+                        retirementAt = 1800000000L
                     }
                 }
             },
@@ -338,8 +340,10 @@ public sealed class AuthAccountConfigWrappersTests
         result.Data.Should().ContainSingle();
         result.Data[0].Id.Should().Be("m1");
         result.Data[0].ModelSpecialty.Should().Be("cyber");
+        result.Data[0].MultiAgentVersion.Should().Be(ModelMultiAgentVersion.V2);
         result.Data[0].SupportedReasoningEfforts.Should().HaveCount(2);
         result.Data[0].UpgradeInfo!.Model.Should().Be("gpt-5.2-codex");
+        result.Data[0].UpgradeInfo!.RetirementAt.Should().Be(DateTimeOffset.FromUnixTimeSeconds(1800000000L));
     }
 
     [Fact]

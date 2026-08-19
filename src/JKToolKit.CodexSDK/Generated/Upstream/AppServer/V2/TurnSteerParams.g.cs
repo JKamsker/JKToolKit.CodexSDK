@@ -23,7 +23,7 @@ internal partial class TurnSteerParams
     public string ExpectedTurnId { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("input")]
-    public System.Collections.Generic.ICollection<Content2> Input { get; set; } = new System.Collections.ObjectModel.Collection<Content2>();
+    public System.Collections.Generic.ICollection<Input> Input { get; set; } = new System.Collections.ObjectModel.Collection<Input>();
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
