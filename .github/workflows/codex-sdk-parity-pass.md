@@ -122,6 +122,7 @@ safe-outputs:
     if-no-changes: "ignore"
     protected-files: fallback-to-issue
     fallback-as-pull-request: true
+    signed-commits: true
 
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
@@ -322,12 +323,12 @@ The workflow also enforces this after the agent runs: if a safe-output write is 
 
 ## Repair Dispatch Runs
 
-When `inputs.repair_attempt` is greater than `0`, this run was automatically dispatched because a previous parity attempt requested safe output but failed the validation gate before safe outputs were processed.
+When `inputs.repair_attempt` is greater than `0`, this run was automatically dispatched because a parity session or the final exact-SHA CI gate failed.
 
 For repair runs:
 
-1. Inspect `inputs.repair_source_run` with `gh run view` and focus on the failing validation step: restore, generated DTO check, build, or test.
-2. Treat the failure log as the first bug report. Reproduce and fix the validation failure before doing any unrelated parity exploration.
+1. Inspect `inputs.repair_source_run` with `gh run view` and use `inputs.repair_source_job` to identify the failing area. For `ci`, inspect the failed gated CI job. For `parity`, inspect the failed agent or validation job.
+2. Treat the failure log as the first bug report. Reproduce and fix that failure before doing any unrelated parity exploration.
 3. Run the same validation commands again after the fix.
 4. Do not request safe output until validation passes and hosted CI is expected to pass.
 5. Stop after the third repair attempt. If `repair_attempt` is `3` and validation still cannot pass, use `report_incomplete` with the exact remaining blocker instead of creating a PR.

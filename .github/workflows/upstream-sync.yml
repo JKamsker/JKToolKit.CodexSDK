@@ -27,6 +27,16 @@ jobs:
       upstream_version: ${{ steps.latest.outputs.latest }}
       up_to_date: ${{ steps.versions.outputs.up_to_date }}
     steps:
+      - name: Verify user automation token
+        shell: bash
+        env:
+          USER_AUTOMATION_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$USER_AUTOMATION_TOKEN" ]; then
+            echo "::error::GH_AW_GITHUB_TOKEN is required so commits and workflow events are created as the repository owner."
+            exit 1
+          fi
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -156,8 +166,11 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.GH_AW_GITHUB_TOKEN }}
           base: master
           branch: automation/upstream-codex-${{ steps.versions.outputs.latest }}
+          committer: Jonas Kamsker <11245306+JKamsker@users.noreply.github.com>
+          author: Jonas Kamsker <11245306+JKamsker@users.noreply.github.com>
           commit-message: "chore(upstream): bump @openai/codex to ${{ steps.versions.outputs.latest }}"
           title: "chore(upstream): bump @openai/codex to ${{ steps.versions.outputs.latest }}"
           body: |
@@ -166,7 +179,7 @@ jobs:
             - Previous: ${{ steps.versions.outputs.pinned }}
             - Latest: ${{ steps.versions.outputs.latest }}
 
-            The dynamic parity pass runs on this branch next, then CI is dispatched against the resulting head commit. If upstream removed or changed a handwritten SDK surface, fix the branch in the PR instead of letting the scheduled sync fail before a PR exists.
+            The dynamic parity pass runs on this branch next. The final branch SHA is merged automatically only after its exact CI run succeeds, and the post-merge NuGet release is monitored. If upstream removed or changed a handwritten SDK surface, the bounded repair workflow fixes this branch or creates an issue.
           delete-branch: true
 
   parity:
@@ -181,25 +194,46 @@ jobs:
       upstream_ref: ${{ needs.sync.outputs.upstream_branch }}
     secrets: inherit
 
-  ci:
-    name: Trigger CI for final PR branch
+  gate:
+    name: Gate, merge, and verify release
     needs: [sync, parity]
-    if: ${{ !cancelled() && needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none' }}
+    if: ${{ needs.parity.result == 'success' && needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout automation scripts
+        uses: actions/checkout@v4
+
+      - name: Gate exact SHA, merge, and verify NuGet release
+        env:
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
+        run: >-
+          python .github/scripts/upstream_sync_gate.py gate
+          --repo "${{ github.repository }}"
+          --pr "${{ needs.sync.outputs.upstream_pr }}"
+          --branch "${{ needs.sync.outputs.upstream_branch }}"
+          --version "${{ needs.sync.outputs.upstream_version }}"
+          --attempt 0
+          --source-run "${{ github.run_id }}"
+
+  repair-parity:
+    name: Repair failed parity session
+    needs: [sync, parity]
+    if: ${{ always() && needs.sync.result == 'success' && needs.parity.result == 'failure' && needs.sync.outputs.existing_pr_exists != 'true' && needs.sync.outputs.up_to_date != 'true' && needs.sync.outputs.pull_request_operation != 'none' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger CI
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const workflowId = "ci.yml";
-            const ref = "${{ needs.sync.outputs.upstream_branch }}";
+      - name: Checkout automation scripts
+        uses: actions/checkout@v4
 
-            core.info(`Dispatching ${workflowId} on ${ref}`);
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: workflowId,
-              ref,
-            });
+      - name: Dispatch bounded repair or create issue
+        env:
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
+        run: >-
+          python .github/scripts/upstream_sync_gate.py schedule-repair
+          --repo "${{ github.repository }}"
+          --pr "${{ needs.sync.outputs.upstream_pr }}"
+          --branch "${{ needs.sync.outputs.upstream_branch }}"
+          --version "${{ needs.sync.outputs.upstream_version }}"
+          --attempt 0
+          --source-run "${{ github.run_id }}"
+          --source-job parity

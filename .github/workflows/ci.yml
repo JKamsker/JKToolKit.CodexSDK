@@ -8,10 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  automation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test upstream automation
+        run: python -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
   changes:
     runs-on: ubuntu-latest
     outputs:
-      src_changed: ${{ steps.detect.outputs.src_changed }}
+      package_changed: ${{ steps.detect.outputs.package_changed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +34,7 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Manual run: building regardless of changed paths."
             exit 0
           fi
@@ -39,30 +48,30 @@ jobs:
           fi
 
           if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "No usable base SHA; building to stay safe."
             exit 0
           fi
 
           if ! git cat-file -e "$base^{commit}" 2>/dev/null || ! git cat-file -e "$head^{commit}" 2>/dev/null; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Could not resolve base/head commits locally; building to stay safe."
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "$base" "$head" -- src)"
+          changed_files="$(git diff --name-only "$base" "$head" -- src UPSTREAM_CODEX_VERSION.json external/codex)"
           if [[ -n "$changed_files" ]]; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
-            echo "Changed src files:"
+            echo "package_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changed package or upstream files:"
             echo "$changed_files"
           else
-            echo "src_changed=false" >> "$GITHUB_OUTPUT"
-            echo "No src changes detected; build and publish jobs will be skipped."
+            echo "package_changed=false" >> "$GITHUB_OUTPUT"
+            echo "No package or upstream changes detected; build and publish jobs will be skipped."
           fi
 
   build-and-test:
     needs: changes
-    if: needs.changes.outputs.src_changed == 'true'
+    if: needs.changes.outputs.package_changed == 'true'
     runs-on: ${{ matrix.os }}
     outputs:
       version: ${{ steps.set-version.outputs.version }}
@@ -145,8 +154,8 @@ jobs:
           path: nuget-packages/*.nupkg
 
   NugetUpload:
-    needs: [changes, build-and-test]
-    if: github.event_name == 'push' && needs.changes.outputs.src_changed == 'true' && needs.build-and-test.result == 'success'
+    needs: [automation-tests, changes, build-and-test]
+    if: github.event_name == 'push' && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - name: Download NuGet Packages
