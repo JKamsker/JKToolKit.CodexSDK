@@ -128,6 +128,14 @@ internal static class CodexAppServerClientConfigRequirementsParser
             Hooks = TryGetObject(req, "hooks")?.Clone(),
             EnforceResidency = residency,
             Network = network,
+            AutoReview = TryGetObject(req, "autoReview") is { } autoReview
+                ? new AutoReviewRequirements
+                {
+                    RequiredOnModels = GetOptionalStringArray(autoReview, "requiredOnModels"),
+                    IgnoreRules = GetOptionalStringArray(autoReview, "ignoreRules"),
+                    Raw = autoReview.Clone()
+                }
+                : null,
             Raw = req.Clone()
         };
     }

@@ -132,6 +132,32 @@ public sealed record class ConfigRequirements
     public NetworkRequirements? Network { get; init; }
 
     /// <summary>
+    /// Gets automatic review requirements, when present.
+    /// </summary>
+    public AutoReviewRequirements? AutoReview { get; init; }
+
+    /// <summary>
+    /// Gets the raw JSON requirements payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents automatic review policy requirements.
+/// </summary>
+public sealed record class AutoReviewRequirements
+{
+    /// <summary>
+    /// Gets model ids that require automatic review, when present.
+    /// </summary>
+    public IReadOnlyList<string>? RequiredOnModels { get; init; }
+
+    /// <summary>
+    /// Gets automatic-review ignore rules, when present.
+    /// </summary>
+    public IReadOnlyList<string>? IgnoreRules { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON requirements payload.
     /// </summary>
     public required JsonElement Raw { get; init; }

@@ -18,7 +18,33 @@ public sealed record class ThreadSectionDescriptor
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets optional synchronized presentation metadata for the section.
+    /// </summary>
+    public ThreadSectionAppearance? Appearance { get; init; }
+
+    /// <summary>
     /// Gets the raw section payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Optional visual presentation for a custom thread section.
+/// </summary>
+public sealed record class ThreadSectionAppearance
+{
+    /// <summary>
+    /// Gets the color token or value returned by upstream.
+    /// </summary>
+    public string? Color { get; init; }
+
+    /// <summary>
+    /// Gets the icon token returned by upstream.
+    /// </summary>
+    public string? Icon { get; init; }
+
+    /// <summary>
+    /// Gets the raw appearance payload.
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
@@ -69,6 +95,11 @@ public sealed class ThreadSectionCreateOptions
     /// Gets or sets the section display name.
     /// </summary>
     public required string Name { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional synchronized presentation metadata for the section.
+    /// </summary>
+    public ThreadSectionAppearanceOptions? Appearance { get; set; }
 }
 
 /// <summary>
@@ -85,6 +116,32 @@ public sealed class ThreadSectionUpdateOptions
     /// Gets or sets the updated section display name.
     /// </summary>
     public required string Name { get; set; }
+
+    /// <summary>
+    /// Gets or sets replacement section appearance. Set <see cref="ClearAppearance"/> to clear it.
+    /// </summary>
+    public ThreadSectionAppearanceOptions? Appearance { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether section appearance should be cleared.
+    /// </summary>
+    public bool ClearAppearance { get; set; }
+}
+
+/// <summary>
+/// Appearance values sent to thread section create/update requests.
+/// </summary>
+public sealed class ThreadSectionAppearanceOptions
+{
+    /// <summary>
+    /// Gets or sets the color token or value.
+    /// </summary>
+    public string? Color { get; set; }
+
+    /// <summary>
+    /// Gets or sets the icon token.
+    /// </summary>
+    public string? Icon { get; set; }
 }
 
 /// <summary>

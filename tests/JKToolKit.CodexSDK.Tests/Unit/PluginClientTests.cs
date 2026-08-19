@@ -584,11 +584,13 @@ public sealed class PluginClientTests
         {
             RemoteMarketplaceName = "codex-remote",
             PluginName = "plugin-one",
+            InstallAttemptId = "attempt-1",
             ForceRemoteSync = true
         });
 
         var installJson = JsonSerializer.Serialize(installRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         installJson.Should().Contain("\"remoteMarketplaceName\":\"codex-remote\"");
+        installJson.Should().Contain("\"installAttemptId\":\"attempt-1\"");
         installJson.Should().NotContain("forceRemoteSync");
     }
 

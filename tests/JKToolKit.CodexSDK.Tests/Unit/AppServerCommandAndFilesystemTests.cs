@@ -240,7 +240,7 @@ public sealed class AppServerCommandAndFilesystemTests
             """
             {
               "data": [
-                { "id": "sec_1", "name": "Work" }
+                { "id": "sec_1", "name": "Work", "appearance": { "color": "blue", "icon": "briefcase" } }
               ],
               "nextCursor": "next_1"
             }
@@ -251,6 +251,8 @@ public sealed class AppServerCommandAndFilesystemTests
         var list = await listClient.ListThreadSectionsAsync(new ThreadSectionListOptions { Limit = 10 });
 
         list.Sections.Should().ContainSingle().Which.Id.Should().Be("sec_1");
+        list.Sections[0].Appearance!.Color.Should().Be("blue");
+        list.Sections[0].Appearance!.Icon.Should().Be("briefcase");
         list.NextCursor.Should().Be("next_1");
         listRpc.LastMethod.Should().Be("threadSection/list");
 
@@ -258,11 +260,17 @@ public sealed class AppServerCommandAndFilesystemTests
         var createRpc = new RecordingRpc { Result = createDoc.RootElement };
         await using var createClient = CreateClient(createRpc);
 
-        var created = await createClient.CreateThreadSectionAsync(new ThreadSectionCreateOptions { Name = "Personal" });
+        var created = await createClient.CreateThreadSectionAsync(new ThreadSectionCreateOptions
+        {
+            Name = "Personal",
+            Appearance = new ThreadSectionAppearanceOptions { Color = "green", Icon = "home" }
+        });
 
         created.Section.Should().NotBeNull();
         created.Section!.Name.Should().Be("Personal");
         createRpc.LastMethod.Should().Be("threadSection/create");
+        JsonSerializer.Serialize(createRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"appearance\"");
 
         using var updateDoc = JsonDocument.Parse("""{"section":{"id":"sec_2","name":"Projects"}}""");
         var updateRpc = new RecordingRpc { Result = updateDoc.RootElement };
@@ -271,12 +279,15 @@ public sealed class AppServerCommandAndFilesystemTests
         var updated = await updateClient.UpdateThreadSectionAsync(new ThreadSectionUpdateOptions
         {
             SectionId = "sec_2",
-            Name = "Projects"
+            Name = "Projects",
+            ClearAppearance = true
         });
 
         updated.Section.Should().NotBeNull();
         updated.Section!.Name.Should().Be("Projects");
         updateRpc.LastMethod.Should().Be("threadSection/update");
+        JsonSerializer.Serialize(updateRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"appearance\":null");
 
         var deleteRpc = new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement };
         await using var deleteClient = CreateClient(deleteRpc);

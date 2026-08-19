@@ -80,6 +80,14 @@ internal static partial class AppServerNotificationMapper
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),
 
+            "thread/reverted" => new ThreadRevertedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
+            "thread/queue/changed" => new ThreadQueueChangedNotification(
+                ThreadId: GetString(p, "threadId") ?? string.Empty,
+                Params: p),
+
             "thread/closed" => new ThreadClosedNotification(
                 ThreadId: GetString(p, "threadId") ?? string.Empty,
                 Params: p),

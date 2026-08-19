@@ -17,6 +17,14 @@ public sealed class AppServerNotificationMapperTests
 
         mapped.Should().BeOfType<AgentMessageDeltaNotification>()
             .Which.Delta.Should().Be("hi");
+
+        AppServerNotificationMapper.Map("thread/reverted", JsonDocument.Parse("""{"threadId":"t"}""").RootElement)
+            .Should().BeOfType<ThreadRevertedNotification>()
+            .Which.ThreadId.Should().Be("t");
+
+        AppServerNotificationMapper.Map("thread/queue/changed", JsonDocument.Parse("""{"threadId":"t"}""").RootElement)
+            .Should().BeOfType<ThreadQueueChangedNotification>()
+            .Which.ThreadId.Should().Be("t");
     }
 
     [Fact]

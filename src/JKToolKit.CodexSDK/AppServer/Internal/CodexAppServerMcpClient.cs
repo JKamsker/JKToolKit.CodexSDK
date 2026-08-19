@@ -74,6 +74,7 @@ internal sealed class CodexAppServerMcpClient
             {
                 Name = options.Name,
                 ThreadId = options.ThreadId,
+                ClientRegistration = options.ClientRegistration?.Value,
                 Scopes = options.Scopes,
                 TimeoutSecs = options.TimeoutSeconds
             },

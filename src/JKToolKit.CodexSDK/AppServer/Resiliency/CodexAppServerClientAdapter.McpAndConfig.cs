@@ -28,6 +28,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct);
 
+    Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(AccountTokenUsageReadOptions options, CancellationToken ct);
+
     Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct);
 
     Task<ModelListResult> ListModelsAsync(CancellationToken ct);
@@ -91,6 +93,9 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct) => _inner.ReadWorkspaceMessagesAsync(ct);
 
     public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct) => _inner.ReadAccountTokenUsageAsync(ct);
+
+    public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(AccountTokenUsageReadOptions options, CancellationToken ct) =>
+        _inner.ReadAccountTokenUsageAsync(options, ct);
 
     public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct) => _inner.ListModelsAsync(options, ct);
 

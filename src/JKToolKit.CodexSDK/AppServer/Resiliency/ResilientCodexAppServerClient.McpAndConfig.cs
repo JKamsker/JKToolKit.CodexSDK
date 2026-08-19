@@ -48,6 +48,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountTokenUsageAsync(token), ct);
 
+    public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(AccountTokenUsageReadOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ReadAccountTokenUsageAsync(options, token), ct);
+
     public Task<ModelListResult> ListModelsAsync(ModelListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.ListModelsAsync(options, token), ct);
 

@@ -43,6 +43,7 @@ public sealed record class ModelUpgradeInfo
     public string? UpgradeCopy { get; init; }
     public string? ModelLink { get; init; }
     public string? MigrationMarkdown { get; init; }
+    public DateTimeOffset? RetirementAt { get; init; }
 }
 
 /// <summary>
@@ -58,6 +59,7 @@ public sealed record class ModelListEntry
     public bool Hidden { get; init; }
     public bool IsDefault { get; init; }
     public bool SupportsPersonality { get; init; }
+    public ModelMultiAgentVersion? MultiAgentVersion { get; init; }
     public string? Upgrade { get; init; }
     public required string DefaultReasoningEffort { get; init; }
     public string? AvailabilityNuxMessage { get; init; }
@@ -65,6 +67,50 @@ public sealed record class ModelListEntry
     public IReadOnlyList<ModelReasoningEffortOption> SupportedReasoningEfforts { get; init; } = Array.Empty<ModelReasoningEffortOption>();
     public ModelUpgradeInfo? UpgradeInfo { get; init; }
     public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Multi-agent runtime advertised for a model.
+/// </summary>
+public readonly record struct ModelMultiAgentVersion
+{
+    private readonly string? _value;
+
+    public string Value => _value ?? string.Empty;
+
+    private ModelMultiAgentVersion(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("Model multi-agent version cannot be empty or whitespace.", nameof(value));
+
+        _value = value;
+    }
+
+    public static ModelMultiAgentVersion Disabled => new("disabled");
+
+    public static ModelMultiAgentVersion V1 => new("v1");
+
+    public static ModelMultiAgentVersion V2 => new("v2");
+
+    public static ModelMultiAgentVersion Parse(string value) => new(value);
+
+    public static bool TryParse(string? value, out ModelMultiAgentVersion version)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            version = default;
+            return false;
+        }
+
+        version = new ModelMultiAgentVersion(value);
+        return true;
+    }
+
+    public static implicit operator ModelMultiAgentVersion(string value) => Parse(value);
+
+    public static implicit operator string(ModelMultiAgentVersion version) => version.Value;
+
+    public override string ToString() => Value;
 }
 
 /// <summary>

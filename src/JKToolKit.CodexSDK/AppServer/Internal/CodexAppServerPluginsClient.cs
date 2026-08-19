@@ -85,6 +85,7 @@ internal sealed class CodexAppServerPluginsClient
             {
                 marketplacePath = options.MarketplacePath,
                 remoteMarketplaceName = options.RemoteMarketplaceName,
+                installAttemptId = options.InstallAttemptId,
                 pluginName = options.PluginName
             },
             ct);

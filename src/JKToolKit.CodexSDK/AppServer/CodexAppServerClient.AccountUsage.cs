@@ -10,4 +10,12 @@ public sealed partial class CodexAppServerClient
     /// </remarks>
     public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(CancellationToken ct = default) =>
         _configClient.ReadAccountTokenUsageAsync(ct);
+
+    /// <summary>
+    /// Reads ChatGPT account token-usage summary, with optional thread-specific estimated usage.
+    /// </summary>
+    public Task<AccountTokenUsageReadResult> ReadAccountTokenUsageAsync(
+        AccountTokenUsageReadOptions options,
+        CancellationToken ct = default) =>
+        _configClient.ReadAccountTokenUsageAsync(options, ct);
 }

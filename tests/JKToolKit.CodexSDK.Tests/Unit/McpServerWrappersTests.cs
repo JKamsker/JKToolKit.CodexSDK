@@ -56,6 +56,7 @@ public sealed class McpServerWrappersTests
                 new
                 {
                     name = "docs",
+                    pluginId = "plug_docs",
                     authStatus = "notLoggedIn",
                     status = "failed",
                     error = "reauth required",
@@ -109,6 +110,7 @@ public sealed class McpServerWrappersTests
 
         page.Servers.Should().HaveCount(1);
         page.Servers[0].Name.Should().Be("docs");
+        page.Servers[0].PluginId.Should().Be("plug_docs");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
         page.Servers[0].StartupStatus.Should().Be("failed");
         page.Servers[0].Error.Should().Be("reauth required");
@@ -192,6 +194,7 @@ public sealed class McpServerWrappersTests
                 var typed = (McpServerOauthLoginParams)p!;
                 typed.Name.Should().Be("my-server");
                 typed.ThreadId.Should().Be("thr_1");
+                typed.ClientRegistration.Should().Be("cimd");
                 typed.TimeoutSecs.Should().Be(30);
                 typed.Scopes.Should().BeNull();
             },
@@ -209,6 +212,7 @@ public sealed class McpServerWrappersTests
         {
             Name = "my-server",
             ThreadId = "thr_1",
+            ClientRegistration = McpServerOauthClientRegistration.Cimd,
             TimeoutSeconds = 30
         });
 

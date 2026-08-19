@@ -45,6 +45,9 @@ public sealed class ConfigRequirementsParsingTests
         requirements.BrowserUse!.DisableAutoReview.Should().BeTrue();
         requirements.Feedback.Should().NotBeNull();
         requirements.Feedback!.Enabled.Should().BeFalse();
+        requirements.AutoReview.Should().NotBeNull();
+        requirements.AutoReview!.RequiredOnModels.Should().Equal("o4-mini");
+        requirements.AutoReview.IgnoreRules.Should().Equal("trusted-workspace");
         requirements.Hooks.Should().NotBeNull();
         requirements.EnforceResidency!.Value.Value.Should().Be("us");
 

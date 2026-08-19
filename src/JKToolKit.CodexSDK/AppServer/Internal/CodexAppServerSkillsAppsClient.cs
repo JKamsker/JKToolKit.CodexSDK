@@ -133,6 +133,7 @@ internal sealed class CodexAppServerSkillsAppsClient
             new UpstreamV2.AppsReadParams
             {
                 AppIds = options.AppIds.ToArray(),
+                ThreadId = options.ThreadId,
                 IncludeTools = options.IncludeTools ? true : null
             },
             ct);
