@@ -234,6 +234,27 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task ListThreadsAsync_SendsProjectFilters_WhenExperimentalEnabled()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };
+        await using var client = CreateClient(rpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+
+        await client.ListThreadsAsync(new ThreadListOptions { ProjectId = "proj_1" });
+
+        rpc.LastMethod.Should().Be("thread/list");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"projectId\":\"proj_1\"");
+
+        var unassignedRpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };
+        await using var unassignedClient = CreateClient(unassignedRpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+
+        await unassignedClient.ListThreadsAsync(new ThreadListOptions { UnassignedProjectOnly = true });
+
+        JsonSerializer.Serialize(unassignedRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"projectId\":null");
+    }
+
+    [Fact]
     public async Task ThreadSectionMethods_SendExpectedMethods_AndParseSections()
     {
         using var listDoc = JsonDocument.Parse(
@@ -346,6 +367,38 @@ public sealed class AppServerCommandAndFilesystemTests
             .And.Contain("\"sha\":null")
             .And.NotContain("isPinned")
             .And.NotContain("originUrl");
+    }
+
+    [Fact]
+    public async Task UpdateThreadMetadataAsync_SendsProjectPatch_WhenExperimentalEnabled()
+    {
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr-1","projectId":"proj_1"}}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = CreateClient(rpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+
+        var result = await client.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thr-1",
+            ProjectId = "proj_1",
+            UpdateProjectId = true
+        });
+
+        result.Thread.Thread.ProjectId.Should().Be("proj_1");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"projectId\":\"proj_1\"");
+
+        var clearRpc = new RecordingRpc { Result = JsonDocument.Parse("""{"thread":{"id":"thr-1","projectId":null}}""").RootElement };
+        await using var clearClient = CreateClient(clearRpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+
+        await clearClient.UpdateThreadMetadataAsync(new ThreadMetadataUpdateOptions
+        {
+            ThreadId = "thr-1",
+            ClearProjectId = true
+        });
+
+        JsonSerializer.Serialize(clearRpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"projectId\":\"\"");
     }
 
     [Fact]

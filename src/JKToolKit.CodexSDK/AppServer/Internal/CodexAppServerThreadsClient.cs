@@ -43,6 +43,7 @@ internal sealed partial class CodexAppServerThreadsClient
                     nameof(ThreadStartOptions.ClearServiceTier)),
                 ServiceName = options.ServiceName,
                 SessionStartSource = options.SessionStartSource?.Value,
+                ProjectId = options.ProjectId,
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 ApprovalsReviewer = options.ApprovalsReviewer,
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
@@ -162,6 +163,7 @@ internal sealed partial class CodexAppServerThreadsClient
             {
                 Archived = options.Archived,
                 SectionId = BuildThreadListSectionId(options),
+                ProjectId = BuildThreadListProjectId(options, _experimentalApiEnabled()),
                 Cwd = options.Cwd,
                 Limit = options.Limit,
                 ModelProviders = options.ModelProviders,

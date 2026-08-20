@@ -166,6 +166,33 @@ internal sealed partial class CodexAppServerThreadsClient
         return null;
     }
 
+    private static JsonElement? BuildThreadListProjectId(ThreadListOptions options, bool experimentalApiEnabled)
+    {
+        ValidateOptionalWireValue(options.ProjectId, nameof(options.ProjectId), nameof(options));
+
+        if (options.UnassignedProjectOnly && !string.IsNullOrWhiteSpace(options.ProjectId))
+        {
+            throw new ArgumentException("ProjectId and UnassignedProjectOnly cannot both be set.", nameof(options));
+        }
+
+        if ((options.UnassignedProjectOnly || !string.IsNullOrWhiteSpace(options.ProjectId)) && !experimentalApiEnabled)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/list.projectId");
+        }
+
+        if (options.UnassignedProjectOnly)
+        {
+            return JsonSerializer.SerializeToElement((string?)null);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.ProjectId))
+        {
+            return JsonSerializer.SerializeToElement(options.ProjectId);
+        }
+
+        return null;
+    }
+
     private static void ValidateOptionalWireValue(string? value, string displayName, string paramName)
     {
         if (value is null)

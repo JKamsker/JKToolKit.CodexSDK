@@ -38,4 +38,20 @@ public sealed class ThreadListParamsSerializationTests
 
         json.Should().Contain("\"sectionId\":\"sec_1\"");
     }
+
+    [Fact]
+    public void Serialize_WritesProjectIdFilters()
+    {
+        var projectJson = JsonSerializer.Serialize(
+            new ThreadListParams { ProjectId = JsonSerializer.SerializeToElement("proj_1") },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        projectJson.Should().Contain("\"projectId\":\"proj_1\"");
+
+        var unassignedJson = JsonSerializer.Serialize(
+            new ThreadListParams { ProjectId = JsonSerializer.SerializeToElement((string?)null) },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        unassignedJson.Should().Contain("\"projectId\":null");
+    }
 }

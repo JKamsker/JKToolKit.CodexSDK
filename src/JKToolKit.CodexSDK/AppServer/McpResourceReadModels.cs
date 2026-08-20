@@ -13,9 +13,22 @@ public sealed class McpResourceReadOptions
     public required string Server { get; set; }
 
     /// <summary>
-    /// Gets or sets the thread identifier that owns the MCP context.
+    /// Gets or sets the thread identifier that owns the MCP context, when reading through a live thread.
     /// </summary>
-    public required string ThreadId { get; set; }
+    public string? ThreadId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the originating MCP tool-call id used for app-specific resource scoping.
+    /// </summary>
+    /// <remarks>
+    /// Upstream requires <see cref="ThreadId"/> when this value is set.
+    /// </remarks>
+    public string? OriginCallId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the connector id associated with the app resource, when present.
+    /// </summary>
+    public string? ConnectorId { get; set; }
 
     /// <summary>
     /// Gets or sets the resource URI to read.
@@ -63,6 +76,11 @@ public sealed record class McpResourceReadResult
     /// Gets the resource contents returned by the server.
     /// </summary>
     public required IReadOnlyList<McpResourceContent> Contents { get; init; }
+
+    /// <summary>
+    /// Gets the originating call id returned by the server when app-specific resource scoping was applied.
+    /// </summary>
+    public string? OriginCallId { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the response.

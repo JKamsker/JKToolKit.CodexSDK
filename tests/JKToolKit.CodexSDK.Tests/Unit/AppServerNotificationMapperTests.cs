@@ -25,6 +25,18 @@ public sealed class AppServerNotificationMapperTests
         AppServerNotificationMapper.Map("thread/queue/changed", JsonDocument.Parse("""{"threadId":"t"}""").RootElement)
             .Should().BeOfType<ThreadQueueChangedNotification>()
             .Which.ThreadId.Should().Be("t");
+
+        AppServerNotificationMapper.Map("thread/project/updated", JsonDocument.Parse("""{"threadId":"t","projectId":null}""").RootElement)
+            .Should().BeOfType<ThreadProjectUpdatedNotification>()
+            .Which.ProjectId.Should().BeNull();
+
+        AppServerNotificationMapper.Map("project/changed", JsonDocument.Parse("""{"projectId":"proj_1","changeType":"updated"}""").RootElement)
+            .Should().BeOfType<ProjectChangedNotification>()
+            .Which.ChangeType.Should().Be("updated");
+
+        AppServerNotificationMapper.Map("autoApprovalReview/strictReviewRequired", JsonDocument.Parse("""{"threadId":"t","turnId":"u","startedAtMs":123456789}""").RootElement)
+            .Should().BeOfType<StrictReviewRequiredNotification>()
+            .Which.StartedAtMs.Should().Be(123456789);
     }
 
     [Fact]
@@ -278,6 +290,9 @@ public sealed class AppServerNotificationMapperTests
     [Theory]
     [InlineData("thread/deleted", "{}")]
     [InlineData("thread/deleted", """{"threadId":123}""")]
+    [InlineData("thread/project/updated", """{"threadId":"t1","projectId":123}""")]
+    [InlineData("project/changed", """{"projectId":"proj_1"}""")]
+    [InlineData("autoApprovalReview/strictReviewRequired", """{"threadId":"t1","turnId":"turn1","startedAtMs":"nope"}""")]
     [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","model":"gpt-5.1","showBufferingUi":"true"}""")]
     [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","showBufferingUi":true}""")]
     [InlineData("rawResponse/completed", """{"threadId":"t1","turnId":"turn1"}""")]

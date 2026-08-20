@@ -68,6 +68,11 @@ public sealed record class CodexThreadSummary
     public string? Preview { get; init; }
 
     /// <summary>
+    /// Gets the canonical app-server project assignment, when present.
+    /// </summary>
+    public string? ProjectId { get; init; }
+
+    /// <summary>
     /// Gets the thread creation timestamp, when present.
     /// </summary>
     public DateTimeOffset? CreatedAt { get; init; }

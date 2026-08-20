@@ -16,6 +16,12 @@ internal partial class McpResourceReadResponse
     [System.Text.Json.Serialization.JsonPropertyName("contents")]
     public System.Collections.Generic.ICollection<ResourceContent> Contents { get; set; } = new System.Collections.ObjectModel.Collection<ResourceContent>();
 
+    /// <summary>
+    /// Originating call when the server applied app-specific resource scoping.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("originCallId")]
+    public string? OriginCallId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

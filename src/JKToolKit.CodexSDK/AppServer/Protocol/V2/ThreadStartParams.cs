@@ -57,6 +57,12 @@ public sealed record class ThreadStartParams
     public string? SessionStartSource { get; init; }
 
     /// <summary>
+    /// Gets an optional project assignment for the new thread.
+    /// </summary>
+    [JsonPropertyName("projectId")]
+    public string? ProjectId { get; init; }
+
+    /// <summary>
     /// Gets an optional approval policy override for the thread.
     /// </summary>
     /// <remarks>

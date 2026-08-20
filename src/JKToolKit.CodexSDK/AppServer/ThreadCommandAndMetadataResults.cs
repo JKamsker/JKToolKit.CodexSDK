@@ -45,6 +45,21 @@ public sealed class ThreadMetadataUpdateOptions
     public ThreadGitInfoUpdate? GitInfo { get; set; }
 
     /// <summary>
+    /// Gets or sets the project id to assign when <see cref="UpdateProjectId"/> is true.
+    /// </summary>
+    public string? ProjectId { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the project assignment should be updated.
+    /// </summary>
+    public bool UpdateProjectId { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the current project assignment should be cleared.
+    /// </summary>
+    public bool ClearProjectId { get; set; }
+
+    /// <summary>
     /// Gets or sets whether the thread should be pinned.
     /// </summary>
     [Obsolete("Codex 0.147.0 removed thread/metadata/update isPinned. Use MoveThreadToSectionAsync instead.")]

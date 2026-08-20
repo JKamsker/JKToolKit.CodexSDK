@@ -31,7 +31,8 @@ public sealed class ThreadSummaryParsingTests
           "serviceTier": "fast",
           "thread": {
             "id": "t2",
-            "name": "hello"
+            "name": "hello",
+            "projectId": "proj_1"
           }
         }
         """);
@@ -41,5 +42,6 @@ public sealed class ThreadSummaryParsingTests
         summary.Should().NotBeNull();
         summary!.Model.Should().Be("gpt-5");
         summary.ServiceTier.Should().Be(JKToolKit.CodexSDK.Models.CodexServiceTier.Fast);
+        summary.ProjectId.Should().Be("proj_1");
     }
 }

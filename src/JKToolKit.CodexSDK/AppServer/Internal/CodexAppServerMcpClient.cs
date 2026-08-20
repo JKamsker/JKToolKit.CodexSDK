@@ -44,8 +44,11 @@ internal sealed class CodexAppServerMcpClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.Server))
             throw new ArgumentException("Server cannot be empty or whitespace.", nameof(options));
-        if (string.IsNullOrWhiteSpace(options.ThreadId))
-            throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
+        ValidateOptionalWireValue(options.ThreadId, nameof(options.ThreadId), nameof(options));
+        ValidateOptionalWireValue(options.OriginCallId, nameof(options.OriginCallId), nameof(options));
+        ValidateOptionalWireValue(options.ConnectorId, nameof(options.ConnectorId), nameof(options));
+        if (!string.IsNullOrWhiteSpace(options.OriginCallId) && string.IsNullOrWhiteSpace(options.ThreadId))
+            throw new ArgumentException("OriginCallId requires ThreadId.", nameof(options));
         if (string.IsNullOrWhiteSpace(options.Uri))
             throw new ArgumentException("Uri cannot be empty or whitespace.", nameof(options));
 
@@ -53,6 +56,8 @@ internal sealed class CodexAppServerMcpClient
             "mcpResource/read",
             new UpstreamV2.McpResourceReadParams
             {
+                ConnectorId = options.ConnectorId,
+                OriginCallId = options.OriginCallId,
                 Server = options.Server,
                 ThreadId = options.ThreadId,
                 Uri = options.Uri
@@ -60,6 +65,14 @@ internal sealed class CodexAppServerMcpClient
             ct);
 
         return CodexAppServerClientMcpParsers.ParseMcpResourceReadResult(result);
+    }
+
+    private static void ValidateOptionalWireValue(string? value, string displayName, string paramName)
+    {
+        if (value is not null && string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException($"{displayName} cannot be empty or whitespace.", paramName);
+        }
     }
 
     public async Task<McpServerOauthLoginResult> StartMcpServerOauthLoginAsync(McpServerOauthLoginOptions options, CancellationToken ct = default)

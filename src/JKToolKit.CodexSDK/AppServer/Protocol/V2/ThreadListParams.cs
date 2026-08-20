@@ -21,6 +21,12 @@ public sealed record class ThreadListParams
     public JsonElement? SectionId { get; init; }
 
     /// <summary>
+    /// Gets an optional project filter. Omit to include every project; send JSON null to include only unassigned threads.
+    /// </summary>
+    [JsonPropertyName("projectId")]
+    public JsonElement? ProjectId { get; init; }
+
+    /// <summary>
     /// Gets an optional working directory filter.
     /// </summary>
     [JsonPropertyName("cwd")]

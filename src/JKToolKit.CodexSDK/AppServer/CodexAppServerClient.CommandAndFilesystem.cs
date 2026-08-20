@@ -63,6 +63,8 @@ public sealed partial class CodexAppServerClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
+        if ((options.UpdateProjectId || options.ClearProjectId) && !_core.ExperimentalApiEnabled)
+            throw new CodexExperimentalApiRequiredException("thread/metadata/update.projectId");
         var patch = BuildThreadMetadataPatch(options);
 
         var result = await _core.SendRequestAsync(
@@ -168,12 +170,37 @@ public sealed partial class CodexAppServerClient
             patch["gitInfo"] = BuildGitInfoPatch(gitInfo);
         }
 
+        if (options.UpdateProjectId || options.ClearProjectId)
+        {
+            patch["projectId"] = BuildProjectIdPatch(options);
+        }
+
         if (patch.Count == 1)
         {
             throw new ArgumentException("At least one metadata update must be set.", nameof(options));
         }
 
         return patch;
+    }
+
+    private static string BuildProjectIdPatch(ThreadMetadataUpdateOptions options)
+    {
+        if (options.UpdateProjectId && options.ClearProjectId)
+        {
+            throw new ArgumentException("UpdateProjectId and ClearProjectId cannot both be set.", nameof(options));
+        }
+
+        if (options.ClearProjectId)
+        {
+            return string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(options.ProjectId))
+        {
+            throw new ArgumentException("ProjectId cannot be empty or whitespace when included in the patch.", nameof(options));
+        }
+
+        return options.ProjectId!;
     }
 
     private static object BuildGitInfoPatch(ThreadGitInfoUpdate gitInfo)

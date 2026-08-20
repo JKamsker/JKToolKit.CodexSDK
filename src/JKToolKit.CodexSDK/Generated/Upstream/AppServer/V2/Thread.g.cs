@@ -95,6 +95,12 @@ internal partial class Thread
     public string Preview { get; set; } = default!;
 
     /// <summary>
+    /// Canonical project assignment owned by app-server, if any.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("projectId")]
+    public string? ProjectId { get; set; } = default!;
+
+    /// <summary>
     /// Unix timestamp (in seconds) used for thread recency ordering.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("recencyAt")]

@@ -27,6 +27,22 @@ public sealed class ThreadListOptions
     public bool UnsectionedOnly { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional project identifier filter.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public string? ProjectId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether only threads without a project should be returned.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public bool UnassignedProjectOnly { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional working directory filter.
     /// </summary>
     public string? Cwd { get; set; }
