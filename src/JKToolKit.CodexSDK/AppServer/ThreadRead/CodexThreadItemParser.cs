@@ -94,12 +94,14 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseAgentMessage(string id, string type, JsonElement element, JsonElement raw) =>
         TryGetRequiredString(element, "text", out var text) &&
-        TryGetOptionalString(element, "phase", out var phase)
+        TryGetOptionalString(element, "phase", out var phase) &&
+        TryGetOptionalString(element, "delivery", out var delivery)
             ? new CodexThreadItemAgentMessage(
                 id,
                 type,
                 text,
                 phase,
+                delivery,
                 element.TryGetProperty("memoryCitation", out var memoryCitation) ? memoryCitation.Clone() : (JsonElement?)null,
                 raw)
             : null;

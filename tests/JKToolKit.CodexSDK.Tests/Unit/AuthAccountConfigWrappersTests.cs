@@ -214,6 +214,9 @@ public sealed class AuthAccountConfigWrappersTests
 
         unknownPlanAccount.AccountInfo.Should().BeOfType<CodexChatGptAccountInfo>()
             .Which.PlanType.Should().Be(CodexPlanType.Unknown);
+
+        CodexPlanType.Parse("edu_plus").Should().Be(CodexPlanType.EduPlus);
+        CodexPlanType.Parse("edu_pro").Should().Be(CodexPlanType.EduPro);
     }
 
     [Fact]

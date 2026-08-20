@@ -71,6 +71,16 @@ public readonly record struct CodexPlanType
     public static CodexPlanType Edu => new("edu");
 
     /// <summary>
+    /// Gets the <c>edu_plus</c> plan.
+    /// </summary>
+    public static CodexPlanType EduPlus => new("edu_plus");
+
+    /// <summary>
+    /// Gets the <c>edu_pro</c> plan.
+    /// </summary>
+    public static CodexPlanType EduPro => new("edu_pro");
+
+    /// <summary>
     /// Gets the <c>unknown</c> plan.
     /// </summary>
     public static CodexPlanType Unknown => new("unknown");

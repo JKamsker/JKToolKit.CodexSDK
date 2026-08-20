@@ -213,6 +213,9 @@ public sealed class ThreadApiParsingTests
         items.OfType<CodexThreadItemUserMessage>().Should().ContainSingle()
             .Which.ClientId.Should().Be("client_msg_1");
 
+        var agentMessage = items.OfType<CodexThreadItemAgentMessage>().Should().ContainSingle().Subject;
+        agentMessage.Delivery.Should().Be("async");
+
         var command = items.OfType<CodexThreadItemCommandExecution>().Should().ContainSingle().Subject;
         command.Source.Should().Be(CodexCommandExecutionSource.UserShell);
         command.WorkingDirectory.Should().Be("C:\\repo");

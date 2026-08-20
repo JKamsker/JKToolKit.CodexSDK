@@ -47,6 +47,7 @@
             "type": "agentMessage",
             "text": "done",
             "phase": "analysis",
+            "delivery": "async",
             "memoryCitation": {
               "kind": "memory"
             }

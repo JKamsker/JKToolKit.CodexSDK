@@ -41,6 +41,7 @@ public sealed record class CodexThreadItemAgentMessage(
     string Type,
     string Text,
     string? Phase,
+    string? Delivery,
     JsonElement? MemoryCitation,
     JsonElement Raw)
     : CodexThreadItem(Id, Type, Raw);

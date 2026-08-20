@@ -56,11 +56,21 @@ SDK impact:
 - Added typed notification records for all three methods.
 - Added mapper coverage with required-field validation and `UnknownNotification` fallback for malformed payloads.
 
+### 5. Agent-message delivery and account plan enums gained new values
+
+Upstream added optional `delivery` metadata to `agentMessage` thread items and added `edu_plus`/`edu_pro` ChatGPT plan values.
+
+SDK impact:
+
+- Added `CodexThreadItemAgentMessage.Delivery` while continuing to preserve the raw item payload.
+- Added `CodexPlanType.EduPlus` and `CodexPlanType.EduPro` convenience values; parsing remains open for future plan values.
+
 ## Validation
 
 Validation run during this pass:
 
 - `dotnet test tests/JKToolKit.CodexSDK.Tests/JKToolKit.CodexSDK.Tests.csproj --configuration Release --filter "FullyQualifiedName~ThreadSummaryParsingTests|FullyQualifiedName~ThreadStartParamsSerializationTests|FullyQualifiedName~ThreadListParamsSerializationTests|FullyQualifiedName~AppServerCommandAndFilesystemTests|FullyQualifiedName~McpServerWrappersTests|FullyQualifiedName~ConfigRequirementsParsingTests|FullyQualifiedName~AppServerNotificationMapperTests|FullyQualifiedName~ExperimentalApiGuardsTests"`
+- `dotnet test tests/JKToolKit.CodexSDK.Tests/JKToolKit.CodexSDK.Tests.csproj --configuration Release --filter "FullyQualifiedName~ThreadApiParsingTests|FullyQualifiedName~AuthAccountConfigWrappersTests"`
 - `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check`
 - `dotnet test JKToolKit.CodexSDK.sln --configuration Release`
 
@@ -76,6 +86,8 @@ The new upstream experimental project RPC family (`project/list`, `project/read`
 - `external/codex/codex-rs/app-server-protocol/src/protocol/v2/mcp.rs`
 - `external/codex/codex-rs/app-server-protocol/src/protocol/v2/config.rs`
 - `external/codex/codex-rs/app-server-protocol/src/protocol/v2/notification.rs`
+- `external/codex/codex-rs/app-server-protocol/src/protocol/v2/item.rs`
+- `external/codex/codex-rs/app-server-protocol/src/protocol/v2/account.rs`
 - `external/codex/codex-rs/app-server/tests/suite/v2/projects.rs`
 - `external/codex/codex-rs/app-server/tests/suite/v2/config_rpc.rs`
 - `external/codex/codex-rs/app-server/tests/suite/v2/guardian_v2.rs`
