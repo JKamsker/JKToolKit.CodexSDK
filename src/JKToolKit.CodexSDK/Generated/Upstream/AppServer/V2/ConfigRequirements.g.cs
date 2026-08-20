@@ -49,8 +49,14 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("browserUse")]
     public BrowserUse? BrowserUse { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("chatgptBaseUrl")]
+    public string? ChatgptBaseUrl { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("checkForUpdateOnStartup")]
     public bool? CheckForUpdateOnStartup { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("cliAuthCredentialsStore")]
+    public CliAuthCredentialsStore? CliAuthCredentialsStore { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("computerUse")]
     public ComputerUse? ComputerUse { get; set; } = default!;
