@@ -74,6 +74,16 @@ public sealed record class ConfigRequirements
     public bool? AllowLoginShell { get; init; }
 
     /// <summary>
+    /// Gets the managed CLI auth credentials store mode, when present.
+    /// </summary>
+    public CliAuthCredentialsStoreMode? CliAuthCredentialsStore { get; init; }
+
+    /// <summary>
+    /// Gets the managed ChatGPT base URL, when present.
+    /// </summary>
+    public string? ChatGptBaseUrl { get; init; }
+
+    /// <summary>
     /// Gets whether update checks should run on startup.
     /// </summary>
     public bool? CheckForUpdateOnStartup { get; init; }

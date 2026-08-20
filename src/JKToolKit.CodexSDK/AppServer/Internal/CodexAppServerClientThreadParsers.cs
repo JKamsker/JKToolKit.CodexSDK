@@ -51,6 +51,7 @@ internal static class CodexAppServerClientThreadParsers
 
         var name = GetString(primary, secondary, "name", "threadName", "title", "preview");
         var preview = GetString(primary, secondary, "preview");
+        var projectId = GetString(primary, secondary, "projectId");
 
         var statusRaw = TryGetObject(primary, "status") ?? TryGetObject(secondary, "status");
         var statusType = statusRaw is { } st ? GetStringOrNull(st, "type") : null;
@@ -107,6 +108,7 @@ internal static class CodexAppServerClientThreadParsers
             StatusType = statusType,
             ActiveFlags = activeFlags,
             Preview = preview,
+            ProjectId = projectId,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt,
             Cwd = cwd,

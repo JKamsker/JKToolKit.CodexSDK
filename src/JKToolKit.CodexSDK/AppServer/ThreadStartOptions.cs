@@ -73,6 +73,14 @@ public sealed class ThreadStartOptions
     public ThreadSessionStartSource? SessionStartSource { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional project assignment for the new thread.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public string? ProjectId { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional approval policy.
     /// </summary>
     /// <remarks>
@@ -160,4 +168,3 @@ public sealed class ThreadStartOptions
     /// </summary>
     public bool PersistExtendedHistory { get; set; }
 }
-

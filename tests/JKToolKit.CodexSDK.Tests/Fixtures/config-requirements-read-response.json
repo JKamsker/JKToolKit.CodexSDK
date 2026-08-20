@@ -18,6 +18,8 @@
     "allowManagedHooksOnly": true,
     "allowAppshots": false,
     "allowLoginShell": true,
+    "cliAuthCredentialsStore": "ephemeral",
+    "chatgptBaseUrl": "https://managed.example/backend-api/",
     "checkForUpdateOnStartup": false,
     "windowsSandboxPrivateDesktop": true,
     "sqliteHome": "file:///home/user/.codex-state",

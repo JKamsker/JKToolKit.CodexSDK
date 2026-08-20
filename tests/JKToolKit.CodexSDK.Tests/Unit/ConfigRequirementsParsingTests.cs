@@ -34,6 +34,8 @@ public sealed class ConfigRequirementsParsingTests
         requirements.AllowManagedHooksOnly.Should().BeTrue();
         requirements.AllowAppshots.Should().BeFalse();
         requirements.AllowLoginShell.Should().BeTrue();
+        requirements.CliAuthCredentialsStore.Should().Be(CliAuthCredentialsStoreMode.Ephemeral);
+        requirements.ChatGptBaseUrl.Should().Be("https://managed.example/backend-api/");
         requirements.CheckForUpdateOnStartup.Should().BeFalse();
         requirements.WindowsSandboxPrivateDesktop.Should().BeTrue();
         requirements.SqliteHome.Should().Be("file:///home/user/.codex-state");

@@ -125,6 +125,7 @@ public sealed class McpServerWrappersTests
     {
         var rawResult = JsonSerializer.SerializeToElement(new
         {
+            originCallId = "call_1",
             contents = new object[]
             {
                 new
@@ -151,6 +152,8 @@ public sealed class McpServerWrappersTests
                 JsonSerializer.Serialize(p, new JsonSerializerOptions(JsonSerializerDefaults.Web))
                     .Should().Contain("\"server\":\"docs\"")
                     .And.Contain("\"threadId\":\"thr_1\"")
+                    .And.Contain("\"originCallId\":\"call_1\"")
+                    .And.Contain("\"connectorId\":\"calendar\"")
                     .And.Contain("\"uri\":\"resource://docs/readme\"");
             },
             Result = rawResult
@@ -167,14 +170,59 @@ public sealed class McpServerWrappersTests
         {
             Server = "docs",
             ThreadId = "thr_1",
+            OriginCallId = "call_1",
+            ConnectorId = "calendar",
             Uri = "resource://docs/readme"
         });
 
+        result.OriginCallId.Should().Be("call_1");
         result.Contents.Should().HaveCount(2);
         result.Contents[0].Text.Should().Be("hello");
         result.Contents[0].BlobBase64.Should().BeNull();
         result.Contents[1].BlobBase64.Should().Be("AQID");
         result.Contents[1].Text.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ReadMcpResourceAsync_AllowsThreadlessRead_ButOriginRequiresThread()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "mcpResource/read",
+            AssertParams = p =>
+            {
+                JsonSerializer.Serialize(p, CodexAppServerClient.CreateDefaultSerializerOptions())
+                    .Should().Contain("\"server\":\"docs\"")
+                    .And.NotContain("threadId");
+            },
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                contents = new[] { new { uri = "resource://docs/readme", text = "hello" } }
+            })
+        };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.ReadMcpResourceAsync(new McpResourceReadOptions
+        {
+            Server = "docs",
+            Uri = "resource://docs/readme"
+        });
+
+        var act = async () => await client.ReadMcpResourceAsync(new McpResourceReadOptions
+        {
+            Server = "docs",
+            OriginCallId = "call_1",
+            Uri = "resource://docs/readme"
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*OriginCallId requires ThreadId*");
     }
 
     [Fact]

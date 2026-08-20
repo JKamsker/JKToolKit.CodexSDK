@@ -140,6 +140,7 @@ internal static class CodexAppServerClientMcpParsers
         return new McpResourceReadResult
         {
             Contents = contents,
+            OriginCallId = GetStringOrNull(result, "originCallId") ?? GetStringOrNull(result, "origin_call_id"),
             Raw = result
         };
     }

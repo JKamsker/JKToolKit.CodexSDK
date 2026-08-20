@@ -78,6 +78,12 @@ internal static class CodexAppServerClientConfigRequirementsParser
             residency = r;
         }
 
+        CliAuthCredentialsStoreMode? cliAuthCredentialsStore = null;
+        if (CliAuthCredentialsStoreMode.TryParse(GetStringOrNull(req, "cliAuthCredentialsStore"), out var storeMode))
+        {
+            cliAuthCredentialsStore = storeMode;
+        }
+
         NetworkRequirements? network = null;
         if (experimentalApiEnabled && TryGetObject(req, "network") is { } net)
         {
@@ -99,6 +105,8 @@ internal static class CodexAppServerClientConfigRequirementsParser
             AllowManagedHooksOnly = GetBoolOrNull(req, "allowManagedHooksOnly"),
             AllowAppshots = GetBoolOrNull(req, "allowAppshots"),
             AllowLoginShell = GetBoolOrNull(req, "allowLoginShell"),
+            CliAuthCredentialsStore = cliAuthCredentialsStore,
+            ChatGptBaseUrl = GetStringOrNull(req, "chatgptBaseUrl"),
             CheckForUpdateOnStartup = GetBoolOrNull(req, "checkForUpdateOnStartup"),
             WindowsSandboxPrivateDesktop = GetBoolOrNull(req, "windowsSandboxPrivateDesktop"),
             ComputerUse = TryGetObject(req, "computerUse") is { } computerUse

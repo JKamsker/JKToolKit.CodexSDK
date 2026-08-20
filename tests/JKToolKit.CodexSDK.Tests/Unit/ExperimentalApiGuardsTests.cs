@@ -138,6 +138,17 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateThreadStart_Throws_WhenProjectIdSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadStartOptions { ProjectId = "proj_1" };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/start.projectId");
+    }
+
+    [Fact]
     public void ValidateAll_DoesNotThrow_WhenExperimentalEnabled()
     {
         using var history = JsonDocument.Parse("""{"items":[]}""");

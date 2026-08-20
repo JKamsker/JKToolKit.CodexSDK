@@ -9,6 +9,11 @@ internal static class ExperimentalApiGuards
             throw new ArgumentException("Sandbox and PermissionProfileId cannot both be set.", nameof(options));
         }
 
+        if (options.ProjectId is not null && string.IsNullOrWhiteSpace(options.ProjectId))
+        {
+            throw new ArgumentException("ProjectId cannot be empty or whitespace.", nameof(options));
+        }
+
         if (!experimentalApiEnabled)
         {
             if (options.AskForApproval is { Granular: not null })
@@ -34,6 +39,11 @@ internal static class ExperimentalApiGuards
             if (options.Environments is not null)
             {
                 throw new CodexExperimentalApiRequiredException("thread/start.environments");
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.ProjectId))
+            {
+                throw new CodexExperimentalApiRequiredException("thread/start.projectId");
             }
 
             if (!string.IsNullOrWhiteSpace(options.PermissionProfileId))
