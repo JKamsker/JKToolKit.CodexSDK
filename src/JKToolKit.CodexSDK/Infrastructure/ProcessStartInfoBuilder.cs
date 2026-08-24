@@ -50,6 +50,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("--cd");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
         AddOptionalModelAndReasoningOverrides(startInfo, options);
+        AddOptionalThreadSource(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -268,6 +269,15 @@ internal static class ProcessStartInfoBuilder
         {
             startInfo.ArgumentList.Add("--image");
             startInfo.ArgumentList.Add(imagePath);
+        }
+    }
+
+    private static void AddOptionalThreadSource(ProcessStartInfo startInfo, CodexSessionOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.ThreadSource))
+        {
+            startInfo.ArgumentList.Add("--thread-source");
+            startInfo.ArgumentList.Add(options.ThreadSource);
         }
     }
 }

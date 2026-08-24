@@ -112,6 +112,85 @@ public sealed class CodexExecParityDriftTests
     }
 
     [Fact]
+    public void CreateProcessStartInfo_EmitsThreadSource_ForNewExecThread()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "prompt")
+            {
+                ThreadSource = "automated_review"
+            };
+            var launcher = CreateLauncher();
+
+            var startInfo = launcher.CreateProcessStartInfo(options, new CodexClientOptions());
+
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "--thread-source",
+                "automated_review",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateResumeStartInfo_DoesNotEmitThreadSource_ForExistingThread()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "follow-up")
+            {
+                ThreadSource = "should_not_override"
+            };
+            var launcher = CreateLauncher();
+
+            var startInfo = launcher.CreateResumeStartInfo(SessionId.Parse("session-abc"), options, new CodexClientOptions());
+
+            startInfo.ArgumentList.Should().Equal(
+                "exec",
+                "--cd",
+                workingDirectory,
+                "resume",
+                "session-abc",
+                "-");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SessionOptions_RejectsRawThreadSourceOption_WhenTypedThreadSourceIsSet()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var options = new CodexSessionOptions(workingDirectory, "prompt")
+            {
+                ThreadSource = "automated_review",
+                AdditionalOptions = new[] { "--thread-source", "raw_source" }
+            };
+
+            var act = () => options.Validate();
+
+            act.Should().Throw<InvalidOperationException>()
+                .WithMessage("Do not specify '--thread-source' in AdditionalOptions when ThreadSource is set.");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CreateResumeStartInfo_AllowsEphemeralOption_ForCliParity()
     {
         var workingDirectory = CreateTempDirectory();
@@ -165,15 +244,18 @@ public sealed class CodexExecParityDriftTests
             var defaultsClone = defaults.Clone();
             defaultsClone.HasExplicitModelOverride.Should().BeFalse();
             defaultsClone.HasExplicitReasoningEffortOverride.Should().BeFalse();
+            defaultsClone.ThreadSource.Should().BeNull();
 
             var explicitOverrides = new CodexSessionOptions(workingDirectory, "prompt")
             {
                 Model = CodexModel.Default,
-                ReasoningEffort = CodexReasoningEffort.Medium
+                ReasoningEffort = CodexReasoningEffort.Medium,
+                ThreadSource = "automated_review"
             };
             var explicitClone = explicitOverrides.Clone();
             explicitClone.HasExplicitModelOverride.Should().BeTrue();
             explicitClone.HasExplicitReasoningEffortOverride.Should().BeTrue();
+            explicitClone.ThreadSource.Should().Be("automated_review");
         }
         finally
         {
