@@ -26,6 +26,7 @@ public class CodexSessionOptions
     private bool _reasoningEffortOverrideExplicitlySet;
     private IReadOnlyList<string> _additionalOptions = Array.Empty<string>();
     private IReadOnlyList<string> _images = Array.Empty<string>();
+    private string? _threadSource;
     private TimeSpan? _idleTimeout;
     private CodexOutputSchema? _outputSchema;
 
@@ -210,6 +211,37 @@ public class CodexSessionOptions
     }
 
     /// <summary>
+    /// Gets or sets the upstream thread source classification for newly created exec threads.
+    /// </summary>
+    /// <remarks>
+    /// When set, the SDK passes <c>--thread-source &lt;value&gt;</c> to <c>codex exec</c> for new sessions.
+    /// The value is not passed to <c>codex exec resume</c>, matching upstream SDK behavior where resumed
+    /// threads keep their existing source classification.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// Thrown when attempting to set an empty or whitespace value.
+    /// </exception>
+    public string? ThreadSource
+    {
+        get => _threadSource;
+        set
+        {
+            if (value is null)
+            {
+                _threadSource = null;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException(
+                    "ThreadSource cannot be empty or whitespace.",
+                    nameof(ThreadSource));
+
+            _threadSource = value;
+        }
+    }
+
+    /// <summary>
     /// Gets or sets an optional JSON Schema that constrains the final assistant message for this session.
     /// </summary>
     /// <remarks>
@@ -328,6 +360,29 @@ public class CodexSessionOptions
 
         ResumeTargetOverride?.Validate();
 
+        if (!string.IsNullOrWhiteSpace(_threadSource))
+        {
+            static bool IsThreadSourceArg(string? arg)
+            {
+                if (string.IsNullOrWhiteSpace(arg))
+                {
+                    return false;
+                }
+
+                if (arg.Equals("--thread-source", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return arg.StartsWith("--thread-source=", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (_additionalOptions.Any(IsThreadSourceArg))
+            {
+                throw new InvalidOperationException("Do not specify '--thread-source' in AdditionalOptions when ThreadSource is set.");
+            }
+        }
+
         if (_outputSchema is { } schema)
         {
             static bool IsOutputSchemaArg(string? arg)
@@ -414,6 +469,7 @@ public class CodexSessionOptions
             IdleTimeout = IdleTimeout,
             OutputSchema = OutputSchema,
             StdinPayload = StdinPayload,
+            ThreadSource = ThreadSource,
             ResumeTargetOverride = ResumeTargetOverride
         };
 
