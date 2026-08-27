@@ -38,6 +38,7 @@ internal static class CodexAppServerClientMcpParsers
                     Name = name,
                     PluginId = GetStringOrNull(item, "pluginId") ?? GetStringOrNull(item, "plugin_id"),
                     AuthStatus = authStatus,
+                    RuntimeStatus = ParseRuntimeStatus(GetStringOrNull(item, "runtimeStatus") ?? GetStringOrNull(item, "runtime_status")),
                     StartupStatus = GetStringOrNull(item, "status"),
                     Error = GetStringOrNull(item, "error"),
                     FailureReason = McpServerStartupFailureReason.TryParse(GetStringOrNull(item, "failureReason"), out var failureReason)
@@ -57,6 +58,26 @@ internal static class CodexAppServerClientMcpParsers
             Servers = servers,
             NextCursor = GetStringOrNull(result, "nextCursor") ?? GetStringOrNull(result, "next_cursor"),
             Raw = result
+        };
+    }
+
+    private static McpServerRuntimeStatus ParseRuntimeStatus(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return McpServerRuntimeStatus.Unknown;
+        }
+
+        return value.Trim() switch
+        {
+            "notStarted" => McpServerRuntimeStatus.NotStarted,
+            "starting" => McpServerRuntimeStatus.Starting,
+            "connected" => McpServerRuntimeStatus.Connected,
+            "authenticationRequired" => McpServerRuntimeStatus.AuthenticationRequired,
+            "failed" => McpServerRuntimeStatus.Failed,
+            "cancelled" => McpServerRuntimeStatus.Cancelled,
+            "disabled" => McpServerRuntimeStatus.Disabled,
+            _ => McpServerRuntimeStatus.Unknown
         };
     }
 

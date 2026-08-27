@@ -16,6 +16,18 @@ internal partial class ComputerUseRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowLockedComputerUse")]
     public bool? AllowLockedComputerUse { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("allowPersistentApproval")]
+    public bool? AllowPersistentApproval { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("defaultAppAccess")]
+    public DefaultAppAccess? DefaultAppAccess { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("macos")]
+    public Macos2? Macos { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("windows")]
+    public Windows2? Windows { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

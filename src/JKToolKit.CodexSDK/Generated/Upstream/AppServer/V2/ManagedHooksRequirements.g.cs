@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ManagedHooksRequirements
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("Interrupt")]
+    public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup>? Interrupt { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("PermissionRequest")]
     public System.Collections.Generic.ICollection<ConfiguredHookMatcherGroup> PermissionRequest { get; set; } = new System.Collections.ObjectModel.Collection<ConfiguredHookMatcherGroup>();
 

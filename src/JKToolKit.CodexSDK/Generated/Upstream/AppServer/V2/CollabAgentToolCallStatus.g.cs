@@ -25,4 +25,8 @@ internal enum CollabAgentToolCallStatus
     Failed = 2,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"interrupted")]
+    Interrupted = 3,
+
+
 }

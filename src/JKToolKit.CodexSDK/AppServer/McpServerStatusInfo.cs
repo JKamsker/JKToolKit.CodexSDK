@@ -23,6 +23,11 @@ public sealed record class McpServerStatusInfo
     public McpAuthStatus AuthStatus { get; init; }
 
     /// <summary>
+    /// Gets the current thread-runtime connection state, when upstream reports one.
+    /// </summary>
+    public McpServerRuntimeStatus RuntimeStatus { get; init; }
+
+    /// <summary>
     /// Gets the startup state reported by upstream, when present.
     /// </summary>
     public string? StartupStatus { get; init; }
@@ -158,4 +163,50 @@ public sealed record class McpServerImplementationInfo
     /// Gets the raw server-info payload.
     /// </summary>
     public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents an MCP server runtime connection status as reported by Codex.
+/// </summary>
+public enum McpServerRuntimeStatus
+{
+    /// <summary>
+    /// The runtime status is unknown, absent, or could not be parsed.
+    /// </summary>
+    Unknown = 0,
+
+    /// <summary>
+    /// The server has not started.
+    /// </summary>
+    NotStarted = 1,
+
+    /// <summary>
+    /// The server is starting.
+    /// </summary>
+    Starting = 2,
+
+    /// <summary>
+    /// The server is connected.
+    /// </summary>
+    Connected = 3,
+
+    /// <summary>
+    /// The server requires authentication.
+    /// </summary>
+    AuthenticationRequired = 4,
+
+    /// <summary>
+    /// The server startup or runtime failed.
+    /// </summary>
+    Failed = 5,
+
+    /// <summary>
+    /// The server startup was cancelled.
+    /// </summary>
+    Cancelled = 6,
+
+    /// <summary>
+    /// The server is disabled.
+    /// </summary>
+    Disabled = 7
 }

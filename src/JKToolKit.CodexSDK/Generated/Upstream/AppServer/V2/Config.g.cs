@@ -25,8 +25,14 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
     public Approvals_reviewer3? Approvals_reviewer { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("browser_use")]
+    public Browser_use? Browser_use { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("compact_prompt")]
     public string? Compact_prompt { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("computer_use")]
+    public Computer_use? Computer_use { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("desktop")]
     public System.Collections.Generic.IDictionary<string, object>? Desktop { get; set; } = default!;

@@ -58,6 +58,7 @@ public sealed class McpServerWrappersTests
                     name = "docs",
                     pluginId = "plug_docs",
                     authStatus = "notLoggedIn",
+                    runtimeStatus = "authenticationRequired",
                     status = "failed",
                     error = "reauth required",
                     failureReason = "reauthenticationRequired",
@@ -112,6 +113,7 @@ public sealed class McpServerWrappersTests
         page.Servers[0].Name.Should().Be("docs");
         page.Servers[0].PluginId.Should().Be("plug_docs");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
+        page.Servers[0].RuntimeStatus.Should().Be(McpServerRuntimeStatus.AuthenticationRequired);
         page.Servers[0].StartupStatus.Should().Be("failed");
         page.Servers[0].Error.Should().Be("reauth required");
         page.Servers[0].FailureReason.Should().Be(McpServerStartupFailureReason.ReauthenticationRequired);

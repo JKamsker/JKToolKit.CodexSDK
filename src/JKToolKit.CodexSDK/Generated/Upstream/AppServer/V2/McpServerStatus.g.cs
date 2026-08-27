@@ -29,6 +29,12 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonPropertyName("resources")]
     public System.Collections.Generic.ICollection<Resource> Resources { get; set; } = new System.Collections.ObjectModel.Collection<Resource>();
 
+    /// <summary>
+    /// Current thread-runtime connection state; null when unavailable or the configuration changed.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("runtimeStatus")]
+    public RuntimeStatus? RuntimeStatus { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("serverInfo")]
     public ServerInfo? ServerInfo { get; set; } = default!;
 

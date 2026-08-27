@@ -33,4 +33,20 @@ internal enum CollabAgentTool
     CloseAgent = 4,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"sendMessage")]
+    SendMessage = 5,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"followupTask")]
+    FollowupTask = 6,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"interruptAgent")]
+    InterruptAgent = 7,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"listAgents")]
+    ListAgents = 8,
+
+
 }

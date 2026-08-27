@@ -13,8 +13,20 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class BrowserUseRequirements
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("allowGlobalPersistentApproval")]
+    public bool? AllowGlobalPersistentApproval { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("allowHistoryAccess")]
+    public bool? AllowHistoryAccess { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("defaultOriginPolicy")]
+    public DefaultOriginPolicy? DefaultOriginPolicy { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("disableAutoReview")]
     public bool? DisableAutoReview { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("origins")]
+    public System.Collections.Generic.IDictionary<string, BrowserUseOriginPolicy>? Origins { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

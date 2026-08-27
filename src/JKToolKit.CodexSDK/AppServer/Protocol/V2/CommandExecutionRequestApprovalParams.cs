@@ -9,6 +9,12 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 public sealed record class CommandExecutionRequestApprovalParams
 {
     /// <summary>
+    /// Gets the action kind under review. Older servers omit this field; upstream defaults that case to <c>command</c>.
+    /// </summary>
+    [JsonPropertyName("kind")]
+    public string Kind { get; init; } = "command";
+
+    /// <summary>
     /// Gets the thread identifier.
     /// </summary>
     [JsonPropertyName("threadId")]
