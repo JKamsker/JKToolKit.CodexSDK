@@ -2,7 +2,7 @@
   "schemaPath": "external/codex/codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
   "schemaByteCount": 658084,
   "schemaSha256": "18ba0e2282f69f7b3a05ffdc8ab0801c1468f25d72de3b4a37f1c8be67432a1d",
-  "codexCliVersion": "0.150.0",
+  "codexCliVersion": "0.150.1",
   "codexCliVersionPinPath": "UPSTREAM_CODEX_VERSION.json",
   "codexCliPackageJsonPath": "external/codex/codex-cli/package.json"
 }
