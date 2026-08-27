@@ -10,23 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ComputerUseRequirements
+internal partial class ComputerUseConfig
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("allowLockedComputerUse")]
-    public bool? AllowLockedComputerUse { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("allowPersistentApproval")]
-    public bool? AllowPersistentApproval { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("defaultAppAccess")]
-    public DefaultAppAccess? DefaultAppAccess { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("default_app_access")]
+    public Default_app_access? Default_app_access { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("macos")]
-    public Macos2? Macos { get; set; } = default!;
+    public Macos? Macos { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("windows")]
-    public Windows2? Windows { get; set; } = default!;
+    public Windows? Windows { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

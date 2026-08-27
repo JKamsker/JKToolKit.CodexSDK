@@ -10,23 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class BrowserUseRequirements
+internal partial class BrowserUseConfig
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("allowGlobalPersistentApproval")]
-    public bool? AllowGlobalPersistentApproval { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("allow_history_access")]
+    public bool? Allow_history_access { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("allowHistoryAccess")]
-    public bool? AllowHistoryAccess { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("defaultOriginPolicy")]
-    public DefaultOriginPolicy? DefaultOriginPolicy { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("disableAutoReview")]
-    public bool? DisableAutoReview { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("default_origin_policy")]
+    public Default_origin_policy? Default_origin_policy { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("origins")]
-    public System.Collections.Generic.IDictionary<string, BrowserUseOriginPolicy>? Origins { get; set; } = default!;
+    public System.Collections.Generic.IDictionary<string, BrowserUseOriginPolicyConfig>? Origins { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

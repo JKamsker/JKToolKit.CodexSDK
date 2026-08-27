@@ -57,4 +57,8 @@ internal enum HookEventName
     Stop = 10,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"interrupt")]
+    Interrupt = 11,
+
+
 }

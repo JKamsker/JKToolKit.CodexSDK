@@ -25,4 +25,8 @@ internal enum SubAgentActivityKind
     Interrupted = 2,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"completed")]
+    Completed = 3,
+
+
 }

@@ -13,8 +13,14 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ConfigRequirements
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("additionalDeveloperInstructions")]
+    public string? AdditionalDeveloperInstructions { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("allowAppshots")]
     public bool? AllowAppshots { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("allowBrowserAndComputerUse")]
+    public bool? AllowBrowserAndComputerUse { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("allowLoginShell")]
     public bool? AllowLoginShell { get; set; } = default!;
@@ -44,7 +50,7 @@ internal partial class ConfigRequirements
     public System.Collections.Generic.ICollection<WindowsSandboxSetupMode>? AllowedWindowsSandboxImplementations { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("autoReview")]
-    public AutoReview? AutoReview { get; set; } = default!;
+    public AutoReview2? AutoReview { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("browserUse")]
     public BrowserUse? BrowserUse { get; set; } = default!;
@@ -72,6 +78,9 @@ internal partial class ConfigRequirements
 
     [System.Text.Json.Serialization.JsonPropertyName("feedback")]
     public Feedback? Feedback { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("inAppBrowser")]
+    public InAppBrowser? InAppBrowser { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("logDir")]
     public string? LogDir { get; set; } = default!;

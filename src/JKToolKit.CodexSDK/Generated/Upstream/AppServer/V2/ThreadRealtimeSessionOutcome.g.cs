@@ -10,23 +10,15 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum CollabAgentToolCallStatus
+internal enum ThreadRealtimeSessionOutcome
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"inProgress")]
-    InProgress = 0,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"completed")]
-    Completed = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"ended")]
+    Ended = 0,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"failed")]
-    Failed = 2,
-
-
-    [System.Runtime.Serialization.EnumMember(Value = @"interrupted")]
-    Interrupted = 3,
+    Failed = 1,
 
 
 }

@@ -31,6 +31,12 @@ internal partial class SkillMetadata
     [System.Text.Json.Serialization.JsonPropertyName("path")]
     public string Path { get; set; } = default!;
 
+    /// <summary>
+    /// Owning plugin ID, matching `PluginSummary.id`, when known.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("pluginId")]
+    public string? PluginId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("scope")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<SkillScope>))]
     public SkillScope Scope { get; set; } = default!;
