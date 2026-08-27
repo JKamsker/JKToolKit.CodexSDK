@@ -59,14 +59,29 @@ public sealed record class ConfigRequirements
     public IReadOnlyDictionary<string, bool>? FeatureRequirements { get; init; }
 
     /// <summary>
+    /// Gets managed developer instructions appended by policy, when present.
+    /// </summary>
+    public string? AdditionalDeveloperInstructions { get; init; }
+
+    /// <summary>
     /// Gets whether unmanaged hooks are disabled while managed hook requirements are active.
     /// </summary>
     public bool? AllowManagedHooksOnly { get; init; }
 
     /// <summary>
+    /// Gets whether browser and computer-use features are allowed by policy.
+    /// </summary>
+    public bool? AllowBrowserAndComputerUse { get; init; }
+
+    /// <summary>
     /// Gets whether app snapshots are allowed by policy.
     /// </summary>
     public bool? AllowAppshots { get; init; }
+
+    /// <summary>
+    /// Gets whether remote control is allowed by policy.
+    /// </summary>
+    public bool? AllowRemoteControl { get; init; }
 
     /// <summary>
     /// Gets whether login shells are allowed by policy.
@@ -102,6 +117,11 @@ public sealed record class ConfigRequirements
     /// Gets browser-use requirements, when present.
     /// </summary>
     public BrowserUseRequirements? BrowserUse { get; init; }
+
+    /// <summary>
+    /// Gets in-app browser requirements, when present.
+    /// </summary>
+    public InAppBrowserRequirements? InAppBrowser { get; init; }
 
     /// <summary>
     /// Gets feedback requirements, when present.
@@ -184,6 +204,26 @@ public sealed record class ComputerUseRequirements
     public bool? AllowLockedComputerUse { get; init; }
 
     /// <summary>
+    /// Gets whether persistent app-access approval is allowed.
+    /// </summary>
+    public bool? AllowPersistentApproval { get; init; }
+
+    /// <summary>
+    /// Gets the default app-access requirement, when present.
+    /// </summary>
+    public AllowDenyRequirementValue? DefaultAppAccess { get; init; }
+
+    /// <summary>
+    /// Gets macOS app-access requirements, when present.
+    /// </summary>
+    public ComputerUseMacosRequirements? Macos { get; init; }
+
+    /// <summary>
+    /// Gets Windows app-access requirements, when present.
+    /// </summary>
+    public ComputerUseWindowsRequirements? Windows { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON requirements payload.
     /// </summary>
     public required JsonElement Raw { get; init; }
@@ -195,9 +235,29 @@ public sealed record class ComputerUseRequirements
 public sealed record class BrowserUseRequirements
 {
     /// <summary>
+    /// Gets whether browser history access is allowed.
+    /// </summary>
+    public bool? AllowHistoryAccess { get; init; }
+
+    /// <summary>
     /// Gets whether browser-use auto review should be disabled.
     /// </summary>
     public bool? DisableAutoReview { get; init; }
+
+    /// <summary>
+    /// Gets whether persistent browser approval can be granted globally.
+    /// </summary>
+    public bool? AllowGlobalPersistentApproval { get; init; }
+
+    /// <summary>
+    /// Gets the default browser-origin policy, when present.
+    /// </summary>
+    public BrowserUseOriginPolicy? DefaultOriginPolicy { get; init; }
+
+    /// <summary>
+    /// Gets per-origin browser policies keyed by origin, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, BrowserUseOriginPolicy>? Origins { get; init; }
 
     /// <summary>
     /// Gets the raw JSON requirements payload.

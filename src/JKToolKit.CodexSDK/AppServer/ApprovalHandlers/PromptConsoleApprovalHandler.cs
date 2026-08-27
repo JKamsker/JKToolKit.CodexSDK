@@ -81,7 +81,7 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
                       throw new InvalidOperationException("Failed to deserialize item/commandExecution/requestApproval params.");
 
         Console.Error.WriteLine("Server request: item/commandExecution/requestApproval");
-        Console.Error.WriteLine($"threadId={request.ThreadId} turnId={request.TurnId} itemId={request.ItemId}");
+        Console.Error.WriteLine($"kind={request.Kind} threadId={request.ThreadId} turnId={request.TurnId} itemId={request.ItemId}");
         if (!string.IsNullOrWhiteSpace(request.ApprovalId))
         {
             Console.Error.WriteLine($"approvalId={request.ApprovalId}");
@@ -489,4 +489,3 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
         return doc.RootElement.Clone();
     }
 }
-

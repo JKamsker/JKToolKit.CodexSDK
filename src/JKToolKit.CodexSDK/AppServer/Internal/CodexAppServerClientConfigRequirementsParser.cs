@@ -102,25 +102,27 @@ internal static class CodexAppServerClientConfigRequirementsParser
             DefaultPermissionProfileId = GetStringOrNull(req, "defaultPermissions"),
             AllowedWebSearchModes = allowedWebSearchModes,
             FeatureRequirements = featureRequirements,
+            AdditionalDeveloperInstructions = GetStringOrNull(req, "additionalDeveloperInstructions"),
             AllowManagedHooksOnly = GetBoolOrNull(req, "allowManagedHooksOnly"),
+            AllowBrowserAndComputerUse = GetBoolOrNull(req, "allowBrowserAndComputerUse"),
             AllowAppshots = GetBoolOrNull(req, "allowAppshots"),
+            AllowRemoteControl = GetBoolOrNull(req, "allowRemoteControl"),
             AllowLoginShell = GetBoolOrNull(req, "allowLoginShell"),
             CliAuthCredentialsStore = cliAuthCredentialsStore,
             ChatGptBaseUrl = GetStringOrNull(req, "chatgptBaseUrl"),
             CheckForUpdateOnStartup = GetBoolOrNull(req, "checkForUpdateOnStartup"),
             WindowsSandboxPrivateDesktop = GetBoolOrNull(req, "windowsSandboxPrivateDesktop"),
             ComputerUse = TryGetObject(req, "computerUse") is { } computerUse
-                ? new ComputerUseRequirements
-                {
-                    AllowLockedComputerUse = GetBoolOrNull(computerUse, "allowLockedComputerUse"),
-                    Raw = computerUse.Clone()
-                }
+                ? ParseComputerUseRequirements(computerUse)
                 : null,
             BrowserUse = TryGetObject(req, "browserUse") is { } browserUse
-                ? new BrowserUseRequirements
+                ? ParseBrowserUseRequirements(browserUse)
+                : null,
+            InAppBrowser = TryGetObject(req, "inAppBrowser") is { } inAppBrowser
+                ? new InAppBrowserRequirements
                 {
-                    DisableAutoReview = GetBoolOrNull(browserUse, "disableAutoReview"),
-                    Raw = browserUse.Clone()
+                    AllowExternalBrowserSettingsImport = GetBoolOrNull(inAppBrowser, "allowExternalBrowserSettingsImport"),
+                    Raw = inAppBrowser.Clone()
                 }
                 : null,
             Feedback = TryGetObject(req, "feedback") is { } feedback
@@ -147,6 +149,68 @@ internal static class CodexAppServerClientConfigRequirementsParser
             Raw = req.Clone()
         };
     }
+
+    private static ComputerUseRequirements ParseComputerUseRequirements(JsonElement computerUse)
+    {
+        return new ComputerUseRequirements
+        {
+            AllowLockedComputerUse = GetBoolOrNull(computerUse, "allowLockedComputerUse"),
+            AllowPersistentApproval = GetBoolOrNull(computerUse, "allowPersistentApproval"),
+            DefaultAppAccess = ParseAllowDenyRequirement(GetStringOrNull(computerUse, "defaultAppAccess")),
+            Macos = TryGetObject(computerUse, "macos") is { } macos
+                ? new ComputerUseMacosRequirements
+                {
+                    BundleIds = ParseAllowDenyMap(macos, "bundleIds"),
+                    Raw = macos.Clone()
+                }
+                : null,
+            Windows = TryGetObject(computerUse, "windows") is { } windows
+                ? new ComputerUseWindowsRequirements
+                {
+                    Aumids = ParseAllowDenyMap(windows, "aumids"),
+                    Exes = ParseWindowsExeRequirements(windows),
+                    Raw = windows.Clone()
+                }
+                : null,
+            Raw = computerUse.Clone()
+        };
+    }
+
+    private static BrowserUseRequirements ParseBrowserUseRequirements(JsonElement browserUse)
+    {
+        return new BrowserUseRequirements
+        {
+            AllowHistoryAccess = GetBoolOrNull(browserUse, "allowHistoryAccess"),
+            DisableAutoReview = GetBoolOrNull(browserUse, "disableAutoReview"),
+            AllowGlobalPersistentApproval = GetBoolOrNull(browserUse, "allowGlobalPersistentApproval"),
+            DefaultOriginPolicy = TryGetObject(browserUse, "defaultOriginPolicy") is { } defaultPolicy
+                ? ParseBrowserUseOriginPolicy(defaultPolicy)
+                : null,
+            Origins = ParseBrowserUseOriginPolicyMap(browserUse, "origins"),
+            Raw = browserUse.Clone()
+        };
+    }
+
+    private static BrowserUseOriginPolicy ParseBrowserUseOriginPolicy(JsonElement policy)
+    {
+        return new BrowserUseOriginPolicy
+        {
+            Access = ParseAllowDenyRequirement(GetStringOrNull(policy, "access")),
+            Downloads = ParseAllowDenyRequirement(GetStringOrNull(policy, "downloads")),
+            Uploads = ParseAllowDenyRequirement(GetStringOrNull(policy, "uploads")),
+            FullCdpAccess = ParseAllowDenyRequirement(GetStringOrNull(policy, "fullCdpAccess")),
+            AutoReview = ParseAllowDenyRequirement(GetStringOrNull(policy, "autoReview")),
+            PersistentApproval = GetBoolOrNull(policy, "persistentApproval"),
+            AccessApprovalLifetime = ParseBrowserUseAccessApprovalLifetime(GetStringOrNull(policy, "accessApprovalLifetime")),
+            Raw = policy.Clone()
+        };
+    }
+
+    private static AllowDenyRequirementValue? ParseAllowDenyRequirement(string? value) =>
+        AllowDenyRequirementValue.TryParse(value, out var requirement) ? requirement : (AllowDenyRequirementValue?)null;
+
+    private static BrowserUseAccessApprovalLifetimeValue? ParseBrowserUseAccessApprovalLifetime(string? value) =>
+        BrowserUseAccessApprovalLifetimeValue.TryParse(value, out var lifetime) ? lifetime : (BrowserUseAccessApprovalLifetimeValue?)null;
 
     private static NetworkRequirements ParseNetworkRequirements(JsonElement network)
     {
@@ -183,6 +247,86 @@ internal static class CodexAppServerClientConfigRequirementsParser
             {
                 result[item.Name] = item.Value.GetBoolean();
             }
+        }
+
+        return result.Count == 0 ? null : result;
+    }
+
+    private static IReadOnlyDictionary<string, AllowDenyRequirementValue>? ParseAllowDenyMap(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } values)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, AllowDenyRequirementValue>(StringComparer.Ordinal);
+        foreach (var item in values.EnumerateObject())
+        {
+            if (item.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            if (AllowDenyRequirementValue.TryParse(item.Value.GetString(), out var requirement))
+            {
+                result[item.Name] = requirement;
+            }
+        }
+
+        return result.Count == 0 ? null : result;
+    }
+
+    private static IReadOnlyDictionary<string, BrowserUseOriginPolicy>? ParseBrowserUseOriginPolicyMap(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } values)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, BrowserUseOriginPolicy>(StringComparer.Ordinal);
+        foreach (var item in values.EnumerateObject())
+        {
+            if (item.Value.ValueKind == JsonValueKind.Object)
+            {
+                result[item.Name] = ParseBrowserUseOriginPolicy(item.Value);
+            }
+        }
+
+        return result.Count == 0 ? null : result;
+    }
+
+    private static IReadOnlyList<ComputerUseWindowsExeRequirement>? ParseWindowsExeRequirements(JsonElement windows)
+    {
+        if (TryGetArray(windows, "exes") is not { } exes)
+        {
+            return null;
+        }
+
+        var result = new List<ComputerUseWindowsExeRequirement>();
+        foreach (var exe in exes.EnumerateArray())
+        {
+            if (exe.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var publisherName = GetStringOrNull(exe, "publisherName");
+            var productName = GetStringOrNull(exe, "productName");
+            if (string.IsNullOrWhiteSpace(publisherName) ||
+                string.IsNullOrWhiteSpace(productName) ||
+                !AllowDenyRequirementValue.TryParse(GetStringOrNull(exe, "access"), out var access))
+            {
+                continue;
+            }
+
+            result.Add(new ComputerUseWindowsExeRequirement
+            {
+                PublisherName = publisherName,
+                ProductName = productName,
+                BinaryName = GetStringOrNull(exe, "binaryName"),
+                Access = access,
+                Raw = exe.Clone()
+            });
         }
 
         return result.Count == 0 ? null : result;

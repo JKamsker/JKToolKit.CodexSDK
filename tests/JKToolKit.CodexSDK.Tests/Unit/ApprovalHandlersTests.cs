@@ -63,6 +63,23 @@ public sealed class ApprovalHandlersTests
     }
 
     [Fact]
+    public void CommandExecutionRequestApprovalParams_DefaultsMissingKindToCommand_AndPreservesWriteStdin()
+    {
+        var commandRequest = JsonSerializer.Deserialize<CommandExecutionRequestApprovalParams>(
+            """{"threadId":"thr","turnId":"turn","itemId":"item"}""",
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        commandRequest!.Kind.Should().Be("command");
+
+        var stdinRequest = JsonSerializer.Deserialize<CommandExecutionRequestApprovalParams>(
+            """{"kind":"writeStdin","threadId":"thr","turnId":"turn","itemId":"item","approvalId":"approval-1","command":"cat","cwd":"/repo"}""",
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        stdinRequest!.Kind.Should().Be("writeStdin");
+        stdinRequest.ApprovalId.Should().Be("approval-1");
+    }
+
+    [Fact]
     public async Task AlwaysDenyHandler_UsesAvailableFileChangeDecision_WhenDeclineUnavailable()
     {
         var handler = new AlwaysDenyHandler();

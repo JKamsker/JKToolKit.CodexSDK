@@ -15,8 +15,11 @@
       "network": false,
       "ignoreMe": "not-a-bool"
     },
+    "additionalDeveloperInstructions": "Follow managed policy.",
     "allowManagedHooksOnly": true,
+    "allowBrowserAndComputerUse": true,
     "allowAppshots": false,
+    "allowRemoteControl": false,
     "allowLoginShell": true,
     "cliAuthCredentialsStore": "ephemeral",
     "chatgptBaseUrl": "https://managed.example/backend-api/",
@@ -26,10 +29,56 @@
     "logDir": "file:///home/user/.codex/log",
     "modelCatalogJson": "file:///home/user/.codex/models.json",
     "computerUse": {
-      "allowLockedComputerUse": true
+      "allowLockedComputerUse": true,
+      "allowPersistentApproval": false,
+      "defaultAppAccess": "deny",
+      "macos": {
+        "bundleIds": {
+          "com.apple.Terminal": "allow",
+          "com.example.Blocked": "deny"
+        }
+      },
+      "windows": {
+        "aumids": {
+          "Microsoft.WindowsTerminal_8wekyb3d8bbwe!App": "allow"
+        },
+        "exes": [
+          {
+            "publisherName": "Microsoft Corporation",
+            "productName": "Windows Terminal",
+            "binaryName": "wt.exe",
+            "access": "allow"
+          }
+        ]
+      }
     },
     "browserUse": {
-      "disableAutoReview": true
+      "allowHistoryAccess": true,
+      "disableAutoReview": true,
+      "allowGlobalPersistentApproval": false,
+      "defaultOriginPolicy": {
+        "access": "allow",
+        "downloads": "deny",
+        "uploads": "deny",
+        "fullCdpAccess": "deny",
+        "autoReview": "allow",
+        "persistentApproval": true,
+        "accessApprovalLifetime": "thread"
+      },
+      "origins": {
+        "https://example.com": {
+          "access": "allow",
+          "downloads": "allow",
+          "uploads": "deny",
+          "fullCdpAccess": "deny",
+          "autoReview": "allow",
+          "persistentApproval": false,
+          "accessApprovalLifetime": "turn"
+        }
+      }
+    },
+    "inAppBrowser": {
+      "allowExternalBrowserSettingsImport": true
     },
     "feedback": {
       "enabled": false
