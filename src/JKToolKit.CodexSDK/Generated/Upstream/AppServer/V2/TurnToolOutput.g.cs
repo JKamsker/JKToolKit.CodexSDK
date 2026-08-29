@@ -10,23 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class TurnError
+internal partial class TurnToolOutput
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("additionalDetails")]
-    public string? AdditionalDetails { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("codexErrorInfo")]
-    public CodexErrorInfo2? CodexErrorInfo { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("namespace")]
+    public string? Namespace { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("message")]
-    public string Message { get; set; } = default!;
-
-    /// <summary>
-    /// Optional public explanation and continuation instruction for a misalignment block.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("misalignment")]
-    public Misalignment? Misalignment { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("output")]
+    public FunctionCallOutputBody Output { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

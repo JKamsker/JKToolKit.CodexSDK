@@ -45,6 +45,12 @@ internal partial class ThreadForkParams
     public bool? Ephemeral { get; set; } = default!;
 
     /// <summary>
+    /// When true, return only thread metadata and live fork state without populating `thread.turns`. This is useful when the client plans to call `thread/turns/list` immediately after forking. Full-history hydration is deprecated for paginated threads; use this with `thread/turns/list` and `thread/items/list` instead.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("excludeTurns")]
+    public bool? ExcludeTurns { get; set; } = default!;
+
+    /// <summary>
     /// Optional last turn id to fork through, inclusive.
     /// <br/>
     /// <br/>When specified, turns after `last_turn_id` are omitted from the fork. The referenced turn cannot be in progress.

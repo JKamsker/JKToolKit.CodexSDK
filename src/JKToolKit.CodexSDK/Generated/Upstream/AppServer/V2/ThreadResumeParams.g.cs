@@ -44,6 +44,12 @@ internal partial class ThreadResumeParams
     public string? DeveloperInstructions { get; set; } = default!;
 
     /// <summary>
+    /// When true, return only thread metadata and live-resume state without populating `thread.turns`. This is useful when the client plans to call `thread/turns/list` immediately after resuming. Full-history hydration is deprecated for paginated threads; use this with `thread/turns/list` and `thread/items/list` instead.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("excludeTurns")]
+    public bool? ExcludeTurns { get; set; } = default!;
+
+    /// <summary>
     /// Configuration overrides for the resumed thread, if any.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("model")]

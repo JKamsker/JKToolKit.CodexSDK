@@ -10,25 +10,8 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadResumeResponse
+internal partial class ThreadRevertResponse
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("approvalPolicy")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AllowedApprovalPolicies>))]
-    public AllowedApprovalPolicies ApprovalPolicy { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("approvalsReviewer")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ApprovalsReviewer>))]
-    public ApprovalsReviewer ApprovalsReviewer { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
-    public string Cwd { get; set; } = default!;
-
-    /// <summary>
-    /// Environment-native paths to instruction source files currently loaded for this thread.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("instructionSources")]
-    public System.Collections.Generic.ICollection<string>? InstructionSources { get; set; } = default!;
 
     /// <summary>
     /// Opaque cursor for hydrating paginated items backwards.
@@ -37,21 +20,6 @@ internal partial class ThreadResumeResponse
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("itemsBackwardsCursor")]
     public string? ItemsBackwardsCursor { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("model")]
-    public string Model { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
-    public string ModelProvider { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
-    public ReasoningEffort2? ReasoningEffort { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("sandbox")]
-    public Sandbox2 Sandbox { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("serviceTier")]
-    public string? ServiceTier { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("thread")]
     public Thread Thread { get; set; } = new Thread();

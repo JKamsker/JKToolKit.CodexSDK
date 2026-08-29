@@ -58,6 +58,10 @@ internal partial class Thread
     [System.Text.Json.Serialization.JsonPropertyName("gitInfo")]
     public GitInfo2? GitInfo { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("historyMode")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ThreadHistoryMode>))]
+    public ThreadHistoryMode? HistoryMode { get; set; } = default!;
+
     /// <summary>
     /// Identifier for this thread. Codex-generated thread IDs are UUIDv7.
     /// </summary>

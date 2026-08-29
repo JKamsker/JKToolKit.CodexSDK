@@ -10,26 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadResumeInitialTurnsPageParams
+internal partial class ThreadItemsListResponse
 {
 
     /// <summary>
-    /// How much item detail to include for each returned turn; defaults to summary.
+    /// Opaque cursor to pass as `cursor` when reversing `sortDirection`. This is only populated when the page contains at least one item.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("itemsView")]
-    public ItemsView? ItemsView { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("backwardsCursor")]
+    public string? BackwardsCursor { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("data")]
+    public System.Collections.Generic.ICollection<ThreadItemEntry> Data { get; set; } = new System.Collections.ObjectModel.Collection<ThreadItemEntry>();
 
     /// <summary>
-    /// Optional turn page size.
+    /// Opaque cursor to pass to the next call to continue after the last item. if None, there are no more items to return.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("limit")]
-    public int? Limit { get; set; } = default!;
-
-    /// <summary>
-    /// Optional turn pagination direction; defaults to descending.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
-    public SortDirection4? SortDirection { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

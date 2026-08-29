@@ -9,27 +9,36 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// Internal-only notification containing the exact usage from one upstream Responses API completion.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RawResponseCompletedNotification
+internal partial class ThreadItemsListParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("responseId")]
-    public string ResponseId { get; set; } = default!;
+    /// <summary>
+    /// Opaque cursor to pass to the next call to continue after the last item.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("cursor")]
+    public string? Cursor { get; set; } = default!;
+
+    /// <summary>
+    /// Optional item page size.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("limit")]
+    public int? Limit { get; set; } = default!;
+
+    /// <summary>
+    /// Optional item pagination direction; defaults to ascending.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
+    public SortDirection2? SortDirection { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
 
+    /// <summary>
+    /// Optional turn id to filter by. When omitted, returns items across the thread.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("turnId")]
-    public string TurnId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("usage")]
-    public Usage? Usage { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("usageMetadata")]
-    public UsageMetadata? UsageMetadata { get; set; } = default!;
+    public string? TurnId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
