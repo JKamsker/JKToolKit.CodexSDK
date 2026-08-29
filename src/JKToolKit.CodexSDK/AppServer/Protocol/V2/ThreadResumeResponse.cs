@@ -57,6 +57,18 @@ public sealed record class ThreadResumeResponse
     public JsonElement? Thread { get; init; }
 
     /// <summary>
+    /// Gets the cursor for hydrating paginated turns backwards, when present.
+    /// </summary>
+    [JsonPropertyName("turnsBackwardsCursor")]
+    public string? TurnsBackwardsCursor { get; init; }
+
+    /// <summary>
+    /// Gets the cursor for hydrating paginated items backwards, when present.
+    /// </summary>
+    [JsonPropertyName("itemsBackwardsCursor")]
+    public string? ItemsBackwardsCursor { get; init; }
+
+    /// <summary>
     /// Gets additional unmodeled properties for forward compatibility.
     /// </summary>
     [JsonExtensionData]

@@ -35,6 +35,8 @@ internal static class CodexAppServerClientThreadResponseParsers
         var instructionSources = GetOptionalStringArray(result, "instructionSources") ?? Array.Empty<string>();
         var activePermissionProfile = ParseActivePermissionProfile(result);
         var initialTurnsPage = ParseTurnsPage(result, "initialTurnsPage");
+        var turnsBackwardsCursor = GetStringOrNull(result, "turnsBackwardsCursor") ?? GetStringOrNull(result, "turns_backwards_cursor");
+        var itemsBackwardsCursor = GetStringOrNull(result, "itemsBackwardsCursor") ?? GetStringOrNull(result, "items_backwards_cursor");
 
         return new CodexThread(
             summary.ThreadId,
@@ -50,7 +52,9 @@ internal static class CodexAppServerClientThreadResponseParsers
             runtimeWorkspaceRoots,
             instructionSources,
             activePermissionProfile,
-            initialTurnsPage);
+            initialTurnsPage,
+            turnsBackwardsCursor,
+            itemsBackwardsCursor);
     }
 
     private static CodexTurnsPage? ParseTurnsPage(JsonElement result, string propertyName)

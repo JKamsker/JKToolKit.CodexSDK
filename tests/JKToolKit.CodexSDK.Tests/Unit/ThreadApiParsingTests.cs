@@ -160,6 +160,24 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
+    public void ParseLifecycleThread_ParsesStableBackwardsCursors()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "threadId": "t_resumed",
+              "turnsBackwardsCursor": "turn_cursor",
+              "itemsBackwardsCursor": "item_cursor"
+            }
+            """);
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(doc.RootElement);
+
+        result.TurnsBackwardsCursor.Should().Be("turn_cursor");
+        result.ItemsBackwardsCursor.Should().Be("item_cursor");
+    }
+
+    [Fact]
     public void ParseReadResult_ReturnsThreadSummary()
     {
         var raw = JsonFixtures.Load("thread-read-response.json");
@@ -234,6 +252,43 @@ public sealed class ThreadApiParsingTests
         search.Action!.Kind.Should().Be(CodexWebSearchActionKind.FindInPage);
         search.Action.Url.Should().Be("https://example.com");
         search.Action.Pattern.Should().Be("cli");
+    }
+
+    [Fact]
+    public void ParseReadResult_ParsesFunctionCallOutputThreadItem()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "thread": {
+                "id": "t_read",
+                "turns": [
+                  {
+                    "id": "turn_1",
+                    "status": "completed",
+                    "items": [
+                      {
+                        "id": "fco_1",
+                        "type": "functionCallOutput",
+                        "name": "memory_lookup",
+                        "namespace": "memories",
+                        "output": "Alice mentioned you."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+            """);
+
+        var result = CodexAppServerClientThreadResponseParsers.ParseReadResult(doc.RootElement, "fallback");
+
+        var item = result.Turns.Should().ContainSingle().Subject.Items
+            .Should().ContainSingle().Subject
+            .Should().BeOfType<CodexThreadItemFunctionCallOutput>().Subject;
+        item.Name.Should().Be("memory_lookup");
+        item.Namespace.Should().Be("memories");
+        item.Output.GetString().Should().Be("Alice mentioned you.");
     }
 
     [Fact]

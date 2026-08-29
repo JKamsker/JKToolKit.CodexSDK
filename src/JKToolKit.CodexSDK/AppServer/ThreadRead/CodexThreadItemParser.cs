@@ -49,6 +49,7 @@ internal static class CodexThreadItemParser
             "fileChange" => ParseFileChange(id, type, element, raw),
             "mcpToolCall" => ParseMcpToolCall(id, type, element, raw),
             "dynamicToolCall" => ParseDynamicToolCall(id, type, element, raw),
+            "functionCallOutput" => ParseFunctionCallOutput(id, type, element, raw),
             "collabAgentToolCall" => ParseCollabAgentToolCall(id, type, element, raw),
             "webSearch" => ParseWebSearch(id, type, element, raw),
             "imageView" => ParseImageView(id, type, element, raw),
@@ -219,6 +220,24 @@ internal static class CodexThreadItemParser
             contentItemsArray is { } contentItems ? CloneElements(contentItems) : null,
             success,
             durationMs,
+            raw);
+    }
+
+    private static CodexThreadItem? ParseFunctionCallOutput(string id, string type, JsonElement element, JsonElement raw)
+    {
+        if (!TryGetRequiredString(element, "name", out var name) ||
+            !TryGetOptionalString(element, "namespace", out var @namespace) ||
+            !TryGetRequiredElement(element, "output", out var output))
+        {
+            return null;
+        }
+
+        return new CodexThreadItemFunctionCallOutput(
+            id,
+            type,
+            name,
+            @namespace,
+            output,
             raw);
     }
 

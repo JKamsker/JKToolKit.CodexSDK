@@ -127,7 +127,13 @@ internal static partial class AppServerNotificationMapper
             return null;
         }
 
-        return new RawResponseCompletedNotification(threadId, turnId, responseId, GetOptionalAny(p, "usage"), p);
+        return new RawResponseCompletedNotification(
+            threadId,
+            turnId,
+            responseId,
+            GetOptionalAny(p, "usage"),
+            GetOptionalAny(p, "usageMetadata"),
+            p);
     }
 
     private static ThreadEnvironmentConnectionNotification? TryMapThreadEnvironmentConnection(string method, JsonElement p)

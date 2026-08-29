@@ -44,6 +44,8 @@ internal sealed class CodexAppServerTurnsClient
 
         ArgumentNullException.ThrowIfNull(options);
 
+        ValidateTurnToolOutput(options);
+
         ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: _experimentalApiEnabled());
 
         if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy) &&
@@ -58,7 +60,9 @@ internal sealed class CodexAppServerTurnsClient
         {
             ThreadId = threadId,
             ClientUserMessageId = options.ClientUserMessageId,
+            TurnTrigger = options.TurnTrigger,
             Input = options.Input.Select(i => i.Wire).ToArray(),
+            ToolOutput = options.ToolOutput,
             ResponsesApiClientMetadata = options.ResponsesApiClientMetadata,
             AdditionalContext = CodexAppServerWireBuilders.BuildAdditionalContext(
                 options.AdditionalContext,
@@ -79,6 +83,7 @@ internal sealed class CodexAppServerTurnsClient
                 options.ServiceTier,
                 options.ClearServiceTier,
                 nameof(TurnStartOptions.ClearServiceTier)),
+            ServiceTierForTurn = options.ServiceTierForTurn?.Value,
             Effort = options.Effort?.Value,
             Summary = options.Summary,
             Personality = options.Personality,
@@ -257,6 +262,34 @@ internal sealed class CodexAppServerTurnsClient
             "turn/interrupt",
             new UpstreamV2.TurnInterruptParams { ThreadId = threadId, TurnId = turnId },
             ct);
+
+    private static void ValidateTurnToolOutput(TurnStartOptions options)
+    {
+        if (options.ToolOutput is null)
+        {
+            return;
+        }
+
+        if (options.Input.Count > 0)
+        {
+            throw new ArgumentException("ToolOutput cannot be combined with non-empty Input.", nameof(options));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.ToolOutput.Name))
+        {
+            throw new ArgumentException("ToolOutput.Name cannot be empty or whitespace.", nameof(options));
+        }
+
+        if (options.ToolOutput.Output.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            throw new ArgumentException("ToolOutput.Output cannot be null or undefined.", nameof(options));
+        }
+
+        if (options.ToolOutput.Output.ValueKind is not JsonValueKind.String and not JsonValueKind.Array)
+        {
+            throw new ArgumentException("ToolOutput.Output must be a string or an array of content items.", nameof(options));
+        }
+    }
 
     private static bool ContainsReadOnlyAccessOverrides(SandboxPolicy? policy) =>
         policy switch

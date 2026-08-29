@@ -75,6 +75,18 @@ public sealed record class CodexThreadItemDynamicToolCall(
     : CodexThreadItem(Id, Type, Raw);
 
 /// <summary>
+/// Represents standalone function-call output submitted as a thread item.
+/// </summary>
+public sealed record class CodexThreadItemFunctionCallOutput(
+    string Id,
+    string Type,
+    string Name,
+    string? Namespace,
+    JsonElement Output,
+    JsonElement Raw)
+    : CodexThreadItem(Id, Type, Raw);
+
+/// <summary>
 /// Represents a collaboration-tool call item.
 /// </summary>
 public sealed record class CodexThreadItemCollabAgentToolCall(

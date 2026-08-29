@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.AppServer;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -21,6 +22,15 @@ public sealed record class TurnStartParams
     public string? ClientUserMessageId { get; init; }
 
     /// <summary>
+    /// Gets optional source classification for the caller that starts this turn.
+    /// </summary>
+    /// <remarks>
+    /// Upstream ignores this field when the request steers an already-active turn.
+    /// </remarks>
+    [JsonPropertyName("turnTrigger")]
+    public string? TurnTrigger { get; init; }
+
+    /// <summary>
     /// Gets the input items for the turn (wire payloads).
     /// </summary>
     /// <remarks>
@@ -30,6 +40,15 @@ public sealed record class TurnStartParams
     /// </remarks>
     [JsonPropertyName("input")]
     public required IReadOnlyList<object> Input { get; init; }
+
+    /// <summary>
+    /// Gets optional standalone tool output to submit instead of user input.
+    /// </summary>
+    /// <remarks>
+    /// Upstream rejects payloads that combine <c>toolOutput</c> with non-empty <c>input</c>.
+    /// </remarks>
+    [JsonPropertyName("toolOutput")]
+    public TurnToolOutput? ToolOutput { get; init; }
 
     /// <summary>
     /// Gets optional turn-scoped Responses API client metadata.
@@ -108,6 +127,15 @@ public sealed record class TurnStartParams
     /// </remarks>
     [JsonPropertyName("serviceTier")]
     public JsonElement? ServiceTier { get; init; }
+
+    /// <summary>
+    /// Gets an optional service tier override that applies only to the new turn started by this request.
+    /// </summary>
+    /// <remarks>
+    /// Omitted or <see langword="null"/> inherits the thread tier and does not change the thread's sticky tier.
+    /// </remarks>
+    [JsonPropertyName("serviceTierForTurn")]
+    public string? ServiceTierForTurn { get; init; }
 
     /// <summary>
     /// Gets an optional reasoning effort override for this turn and subsequent turns (wire value).

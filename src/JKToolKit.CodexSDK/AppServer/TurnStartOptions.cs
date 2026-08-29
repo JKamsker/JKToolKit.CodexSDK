@@ -21,6 +21,22 @@ public sealed class TurnStartOptions
     public string? ClientUserMessageId { get; set; }
 
     /// <summary>
+    /// Gets or sets optional source classification for the caller that starts this turn.
+    /// </summary>
+    /// <remarks>
+    /// Upstream ignores this field when the request steers an already-active turn.
+    /// </remarks>
+    public string? TurnTrigger { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional standalone tool output to submit instead of user input.
+    /// </summary>
+    /// <remarks>
+    /// Upstream rejects payloads that combine <see cref="ToolOutput"/> with non-empty <see cref="Input"/>.
+    /// </remarks>
+    public TurnToolOutput? ToolOutput { get; set; }
+
+    /// <summary>
     /// Gets or sets optional turn-scoped Responses API client metadata.
     /// </summary>
     /// <remarks>
@@ -134,6 +150,14 @@ public sealed class TurnStartOptions
     public bool ClearServiceTier { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional service tier override that applies only to the turn started by this request.
+    /// </summary>
+    /// <remarks>
+    /// This does not change the thread's sticky service tier. Omit to inherit the current thread tier.
+    /// </remarks>
+    public CodexServiceTier? ServiceTierForTurn { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional reasoning effort.
     /// </summary>
     /// <remarks>
@@ -182,6 +206,8 @@ public sealed class TurnStartOptions
         {
             Input = Input,
             ClientUserMessageId = ClientUserMessageId,
+            TurnTrigger = TurnTrigger,
+            ToolOutput = ToolOutput,
             ResponsesApiClientMetadata = ResponsesApiClientMetadata,
             AdditionalContext = AdditionalContext,
             Cwd = Cwd,
@@ -195,6 +221,7 @@ public sealed class TurnStartOptions
             Model = Model,
             ServiceTier = ServiceTier,
             ClearServiceTier = ClearServiceTier,
+            ServiceTierForTurn = ServiceTierForTurn,
             Effort = Effort,
             Summary = Summary,
             Personality = Personality,

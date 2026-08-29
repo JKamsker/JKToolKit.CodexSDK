@@ -155,4 +155,30 @@ public sealed class ThreadForkParamsSerializationTests
         json.Should().Contain("\"runtimeWorkspaceRoots\":[\"C:/repo\"]");
         json.Should().Contain("\"permissions\":\"profile-1\"");
     }
+
+    [Fact]
+    public async Task ForkThreadAsync_MapsExcludeTurns_FromOptionsToWireParams()
+    {
+        ThreadForkParams? captured = null;
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_new"}""");
+        var response = doc.RootElement.Clone();
+
+        var client = new CodexAppServerThreadsClient(
+            sendRequestAsync: (method, @params, _) =>
+            {
+                method.Should().Be("thread/fork");
+                captured = @params.Should().BeOfType<ThreadForkParams>().Subject;
+                return Task.FromResult(response);
+            },
+            experimentalApiEnabled: () => false);
+
+        _ = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            ExcludeTurns = true
+        });
+
+        captured.Should().NotBeNull();
+        captured!.ExcludeTurns.Should().BeTrue();
+    }
 }

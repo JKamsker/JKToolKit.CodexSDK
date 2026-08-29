@@ -130,6 +130,17 @@ public sealed record class ThreadResumeParams
     public string? Personality { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the response should omit hydrated turns.
+    /// </summary>
+    /// <remarks>
+    /// Full-history hydration is deprecated for paginated threads; use this with <c>thread/turns/list</c>
+    /// and <c>thread/items/list</c> where available.
+    /// </remarks>
+    [JsonPropertyName("excludeTurns")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ExcludeTurns { get; init; }
+
+    /// <summary>
     /// Gets optional turn-page bootstrap parameters for the resume response.
     /// </summary>
     /// <remarks>

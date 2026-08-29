@@ -130,7 +130,7 @@ public sealed class AppServerNotificationMapperTests
         commandExecNotification.StreamKind.Should().Be(CommandExecOutputStreamKind.Stdout);
 
         var rawResponseCompleted = JsonDocument.Parse(
-            """{"threadId":"t1","turnId":"turn1","responseId":"resp_1","usage":{"totalTokens":10,"cacheWriteInputTokens":2}}""").RootElement;
+            """{"threadId":"t1","turnId":"turn1","responseId":"resp_1","usage":{"totalTokens":10,"cacheWriteInputTokens":2},"usageMetadata":{"amount":"42"}}""").RootElement;
         var rawResponseNotification = AppServerNotificationMapper.Map("rawResponse/completed", rawResponseCompleted)
             .Should().BeOfType<RawResponseCompletedNotification>()
             .Which;
@@ -138,6 +138,8 @@ public sealed class AppServerNotificationMapperTests
         rawResponseNotification.ResponseId.Should().Be("resp_1");
         rawResponseNotification.Usage.Should().NotBeNull();
         rawResponseNotification.Usage!.Value.GetProperty("cacheWriteInputTokens").GetInt32().Should().Be(2);
+        rawResponseNotification.UsageMetadata.Should().NotBeNull();
+        rawResponseNotification.UsageMetadata!.Value.GetProperty("amount").GetString().Should().Be("42");
 
         var fsChanged = JsonDocument.Parse($@"{{""watchId"":""w1"",""changedPaths"":[""{XPaths.JsonAbs("repo/a.txt")}"",""{XPaths.JsonAbs("repo/b.txt")}""]}}").RootElement;
         AppServerNotificationMapper.Map("fs/changed", fsChanged)

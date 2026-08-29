@@ -135,6 +135,14 @@ public sealed class ThreadResumeOptions
     public string? Personality { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the response should omit hydrated turns.
+    /// </summary>
+    /// <remarks>
+    /// Full-history hydration is deprecated for paginated threads. Set this when the client plans to page turns/items separately.
+    /// </remarks>
+    public bool ExcludeTurns { get; set; }
+
+    /// <summary>
     /// Gets or sets optional turn-page bootstrap settings for the resume response.
     /// </summary>
     /// <remarks>

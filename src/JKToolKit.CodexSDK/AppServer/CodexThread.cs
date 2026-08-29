@@ -74,6 +74,16 @@ public sealed record class CodexThread
     public CodexTurnsPage? InitialTurnsPage { get; }
 
     /// <summary>
+    /// Gets the cursor for hydrating paginated turns backwards, when present.
+    /// </summary>
+    public string? TurnsBackwardsCursor { get; }
+
+    /// <summary>
+    /// Gets the cursor for hydrating paginated items backwards, when present.
+    /// </summary>
+    public string? ItemsBackwardsCursor { get; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the lifecycle response.
     /// </summary>
     public JsonElement Raw { get; }
@@ -95,7 +105,9 @@ public sealed record class CodexThread
         IReadOnlyList<string>? runtimeWorkspaceRoots = null,
         IReadOnlyList<string>? instructionSources = null,
         ActivePermissionProfileInfo? activePermissionProfile = null,
-        CodexTurnsPage? initialTurnsPage = null)
+        CodexTurnsPage? initialTurnsPage = null,
+        string? turnsBackwardsCursor = null,
+        string? itemsBackwardsCursor = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Thread = thread ?? new CodexThreadSummary
@@ -114,7 +126,8 @@ public sealed record class CodexThread
         InstructionSources = instructionSources ?? Array.Empty<string>();
         ActivePermissionProfile = activePermissionProfile;
         InitialTurnsPage = initialTurnsPage;
+        TurnsBackwardsCursor = turnsBackwardsCursor;
+        ItemsBackwardsCursor = itemsBackwardsCursor;
         Raw = raw;
     }
 }
-

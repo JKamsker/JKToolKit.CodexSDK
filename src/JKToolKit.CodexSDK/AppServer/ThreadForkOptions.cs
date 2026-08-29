@@ -118,6 +118,14 @@ public sealed class ThreadForkOptions
     public string? DeveloperInstructions { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the response should omit hydrated turns.
+    /// </summary>
+    /// <remarks>
+    /// Full-history hydration is deprecated for paginated threads. Set this when the client plans to page turns/items separately.
+    /// </remarks>
+    public bool ExcludeTurns { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional value indicating whether the forked thread should be ephemeral.
     /// </summary>
     public bool? Ephemeral { get; set; }

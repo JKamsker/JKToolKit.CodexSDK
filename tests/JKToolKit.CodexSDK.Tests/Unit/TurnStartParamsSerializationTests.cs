@@ -61,4 +61,23 @@ public sealed class TurnStartParamsSerializationTests
             .And.Contain("\"responsesapiClientMetadata\":{\"workspace_kind\":\"local\"}")
             .And.Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\"}}");
     }
+
+    [Fact]
+    public void Serialize_WritesStableTurnTriggerServiceTierForTurnAndToolOutput()
+    {
+        var json = JsonSerializer.Serialize(
+            new TurnStartParams
+            {
+                ThreadId = "thr_123",
+                Input = [],
+                TurnTrigger = "toolResult",
+                ServiceTierForTurn = "default",
+                ToolOutput = TurnToolOutput.Text("memory_lookup", "Alice mentioned you.", "memories")
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"turnTrigger\":\"toolResult\"")
+            .And.Contain("\"serviceTierForTurn\":\"default\"")
+            .And.Contain("\"toolOutput\":{\"name\":\"memory_lookup\",\"namespace\":\"memories\",\"output\":\"Alice mentioned you.\"}");
+    }
 }
