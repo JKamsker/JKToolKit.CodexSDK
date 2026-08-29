@@ -108,6 +108,17 @@ public sealed record class ThreadForkParams
     public string? DeveloperInstructions { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the response should omit hydrated turns.
+    /// </summary>
+    /// <remarks>
+    /// Full-history hydration is deprecated for paginated threads; use this with <c>thread/turns/list</c>
+    /// and <c>thread/items/list</c> where available.
+    /// </remarks>
+    [JsonPropertyName("excludeTurns")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ExcludeTurns { get; init; }
+
+    /// <summary>
     /// Gets an optional value indicating whether the forked thread should be ephemeral.
     /// </summary>
     [JsonPropertyName("ephemeral")]

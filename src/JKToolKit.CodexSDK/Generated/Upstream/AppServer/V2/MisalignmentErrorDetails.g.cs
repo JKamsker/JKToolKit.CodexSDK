@@ -10,23 +10,26 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class TurnError
+internal partial class MisalignmentErrorDetails
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("additionalDetails")]
-    public string? AdditionalDetails { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("codexErrorInfo")]
-    public CodexErrorInfo2? CodexErrorInfo { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("message")]
-    public string Message { get; set; } = default!;
+    /// <summary>
+    /// A substantive localized explanation is required before offering continuation.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("detailedExplanation")]
+    public string? DetailedExplanation { get; set; } = default!;
 
     /// <summary>
-    /// Optional public explanation and continuation instruction for a misalignment block.
+    /// Open-ended classification; clients must accept categories added by Responses.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("misalignment")]
-    public Misalignment? Misalignment { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("errorType")]
+    public string? ErrorType { get; set; } = default!;
+
+    /// <summary>
+    /// Instruction to submit as the next turn's user input if continuation is confirmed.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("steer")]
+    public Steer? Steer { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

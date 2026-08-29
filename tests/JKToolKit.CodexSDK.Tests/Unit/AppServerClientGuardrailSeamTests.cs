@@ -103,6 +103,31 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task ResumeThread_WithExcludeTurns_SendsStableParam()
+    {
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        _ = await client.ResumeThreadAsync(new ThreadResumeOptions
+        {
+            ThreadId = "thr_1",
+            ExcludeTurns = true
+        });
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("thread/resume");
+        rpc.LastParams.Should().BeOfType<ThreadResumeParams>()
+            .Which.ExcludeTurns.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task UnsubscribeThread_WhenExperimentalDisabled_SendsThreadUnsubscribe()
     {
         using var doc = JsonDocument.Parse("""{"status":"unsubscribed"}""");
@@ -279,6 +304,60 @@ public sealed class AppServerClientGuardrailSeamTests
         rpc.LastMethod.Should().Be("turn/start");
         rpc.LastParams.Should().BeOfType<TurnStartParams>();
         ((TurnStartParams)rpc.LastParams!).ApprovalsReviewer.Should().Be(CodexApprovalsReviewer.GuardianSubagent);
+    }
+
+    [Fact]
+    public async Task StartTurn_WithStandaloneToolOutput_SendsStableTurnFields()
+    {
+        using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        _ = await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            TurnTrigger = "toolResult",
+            ToolOutput = TurnToolOutput.Text("memory_lookup", "Alice mentioned you.", "memories"),
+            ServiceTierForTurn = CodexServiceTier.Parse("default")
+        });
+
+        rpc.RequestCount.Should().Be(1);
+        rpc.LastMethod.Should().Be("turn/start");
+        var p = rpc.LastParams.Should().BeOfType<TurnStartParams>().Subject;
+        p.Input.Should().BeEmpty();
+        p.TurnTrigger.Should().Be("toolResult");
+        p.ServiceTierForTurn.Should().Be("default");
+        p.ToolOutput.Should().NotBeNull();
+        p.ToolOutput!.Name.Should().Be("memory_lookup");
+        p.ToolOutput.Namespace.Should().Be("memories");
+        p.ToolOutput.Output.GetString().Should().Be("Alice mentioned you.");
+    }
+
+    [Fact]
+    public async Task StartTurn_WithStandaloneToolOutputAndInput_ThrowsBeforeSendingRequest()
+    {
+        var rpc = new FakeRpc();
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions(),
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        var act = async () => await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            Input = [TurnInputItem.Text("hello")],
+            ToolOutput = TurnToolOutput.Text("memory_lookup", "result")
+        });
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*ToolOutput*Input*");
+        rpc.RequestCount.Should().Be(0);
     }
 
     [Fact]

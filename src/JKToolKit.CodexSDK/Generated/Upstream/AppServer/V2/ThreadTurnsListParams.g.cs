@@ -10,14 +10,32 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadReadParams
+internal partial class ThreadTurnsListParams
 {
 
     /// <summary>
-    /// When true, include turns and their items from rollout history. Full-history hydration is deprecated for paginated threads; prefer a metadata-only read and page with `thread/turns/list` and `thread/items/list`.
+    /// Opaque cursor to pass to the next call to continue after the last turn.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("includeTurns")]
-    public bool? IncludeTurns { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("cursor")]
+    public string? Cursor { get; set; } = default!;
+
+    /// <summary>
+    /// How much item detail to include for each returned turn; defaults to summary.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("itemsView")]
+    public ItemsView2? ItemsView { get; set; } = default!;
+
+    /// <summary>
+    /// Optional turn page size.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("limit")]
+    public int? Limit { get; set; } = default!;
+
+    /// <summary>
+    /// Optional turn pagination direction; defaults to descending.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("sortDirection")]
+    public SortDirection5? SortDirection { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

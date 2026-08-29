@@ -121,6 +121,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 BaseInstructions = options.BaseInstructions,
                 DeveloperInstructions = options.DeveloperInstructions,
                 Personality = options.Personality,
+                ExcludeTurns = options.ExcludeTurns,
                 InitialTurnsPage = CodexAppServerWireBuilders.BuildInitialTurnsPage(
                     options.InitialTurnsPage,
                     nameof(ThreadResumeOptions.InitialTurnsPage))
@@ -412,6 +413,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 Config = options.Config,
                 BaseInstructions = options.BaseInstructions,
                 DeveloperInstructions = options.DeveloperInstructions,
+                ExcludeTurns = options.ExcludeTurns,
                 Ephemeral = options.Ephemeral
             },
             ct);

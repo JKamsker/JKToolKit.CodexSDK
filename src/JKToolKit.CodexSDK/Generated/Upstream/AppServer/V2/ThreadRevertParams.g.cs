@@ -10,26 +10,22 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Internal-only notification containing the exact usage from one upstream Responses API completion.
+/// Replace a paginated thread's durable history with the prefix before one turn.
+/// <br/>
+/// <br/>This only changes persisted conversation history. It does not revert local file changes.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RawResponseCompletedNotification
+internal partial class ThreadRevertParams
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("responseId")]
-    public string ResponseId { get; set; } = default!;
+    /// <summary>
+    /// Turn excluded from the replacement history, together with every later turn.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("beforeTurnId")]
+    public string BeforeTurnId { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("turnId")]
-    public string TurnId { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("usage")]
-    public Usage? Usage { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("usageMetadata")]
-    public UsageMetadata? UsageMetadata { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

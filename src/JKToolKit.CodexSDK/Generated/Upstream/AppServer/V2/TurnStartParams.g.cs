@@ -74,6 +74,12 @@ internal partial class TurnStartParams
     public string? ServiceTier { get; set; } = default!;
 
     /// <summary>
+    /// Override the service tier only when this request starts a new turn. Use "default" for standard speed. Omitted or null inherits the thread's tier. Does not change the thread's tier or a turn being steered.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("serviceTierForTurn")]
+    public string? ServiceTierForTurn { get; set; } = default!;
+
+    /// <summary>
     /// Override the reasoning summary for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("summary")]
@@ -81,6 +87,15 @@ internal partial class TurnStartParams
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("toolOutput")]
+    public ToolOutput? ToolOutput { get; set; } = default!;
+
+    /// <summary>
+    /// Optional source classification for the caller that starts this turn. Ignored when this request steers an already-active turn.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("turnTrigger")]
+    public string? TurnTrigger { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

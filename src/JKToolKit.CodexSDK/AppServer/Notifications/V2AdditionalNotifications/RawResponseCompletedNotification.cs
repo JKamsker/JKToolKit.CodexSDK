@@ -28,14 +28,20 @@ public sealed record class RawResponseCompletedNotification : AppServerNotificat
     public JsonElement? Usage { get; }
 
     /// <summary>
+    /// Gets the raw usage metadata payload, when present.
+    /// </summary>
+    public JsonElement? UsageMetadata { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="RawResponseCompletedNotification"/>.
     /// </summary>
-    public RawResponseCompletedNotification(string ThreadId, string TurnId, string ResponseId, JsonElement? Usage, JsonElement Params)
+    public RawResponseCompletedNotification(string ThreadId, string TurnId, string ResponseId, JsonElement? Usage, JsonElement? UsageMetadata, JsonElement Params)
         : base("rawResponse/completed", Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;
         this.ResponseId = ResponseId;
         this.Usage = Usage;
+        this.UsageMetadata = UsageMetadata;
     }
 }

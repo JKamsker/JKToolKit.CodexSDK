@@ -58,4 +58,18 @@ public sealed class ThreadResumeParamsSerializationTests
             .And.Contain("\"sortDirection\":\"desc\"")
             .And.Contain("\"itemsView\":\"summary\"");
     }
+
+    [Fact]
+    public void Serialize_WritesStableExcludeTurns()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadResumeParams
+            {
+                ThreadId = "thr_123",
+                ExcludeTurns = true
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"excludeTurns\":true");
+    }
 }
