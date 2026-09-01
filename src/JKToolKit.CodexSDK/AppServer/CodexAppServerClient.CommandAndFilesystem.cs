@@ -38,14 +38,25 @@ public sealed partial class CodexAppServerClient
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
         if (string.IsNullOrWhiteSpace(options.Command))
             throw new ArgumentException("Command cannot be empty or whitespace.", nameof(options));
+        if (options.TimeoutMs < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.TimeoutMs, "Thread shell command timeoutMs cannot be negative.");
 
-        var result = await _core.SendRequestAsync(
-            "thread/shellCommand",
-            new
+        object @params = options.TimeoutMs.HasValue
+            ? new
+            {
+                threadId = options.ThreadId,
+                command = options.Command,
+                timeoutMs = options.TimeoutMs.Value
+            }
+            : new
             {
                 threadId = options.ThreadId,
                 command = options.Command
-            },
+            };
+
+        var result = await _core.SendRequestAsync(
+            "thread/shellCommand",
+            @params,
             ct).ConfigureAwait(false);
 
         EnsureObjectResponse(result, "thread/shellCommand response");

@@ -104,8 +104,10 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new AccountRateLimitsReadResult
         {
+            AccountId = CodexAppServerClientJson.GetStringOrNull(result, "accountId"),
             RateLimits = rateLimits.HasValue ? rateLimits.Value.Clone() : EmptyObject(),
             RateLimitsByLimitId = rateLimitsByLimitId,
+            RateLimitUpsell = CodexAppServerClientJson.TryGetElement(result, "rateLimitUpsell")?.Clone(),
             RateLimitResetCredits = ParseRateLimitResetCredits(result),
             Raw = result
         };

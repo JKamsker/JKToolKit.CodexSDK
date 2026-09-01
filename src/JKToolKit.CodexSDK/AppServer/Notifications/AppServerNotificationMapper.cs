@@ -353,7 +353,7 @@ internal static partial class AppServerNotificationMapper
                 Error: GetStringOrNull(p, "error"),
                 Params: p),
 
-            _ => TryMapCodex149Notification(method, p) ?? new UnknownNotification(method, p)
+            _ => TryMapCodex152Notification(method, p) ?? TryMapCodex149Notification(method, p) ?? new UnknownNotification(method, p)
         };
     }
 

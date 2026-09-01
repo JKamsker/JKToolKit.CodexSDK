@@ -90,6 +90,19 @@ internal static partial class AppServerNotificationMapper
         return new ServerRequestResolvedNotification(threadId, requestId!, p);
     }
 
+    private static ModelProviderAuthRecoveryNotification? TryMapModelProviderAuthRecovery(string method, JsonElement p)
+    {
+        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
+            !TryGetRequiredString(p, "turnId", out var turnId) ||
+            !TryGetRequiredString(p, "provider", out var provider) ||
+            !TryGetRequiredString(p, "message", out var message))
+        {
+            return null;
+        }
+
+        return new ModelProviderAuthRecoveryNotification(method, threadId, turnId, provider, message, p);
+    }
+
     private static bool TryParseMcpServerStartupState(string? value, out McpServerStartupState status)
     {
         switch (value)

@@ -10,23 +10,20 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadShellCommandParams
+internal partial class AuthRecoveryNotification
 {
 
-    /// <summary>
-    /// Shell command string evaluated by the thread's configured shell. Unlike `command/exec`, this intentionally preserves shell syntax such as pipes, redirects, and quoting. This runs unsandboxed with full access rather than inheriting the thread sandbox policy.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("command")]
-    public string Command { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("message")]
+    public string Message { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("provider")]
+    public string Provider { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
 
-    /// <summary>
-    /// Maximum execution time in milliseconds. Defaults to one hour when omitted or null. Must be non-negative; zero requests an immediate timeout, not unlimited execution. Does not affect the immediate RPC acknowledgement.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("timeoutMs")]
-    public long? TimeoutMs { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("turnId")]
+    public string TurnId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

@@ -278,6 +278,19 @@ public sealed class AppServerNotificationMapperTests
         safetyNotification.Reasons.Should().Equal("review");
         safetyNotification.ShowBufferingUi.Should().BeTrue();
         safetyNotification.FasterModel.Should().Be("gpt-5-mini");
+
+        var authRecoveryStarted = JsonDocument.Parse("""{"threadId":"t1","turnId":"turn1","provider":"bedrock","message":"Refreshing credentials."}""").RootElement;
+        var authRecoveryNotification = AppServerNotificationMapper.Map("modelProvider/authRecoveryStarted", authRecoveryStarted)
+            .Should().BeOfType<ModelProviderAuthRecoveryNotification>()
+            .Which;
+
+        authRecoveryNotification.Method.Should().Be("modelProvider/authRecoveryStarted");
+        authRecoveryNotification.ThreadId.Should().Be("t1");
+        authRecoveryNotification.Provider.Should().Be("bedrock");
+
+        AppServerNotificationMapper.Map("modelProvider/authRecoveryCompleted", authRecoveryStarted)
+            .Should().BeOfType<ModelProviderAuthRecoveryNotification>()
+            .Which.Method.Should().Be("modelProvider/authRecoveryCompleted");
     }
 
     [Fact]
@@ -297,6 +310,8 @@ public sealed class AppServerNotificationMapperTests
     [InlineData("autoApprovalReview/strictReviewRequired", """{"threadId":"t1","turnId":"turn1","startedAtMs":"nope"}""")]
     [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","model":"gpt-5.1","showBufferingUi":"true"}""")]
     [InlineData("model/safetyBuffering/updated", """{"threadId":"t1","turnId":"turn1","showBufferingUi":true}""")]
+    [InlineData("modelProvider/authRecoveryStarted", """{"threadId":"t1","turnId":"turn1","provider":"bedrock"}""")]
+    [InlineData("modelProvider/authRecoveryCompleted", """{"threadId":"t1","turnId":"turn1","provider":123,"message":"done"}""")]
     [InlineData("rawResponse/completed", """{"threadId":"t1","turnId":"turn1"}""")]
     [InlineData("thread/environment/connected", """{"threadId":"t1","environmentId":123}""")]
     [InlineData("thread/environment/disconnected", """{"threadId":123,"environmentId":"env-1"}""")]

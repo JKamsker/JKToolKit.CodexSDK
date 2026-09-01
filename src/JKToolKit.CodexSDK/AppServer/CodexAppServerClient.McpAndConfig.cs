@@ -221,6 +221,11 @@ public sealed record class AccountReadResult
 public sealed record class AccountRateLimitsReadResult
 {
     /// <summary>
+    /// Gets the account associated with this usage snapshot, when upstream reports it.
+    /// </summary>
+    public string? AccountId { get; init; }
+
+    /// <summary>
     /// Gets the aggregate/default rate-limit snapshot.
     /// </summary>
     public required JsonElement RateLimits { get; init; }
@@ -234,6 +239,11 @@ public sealed record class AccountRateLimitsReadResult
     /// Gets earned rate-limit reset credit information when the backend reports it.
     /// </summary>
     public RateLimitResetCreditsSummary? RateLimitResetCredits { get; init; }
+
+    /// <summary>
+    /// Gets the optional backend-owned rate-limit upsell banner payload.
+    /// </summary>
+    public JsonElement? RateLimitUpsell { get; init; }
 
     /// <summary>
     /// Gets the raw JSON payload for the response.
