@@ -13,8 +13,20 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class GetAccountRateLimitsResponse
 {
 
+    /// <summary>
+    /// Account associated with this usage snapshot, when supplied by the backend.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("accountId")]
+    public string? AccountId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("rateLimitResetCredits")]
     public RateLimitResetCredits? RateLimitResetCredits { get; set; } = default!;
+
+    /// <summary>
+    /// Optional backend-owned banner from the same usage read. Its nested keys retain the backend's snake_case contract; an absent banner leaves the client's existing UI unchanged.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("rateLimitUpsell")]
+    public object? RateLimitUpsell { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("rateLimits")]
     public RateLimitSnapshot RateLimits { get; set; } = new RateLimitSnapshot();
