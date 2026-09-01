@@ -186,13 +186,31 @@ public sealed class AppServerCommandAndFilesystemTests
         await client.ThreadShellCommandAsync(new ThreadShellCommandOptions
         {
             ThreadId = "thr-1",
-            Command = "git status"
+            Command = "git status",
+            TimeoutMs = 28_800_000
         });
 
         rpc.LastMethod.Should().Be("thread/shellCommand");
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"threadId\":\"thr-1\"")
-            .And.Contain("\"command\":\"git status\"");
+            .And.Contain("\"command\":\"git status\"")
+            .And.Contain("\"timeoutMs\":28800000");
+    }
+
+    [Fact]
+    public async Task ThreadShellCommandAsync_RejectsNegativeTimeoutMs()
+    {
+        await using var client = CreateClient(new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement });
+
+        var act = async () => await client.ThreadShellCommandAsync(new ThreadShellCommandOptions
+        {
+            ThreadId = "thr-1",
+            Command = "git status",
+            TimeoutMs = -1
+        });
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>()
+            .WithMessage("*timeoutMs cannot be negative*");
     }
 
     [Fact]

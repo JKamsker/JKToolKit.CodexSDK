@@ -278,7 +278,12 @@ public sealed class McpServerWrappersTests
                 command: "npx",
                 args: ["-y", "@openai/codex-shell-tool-mcp"],
                 enabled: true,
-                required: false);
+                required: false)
+            .SetMcpServerTool(
+                serverName: "shell-tool",
+                toolName: "search",
+                approvalMode: "prompt",
+                outputTokenLimit: 30_000);
 
         var element = overrides.Build();
 
@@ -289,6 +294,22 @@ public sealed class McpServerWrappersTests
         element.TryGetProperty("mcp_servers.shell-tool.args", out var args).Should().BeTrue();
         args.ValueKind.Should().Be(JsonValueKind.Array);
         args.EnumerateArray().Select(a => a.GetString()).Should().Equal("-y", "@openai/codex-shell-tool-mcp");
+
+        element.TryGetProperty("mcp_servers.shell-tool.tools.search.approval_mode", out var approvalMode).Should().BeTrue();
+        approvalMode.GetString().Should().Be("prompt");
+
+        element.TryGetProperty("mcp_servers.shell-tool.tools.search.output_token_limit", out var outputTokenLimit).Should().BeTrue();
+        outputTokenLimit.GetInt64().Should().Be(30_000);
+    }
+
+    [Fact]
+    public void CodexConfigOverridesBuilder_RejectsNonPositiveMcpToolOutputLimit()
+    {
+        var act = () => new CodexConfigOverridesBuilder()
+            .SetMcpServerTool("shell-tool", "search", outputTokenLimit: 0);
+
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("*output token limit must be positive*");
     }
 
     private sealed class FakeProcess : IStdioProcess

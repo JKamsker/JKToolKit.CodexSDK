@@ -244,6 +244,7 @@ public sealed class AuthAccountConfigWrappersTests
     {
         var rawResult = JsonSerializer.SerializeToElement(new
         {
+            accountId = "account-123",
             rateLimits = new
             {
                 limitId = "codex",
@@ -253,6 +254,11 @@ public sealed class AuthAccountConfigWrappersTests
             {
                 codex = new { limitId = "codex" },
                 secondary = new { limitId = "secondary" }
+            },
+            rateLimitUpsell = new
+            {
+                banner_type = "selected_model_limit_reached",
+                title = "Usage limit reached"
             }
         });
 
@@ -267,11 +273,14 @@ public sealed class AuthAccountConfigWrappersTests
 
         var result = await client.ReadAccountRateLimitsAsync();
 
+        result.AccountId.Should().Be("account-123");
         result.RateLimits.GetProperty("limitId").GetString().Should().Be("codex");
         result.RateLimits.GetProperty("planType").GetString().Should().Be("pro");
         result.RateLimitsByLimitId.Should().NotBeNull();
         result.RateLimitsByLimitId!.Should().ContainKey("codex");
         result.RateLimitsByLimitId!["secondary"].GetProperty("limitId").GetString().Should().Be("secondary");
+        result.RateLimitUpsell.Should().NotBeNull();
+        result.RateLimitUpsell!.Value.GetProperty("banner_type").GetString().Should().Be("selected_model_limit_reached");
     }
 
     [Fact]

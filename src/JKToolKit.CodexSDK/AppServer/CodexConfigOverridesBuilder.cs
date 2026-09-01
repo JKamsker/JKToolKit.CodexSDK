@@ -116,6 +116,32 @@ public sealed class CodexConfigOverridesBuilder
     }
 
     /// <summary>
+    /// Adds or updates per-tool settings for an MCP server entry under <c>mcp_servers</c>.
+    /// </summary>
+    public CodexConfigOverridesBuilder SetMcpServerTool(
+        string serverName,
+        string toolName,
+        string? approvalMode = null,
+        long? outputTokenLimit = null)
+    {
+        if (string.IsNullOrWhiteSpace(serverName))
+            throw new ArgumentException("Server name cannot be empty or whitespace.", nameof(serverName));
+        if (string.IsNullOrWhiteSpace(toolName))
+            throw new ArgumentException("Tool name cannot be empty or whitespace.", nameof(toolName));
+        if (approvalMode is not null && string.IsNullOrWhiteSpace(approvalMode))
+            throw new ArgumentException("Approval mode cannot be empty or whitespace.", nameof(approvalMode));
+        if (outputTokenLimit <= 0)
+            throw new ArgumentOutOfRangeException(nameof(outputTokenLimit), outputTokenLimit, "MCP tool output token limit must be positive.");
+
+        var prefix = $"mcp_servers.{serverName}.tools.{toolName}";
+
+        Set($"{prefix}.approval_mode", approvalMode);
+        Set($"{prefix}.output_token_limit", outputTokenLimit);
+
+        return this;
+    }
+
+    /// <summary>
     /// Builds the JSON object to assign to <c>ThreadStartOptions.Config</c> / <c>ThreadResumeOptions.Config</c>.
     /// </summary>
     public JsonElement Build() => JsonSerializer.SerializeToElement(_overrides, new JsonSerializerOptions(JsonSerializerDefaults.Web));
@@ -125,4 +151,3 @@ public sealed class CodexConfigOverridesBuilder
     /// </summary>
     public JsonElement? BuildOrNull() => _overrides.Count == 0 ? null : Build();
 }
-

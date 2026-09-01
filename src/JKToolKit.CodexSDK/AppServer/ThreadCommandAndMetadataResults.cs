@@ -16,6 +16,14 @@ public sealed class ThreadShellCommandOptions
     /// Gets or sets the shell command string to execute.
     /// </summary>
     public required string Command { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum command execution time in milliseconds.
+    /// </summary>
+    /// <remarks>
+    /// When omitted, the app server uses its default timeout. Zero requests an immediate timeout.
+    /// </remarks>
+    public long? TimeoutMs { get; set; }
 }
 
 /// <summary>
