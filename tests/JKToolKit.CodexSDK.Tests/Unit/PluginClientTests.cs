@@ -595,6 +595,60 @@ public sealed class PluginClientTests
     }
 
     [Fact]
+    public async Task ReconcilePluginsAsync_SendsReason_AndParsesChangedPlugins()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "changedPlugins": [
+                {
+                  "id": "linear@workspace-directory",
+                  "hasMcps": true,
+                  "hasApps": false,
+                  "hasHooks": true,
+                  "hasSkills": true,
+                  "futureField": "preserved"
+                }
+              ],
+              "failedRemotePluginIds": ["plugins~Plugin_111"],
+              "failedMaterializationRemotePluginIds": ["plugins~Plugin_222"]
+            }
+            """);
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReconcilePluginsAsync(new PluginReconcileOptions { Reason = "tooling_changed" });
+
+        result.ChangedPlugins.Should().ContainSingle();
+        var plugin = result.ChangedPlugins[0];
+        plugin.Id.Should().Be("linear@workspace-directory");
+        plugin.HasMcps.Should().BeTrue();
+        plugin.HasApps.Should().BeFalse();
+        plugin.HasHooks.Should().BeTrue();
+        plugin.HasSkills.Should().BeTrue();
+        plugin.Raw.TryGetProperty("futureField", out _).Should().BeTrue();
+        result.FailedRemotePluginIds.Should().Equal("plugins~Plugin_111");
+        result.FailedMaterializationRemotePluginIds.Should().Equal("plugins~Plugin_222");
+        rpc.LastMethod.Should().Be("plugin/reconcile");
+
+        var json = JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        json.Should().Contain("\"reason\":\"tooling_changed\"");
+    }
+
+    [Fact]
+    public async Task ReconcilePluginsAsync_RequiresCurrentResponseArrays()
+    {
+        using var doc = JsonDocument.Parse("""{"changedPlugins":[]}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = CreateClient(rpc);
+
+        var act = async () => await client.ReconcilePluginsAsync(new PluginReconcileOptions());
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*failedRemotePluginIds*");
+    }
+
+    [Fact]
     public async Task ReadPluginAsync_RequiresExactlyOneMarketplaceSelector()
     {
         var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{}""").RootElement };

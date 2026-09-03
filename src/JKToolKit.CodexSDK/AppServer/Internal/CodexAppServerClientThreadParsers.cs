@@ -78,7 +78,10 @@ internal static class CodexAppServerClientThreadParsers
         var updatedAt = GetDateTimeOffset(primary, secondary, "updatedAt");
         var cwd = GetString(primary, secondary, "cwd");
         var pathValue = GetString(primary, secondary, "path");
-        var model = GetString(secondary, default, "model");
+        var model = GetString(primary, secondary, "model");
+        var reasoningEffort = CodexReasoningEffort.TryParse(GetString(primary, secondary, "reasoningEffort"), out var parsedReasoningEffort)
+            ? parsedReasoningEffort
+            : (CodexReasoningEffort?)null;
         var modelProvider = GetString(primary, secondary, "modelProvider");
         var serviceTier = CodexServiceTier.TryParse(GetString(secondary, default, "serviceTier"), out var parsedServiceTier)
             ? parsedServiceTier
@@ -114,6 +117,7 @@ internal static class CodexAppServerClientThreadParsers
             Cwd = cwd,
             Path = pathValue,
             Model = model,
+            ReasoningEffort = reasoningEffort,
             ModelProvider = modelProvider,
             ServiceTier = serviceTier,
             Ephemeral = ephemeral,

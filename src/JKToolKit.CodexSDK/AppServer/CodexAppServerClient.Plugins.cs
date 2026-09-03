@@ -33,6 +33,12 @@ public sealed partial class CodexAppServerClient
         _pluginsClient.UninstallPluginAsync(options, ct);
 
     /// <summary>
+    /// Reconciles remote installed plugin bundles and returns affected plugin capabilities.
+    /// </summary>
+    public Task<PluginReconcileResult> ReconcilePluginsAsync(PluginReconcileOptions options, CancellationToken ct = default) =>
+        _pluginsClient.ReconcilePluginsAsync(options, ct);
+
+    /// <summary>
     /// Saves a local plugin as a remote shared plugin.
     /// </summary>
     public Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct = default) =>

@@ -10,17 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Usage metadata reported for one upstream response.
+/// Approval settings for a connected account within an app.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ResponseUsageMetadata
+internal partial class AppLinkConfig
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("amount")]
-    public string? Amount { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
+    public Approvals_reviewer2? Approvals_reviewer { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("metadata")]
-    public object? Metadata { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("default_tools_approval_mode")]
+    public Default_tools_approval_mode2? Default_tools_approval_mode { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

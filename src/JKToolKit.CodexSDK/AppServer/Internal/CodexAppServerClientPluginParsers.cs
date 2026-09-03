@@ -145,6 +145,46 @@ internal static partial class CodexAppServerClientPluginParsers
         };
     }
 
+    public static PluginReconcileResult ParsePluginReconcileResult(JsonElement result)
+    {
+        if (result.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("plugin/reconcile response must be a JSON object.");
+        }
+
+        var changedPluginsArray = CodexAppServerClientJson.TryGetArray(result, "changedPlugins")
+            ?? throw new InvalidOperationException("plugin/reconcile returned no changedPlugins array.");
+        var changedPlugins = new List<PluginReconcileChangedPlugin>();
+        foreach (var item in changedPluginsArray.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("plugin/reconcile changedPlugins[] entries must be objects.");
+            }
+
+            changedPlugins.Add(new PluginReconcileChangedPlugin
+            {
+                Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin/reconcile changedPlugins[]"),
+                HasMcps = CodexAppServerClientJson.GetRequiredBool(item, "hasMcps", "plugin/reconcile changedPlugins[]"),
+                HasApps = CodexAppServerClientJson.GetRequiredBool(item, "hasApps", "plugin/reconcile changedPlugins[]"),
+                HasHooks = CodexAppServerClientJson.GetRequiredBool(item, "hasHooks", "plugin/reconcile changedPlugins[]"),
+                HasSkills = CodexAppServerClientJson.GetRequiredBool(item, "hasSkills", "plugin/reconcile changedPlugins[]"),
+                Raw = item.Clone()
+            });
+        }
+
+        return new PluginReconcileResult
+        {
+            ChangedPlugins = changedPlugins,
+            FailedRemotePluginIds = GetRequiredStringArray(result, "failedRemotePluginIds", "plugin/reconcile response"),
+            FailedMaterializationRemotePluginIds = GetRequiredStringArray(
+                result,
+                "failedMaterializationRemotePluginIds",
+                "plugin/reconcile response"),
+            Raw = result
+        };
+    }
+
     internal static PluginSummaryDescriptor ParsePluginSummary(JsonElement item)
     {
         var availability = CodexAppServerClientJson.GetStringOrNull(item, "availability") ?? PluginAvailability.Available.Value;

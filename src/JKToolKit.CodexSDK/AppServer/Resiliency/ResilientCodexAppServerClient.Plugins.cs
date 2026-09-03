@@ -19,6 +19,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<PluginUninstallResult> UninstallPluginAsync(PluginUninstallOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.UninstallPluginAsync(options, token), ct);
 
+    public Task<PluginReconcileResult> ReconcilePluginsAsync(PluginReconcileOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.ReconcilePluginsAsync(options, token), ct);
+
     public Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Plugins, (c, token) => c.SavePluginShareAsync(options, token), ct);
 
