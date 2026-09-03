@@ -69,6 +69,12 @@ internal partial class Thread
     public string Id { get; set; } = default!;
 
     /// <summary>
+    /// Current configured model when loaded, otherwise the latest persisted model. Null when unavailable. This is not per-turn execution telemetry.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("model")]
+    public string? Model { get; set; } = default!;
+
+    /// <summary>
     /// Model provider used for this thread (for example, 'openai').
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
@@ -103,6 +109,12 @@ internal partial class Thread
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("projectId")]
     public string? ProjectId { get; set; } = default!;
+
+    /// <summary>
+    /// Current configured reasoning effort when loaded, otherwise the latest persisted effort. Null when unset or unavailable. This is not per-turn execution telemetry.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("reasoningEffort")]
+    public ReasoningEffort? ReasoningEffort { get; set; } = default!;
 
     /// <summary>
     /// Unix timestamp (in seconds) used for thread recency ordering.

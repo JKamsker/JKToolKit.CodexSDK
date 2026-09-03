@@ -28,6 +28,12 @@ internal partial class AppConfig
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool? Enabled { get; set; } = true;
 
+    /// <summary>
+    /// Per-account approval settings keyed by link ID.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("links")]
+    public Links? Links { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("open_world_enabled")]
     public bool? Open_world_enabled { get; set; } = default!;
 

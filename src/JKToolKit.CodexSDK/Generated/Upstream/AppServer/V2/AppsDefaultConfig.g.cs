@@ -14,10 +14,10 @@ internal partial class AppsDefaultConfig
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
-    public Approvals_reviewer2? Approvals_reviewer { get; set; } = default!;
+    public Approvals_reviewer3? Approvals_reviewer { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("default_tools_approval_mode")]
-    public Default_tools_approval_mode2? Default_tools_approval_mode { get; set; } = default!;
+    public Default_tools_approval_mode3? Default_tools_approval_mode { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("destructive_enabled")]
     public bool? Destructive_enabled { get; set; } = true;

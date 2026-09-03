@@ -10,17 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Usage metadata reported for one upstream response.
+/// Account settings for a single app.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ResponseUsageMetadata
+internal partial class AppLinksConfig
 {
-
-    [System.Text.Json.Serialization.JsonPropertyName("amount")]
-    public string? Amount { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("metadata")]
-    public object? Metadata { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
