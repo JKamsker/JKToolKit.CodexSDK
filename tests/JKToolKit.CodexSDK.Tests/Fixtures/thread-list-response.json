@@ -9,6 +9,8 @@
       "cwd": "C:\\repo",
       "path": "C:\\repo\\.codex\\sessions\\rollout-t_1.jsonl",
       "cliVersion": "0.2.3",
+      "model": "gpt-5.1",
+      "reasoningEffort": "high",
       "modelProvider": "openai",
       "status": {
         "type": "active",
@@ -34,6 +36,8 @@
       "cwd": "/tmp",
       "path": "/tmp/.codex/sessions/rollout-t_2.jsonl",
       "cliVersion": "0.2.3",
+      "model": "gpt-5-codex",
+      "reasoningEffort": "minimal",
       "modelProvider": "openai",
       "status": {
         "type": "idle"

@@ -110,6 +110,21 @@ internal sealed class CodexAppServerPluginsClient
         return CodexAppServerClientPluginParsers.ParsePluginUninstallResult(result);
     }
 
+    public async Task<PluginReconcileResult> ReconcilePluginsAsync(PluginReconcileOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var result = await _sendRequestAsync(
+            "plugin/reconcile",
+            new
+            {
+                options.Reason
+            },
+            ct);
+
+        return CodexAppServerClientPluginParsers.ParsePluginReconcileResult(result);
+    }
+
     public async Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);

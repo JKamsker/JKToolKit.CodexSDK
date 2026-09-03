@@ -335,3 +335,76 @@ public sealed record class PluginSearchPage
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
+
+/// <summary>
+/// Options for <c>plugin/reconcile</c>.
+/// </summary>
+public sealed class PluginReconcileOptions
+{
+    /// <summary>
+    /// Gets or sets an optional client-provided reason recorded with the reconciliation attempt.
+    /// </summary>
+    public string? Reason { get; set; }
+}
+
+/// <summary>
+/// Describes one plugin affected by <c>plugin/reconcile</c>.
+/// </summary>
+public sealed record class PluginReconcileChangedPlugin
+{
+    /// <summary>
+    /// Gets the local plugin identifier, matching <see cref="PluginSummaryDescriptor.Id"/>.
+    /// </summary>
+    public required string Id { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether MCP servers were affected.
+    /// </summary>
+    public bool HasMcps { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether apps were affected.
+    /// </summary>
+    public bool HasApps { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether hooks were affected.
+    /// </summary>
+    public bool HasHooks { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether skill roots were affected.
+    /// </summary>
+    public bool HasSkills { get; init; }
+
+    /// <summary>
+    /// Gets the raw changed-plugin payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Result returned by <c>plugin/reconcile</c>.
+/// </summary>
+public sealed record class PluginReconcileResult
+{
+    /// <summary>
+    /// Gets plugins affected by bundle, enablement, or removal changes.
+    /// </summary>
+    public required IReadOnlyList<PluginReconcileChangedPlugin> ChangedPlugins { get; init; }
+
+    /// <summary>
+    /// Gets backend remote plugin IDs whose bundle or identity update failed.
+    /// </summary>
+    public required IReadOnlyList<string> FailedRemotePluginIds { get; init; }
+
+    /// <summary>
+    /// Gets remote plugin IDs whose requested bundle could not be materialized.
+    /// </summary>
+    public required IReadOnlyList<string> FailedMaterializationRemotePluginIds { get; init; }
+
+    /// <summary>
+    /// Gets the raw plugin reconcile payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}

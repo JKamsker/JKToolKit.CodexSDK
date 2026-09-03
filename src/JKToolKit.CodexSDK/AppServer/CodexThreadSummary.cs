@@ -98,6 +98,11 @@ public sealed record class CodexThreadSummary
     public string? Model { get; init; }
 
     /// <summary>
+    /// Gets the reasoning effort associated with the thread, when present.
+    /// </summary>
+    public CodexReasoningEffort? ReasoningEffort { get; init; }
+
+    /// <summary>
     /// Gets the model provider associated with the thread, when present.
     /// </summary>
     public string? ModelProvider { get; init; }

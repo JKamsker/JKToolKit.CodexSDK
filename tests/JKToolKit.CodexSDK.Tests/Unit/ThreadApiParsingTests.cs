@@ -39,7 +39,11 @@ public sealed class ThreadApiParsingTests
         status!.Kind.Should().Be(CodexThreadStatusKind.Active);
         status.ActiveFlags.Should().Contain("waitingOnUserInput");
         threads[0].Raw.TryGetProperty("unknownField", out _).Should().BeTrue();
+        threads[0].Model.Should().Be("gpt-5.1");
+        threads[0].ReasoningEffort.Should().Be(CodexReasoningEffort.High);
         threads[1].Path.Should().Contain("rollout-t_2");
+        threads[1].Model.Should().Be("gpt-5-codex");
+        threads[1].ReasoningEffort.Should().Be(CodexReasoningEffort.Minimal);
         threads[1].SourceKind.Should().Be("subAgentThreadSpawn");
         threads[1].ParentThreadId.Should().Be("t_parent");
         threads[1].AgentNickname.Should().Be("beta");
@@ -59,6 +63,8 @@ public sealed class ThreadApiParsingTests
         var summary = CodexAppServerClient.ParseThreadSummary(threadObj, raw);
         summary.Should().NotBeNull();
         summary!.Name.Should().Be("Read Me");
+        summary.Model.Should().Be("gpt-5.1");
+        summary.ReasoningEffort.Should().Be(CodexReasoningEffort.XHigh);
         summary.ModelProvider.Should().Be("openai");
         summary.Path.Should().Contain("rollout-t_read");
         summary.SourceKind.Should().Be("cli");

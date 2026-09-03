@@ -8,6 +8,8 @@
     "cwd": "C:\\repo",
     "path": "C:\\repo\\.codex\\sessions\\rollout-t_read.jsonl",
     "cliVersion": "0.2.3",
+    "model": "gpt-5.1",
+    "reasoningEffort": "xhigh",
     "modelProvider": "openai",
     "status": {
       "type": "active",

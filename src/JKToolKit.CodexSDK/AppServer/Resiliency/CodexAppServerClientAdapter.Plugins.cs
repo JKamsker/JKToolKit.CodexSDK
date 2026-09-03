@@ -12,6 +12,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<PluginUninstallResult> UninstallPluginAsync(PluginUninstallOptions options, CancellationToken ct);
 
+    Task<PluginReconcileResult> ReconcilePluginsAsync(PluginReconcileOptions options, CancellationToken ct);
+
     Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct);
 
     Task<PluginShareUpdateTargetsResult> UpdatePluginShareTargetsAsync(PluginShareUpdateTargetsOptions options, CancellationToken ct);
@@ -35,6 +37,9 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<PluginInstallResult> InstallPluginAsync(PluginInstallOptions options, CancellationToken ct) => _inner.InstallPluginAsync(options, ct);
 
     public Task<PluginUninstallResult> UninstallPluginAsync(PluginUninstallOptions options, CancellationToken ct) => _inner.UninstallPluginAsync(options, ct);
+
+    public Task<PluginReconcileResult> ReconcilePluginsAsync(PluginReconcileOptions options, CancellationToken ct) =>
+        _inner.ReconcilePluginsAsync(options, ct);
 
     public Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct) =>
         _inner.SavePluginShareAsync(options, ct);

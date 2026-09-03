@@ -1239,6 +1239,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<PluginUninstallResult> UninstallPluginAsync(PluginUninstallOptions options, CancellationToken ct) =>
             NotSupported<PluginUninstallResult>();
 
+        public Task<PluginReconcileResult> ReconcilePluginsAsync(PluginReconcileOptions options, CancellationToken ct) =>
+            NotSupported<PluginReconcileResult>();
+
         public Task<PluginShareSaveResult> SavePluginShareAsync(PluginShareSaveOptions options, CancellationToken ct) =>
             NotSupported<PluginShareSaveResult>();
 
