@@ -10,14 +10,17 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RequestPermissionProfile
+internal partial class ApplicationNetworkRequirements
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("fileSystem")]
-    public FileSystem? FileSystem { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("domains")]
+    public System.Collections.Generic.IDictionary<string, NetworkDomainPermission> Domains { get; set; } = new System.Collections.Generic.Dictionary<string, NetworkDomainPermission>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("network")]
-    public Network2? Network { get; set; } = default!;
+    /// <summary>
+    /// When enabled, only explicitly allowed exact domains may be contacted.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

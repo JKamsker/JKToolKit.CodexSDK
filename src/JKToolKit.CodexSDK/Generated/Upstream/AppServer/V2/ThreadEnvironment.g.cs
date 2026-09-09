@@ -9,15 +9,21 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// An environment selected by a loaded thread, independent of connection status.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class RequestPermissionProfile
+internal partial class ThreadEnvironment
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("fileSystem")]
-    public FileSystem? FileSystem { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("cwd")]
+    public string Cwd { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("network")]
-    public Network2? Network { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string EnvironmentId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("runtimeWorkspaceRoots")]
+    public System.Collections.Generic.ICollection<string> RuntimeWorkspaceRoots { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

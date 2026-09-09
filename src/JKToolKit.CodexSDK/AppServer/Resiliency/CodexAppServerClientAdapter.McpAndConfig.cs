@@ -22,6 +22,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct);
 
+    Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(AccountRateLimitsReadOptions options, CancellationToken ct);
+
     Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(string idempotencyKey, CancellationToken ct);
 
     Task<WorkspaceMessagesReadResult> ReadWorkspaceMessagesAsync(CancellationToken ct);
@@ -86,6 +88,9 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<AccountReadResult> ReadAccountAsync(CancellationToken ct) => _inner.ReadAccountAsync(ct);
 
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) => _inner.ReadAccountRateLimitsAsync(ct);
+
+    public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(AccountRateLimitsReadOptions options, CancellationToken ct) =>
+        _inner.ReadAccountRateLimitsAsync(options, ct);
 
     public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(string idempotencyKey, CancellationToken ct) =>
         _inner.ConsumeAccountRateLimitResetCreditAsync(idempotencyKey, ct);

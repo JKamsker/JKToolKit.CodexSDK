@@ -53,6 +53,7 @@
       }
     },
     "browserUse": {
+      "allowWebmcp": true,
       "allowHistoryAccess": true,
       "disableAutoReview": true,
       "allowGlobalPersistentApproval": false,
@@ -107,6 +108,15 @@
       },
       "allowLocalBinding": true,
       "unknownField": "preserve"
+    },
+    "application": {
+      "network": {
+        "enabled": true,
+        "domains": {
+          "app.example.com": "allow",
+          "blocked.example.com": "deny"
+        }
+      }
     },
     "unknownTopLevelField": true
   }

@@ -57,6 +57,12 @@ public sealed record class ThreadListParams
     public IReadOnlyList<string>? SourceKinds { get; init; }
 
     /// <summary>
+    /// Gets an optional originator allowlist, if supported upstream.
+    /// </summary>
+    [JsonPropertyName("originators")]
+    public IReadOnlyList<string>? Originators { get; init; }
+
+    /// <summary>
     /// Gets an optional cursor for paging.
     /// </summary>
     [JsonPropertyName("cursor")]

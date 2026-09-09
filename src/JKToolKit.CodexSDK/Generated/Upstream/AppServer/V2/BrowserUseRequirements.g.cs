@@ -19,6 +19,9 @@ internal partial class BrowserUseRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowHistoryAccess")]
     public bool? AllowHistoryAccess { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("allowWebmcp")]
+    public bool? AllowWebmcp { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("defaultOriginPolicy")]
     public DefaultOriginPolicy? DefaultOriginPolicy { get; set; } = default!;
 

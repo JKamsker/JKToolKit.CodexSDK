@@ -25,6 +25,12 @@ internal partial class RateLimitSnapshot
     [System.Text.Json.Serialization.JsonPropertyName("limitName")]
     public string? LimitName { get; set; } = default!;
 
+    /// <summary>
+    /// Normal model whose display name and reasoning options describe this quota alias.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("normalModelSlug")]
+    public string? NormalModelSlug { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("planType")]
     public PlanType3? PlanType { get; set; } = default!;
 

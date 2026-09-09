@@ -162,6 +162,14 @@ public sealed record class ConfigRequirements
     public NetworkRequirements? Network { get; init; }
 
     /// <summary>
+    /// Gets managed application requirements, when present.
+    /// </summary>
+    /// <remarks>
+    /// Upstream may gate this field behind experimental API capabilities.
+    /// </remarks>
+    public ApplicationRequirements? Application { get; init; }
+
+    /// <summary>
     /// Gets automatic review requirements, when present.
     /// </summary>
     public AutoReviewRequirements? AutoReview { get; init; }
@@ -234,6 +242,11 @@ public sealed record class ComputerUseRequirements
 /// </summary>
 public sealed record class BrowserUseRequirements
 {
+    /// <summary>
+    /// Gets whether WebMCP browser use is allowed.
+    /// </summary>
+    public bool? AllowWebMcp { get; init; }
+
     /// <summary>
     /// Gets whether browser history access is allowed.
     /// </summary>

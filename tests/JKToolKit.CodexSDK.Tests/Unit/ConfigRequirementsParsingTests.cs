@@ -58,6 +58,7 @@ public sealed class ConfigRequirementsParsingTests
         requirements.ComputerUse.Windows.Exes[0].BinaryName.Should().Be("wt.exe");
         requirements.ComputerUse.Windows.Exes[0].Access.Should().Be(AllowDenyRequirementValue.Allow);
         requirements.BrowserUse.Should().NotBeNull();
+        requirements.BrowserUse!.AllowWebMcp.Should().BeTrue();
         requirements.BrowserUse!.AllowHistoryAccess.Should().BeTrue();
         requirements.BrowserUse!.DisableAutoReview.Should().BeTrue();
         requirements.BrowserUse.AllowGlobalPersistentApproval.Should().BeFalse();
@@ -87,6 +88,13 @@ public sealed class ConfigRequirementsParsingTests
         requirements.Network.UnixSockets.Should().NotBeNull();
         requirements.Network.UnixSockets!["/tmp/codex.sock"].Should().Be(NetworkUnixSocketPermission.Allow);
         requirements.Network.UnixSockets["/tmp/blocked.sock"].Should().Be(NetworkUnixSocketPermission.Deny);
+
+        requirements.Application.Should().NotBeNull();
+        requirements.Application!.Network.Should().NotBeNull();
+        requirements.Application.Network!.Enabled.Should().BeTrue();
+        requirements.Application.Network.Domains.Should().NotBeNull();
+        requirements.Application.Network.Domains!["app.example.com"].Should().Be(NetworkDomainPermission.Allow);
+        requirements.Application.Network.Domains["blocked.example.com"].Should().Be(NetworkDomainPermission.Deny);
 
         requirements.Raw.TryGetProperty("unknownTopLevelField", out _).Should().BeTrue();
     }
@@ -155,7 +163,9 @@ public sealed class ConfigRequirementsParsingTests
         var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(raw, experimentalApiEnabled: false);
         requirements.Should().NotBeNull();
         requirements!.Network.Should().BeNull();
+        requirements.Application.Should().BeNull();
         requirements.Raw.TryGetProperty("network", out _).Should().BeTrue("raw should preserve forward-compatible fields");
+        requirements.Raw.TryGetProperty("application", out _).Should().BeTrue("raw should preserve forward-compatible fields");
     }
 
     [Fact]

@@ -41,6 +41,12 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonPropertyName("tools")]
     public System.Collections.Generic.IDictionary<string, Tool> Tools { get; set; } = new System.Collections.Generic.Dictionary<string, Tool>();
 
+    /// <summary>
+    /// Tool discovery failed and no catalog was returned. Null when a catalog is returned, including cached or empty catalogs.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("toolsError")]
+    public string? ToolsError { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

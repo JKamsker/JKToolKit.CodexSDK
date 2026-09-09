@@ -87,6 +87,12 @@ internal partial class Thread
     public string? Name { get; set; } = default!;
 
     /// <summary>
+    /// Originator recorded when the thread was created, independent of its current client or executor. Null when the recorded originator is unavailable.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("originator")]
+    public string? Originator { get; set; } = default!;
+
+    /// <summary>
     /// The ID of the parent thread. This will only be set if this thread is a subagent.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("parentThreadId")]

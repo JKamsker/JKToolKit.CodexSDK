@@ -85,9 +85,14 @@ internal static class CodexAppServerClientConfigRequirementsParser
         }
 
         NetworkRequirements? network = null;
+        ApplicationRequirements? application = null;
         if (experimentalApiEnabled && TryGetObject(req, "network") is { } net)
         {
             network = ParseNetworkRequirements(net);
+        }
+        if (experimentalApiEnabled && TryGetObject(req, "application") is { } app)
+        {
+            application = ParseApplicationRequirements(app);
         }
 
         return new ConfigRequirements
@@ -138,6 +143,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             Hooks = TryGetObject(req, "hooks")?.Clone(),
             EnforceResidency = residency,
             Network = network,
+            Application = application,
             AutoReview = TryGetObject(req, "autoReview") is { } autoReview
                 ? new AutoReviewRequirements
                 {
@@ -180,6 +186,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
     {
         return new BrowserUseRequirements
         {
+            AllowWebMcp = GetBoolOrNull(browserUse, "allowWebmcp"),
             AllowHistoryAccess = GetBoolOrNull(browserUse, "allowHistoryAccess"),
             DisableAutoReview = GetBoolOrNull(browserUse, "disableAutoReview"),
             AllowGlobalPersistentApproval = GetBoolOrNull(browserUse, "allowGlobalPersistentApproval"),
@@ -230,6 +237,22 @@ internal static class CodexAppServerClientConfigRequirementsParser
             UnixSockets = ParseUnixSocketPermissions(network, "unixSockets"),
             AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
             Raw = network.Clone()
+        };
+    }
+
+    private static ApplicationRequirements ParseApplicationRequirements(JsonElement application)
+    {
+        return new ApplicationRequirements
+        {
+            Network = TryGetObject(application, "network") is { } network
+                ? new ApplicationNetworkRequirements
+                {
+                    Enabled = GetBoolOrNull(network, "enabled"),
+                    Domains = ParseDomainPermissions(network, "domains"),
+                    Raw = network.Clone()
+                }
+                : null,
+            Raw = application.Clone()
         };
     }
 

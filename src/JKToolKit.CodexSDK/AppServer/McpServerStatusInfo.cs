@@ -53,6 +53,11 @@ public sealed record class McpServerStatusInfo
     public required IReadOnlyList<McpServerToolInfo> Tools { get; init; }
 
     /// <summary>
+    /// Gets the upstream tool-discovery error when discovery failed and no catalog was returned.
+    /// </summary>
+    public string? ToolsError { get; init; }
+
+    /// <summary>
     /// Gets the resources exposed by this server.
     /// </summary>
     public required IReadOnlyList<McpServerResourceInfo> Resources { get; init; }

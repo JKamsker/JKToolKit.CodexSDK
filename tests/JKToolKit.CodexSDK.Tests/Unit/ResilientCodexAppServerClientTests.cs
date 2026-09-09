@@ -1134,6 +1134,9 @@ public sealed class ResilientCodexAppServerClientTests
         public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct) =>
             NotSupported<AccountRateLimitsReadResult>();
 
+        public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(AccountRateLimitsReadOptions options, CancellationToken ct) =>
+            NotSupported<AccountRateLimitsReadResult>();
+
         public Task<AccountRateLimitResetCreditConsumeResult> ConsumeAccountRateLimitResetCreditAsync(string idempotencyKey, CancellationToken ct) =>
             ConsumeAccountRateLimitResetCreditAsyncImpl?.Invoke(idempotencyKey, ct) ?? NotSupported<AccountRateLimitResetCreditConsumeResult>();
 
