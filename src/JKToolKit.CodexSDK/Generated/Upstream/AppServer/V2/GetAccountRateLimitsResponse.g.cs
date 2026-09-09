@@ -19,6 +19,12 @@ internal partial class GetAccountRateLimitsResponse
     [System.Text.Json.Serialization.JsonPropertyName("accountId")]
     public string? AccountId { get; set; } = default!;
 
+    /// <summary>
+    /// Backend permission for ordinary included usage, validated against the active account. Null means unavailable; clients must not infer recovery from percentages or reset times.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("ordinaryUsageAllowed")]
+    public bool? OrdinaryUsageAllowed { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("rateLimitResetCredits")]
     public RateLimitResetCredits? RateLimitResetCredits { get; set; } = default!;
 

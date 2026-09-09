@@ -44,6 +44,12 @@ internal partial class ThreadListParams
     public System.Collections.Generic.ICollection<string>? ModelProviders { get; set; } = default!;
 
     /// <summary>
+    /// Optional originator allowlist, matching any supplied value exactly. Supported by hosted backends only; the local app-server rejects a nonempty list. Omitted or empty lists leave originators unrestricted.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("originators")]
+    public System.Collections.Generic.ICollection<string>? Originators { get; set; } = default!;
+
+    /// <summary>
     /// Optional substring filter for the extracted thread title.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("searchTerm")]
