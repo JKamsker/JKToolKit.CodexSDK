@@ -96,6 +96,7 @@ internal static class CodexAppServerClientThreadParsers
         var cliVersion = GetString(primary, secondary, "cliVersion");
         var agentNickname = GetString(primary, secondary, "agentNickname");
         var agentRole = GetString(primary, secondary, "agentRole");
+        var originator = GetString(primary, secondary, "originator");
         var turns = CodexAppServerClientThreadTurnParsers.ParseTurns(primary, secondary);
         var turnCount = turns?.Count ?? GetArrayCount(primary, secondary, "turns");
 
@@ -127,6 +128,7 @@ internal static class CodexAppServerClientThreadParsers
             CliVersion = cliVersion,
             AgentNickname = agentNickname,
             AgentRole = agentRole,
+            Originator = originator,
             TurnCount = turnCount,
             Turns = turns,
             Raw = threadObject,

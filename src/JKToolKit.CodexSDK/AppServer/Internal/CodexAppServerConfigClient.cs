@@ -75,11 +75,13 @@ internal sealed partial class CodexAppServerConfigClient
         };
     }
 
-    public async Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default)
+    public async Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(AccountRateLimitsReadOptions options, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         var result = await _sendRequestAsync(
             "account/rateLimits/read",
-            null,
+            BuildAccountRateLimitsReadParams(options),
             ct);
 
         var rateLimits = CodexAppServerClientJson.TryGetObject(result, "rateLimits");
@@ -107,9 +109,24 @@ internal sealed partial class CodexAppServerConfigClient
             AccountId = CodexAppServerClientJson.GetStringOrNull(result, "accountId"),
             RateLimits = rateLimits.HasValue ? rateLimits.Value.Clone() : EmptyObject(),
             RateLimitsByLimitId = rateLimitsByLimitId,
+            OrdinaryUsageAllowed = CodexAppServerClientJson.GetBoolOrNull(result, "ordinaryUsageAllowed"),
             RateLimitUpsell = CodexAppServerClientJson.TryGetElement(result, "rateLimitUpsell")?.Clone(),
             RateLimitResetCredits = ParseRateLimitResetCredits(result),
             Raw = result
+        };
+    }
+
+    private static object? BuildAccountRateLimitsReadParams(AccountRateLimitsReadOptions options)
+    {
+        if (options.SupportsLunaReserve is null && options.ExcludeResetCreditDetails is null)
+        {
+            return null;
+        }
+
+        return new UpstreamV2.GetAccountRateLimitsParams
+        {
+            SupportsLunaReserve = options.SupportsLunaReserve,
+            ExcludeResetCreditDetails = options.ExcludeResetCreditDetails
         };
     }
 

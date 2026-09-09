@@ -148,6 +148,11 @@ public sealed record class CodexThreadSummary
     public string? AgentRole { get; init; }
 
     /// <summary>
+    /// Gets the client or executor originator recorded when the thread was created, when present.
+    /// </summary>
+    public string? Originator { get; init; }
+
+    /// <summary>
     /// Gets the number of turns materialized on the thread payload, when present.
     /// </summary>
     public int? TurnCount { get; init; }

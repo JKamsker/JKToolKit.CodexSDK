@@ -68,6 +68,11 @@ public sealed class ThreadListOptions
     public IReadOnlyList<string>? SourceKinds { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional originator allowlist, if supported upstream.
+    /// </summary>
+    public IReadOnlyList<string>? Originators { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional cursor for paging.
     /// </summary>
     public string? Cursor { get; set; }

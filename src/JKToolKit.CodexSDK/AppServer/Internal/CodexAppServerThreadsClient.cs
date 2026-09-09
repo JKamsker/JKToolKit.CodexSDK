@@ -170,6 +170,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 ModelProviders = options.ModelProviders,
                 SearchTerm = options.SearchTerm,
                 SourceKinds = options.SourceKinds,
+                Originators = options.Originators,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,
             },

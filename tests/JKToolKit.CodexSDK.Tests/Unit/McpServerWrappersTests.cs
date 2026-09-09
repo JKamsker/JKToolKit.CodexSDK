@@ -61,6 +61,7 @@ public sealed class McpServerWrappersTests
                     runtimeStatus = "authenticationRequired",
                     status = "failed",
                     error = "reauth required",
+                    toolsError = "tool discovery failed",
                     failureReason = "reauthenticationRequired",
                     serverInfo = new
                     {
@@ -116,6 +117,7 @@ public sealed class McpServerWrappersTests
         page.Servers[0].RuntimeStatus.Should().Be(McpServerRuntimeStatus.AuthenticationRequired);
         page.Servers[0].StartupStatus.Should().Be("failed");
         page.Servers[0].Error.Should().Be("reauth required");
+        page.Servers[0].ToolsError.Should().Be("tool discovery failed");
         page.Servers[0].FailureReason.Should().Be(McpServerStartupFailureReason.ReauthenticationRequired);
         page.Servers[0].ServerInfo.Should().NotBeNull();
         page.Servers[0].ServerInfo!.Title.Should().Be("Lookup Server");

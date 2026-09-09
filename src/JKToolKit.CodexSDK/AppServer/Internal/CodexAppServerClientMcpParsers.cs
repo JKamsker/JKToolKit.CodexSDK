@@ -46,6 +46,7 @@ internal static class CodexAppServerClientMcpParsers
                         : null,
                     ServerInfo = ParseServerInfo(item),
                     Tools = tools,
+                    ToolsError = GetStringOrNull(item, "toolsError") ?? GetStringOrNull(item, "tools_error"),
                     Resources = resources,
                     ResourceTemplates = templates,
                     Raw = item

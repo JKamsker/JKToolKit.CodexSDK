@@ -54,4 +54,14 @@ public sealed class ThreadListParamsSerializationTests
 
         unassignedJson.Should().Contain("\"projectId\":null");
     }
+
+    [Fact]
+    public void Serialize_WritesOriginatorsFilter()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadListParams { Originators = new[] { "codex_cli_rs" } },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"originators\":[\"codex_cli_rs\"]");
+    }
 }

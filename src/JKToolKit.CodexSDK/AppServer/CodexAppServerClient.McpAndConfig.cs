@@ -58,7 +58,16 @@ public sealed partial class CodexAppServerClient
     /// This calls the app-server method <c>account/rateLimits/read</c>.
     /// </remarks>
     public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(CancellationToken ct = default) =>
-        _configClient.ReadAccountRateLimitsAsync(ct);
+        _configClient.ReadAccountRateLimitsAsync(new AccountRateLimitsReadOptions(), ct);
+
+    /// <summary>
+    /// Reads current account rate limits.
+    /// </summary>
+    /// <remarks>
+    /// This calls the app-server method <c>account/rateLimits/read</c>.
+    /// </remarks>
+    public Task<AccountRateLimitsReadResult> ReadAccountRateLimitsAsync(AccountRateLimitsReadOptions options, CancellationToken ct = default) =>
+        _configClient.ReadAccountRateLimitsAsync(options, ct);
 
     /// <summary>
     /// Consumes one earned account rate-limit reset credit.
@@ -234,6 +243,11 @@ public sealed record class AccountRateLimitsReadResult
     /// Gets optional per-limit snapshots keyed by metered limit identifier.
     /// </summary>
     public IReadOnlyDictionary<string, JsonElement>? RateLimitsByLimitId { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether ordinary included usage is currently allowed, when upstream reports it.
+    /// </summary>
+    public bool? OrdinaryUsageAllowed { get; init; }
 
     /// <summary>
     /// Gets earned rate-limit reset credit information when the backend reports it.

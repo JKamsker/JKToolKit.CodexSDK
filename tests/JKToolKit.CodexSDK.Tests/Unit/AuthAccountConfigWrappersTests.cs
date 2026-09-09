@@ -245,10 +245,12 @@ public sealed class AuthAccountConfigWrappersTests
         var rawResult = JsonSerializer.SerializeToElement(new
         {
             accountId = "account-123",
+            ordinaryUsageAllowed = true,
             rateLimits = new
             {
                 limitId = "codex",
-                planType = "pro"
+                planType = "pro",
+                normalModelSlug = "gpt-6-astra"
             },
             rateLimitsByLimitId = new
             {
@@ -274,13 +276,42 @@ public sealed class AuthAccountConfigWrappersTests
         var result = await client.ReadAccountRateLimitsAsync();
 
         result.AccountId.Should().Be("account-123");
+        result.OrdinaryUsageAllowed.Should().BeTrue();
         result.RateLimits.GetProperty("limitId").GetString().Should().Be("codex");
         result.RateLimits.GetProperty("planType").GetString().Should().Be("pro");
+        result.RateLimits.GetProperty("normalModelSlug").GetString().Should().Be("gpt-6-astra");
         result.RateLimitsByLimitId.Should().NotBeNull();
         result.RateLimitsByLimitId!.Should().ContainKey("codex");
         result.RateLimitsByLimitId!["secondary"].GetProperty("limitId").GetString().Should().Be("secondary");
         result.RateLimitUpsell.Should().NotBeNull();
         result.RateLimitUpsell!.Value.GetProperty("banner_type").GetString().Should().Be("selected_model_limit_reached");
+    }
+
+    [Fact]
+    public async Task ReadAccountRateLimitsAsync_WithOptions_SendsCapabilityParams()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/rateLimits/read",
+            AssertParams = p =>
+            {
+                var json = JsonSerializer.SerializeToElement(p, CodexAppServerClient.CreateDefaultSerializerOptions());
+                json.GetProperty("supportsLunaReserve").GetBoolean().Should().BeTrue();
+                json.GetProperty("excludeResetCreditDetails").GetBoolean().Should().BeTrue();
+            },
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                rateLimits = new { }
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        _ = await client.ReadAccountRateLimitsAsync(new AccountRateLimitsReadOptions
+        {
+            SupportsLunaReserve = true,
+            ExcludeResetCreditDetails = true
+        });
     }
 
     [Fact]

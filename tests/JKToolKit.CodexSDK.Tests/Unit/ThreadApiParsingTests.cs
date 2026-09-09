@@ -73,6 +73,21 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
+    public void ParseThreadSummary_ParsesOriginator()
+    {
+        var raw = JsonSerializer.SerializeToElement(new
+        {
+            id = "t_origin",
+            originator = "codex_cli_rs"
+        });
+
+        var summary = CodexAppServerClient.ParseThreadSummary(raw);
+
+        summary.Should().NotBeNull();
+        summary!.Originator.Should().Be("codex_cli_rs");
+    }
+
+    [Fact]
     public void ExtractThreadId_HandlesCommonShapes()
     {
         CodexAppServerClient.ExtractThreadId(JsonFixtures.Load("thread-fork-response.json")).Should().Be("t_forked");
