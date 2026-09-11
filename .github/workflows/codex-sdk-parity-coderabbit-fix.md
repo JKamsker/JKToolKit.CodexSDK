@@ -20,6 +20,9 @@ on:
     - coderabbitai
     - "coderabbitai[bot]"
 
+concurrency:
+  job-discriminator: ${{ github.event.inputs.pr_number || github.event.pull_request.number || github.run_id }}
+
 if: >
   (
     github.event_name == 'workflow_dispatch' &&
@@ -58,7 +61,9 @@ network:
     - dotnet
 
 tools:
+  bash: ["*"]
   github:
+    mode: gh-proxy
     lockdown: false
     min-integrity: none
 
@@ -72,9 +77,11 @@ safe-outputs:
 
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
-# The same compile script also injects model_reasoning_effort = "high" into
+# The same compile script also injects model_reasoning_effort = "medium" into
 # the generated Codex config so the model remains controlled by GH_AW_* vars.
 engine: codex
+model: gpt-5.6-sol
+max-ai-credits: 2000
 
 post-steps:
   - name: Check whether parity CodeRabbit validation is required
@@ -91,7 +98,7 @@ post-steps:
 
   - name: Setup .NET for CodeRabbit fix validation
     if: steps.coderabbit-validation-guard.outputs.should_validate == 'true'
-    uses: actions/setup-dotnet@v4
+    uses: actions/setup-dotnet@v6
     with:
       dotnet-version: 10.0.x
 

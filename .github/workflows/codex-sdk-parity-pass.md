@@ -87,6 +87,9 @@ on:
       - "src/JKToolKit.CodexSDK.UpstreamGen/**"
       - "docs/upstreamgen.md"
 
+concurrency:
+  job-discriminator: ${{ inputs.upstream_pr || github.event.pull_request.number || github.run_id }}
+
 permissions:
   contents: read
   pull-requests: read
@@ -103,7 +106,9 @@ network:
     - dotnet
 
 tools:
+  bash: ["*"]
   github:
+    mode: gh-proxy
     lockdown: false
     min-integrity: none
 
@@ -126,9 +131,11 @@ safe-outputs:
 
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
-# The same compile script also injects model_reasoning_effort = "high" into
+# The same compile script also injects model_reasoning_effort = "medium" into
 # the generated Codex config so the model remains controlled by GH_AW_* vars.
 engine: codex
+model: gpt-5.6-sol
+max-ai-credits: 2000
 
 post-steps:
   - name: Check whether parity validation is required
@@ -187,7 +194,7 @@ post-steps:
 
   - name: Setup .NET for parity validation
     if: steps.parity-validation-guard.outputs.should_validate == 'true'
-    uses: actions/setup-dotnet@v4
+    uses: actions/setup-dotnet@v6
     with:
       dotnet-version: 10.0.x
 

@@ -16,12 +16,15 @@ from pathlib import Path
 
 CONFIG_WRITE = '> "${RUNNER_TEMP}/gh-aw/awf-config.json"'
 AWF_SCHEMA = "awf-config.schema.json"
-AWF_COMMAND = "sudo -E awf --config"
+AWF_COMMAND = "awf --config"
 PATCH_MARKER = "Patch gh-aw OpenAI proxy target from CODEX_LB_BASE_URL"
-CODEX_CONFIG_HEREDOC = 'cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_'
-REASONING_EFFORT_LINE = 'model_reasoning_effort = "high"'
+CODEX_CONFIG_HEREDOC = 'mcp-config/config.toml" << GH_AW_CODEX_'
+REASONING_EFFORT_LINE = 'model_reasoning_effort = "medium"'
 CODEX_ENDPOINT_ENV = "          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}"
-DETECTION_UPLOAD_STEP = "      - name: Upload threat detection log"
+DETECTION_UPLOAD_STEPS = {
+    "      - name: Upload threat detection artifact",
+    "      - name: Upload threat detection log",
+}
 DETECTION_REDACTION_MARKER = "Redact Codex endpoint detection artifacts"
 
 
@@ -139,6 +142,12 @@ def insert_endpoint_env(lines: list[str]) -> tuple[list[str], int]:
     awf_indices = [index for index, line in enumerate(patched) if AWF_COMMAND in line]
 
     for awf_index in reversed(awf_indices):
+        step_start = 0
+        for index in range(awf_index, -1, -1):
+            if patched[index].startswith("      - name: "):
+                step_start = index
+                break
+
         next_step = len(patched)
         for index in range(awf_index + 1, len(patched)):
             if patched[index].startswith("      - name: "):
@@ -146,7 +155,7 @@ def insert_endpoint_env(lines: list[str]) -> tuple[list[str], int]:
                 break
 
         env_index = None
-        for index in range(awf_index + 1, next_step):
+        for index in range(step_start + 1, next_step):
             if patched[index] == "        env:":
                 env_index = index
                 break
@@ -204,7 +213,7 @@ def insert_detection_redaction(lines: list[str]) -> tuple[list[str], int]:
     patched: list[str] = []
     insertions = 0
     for line in lines:
-        if line == DETECTION_UPLOAD_STEP:
+        if line in DETECTION_UPLOAD_STEPS:
             patched.extend(DETECTION_REDACTION_STEP)
             insertions += 1
         patched.append(line)

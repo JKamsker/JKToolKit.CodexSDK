@@ -6,7 +6,10 @@ This repository uses normal gh-aw Codex workflows, but committed lockfiles must 
 python .github/scripts/compile_gh_aw.py .github/workflows/daily-repo-status.md
 ```
 
-The wrapper runs `gh aw compile` first, then applies the repository-specific lockfile patch that routes OpenAI-compatible Codex traffic through the load balancer.
+The wrapper runs the installed `JKamsker/gh-aw` compiler, pins generated setup
+actions to the corresponding upstream gh-aw-actions release declared in the
+wrapper, then applies the repository-specific lockfile patch that routes
+OpenAI-compatible Codex traffic through the load balancer.
 
 ## Why The Wrapper Exists
 
@@ -18,6 +21,13 @@ Raw `gh aw compile` regenerates `.lock.yml` files without the private endpoint p
 - Passes `CODEX_LB_BASE_URL` only to the runner-side patch step.
 - Adds `--exclude-env CODEX_LB_BASE_URL` so the sandboxed agent does not receive the endpoint value.
 - Redacts endpoint values from gh-aw artifacts before upload, including detection artifacts.
+- Sets Codex reasoning effort to `medium` in each generated Codex configuration block.
+
+The workflow source files select `gpt-5.6-sol` explicitly so repository or
+organization model defaults cannot silently move these automations to a
+different model. They also use a 2,000 AI-credit ceiling and GitHub `gh-proxy`
+mode so full runs are not cut off by the former 1,000-credit default or direct
+GitHub API firewall blocks.
 
 The endpoint host is considered secret. Do not write it in workflow YAML, lockfiles, docs, commit messages, logs, or comments. The secret name `CODEX_LB_BASE_URL` is safe to mention.
 

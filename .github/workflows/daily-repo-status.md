@@ -17,7 +17,9 @@ permissions:
 network: defaults
 
 tools:
+  bash: ["*"]
   github:
+    mode: gh-proxy
     # If in a public repo, setting `lockdown: false` allows
     # reading issues, pull requests and comments from 3rd-parties
     # If in a private repo this has no particular effect.
@@ -34,6 +36,8 @@ safe-outputs:
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
 engine: codex
+model: gpt-5.6-sol
+max-ai-credits: 2000
 
 post-steps:
   - name: Redact Codex endpoint artifacts
