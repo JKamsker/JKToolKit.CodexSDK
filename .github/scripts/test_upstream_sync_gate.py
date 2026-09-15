@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from unittest.mock import patch
 
 import upstream_sync_gate as gate
@@ -153,6 +154,55 @@ class GateFlowTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         repair.assert_called_once_with(github, context(), "88", "ci")
+
+
+class ReleaseTests(unittest.TestCase):
+    def test_builtin_token_dispatches_exact_merge_and_ignores_old_runs(self) -> None:
+        old_run = {"databaseId": 10, "displayTitle": "Release upstream merge merge456"}
+        release_run = {
+            "databaseId": 11, "displayTitle": "Release upstream merge merge456",
+            "headSha": "newer-default-head", "status": "completed", "conclusion": "success",
+        }
+        github = FakeGitHub([
+            [old_run], [old_run, release_run], release_run,
+            {"jobs": [{"name": "NugetUpload", "conclusion": "success"}]},
+        ])
+
+        self.assertTrue(gate.verify_release(
+            github, replace(context(), release_via_dispatch=True), "merge456",
+        ))
+
+        dispatch = next(command for command in github.commands if command[:2] == ["workflow", "run"])
+        self.assertIn("publish=true", dispatch)
+        self.assertIn("release_sha=merge456", dispatch)
+        self.assertEqual("master", dispatch[dispatch.index("--ref") + 1])
+        for command in github.commands:
+            if command[:2] == ["run", "list"]:
+                self.assertEqual("master", command[command.index("--branch") + 1])
+
+    def test_owner_token_uses_push_release_without_duplicate_dispatch(self) -> None:
+        release_run = {
+            "databaseId": 12, "headSha": "merge456", "status": "completed", "conclusion": "success",
+        }
+        github = FakeGitHub([
+            [release_run], release_run,
+            {"jobs": [{"name": "NugetUpload", "conclusion": "success"}]},
+        ])
+
+        self.assertTrue(gate.verify_release(github, context(), "merge456"))
+        self.assertFalse(any(command[:2] == ["workflow", "run"] for command in github.commands))
+
+    def test_successful_workflow_with_skipped_upload_is_not_a_release(self) -> None:
+        release_run = {
+            "databaseId": 12, "headSha": "merge456", "status": "completed", "conclusion": "success",
+        }
+        github = FakeGitHub([
+            [release_run], release_run,
+            {"jobs": [{"name": "NugetUpload", "conclusion": "skipped"}]}, [],
+        ])
+
+        self.assertFalse(gate.verify_release(github, context(), "merge456"))
+        self.assertTrue(any(command[:2] == ["issue", "create"] for command in github.commands))
 
 
 if __name__ == "__main__":

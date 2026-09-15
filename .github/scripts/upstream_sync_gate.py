@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ class GateContext:
     version: str
     attempt: int
     source_run: str
+    release_via_dispatch: bool = False
 
 
 class GitHub:
@@ -72,7 +74,9 @@ def load_pr(github: GitHub, context: GateContext) -> dict[str, Any]:
     return pull
 
 
-def list_runs(github: GitHub, context: GateContext, event: str) -> list[dict[str, Any]]:
+def list_runs(
+    github: GitHub, context: GateContext, event: str, *, branch: str | None = None,
+) -> list[dict[str, Any]]:
     runs = github.json(
         [
             "run",
@@ -82,7 +86,7 @@ def list_runs(github: GitHub, context: GateContext, event: str) -> list[dict[str
             "--workflow",
             CI_WORKFLOW,
             "--branch",
-            context.branch if event == "workflow_dispatch" else DEFAULT_BRANCH,
+            branch or (context.branch if event == "workflow_dispatch" else DEFAULT_BRANCH),
             "--event",
             event,
             "--limit",
@@ -250,14 +254,37 @@ def merge_exact_head(github: GitHub, context: GateContext, head_sha: str) -> str
 
 
 def verify_release(github: GitHub, context: GateContext, merge_sha: str) -> bool:
-    release_run = wait_for_run(
-        lambda: list_runs(github, context, "push"),
-        lambda run: run.get("headSha") == merge_sha,
-        RUN_DISCOVERY_TIMEOUT_SECONDS,
-    )
+    if context.release_via_dispatch:
+        # GITHUB_TOKEN merges do not trigger push workflows. Dispatch on the
+        # default branch, but build the exact merge even if that branch advances.
+        fetch = lambda: list_runs(github, context, "workflow_dispatch", branch=DEFAULT_BRANCH)
+        existing_ids = {run.get("databaseId") for run in fetch()}
+        github.run([
+            "workflow", "run", CI_WORKFLOW, "--repo", context.repo,
+            "--ref", DEFAULT_BRANCH, "-f", "publish=true", "-f", f"release_sha={merge_sha}",
+        ])
+        release_run = wait_for_run(
+            fetch,
+            lambda run: run.get("displayTitle") == f"Release upstream merge {merge_sha}"
+            and run.get("databaseId") not in existing_ids,
+            RUN_DISCOVERY_TIMEOUT_SECONDS,
+        )
+    else:
+        release_run = wait_for_run(
+            lambda: list_runs(github, context, "push"),
+            lambda run: run.get("headSha") == merge_sha,
+            RUN_DISCOVERY_TIMEOUT_SECONDS,
+        )
     print(f"Waiting for post-merge NuGet release CI: {release_run.get('url')}")
     completed = wait_for_completion(github, context.repo, release_run)
-    if completed.get("conclusion") == "success":
+    jobs = github.json([
+        "run", "view", str(completed["databaseId"]), "--repo", context.repo, "--json", "jobs",
+    ])
+    published = any(
+        job.get("name") == "NugetUpload" and job.get("conclusion") == "success"
+        for job in (jobs or {}).get("jobs", [])
+    )
+    if completed.get("conclusion") == "success" and published:
         print(f"NuGet release CI succeeded: {completed.get('url')}")
         return True
 
@@ -266,7 +293,8 @@ def verify_release(github: GitHub, context: GateContext, merge_sha: str) -> bool
         context,
         f"NuGet release failed for upstream Codex {context.version}",
         f"The tested upstream sync was merged as `{merge_sha}`, but its post-merge release failed.\n\n"
-        f"Run: {completed.get('url')}",
+        f"Run: {completed.get('url')}\n"
+        "The workflow must succeed and its NugetUpload job must complete successfully.",
     )
     return False
 
@@ -307,7 +335,10 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = parser().parse_args()
-    context = GateContext(args.repo, args.pr, args.branch, args.version, args.attempt, args.source_run)
+    context = GateContext(
+        args.repo, args.pr, args.branch, args.version, args.attempt, args.source_run,
+        release_via_dispatch=os.environ.get("UPSTREAM_USE_GITHUB_TOKEN") == "true",
+    )
     github = GitHub()
     try:
         if args.command == "gate":

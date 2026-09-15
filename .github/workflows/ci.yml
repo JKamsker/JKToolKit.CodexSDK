@@ -1,4 +1,5 @@
 name: CI
+run-name: ${{ inputs.release_sha && format('Release upstream merge {0}', inputs.release_sha) || github.event.head_commit.message || github.event.pull_request.title || 'CI' }}
 
 on:
   push:
@@ -6,6 +7,15 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish an already merged upstream commit (default branch only).
+        type: boolean
+        default: false
+      release_sha:
+        description: Full merged commit SHA to build and publish.
+        type: string
+        default: ""
 
 jobs:
   automation-tests:
@@ -21,11 +31,35 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       package_changed: ${{ steps.detect.outputs.package_changed }}
+      checkout_ref: ${{ steps.target.outputs.checkout_ref }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Validate checkout and release target
+        id: target
+        shell: bash
+        env:
+          PUBLISH: ${{ inputs.publish || false }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          target="$GITHUB_SHA"
+          if [ "$PUBLISH" = true ] || [ -n "$RELEASE_SHA" ]; then
+            if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ] || [ "$PUBLISH" != true ] || [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+              echo "::error::Release dispatches must explicitly publish from the default branch."
+              exit 1
+            fi
+            if ! [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]] || ! git merge-base --is-ancestor "$RELEASE_SHA" "$GITHUB_SHA"; then
+              echo "::error::The release SHA must be a full commit SHA already merged into the default branch."
+              exit 1
+            fi
+            target="$RELEASE_SHA"
+          fi
+          echo "checkout_ref=$target" >> "$GITHUB_OUTPUT"
 
       - name: Detect src changes
         id: detect
@@ -59,7 +93,7 @@ jobs:
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "$base" "$head" -- src UPSTREAM_CODEX_VERSION.json external/codex)"
+          changed_files="$(git diff --name-only "$base" "$head" -- src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml)"
           if [[ -n "$changed_files" ]]; then
             echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Changed package or upstream files:"
@@ -88,6 +122,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.changes.outputs.checkout_ref }}
           submodules: recursive
 
       - name: Setup .NET
@@ -112,7 +147,7 @@ jobs:
         run: dotnet build JKToolKit.CodexSDK.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release --no-build --framework ${{ matrix.framework }} --logger \"trx;LogFileName=test-results.trx\"
+        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release --no-build --framework ${{ matrix.framework }} --logger "trx;LogFileName=test-results.trx"
 
       - name: Prepare NuGet README
         if: matrix.os == 'ubuntu-latest'
@@ -155,7 +190,7 @@ jobs:
 
   NugetUpload:
     needs: [automation-tests, changes, build-and-test]
-    if: github.event_name == 'push' && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success'
+    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - name: Download NuGet Packages

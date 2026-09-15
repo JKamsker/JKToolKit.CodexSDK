@@ -51,14 +51,15 @@ jobs:
     needs: parity
     if: needs.parity.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 110
     steps:
       - name: Checkout automation scripts
         uses: actions/checkout@v4
 
       - name: Gate, merge, and verify release
         env:
-          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN || github.token }}
+          UPSTREAM_USE_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN == '' }}
         run: >-
           python .github/scripts/upstream_sync_gate.py gate
           --repo "${{ github.repository }}"
@@ -79,7 +80,8 @@ jobs:
 
       - name: Dispatch next bounded repair or create issue
         env:
-          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN || github.token }}
+          UPSTREAM_USE_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN == '' }}
         run: >-
           python .github/scripts/upstream_sync_gate.py schedule-repair
           --repo "${{ github.repository }}"

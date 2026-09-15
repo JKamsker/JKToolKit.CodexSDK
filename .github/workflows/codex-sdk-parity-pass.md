@@ -309,7 +309,7 @@ When changes are needed:
 
 1. Follow `.codex/skills/codex-sdk-parity-pass/SKILL.md`.
 2. Audit the upstream delta from the `integration` version to the `api` version in `UPSTREAM_CODEX_VERSION.json`.
-3. Implement only confirmed SDK drift fixes.
+3. Regenerate DTOs with `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- generate` before checking or building the SDK. The bootstrap PR intentionally contains only the API pin and submodule update so schema or generator changes cannot prevent a repair branch from being created. If generation fails, repair the generator against the vendored schema and regenerate. Implement confirmed SDK drift fixes.
 4. Update or create the relevant `docs/codex-<from>-to-<to>-interop.md` note.
 5. Run focused tests for every touched surface.
 6. Run `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check`.

@@ -50,7 +50,7 @@ def load_source_run(source_run_id: str) -> dict[str, Any]:
             "view",
             source_run_id,
             "--json",
-            "status,conclusion,event,headBranch,headSha,url,jobs",
+            "status,conclusion,event,headBranch,headSha,url,jobs,workflowName",
         ]
     )
     return json.loads(output)
@@ -170,6 +170,12 @@ def main() -> int:
     source_run = load_source_run(source_run_id)
     if source_run.get("conclusion") != "failure":
         print(f"Source run conclusion is {source_run.get('conclusion')}; no repair dispatch needed.")
+        return 0
+
+    if source_run.get("workflowName") == "Upstream Sync (@openai/codex)":
+        # The caller owns the bounded repair -> CI -> merge chain. Starting a
+        # standalone parity repair here races it and bypasses its final gate.
+        print("Upstream Sync schedules its own repairs; no duplicate dispatch needed.")
         return 0
 
     agent_job = find_agent_job(source_run)
