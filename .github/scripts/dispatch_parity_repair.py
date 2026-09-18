@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dispatch a bounded repair run after parity validation-gate failures."""
+"""Dispatch bounded retries after parity validation or agent failures."""
 
 from __future__ import annotations
 
@@ -79,6 +79,16 @@ def failed_validation_steps(agent_job: dict[str, Any]) -> list[str]:
         for step in steps
         if step.get("name") in VALIDATION_STEP_NAMES and step.get("conclusion") == "failure"
     ]
+
+
+def is_retryable_agent_failure(agent_job: dict[str, Any], context: RepairContext) -> bool:
+    """Retry failed agents only when they belong to an upstream-sync PR."""
+    return (
+        agent_job.get("conclusion") == "failure"
+        and context.upstream_sync_pr.lower() == "true"
+        and bool(context.upstream_pr)
+        and bool(context.upstream_ref)
+    )
 
 
 def load_agent_log(source_run_id: str, agent_job: dict[str, Any]) -> str:
@@ -184,15 +194,17 @@ def main() -> int:
         return 0
 
     failures = failed_validation_steps(agent_job)
-    if not failures:
-        print("Agent job did not fail in the parity validation gate; no repair dispatch needed.")
+    context = parse_repair_context(load_agent_log(source_run_id, agent_job))
+    if failures:
+        print("Validation-gate failure detected:")
+        for failure in failures:
+            print(f"- {failure}")
+    elif is_retryable_agent_failure(agent_job, context):
+        print("Upstream parity agent failed before validation; dispatching a bounded retry.")
+    else:
+        print("Failure is not a retryable upstream parity-agent or validation-gate failure.")
         return 0
 
-    print("Validation-gate failure detected:")
-    for failure in failures:
-        print(f"- {failure}")
-
-    context = parse_repair_context(load_agent_log(source_run_id, agent_job))
     dispatch_repair(
         repo=repo,
         workflow_file=workflow_file,

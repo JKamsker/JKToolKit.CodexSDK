@@ -30,6 +30,13 @@ dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen -- generate
 dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen -- check
 ```
 
+The scheduled upstream-sync workflow runs generation and the generated-output
+check deterministically before it creates the update PR. If an upstream schema
+change breaks the generator, it restores the generated tree before creating the
+bootstrap PR so the bounded parity-repair workflow can repair the generator
+without inheriting partial output. The AI parity pass is reserved for generator
+repairs and confirmed handwritten SDK drift.
+
 ## Manual Bump Checklist
 
 1. Update `UPSTREAM_CODEX_VERSION.json` `api`

@@ -30,6 +30,12 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<ThreadUnsubscribeResult> UnsubscribeThreadAsync(string threadId, CancellationToken ct);
 
+    Task<ThreadAttachmentAddResult> AddThreadAttachmentAsync(ThreadAttachmentAddOptions options, CancellationToken ct);
+
+    Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct);
+
+    Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct);
+
     Task CompactThreadAsync(string threadId, CancellationToken ct);
 
     Task<CodexThread> RollbackThreadAsync(string threadId, int numTurns, CancellationToken ct);
@@ -91,6 +97,15 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<CodexLoadedThreadListPage> ListLoadedThreadsAsync(ThreadLoadedListOptions options, CancellationToken ct) => _inner.ListLoadedThreadsAsync(options, ct);
 
     public Task<ThreadUnsubscribeResult> UnsubscribeThreadAsync(string threadId, CancellationToken ct) => _inner.UnsubscribeThreadAsync(threadId, ct);
+
+    public Task<ThreadAttachmentAddResult> AddThreadAttachmentAsync(ThreadAttachmentAddOptions options, CancellationToken ct) =>
+        _inner.AddThreadAttachmentAsync(options, ct);
+
+    public Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct) =>
+        _inner.ListThreadAttachmentsAsync(options, ct);
+
+    public Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct) =>
+        _inner.RemoveThreadAttachmentAsync(options, ct);
 
     public Task CompactThreadAsync(string threadId, CancellationToken ct) => _inner.CompactThreadAsync(threadId, ct);
 

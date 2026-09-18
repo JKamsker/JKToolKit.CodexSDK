@@ -35,6 +35,9 @@ public sealed class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.ReadThreadAsync),
         nameof(CodexAppServerClient.ListLoadedThreadsAsync),
         nameof(CodexAppServerClient.UnsubscribeThreadAsync),
+        nameof(CodexAppServerClient.AddThreadAttachmentAsync),
+        nameof(CodexAppServerClient.ListThreadAttachmentsAsync),
+        nameof(CodexAppServerClient.RemoveThreadAttachmentAsync),
         nameof(CodexAppServerClient.CompactThreadAsync),
         nameof(CodexAppServerClient.RollbackThreadAsync),
         nameof(CodexAppServerClient.CleanThreadBackgroundTerminalsAsync),
@@ -1034,6 +1037,15 @@ public sealed class ResilientCodexAppServerClientTests
 
         public Task<ThreadUnsubscribeResult> UnsubscribeThreadAsync(string threadId, CancellationToken ct) =>
             NotSupported<ThreadUnsubscribeResult>();
+
+        public Task<ThreadAttachmentAddResult> AddThreadAttachmentAsync(ThreadAttachmentAddOptions options, CancellationToken ct) =>
+            NotSupported<ThreadAttachmentAddResult>();
+
+        public Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct) =>
+            NotSupported<ThreadAttachmentListPage>();
+
+        public Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct) =>
+            NotSupported<ThreadAttachmentRemoveResult>();
 
         public Task CompactThreadAsync(string threadId, CancellationToken ct) =>
             CompactThreadAsyncImpl?.Invoke(threadId, ct) ?? Task.CompletedTask;

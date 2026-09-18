@@ -103,7 +103,7 @@ class WorkflowShellTests(unittest.TestCase):
                     self.assertEqual(0, result.returncode, result.stderr)
                     self.assertEqual(f"ready={expected}\n", self.output.read_text())
 
-    def test_bootstrap_only_changes_api_marker_and_leaves_integration_baseline(self) -> None:
+    def test_bootstrap_changes_api_marker_and_leaves_integration_baseline(self) -> None:
         stub = self.root / "git"
         stub.write_text('#!/bin/sh\nexit 0\n')
         stub.chmod(0o755)
@@ -114,8 +114,50 @@ class WorkflowShellTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual({"api": "1.2.3", "integration": "1.0.0"}, json.loads(marker.read_text()))
         bootstrap = (WORKFLOWS / "upstream-sync.yml").read_text().split("\n  parity:")[0]
-        self.assertNotIn("dotnet run", bootstrap)
+        self.assertLess(bootstrap.index("- name: Regenerate upstream DTOs"), bootstrap.index("- name: Create pull request"))
         self.assertNotIn("Verify user automation token", bootstrap)
+
+    def test_dto_generation_is_deterministic_and_cleans_partial_output_on_failure(self) -> None:
+        command_log = self.root / "commands.log"
+        dotnet = self.root / "dotnet"
+        dotnet.write_text(textwrap.dedent("""\
+            #!/bin/sh
+            printf 'dotnet %s\\n' "$*" >> "$COMMAND_LOG"
+            if [ "${FAIL_GENERATE:-0}" = 1 ] && echo "$*" | grep -q -- ' generate$'; then
+              exit 1
+            fi
+            exit 0
+            """))
+        dotnet.chmod(0o755)
+        git = self.root / "git"
+        git.write_text(textwrap.dedent("""\
+            #!/bin/sh
+            printf 'git %s\\n' "$*" >> "$COMMAND_LOG"
+            exit 0
+            """))
+        git.chmod(0o755)
+        script = step_script("upstream-sync.yml", "Regenerate upstream DTOs")
+        environment = {
+            "PATH": f"{self.root}:{os.environ['PATH']}",
+            "COMMAND_LOG": str(command_log),
+        }
+
+        success = self.run_script(script, **environment)
+        self.assertEqual(0, success.returncode, success.stderr)
+        self.assertEqual("ready=true\n", self.output.read_text())
+        success_commands = command_log.read_text()
+        self.assertIn("dotnet restore src/JKToolKit.CodexSDK.UpstreamGen", success_commands)
+        self.assertIn("-- generate", success_commands)
+        self.assertIn("-- check", success_commands)
+        self.assertNotIn("git restore", success_commands)
+
+        command_log.write_text("")
+        failure = self.run_script(script, **environment, FAIL_GENERATE="1")
+        self.assertEqual(0, failure.returncode, failure.stderr)
+        self.assertEqual("ready=false\n", self.output.read_text())
+        failure_commands = command_log.read_text()
+        self.assertIn("git restore --source=HEAD --staged --worktree", failure_commands)
+        self.assertIn("git clean -fd --", failure_commands)
 
 
 class ExistingPullTests(unittest.TestCase):

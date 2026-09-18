@@ -90,6 +90,16 @@ on:
 concurrency:
   job-discriminator: ${{ inputs.upstream_pr || github.event.pull_request.number || github.run_id }}
 
+# The upstream-sync caller invokes this workflow directly after creating its
+# automation PR. Ignore the duplicate pull_request event for that branch; two
+# parity agents auditing and pushing the same PR waste credits and can race.
+if: >
+  github.event_name != 'pull_request' ||
+  !(
+    startsWith(github.event.pull_request.title, 'chore(upstream): bump @openai/codex') &&
+    startsWith(github.event.pull_request.head.ref, 'automation/upstream-codex-')
+  )
+
 permissions:
   contents: read
   pull-requests: read
@@ -319,6 +329,13 @@ When changes are needed:
 10. Use the `push_to_pull_request_branch` safe-output tool to update the triggering PR branch.
 
 Do not use raw `git push`.
+
+Keep the semantic audit bounded. Start with the release notes and
+`git diff --name-only rust-v<integration>..rust-v<api>`, then inspect only
+touched upstream areas and the corresponding SDK hotspots. Do not scan the
+entire vendored repository or generated tree after generation and its check
+have succeeded. Prefer a focused regression test over broader speculative
+cleanup, and proceed to validation as soon as the confirmed delta is covered.
 
 ## Validation Before Safe Output
 
