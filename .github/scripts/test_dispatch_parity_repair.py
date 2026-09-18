@@ -29,6 +29,49 @@ class DispatcherTests(unittest.TestCase):
         self.assertEqual(0, repair.main())
         dispatch.assert_called_once()
 
+    @patch.dict(os.environ, {"SOURCE_RUN_ID": "123", "GITHUB_REPOSITORY": "owner/repo"})
+    @patch.object(repair, "dispatch_repair")
+    @patch.object(
+        repair,
+        "load_agent_log",
+        return_value=(
+            "parity_repair_context.repair_attempt=0\n"
+            "parity_repair_context.upstream_sync_pr=true\n"
+            "parity_repair_context.upstream_version=1.2.3\n"
+            "parity_repair_context.upstream_pr=42\n"
+            "parity_repair_context.upstream_ref=automation/upstream-codex-1.2.3\n"
+        ),
+    )
+    @patch.object(repair, "load_source_run")
+    def test_retries_upstream_agent_failure_before_validation(self, load_run, _load_log, dispatch):
+        load_run.return_value = {
+            "conclusion": "failure",
+            "workflowName": "Codex SDK Parity Pass",
+            "jobs": [{"name": "agent", "conclusion": "failure", "steps": []}],
+        }
+
+        self.assertEqual(0, repair.main())
+
+        dispatch.assert_called_once()
+        context = dispatch.call_args.kwargs["context"]
+        self.assertEqual("42", context.upstream_pr)
+        self.assertEqual("automation/upstream-codex-1.2.3", context.upstream_ref)
+
+    @patch.dict(os.environ, {"SOURCE_RUN_ID": "123", "GITHUB_REPOSITORY": "owner/repo"})
+    @patch.object(repair, "dispatch_repair")
+    @patch.object(repair, "load_agent_log", return_value="")
+    @patch.object(repair, "load_source_run")
+    def test_does_not_retry_unrelated_agent_failure(self, load_run, _load_log, dispatch):
+        load_run.return_value = {
+            "conclusion": "failure",
+            "workflowName": "Codex SDK Parity Pass",
+            "jobs": [{"name": "agent", "conclusion": "failure", "steps": []}],
+        }
+
+        self.assertEqual(0, repair.main())
+
+        dispatch.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

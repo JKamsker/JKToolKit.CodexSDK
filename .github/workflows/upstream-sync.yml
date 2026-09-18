@@ -168,6 +168,37 @@ jobs:
           git -C external/codex fetch origin "refs/tags/rust-v${LATEST_CODEX_VERSION}:refs/tags/rust-v${LATEST_CODEX_VERSION}"
           git -C external/codex checkout --detach "rust-v${LATEST_CODEX_VERSION}"
 
+      - name: Setup .NET for deterministic DTO generation
+        if: steps.tag.outputs.ready == 'true'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Regenerate upstream DTOs
+        if: steps.tag.outputs.ready == 'true'
+        id: dto-generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated_root="src/JKToolKit.CodexSDK/Generated/Upstream"
+          generator_project="src/JKToolKit.CodexSDK.UpstreamGen"
+
+          if dotnet restore "$generator_project" \
+            && dotnet run --project "$generator_project" --configuration Release --no-restore -- generate \
+            && dotnet run --project "$generator_project" --configuration Release --no-restore -- check; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Keep the bootstrap branch usable when an upstream schema change
+          # requires a generator repair. The parity pass can then fix the
+          # generator against the vendored source instead of inheriting a
+          # partially generated tree.
+          git restore --source=HEAD --staged --worktree -- "$generated_root"
+          git clean -fd -- "$generated_root"
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::Deterministic DTO generation failed; the parity repair pass will repair the generator and regenerate from a clean tree."
+
       - name: Create pull request
         if: steps.tag.outputs.ready == 'true'
         id: cpr
@@ -186,6 +217,7 @@ jobs:
 
             - Previous: ${{ steps.versions.outputs.pinned }}
             - Latest: ${{ steps.versions.outputs.latest }}
+            - Deterministic DTO generation: ${{ steps.dto-generation.outputs.ready == 'true' && 'complete' || 'deferred to parity repair' }}
 
             The dynamic parity pass runs on this branch next. The final branch SHA is merged automatically only after its exact CI run succeeds, and the post-merge NuGet release is monitored. If upstream removed or changed a handwritten SDK surface, the bounded repair workflow fixes this branch or creates an issue.
           delete-branch: true
