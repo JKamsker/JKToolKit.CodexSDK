@@ -29,6 +29,80 @@ public sealed class AppServerThreadManagementClientTests
     }
 
     [Fact]
+    public async Task ThreadAttachmentMethods_SendExpectedRequests_AndParseResults()
+    {
+        using var addDoc = JsonDocument.Parse("""
+        {
+          "outcome": "created",
+          "attachment": {
+            "id": "att_1",
+            "attachmentType": "review",
+            "identityKey": "review-1",
+            "payload": { "status": "open" },
+            "createdAt": 123
+          }
+        }
+        """);
+        var rpc = new RecordingRpc { Result = addDoc.RootElement };
+
+        await using var client = CreateClient(rpc);
+        var add = await client.AddThreadAttachmentAsync(new ThreadAttachmentAddOptions
+        {
+            ThreadId = "thr_1",
+            AttachmentType = "review",
+            IdentityKey = "review-1",
+            Payload = JsonSerializer.SerializeToElement(new { status = "open" })
+        });
+
+        rpc.LastMethod.Should().Be("thread/attachment/add");
+        var addParams = JsonSerializer.SerializeToElement(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
+        addParams.GetProperty("threadId").GetString().Should().Be("thr_1");
+        addParams.GetProperty("payload").GetProperty("status").GetString().Should().Be("open");
+        add.Outcome.Should().Be(ThreadAttachmentAddOutcome.Created);
+        add.Attachment.Id.Should().Be("att_1");
+        add.Attachment.Payload.GetProperty("status").GetString().Should().Be("open");
+        add.Attachment.CreatedAt.Should().Be(123);
+
+        using var listDoc = JsonDocument.Parse("""
+        {
+          "data": [
+            {
+              "id": "att_1",
+              "attachmentType": "review",
+              "identityKey": "review-1",
+              "payload": { "status": "open" },
+              "createdAt": 123
+            }
+          ],
+          "nextCursor": "next-1"
+        }
+        """);
+        rpc.Result = listDoc.RootElement;
+        var page = await client.ListThreadAttachmentsAsync(new ThreadAttachmentListOptions
+        {
+            ThreadId = "thr_1",
+            Cursor = "cursor-1",
+            Limit = 10
+        });
+
+        rpc.LastMethod.Should().Be("thread/attachment/list");
+        page.Attachments.Should().ContainSingle().Which.IdentityKey.Should().Be("review-1");
+        page.NextCursor.Should().Be("next-1");
+
+        using var removeDoc = JsonDocument.Parse("""{}""");
+        rpc.Result = removeDoc.RootElement;
+        var removed = await client.RemoveThreadAttachmentAsync(new ThreadAttachmentRemoveOptions
+        {
+            ThreadId = "thr_1",
+            AttachmentType = "review",
+            IdentityKey = "review-1"
+        });
+
+        rpc.LastMethod.Should().Be("thread/attachment/remove");
+        removed.Raw.ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    [Fact]
     public async Task ListPermissionProfiles_SendsPermissionProfileList_AndParsesPage()
     {
         using var doc = JsonDocument.Parse("""

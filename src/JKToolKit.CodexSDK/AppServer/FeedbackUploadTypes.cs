@@ -41,6 +41,7 @@ public sealed class FeedbackUploadOptions
 public sealed record class FeedbackUploadResult
 {
     public required string ThreadId { get; init; }
+    public string? PromptHash { get; init; }
     public required JsonElement Raw { get; init; }
 }
 

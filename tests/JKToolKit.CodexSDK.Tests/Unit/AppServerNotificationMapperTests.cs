@@ -10,6 +10,39 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AppServerNotificationMapperTests
 {
     [Fact]
+    public void Map_ThreadAttachmentUpdated_ParsesTypedNotification_AndRejectsMalformedPayloads()
+    {
+        var json = JsonDocument.Parse("""
+        {
+          "threadId": "thr_1",
+          "attachmentType": "review",
+          "identityKey": "review-1",
+          "attachmentId": "att_1",
+          "operation": "created"
+        }
+        """).RootElement;
+
+        var mapped = AppServerNotificationMapper.Map("thread/attachment/updated", json)
+            .Should().BeOfType<ThreadAttachmentUpdatedNotification>().Subject;
+
+        mapped.ThreadId.Should().Be("thr_1");
+        mapped.AttachmentType.Should().Be("review");
+        mapped.IdentityKey.Should().Be("review-1");
+        mapped.AttachmentId.Should().Be("att_1");
+        mapped.Operation.Should().Be(ThreadAttachmentOperation.Created);
+
+        AppServerNotificationMapper.Map(
+                "thread/attachment/updated",
+                JsonDocument.Parse("""{"threadId":"thr_1","operation":"created"}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+
+        AppServerNotificationMapper.Map(
+                "thread/attachment/updated",
+                JsonDocument.Parse("""{"threadId":"thr_1","attachmentType":"review","identityKey":"review-1","attachmentId":"att_1","operation":"renamed"}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
     public void Map_KnownNotifications_ToTypedRecords()
     {
         var json = JsonDocument.Parse("""{"threadId":"t","turnId":"u","itemId":"i","delta":"hi"}""").RootElement;
