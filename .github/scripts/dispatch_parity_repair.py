@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dispatch a bounded repair run after parity validation-gate failures."""
+"""Dispatch bounded retries after parity validation or agent failures."""
 
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ class RepairContext:
     upstream_version: str
     upstream_pr: str
     upstream_ref: str
+    trusted_actor: str
 
 
 def run_gh(args: list[str], *, capture: bool = True) -> str:
@@ -81,6 +82,17 @@ def failed_validation_steps(agent_job: dict[str, Any]) -> list[str]:
     ]
 
 
+def is_retryable_agent_failure(agent_job: dict[str, Any], context: RepairContext) -> bool:
+    """Retry failed agents only when they belong to an upstream-sync PR."""
+    return (
+        agent_job.get("conclusion") == "failure"
+        and context.upstream_sync_pr.lower() == "true"
+        and bool(context.upstream_pr)
+        and bool(context.upstream_ref)
+        and bool(context.trusted_actor)
+    )
+
+
 def load_agent_log(source_run_id: str, agent_job: dict[str, Any]) -> str:
     job_id = str(agent_job.get("databaseId") or "")
     if not job_id:
@@ -106,6 +118,7 @@ def parse_repair_context(log_text: str) -> RepairContext:
         upstream_version=values.get("upstream_version") or "",
         upstream_pr=values.get("upstream_pr") or "",
         upstream_ref=values.get("upstream_ref") or "",
+        trusted_actor=values.get("trusted_actor") or "",
     )
 
 
@@ -127,6 +140,15 @@ def dispatch_repair(
         return
 
     next_attempt = context.attempt + 1
+    aw_context = json.dumps(
+        {
+            "command_name": "upstream-sync-repair",
+            "actor": context.trusted_actor,
+            "item_type": "pull_request",
+            "item_number": context.upstream_pr,
+        },
+        separators=(",", ":"),
+    )
     args = [
         "workflow",
         "run",
@@ -149,6 +171,10 @@ def dispatch_repair(
         f"repair_source_run={source_run_id}",
         "-f",
         "repair_source_job=agent",
+        "-f",
+        f"trusted_actor={context.trusted_actor}",
+        "-f",
+        f"aw_context={aw_context}",
     ]
 
     print(f"Dispatching parity repair attempt {next_attempt}/{max_attempts} from run {source_run_id}.")
@@ -184,15 +210,17 @@ def main() -> int:
         return 0
 
     failures = failed_validation_steps(agent_job)
-    if not failures:
-        print("Agent job did not fail in the parity validation gate; no repair dispatch needed.")
+    context = parse_repair_context(load_agent_log(source_run_id, agent_job))
+    if failures:
+        print("Validation-gate failure detected:")
+        for failure in failures:
+            print(f"- {failure}")
+    elif is_retryable_agent_failure(agent_job, context):
+        print("Upstream parity agent failed before validation; dispatching a bounded retry.")
+    else:
+        print("Failure is not a retryable upstream parity-agent or validation-gate failure.")
         return 0
 
-    print("Validation-gate failure detected:")
-    for failure in failures:
-        print(f"- {failure}")
-
-    context = parse_repair_context(load_agent_log(source_run_id, agent_job))
     dispatch_repair(
         repo=repo,
         workflow_file=workflow_file,

@@ -34,6 +34,7 @@ def context(attempt: int = 0) -> gate.GateContext:
         version="1.2.3",
         attempt=attempt,
         source_run="1000",
+        actor="maintainer",
     )
 
 
@@ -77,6 +78,9 @@ class RepairTests(unittest.TestCase):
         self.assertIn("repair_attempt=2", command)
         self.assertIn("repair_source_run=222", command)
         self.assertIn("repair_source_job=ci", command)
+        self.assertIn("trusted_actor=maintainer", command)
+        self.assertTrue(any('"actor":"maintainer"' in value for value in command))
+        self.assertTrue(any('"item_number":"42"' in value for value in command))
 
     def test_creates_issue_after_final_attempt(self) -> None:
         github = FakeGitHub([[]])

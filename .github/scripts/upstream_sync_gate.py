@@ -29,6 +29,7 @@ class GateContext:
     version: str
     attempt: int
     source_run: str
+    actor: str
     release_via_dispatch: bool = False
 
 
@@ -178,6 +179,16 @@ def schedule_repair(
         )
         return False
 
+    aw_context = json.dumps(
+        {
+            "command_name": "upstream-sync-repair",
+            "actor": context.actor,
+            "item_type": "pull_request",
+            "item_number": str(context.pr),
+        },
+        separators=(",", ":"),
+    )
+
     github.run(
         [
             "workflow",
@@ -199,6 +210,10 @@ def schedule_repair(
             f"repair_source_run={source_run}",
             "-f",
             f"repair_source_job={source_job}",
+            "-f",
+            f"trusted_actor={context.actor}",
+            "-f",
+            f"aw_context={aw_context}",
         ]
     )
     print(f"Dispatched automatic repair attempt {next_attempt}/{MAX_REPAIR_ATTEMPTS}.")
@@ -327,6 +342,7 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument("--branch", required=True)
         command.add_argument("--version", required=True)
         command.add_argument("--attempt", required=True, type=int)
+        command.add_argument("--actor", required=True)
         command.add_argument("--source-run", required=True)
         if name == "schedule-repair":
             command.add_argument("--source-job", required=True)
@@ -336,7 +352,7 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = parser().parse_args()
     context = GateContext(
-        args.repo, args.pr, args.branch, args.version, args.attempt, args.source_run,
+        args.repo, args.pr, args.branch, args.version, args.attempt, args.source_run, args.actor,
         release_via_dispatch=os.environ.get("UPSTREAM_USE_GITHUB_TOKEN") == "true",
     )
     github = GitHub()

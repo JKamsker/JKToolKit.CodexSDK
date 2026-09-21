@@ -103,7 +103,7 @@ class WorkflowShellTests(unittest.TestCase):
                     self.assertEqual(0, result.returncode, result.stderr)
                     self.assertEqual(f"ready={expected}\n", self.output.read_text())
 
-    def test_bootstrap_only_changes_api_marker_and_leaves_integration_baseline(self) -> None:
+    def test_bootstrap_changes_api_marker_and_leaves_integration_baseline(self) -> None:
         stub = self.root / "git"
         stub.write_text('#!/bin/sh\nexit 0\n')
         stub.chmod(0o755)
@@ -114,29 +114,68 @@ class WorkflowShellTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual({"api": "1.2.3", "integration": "1.0.0"}, json.loads(marker.read_text()))
         bootstrap = (WORKFLOWS / "upstream-sync.yml").read_text().split("\n  parity:")[0]
-        self.assertNotIn("dotnet run", bootstrap)
+        self.assertLess(bootstrap.index("- name: Regenerate upstream DTOs"), bootstrap.index("- name: Create pull request"))
         self.assertNotIn("Verify user automation token", bootstrap)
+
+    def test_dto_generation_is_deterministic_and_cleans_partial_output_on_failure(self) -> None:
+        command_log = self.root / "commands.log"
+        dotnet = self.root / "dotnet"
+        dotnet.write_text(textwrap.dedent("""\
+            #!/bin/sh
+            printf 'dotnet %s\\n' "$*" >> "$COMMAND_LOG"
+            if [ "${FAIL_GENERATE:-0}" = 1 ] && echo "$*" | grep -q -- ' generate$'; then
+              exit 1
+            fi
+            exit 0
+            """))
+        dotnet.chmod(0o755)
+        git = self.root / "git"
+        git.write_text(textwrap.dedent("""\
+            #!/bin/sh
+            printf 'git %s\\n' "$*" >> "$COMMAND_LOG"
+            exit 0
+            """))
+        git.chmod(0o755)
+        script = step_script("upstream-sync.yml", "Regenerate upstream DTOs")
+        environment = {
+            "PATH": f"{self.root}:{os.environ['PATH']}",
+            "COMMAND_LOG": str(command_log),
+        }
+
+        success = self.run_script(script, **environment)
+        self.assertEqual(0, success.returncode, success.stderr)
+        self.assertEqual("ready=true\n", self.output.read_text())
+        success_commands = command_log.read_text()
+        self.assertIn("dotnet restore src/JKToolKit.CodexSDK.UpstreamGen", success_commands)
+        self.assertIn("-- generate", success_commands)
+        self.assertIn("-- check", success_commands)
+        self.assertNotIn("git restore", success_commands)
+
+        command_log.write_text("")
+        failure = self.run_script(script, **environment, FAIL_GENERATE="1")
+        self.assertEqual(0, failure.returncode, failure.stderr)
+        self.assertEqual("ready=false\n", self.output.read_text())
+        failure_commands = command_log.read_text()
+        self.assertIn("git restore --source=HEAD --staged --worktree", failure_commands)
+        self.assertIn("git clean -fd --", failure_commands)
 
 
 class ExistingPullTests(unittest.TestCase):
-    def test_resume_only_expected_same_repo_branch_and_pause_exhausted_repairs(self) -> None:
+    def test_resume_only_expected_same_repo_branch(self) -> None:
         script = step_script("upstream-sync.yml", "Check for an existing upstream PR", "script")
         valid = {"number": 42, "head": {"ref": "automation/upstream-codex-1.2.3", "repo": {"full_name": "owner/repo"}}}
-        exhausted = {"title": "Upstream sync 1.2.3 failed after automatic repairs", "html_url": "https://example.org/issue"}
         cases = [
-            ([valid], [], "true", "false"),
-            ([valid], [exhausted], "true", "true"),
-            ([{**valid, "head": {**valid["head"], "repo": {"full_name": "fork/repo"}}}], [], "false", None),
-            ([], [], "false", None),
+            ([valid], "true"),
+            ([{**valid, "head": {**valid["head"], "repo": {"full_name": "fork/repo"}}}], "false"),
+            ([], "false"),
         ]
-        for pulls, issues, exists, repair_exhausted in cases:
-            with self.subTest(exists=exists, repair_exhausted=repair_exhausted):
+        for pulls, exists in cases:
+            with self.subTest(exists=exists):
                 harness = f'''
 const outputs = {{}};
 const core = {{setOutput: (k, v) => outputs[k] = v, notice: () => {{}}}};
 const context = {{repo: {{owner: 'owner', repo: 'repo'}}}};
-const github = {{rest: {{pulls: {{list: 'pulls'}}, issues: {{listForRepo: 'issues'}}}},
-  paginate: async (kind) => kind === 'pulls' ? {json.dumps(pulls)} : {json.dumps(issues)}}};
+const github = {{rest: {{pulls: {{list: 'pulls'}}}}, paginate: async () => {json.dumps(pulls)}}};
 (async () => {{ {script} }})().then(() => console.log(JSON.stringify(outputs)));
 '''
                 result = subprocess.run(
@@ -145,7 +184,6 @@ const github = {{rest: {{pulls: {{list: 'pulls'}}, issues: {{listForRepo: 'issue
                 )
                 outputs = json.loads(result.stdout)
                 self.assertEqual(exists, outputs["exists"])
-                self.assertEqual(repair_exhausted, outputs.get("repair_exhausted"))
 
 
 if __name__ == "__main__":

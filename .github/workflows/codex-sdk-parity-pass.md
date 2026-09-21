@@ -42,6 +42,11 @@ on:
         required: false
         default: ""
         type: string
+      trusted_actor:
+        description: "The trusted maintainer actor that initiated an automated repair chain."
+        required: false
+        default: ""
+        type: string
   workflow_dispatch:
     inputs:
       upstream_sync_pr:
@@ -73,6 +78,10 @@ on:
         description: "The job in the source run that failed validation."
         required: false
         default: ""
+      trusted_actor:
+        description: "The trusted maintainer actor that initiated an automated repair chain."
+        required: false
+        default: ""
   schedule:
     # GitHub Actions cron uses UTC. These runs are one hour after the
     # 09:00 UTC and 21:00 UTC Upstream Sync runs.
@@ -89,6 +98,16 @@ on:
 
 concurrency:
   job-discriminator: ${{ inputs.upstream_pr || github.event.pull_request.number || github.run_id }}
+
+# The upstream-sync caller invokes this workflow directly after creating its
+# automation PR. Ignore the duplicate pull_request event for that branch; two
+# parity agents auditing and pushing the same PR waste credits and can race.
+if: >
+  github.event_name != 'pull_request' ||
+  !(
+    startsWith(github.event.pull_request.title, 'chore(upstream): bump @openai/codex') &&
+    startsWith(github.event.pull_request.head.ref, 'automation/upstream-codex-')
+  )
 
 permissions:
   contents: read
@@ -160,6 +179,7 @@ post-steps:
       UPSTREAM_VERSION: ${{ inputs.upstream_version || '' }}
       UPSTREAM_PR: ${{ inputs.upstream_pr || github.event.pull_request.number || '' }}
       UPSTREAM_REF: ${{ inputs.upstream_ref || github.event.pull_request.head.ref || github.ref_name || '' }}
+      TRUSTED_ACTOR: ${{ inputs.trusted_actor || github.actor }}
     run: |
       set -euo pipefail
 
@@ -191,6 +211,7 @@ post-steps:
       echo "parity_repair_context.upstream_version=${upstream_version}"
       echo "parity_repair_context.upstream_pr=${upstream_pr}"
       echo "parity_repair_context.upstream_ref=${UPSTREAM_REF:-}"
+      echo "parity_repair_context.trusted_actor=${TRUSTED_ACTOR:-}"
 
   - name: Setup .NET for parity validation
     if: steps.parity-validation-guard.outputs.should_validate == 'true'
@@ -319,6 +340,13 @@ When changes are needed:
 10. Use the `push_to_pull_request_branch` safe-output tool to update the triggering PR branch.
 
 Do not use raw `git push`.
+
+Keep the semantic audit bounded. Start with the release notes and
+`git diff --name-only rust-v<integration>..rust-v<api>`, then inspect only
+touched upstream areas and the corresponding SDK hotspots. Do not scan the
+entire vendored repository or generated tree after generation and its check
+have succeeded. Prefer a focused regression test over broader speculative
+cleanup, and proceed to validation as soon as the confirmed delta is covered.
 
 ## Validation Before Safe Output
 

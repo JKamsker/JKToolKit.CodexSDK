@@ -21,6 +21,12 @@ on:
       repair_source_job:
         description: "The failing job category (ci or parity)."
         required: true
+      trusted_actor:
+        description: "The trusted maintainer actor from the original sync run."
+        required: true
+      aw_context:
+        description: "Verified gh-aw dispatch provenance for the trusted actor."
+        required: true
 
 permissions:
   actions: write
@@ -44,6 +50,8 @@ jobs:
       repair_attempt: ${{ inputs.repair_attempt }}
       repair_source_run: ${{ inputs.repair_source_run }}
       repair_source_job: ${{ inputs.repair_source_job }}
+      trusted_actor: ${{ inputs.trusted_actor }}
+      aw_context: ${{ inputs.aw_context }}
     secrets: inherit
 
   gate:
@@ -67,6 +75,7 @@ jobs:
           --branch "${{ inputs.upstream_ref }}"
           --version "${{ inputs.upstream_version }}"
           --attempt "${{ inputs.repair_attempt }}"
+          --actor "${{ inputs.trusted_actor }}"
           --source-run "${{ github.run_id }}"
 
   retry-parity:
@@ -89,5 +98,6 @@ jobs:
           --branch "${{ inputs.upstream_ref }}"
           --version "${{ inputs.upstream_version }}"
           --attempt "${{ inputs.repair_attempt }}"
+          --actor "${{ inputs.trusted_actor }}"
           --source-run "${{ github.run_id }}"
           --source-job parity
