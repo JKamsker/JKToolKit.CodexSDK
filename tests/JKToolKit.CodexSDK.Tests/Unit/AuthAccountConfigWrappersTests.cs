@@ -574,7 +574,11 @@ public sealed class AuthAccountConfigWrappersTests
                 json.GetProperty("includeLogs").GetBoolean().Should().BeTrue();
                 json.GetProperty("extraLogFiles").GetArrayLength().Should().Be(1);
             },
-            Result = JsonSerializer.SerializeToElement(new { threadId = "feedback-thread-1" })
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                threadId = "feedback-thread-1",
+                promptHash = "abc123"
+            })
         };
 
         await using var client = CreateClient(rpc);
@@ -587,6 +591,7 @@ public sealed class AuthAccountConfigWrappersTests
         });
 
         result.ThreadId.Should().Be("feedback-thread-1");
+        result.PromptHash.Should().Be("abc123");
     }
 
     [Fact]

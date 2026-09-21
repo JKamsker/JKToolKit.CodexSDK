@@ -115,6 +115,7 @@ internal sealed partial class CodexAppServerConfigClient
         return new FeedbackUploadResult
         {
             ThreadId = CodexAppServerClientJson.GetRequiredString(result, "threadId", "feedback/upload response"),
+            PromptHash = CodexAppServerClientJson.GetStringOrNull(result, "promptHash"),
             Raw = result
         };
     }
