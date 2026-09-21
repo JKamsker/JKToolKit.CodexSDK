@@ -1,16 +1,17 @@
-# Codex 0.154.0 -> 0.155.0 Interop Research
+# Codex 0.154.0 -> 0.155.1 Interop Research
 
 ## Scope
 
-- Verified `UPSTREAM_CODEX_VERSION.json` `api` is `0.155.0`.
-- Verified `external/codex` is pinned to the `rust-v0.155.0` commit.
-- Audited the local upstream delta from `rust-v0.154.0` to `rust-v0.155.0`, focusing on app-server protocol/schema drift, generated DTO output, feedback upload, thread attachments, notification mapping, and exec/resume behavior.
+- Verified `UPSTREAM_CODEX_VERSION.json` `api` is `0.155.1`.
+- Verified `external/codex` is pinned to the `rust-v0.155.1` commit.
+- Audited the local upstream delta from `rust-v0.154.0` to `rust-v0.155.1`, focusing on app-server protocol/schema drift, generated DTO output, feedback upload, thread attachments, notification mapping, and exec/resume behavior.
+- Verified the `0.155.1` hotfix only restores a TUI reasoning-summary default and does not change SDK-relevant app-server, protocol, core, exec, or CLI surfaces.
 
 ## Update Status
 
-- Generated upstream schema/DTO output is up to date for `0.155.0`.
+- Generated upstream schema/DTO output is up to date for `0.155.1`.
 - Handwritten SDK wrappers and projections cover the stable app-server additions in this version window.
-- `UPSTREAM_CODEX_VERSION.json` `integration` is updated to `0.155.0` after this parity pass.
+- `UPSTREAM_CODEX_VERSION.json` `integration` is updated to `0.155.1` after this parity pass.
 
 ## Confirmed Upstream Changes
 
@@ -64,12 +65,12 @@ Validation run during this pass:
 
 ## Remaining Drift
 
-No remaining actionable drift was identified for existing stable SDK surfaces in the `0.154.0 -> 0.155.0` window.
+No remaining actionable drift was identified for existing stable SDK surfaces in the `0.154.0 -> 0.155.1` window.
 
 ## Upstream Sources
 
-- GitHub release tag `openai/codex` `rust-v0.155.0`
-- Local upstream commits for `rust-v0.154.0` and `rust-v0.155.0`
+- GitHub release tags `openai/codex` `rust-v0.155.0` and `rust-v0.155.1`
+- Local upstream commits for `rust-v0.154.0`, `rust-v0.155.0`, and `rust-v0.155.1`
 - `external/codex/codex-rs/app-server-protocol/src/protocol/common.rs`
 - `external/codex/codex-rs/app-server-protocol/src/protocol/v2/feedback.rs`
 - `external/codex/codex-rs/app-server-protocol/src/protocol/v2/thread_attachment.rs`
