@@ -303,13 +303,18 @@ test "$expected" = "$actual"
 test "$api_version" = "$integration_version"
 ```
 
-No-op if all of these are true:
+Treat the `integration` marker as the durable completion record for a parity
+pass. Immediately no-op, including for an upstream-sync dispatch, when all of
+these are true:
 
-- this is not a relevant pull request run or upstream-sync dispatch,
 - the API marker and submodule commit already match,
-- the API marker and integration marker already match,
-- generated upstream DTO/schema checks are clean,
-- and there is no confirmed SDK drift from the upstream delta.
+- the API marker and integration marker already match, and
+- `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check` is clean.
+
+Do not re-audit the already-completed upstream delta in this case. An
+upstream-sync run can be resumed after a successful repair or interrupted gate,
+and the resumed run must proceed to the exact-SHA CI gate instead of repeating
+the Codex implementation pass.
 
 When no-oping, leave the workspace unchanged and emit a concise explanation in the final output. Do not create a pull request and do not push to a pull request branch.
 
