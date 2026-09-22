@@ -34,6 +34,13 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("allowedApprovalPolicies")]
     public System.Collections.Generic.ICollection<AllowedApprovalPolicies>? AllowedApprovalPolicies { get; set; } = default!;
 
+    /// <summary>
+    /// Effective login methods after managed, forced-login, and workspace restrictions. An empty list permits no login method. Older servers may omit this field.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("allowedLoginMethods")]
+    // TODO(system.text.json): Add ItemConverterType with enum converter when supported
+    public System.Collections.Generic.ICollection<ForcedLoginMethod>? AllowedLoginMethods { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("allowedPermissionProfiles")]
     public System.Collections.Generic.IDictionary<string, bool>? AllowedPermissionProfiles { get; set; } = default!;
 
@@ -47,7 +54,7 @@ internal partial class ConfigRequirements
 
     [System.Text.Json.Serialization.JsonPropertyName("allowedWindowsSandboxImplementations")]
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
-    public System.Collections.Generic.ICollection<WindowsSandboxSetupMode>? AllowedWindowsSandboxImplementations { get; set; } = default!;
+    public System.Collections.Generic.ICollection<WindowsSandboxImplementation>? AllowedWindowsSandboxImplementations { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("autoReview")]
     public AutoReview2? AutoReview { get; set; } = default!;
@@ -88,14 +95,23 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("modelCatalogJson")]
     public string? ModelCatalogJson { get; set; } = default!;
 
+    /// <summary>
+    /// Exact provider selection required by managed policy.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
+    public string? ModelProvider { get; set; } = default!;
+
+    /// <summary>
+    /// Complete required provider definitions, using config.toml field names.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("modelProviders")]
+    public System.Collections.Generic.IDictionary<string, object>? ModelProviders { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("models")]
     public Models? Models { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("sqliteHome")]
     public string? SqliteHome { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("windowsSandboxPrivateDesktop")]
-    public bool? WindowsSandboxPrivateDesktop { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

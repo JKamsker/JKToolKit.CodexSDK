@@ -34,6 +34,12 @@ internal partial class PluginDetail
     [System.Text.Json.Serialization.JsonPropertyName("mcpServers")]
     public System.Collections.Generic.ICollection<string> McpServers { get; set; } = new System.Collections.ObjectModel.Collection<string>();
 
+    /// <summary>
+    /// The declared onboarding skill, when the plugin and visible skill are enabled.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("onboardingSkill")]
+    public OnboardingSkill? OnboardingSkill { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("scheduledTasks")]
     public System.Collections.Generic.ICollection<ScheduledTaskSummary>? ScheduledTasks { get; set; } = default!;
 

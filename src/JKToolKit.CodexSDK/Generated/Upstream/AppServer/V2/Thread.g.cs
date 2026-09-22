@@ -160,7 +160,7 @@ internal partial class Thread
     public ThreadSource? ThreadSource { get; set; } = default!;
 
     /// <summary>
-    /// Only populated on `thread/resume`, `thread/rollback`, `thread/fork`, and `thread/read` (when `includeTurns` is true) responses. For all other responses and notifications returning a Thread, the turns field will be an empty list.
+    /// Only populated on `thread/resume`, `thread/fork`, and `thread/read` (when `includeTurns` is true) responses. For all other responses and notifications returning a Thread, the turns field will be an empty list.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("turns")]
     public System.Collections.Generic.ICollection<Turn> Turns { get; set; } = new System.Collections.ObjectModel.Collection<Turn>();

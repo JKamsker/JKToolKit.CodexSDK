@@ -35,6 +35,12 @@ internal partial class TurnStartParams
     public string? Cwd { get; set; } = default!;
 
     /// <summary>
+    /// Replace this thread's disabled plugin IDs. Omitted/null preserves the list; [] clears it.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("disabledPluginIds")]
+    public System.Collections.Generic.ICollection<string>? DisabledPluginIds { get; set; } = default!;
+
+    /// <summary>
     /// Override the reasoning effort for this turn and subsequent turns.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("effort")]
@@ -56,7 +62,7 @@ internal partial class TurnStartParams
     public object? OutputSchema { get; set; } = default!;
 
     /// <summary>
-    /// Override the personality for this turn and subsequent turns.
+    /// @deprecated `friendly` and `pragmatic` no longer select a style. Changing this does not rewrite the thread's existing instructions.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
     public Personality5? Personality { get; set; } = default!;

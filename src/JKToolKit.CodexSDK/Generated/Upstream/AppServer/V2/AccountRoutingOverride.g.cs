@@ -10,22 +10,22 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Deprecated: `friendly` and `pragmatic` no longer select a style.
+/// Backend routing policy. Wire values match the accounts/check contract.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal enum Personality
+internal enum AccountRoutingOverride
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"none")]
-    None = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"NO_CONSTRAINT")]
+    NO_CONSTRAINT = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"friendly")]
-    Friendly = 1,
+    [System.Runtime.Serialization.EnumMember(Value = @"us")]
+    Us = 1,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"pragmatic")]
-    Pragmatic = 2,
+    [System.Runtime.Serialization.EnumMember(Value = @"us_cr")]
+    Us_cr = 2,
 
 
 }
