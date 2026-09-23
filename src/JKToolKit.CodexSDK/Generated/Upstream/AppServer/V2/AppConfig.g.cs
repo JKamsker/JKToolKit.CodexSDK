@@ -34,6 +34,12 @@ internal partial class AppConfig
     [System.Text.Json.Serialization.JsonPropertyName("links")]
     public Links? Links { get; set; } = default!;
 
+    /// <summary>
+    /// Additional model-facing surfaces omitted for this connector's tools.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("omit_tools_from")]
+    public System.Collections.Generic.ICollection<Omit_tools_from>? Omit_tools_from { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("open_world_enabled")]
     public bool? Open_world_enabled { get; set; } = default!;
 

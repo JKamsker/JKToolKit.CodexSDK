@@ -30,6 +30,12 @@ internal partial class ThreadSettings
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;
 
+    /// <summary>
+    /// Saved list of disabled plugin IDs. Does not yet filter plugin capabilities.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("disabledPluginIds")]
+    public System.Collections.Generic.ICollection<string>? DisabledPluginIds { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("effort")]
     public Effort? Effort { get; set; } = default!;
 
@@ -39,6 +45,9 @@ internal partial class ThreadSettings
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string ModelProvider { get; set; } = default!;
 
+    /// <summary>
+    /// @deprecated Reports the saved setting; `friendly` and `pragmatic` no longer select a style.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
     public Personality3? Personality { get; set; } = default!;
 
