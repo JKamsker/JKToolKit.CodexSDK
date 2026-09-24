@@ -46,6 +46,11 @@ internal static class ExperimentalApiGuards
                 throw new CodexExperimentalApiRequiredException("thread/start.projectId");
             }
 
+            if (options.DaybreakEnabled is not null)
+            {
+                throw new CodexExperimentalApiRequiredException("thread/start.daybreakEnabled");
+            }
+
             if (!string.IsNullOrWhiteSpace(options.PermissionProfileId))
             {
                 throw new CodexExperimentalApiRequiredException("thread/start.permissions");

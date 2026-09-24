@@ -65,12 +65,22 @@ internal sealed partial class CodexAppServerConfigClient
             ct);
 
         var account = CodexAppServerClientJson.TryGetObject(result, "account");
+        var workspaceRouting = CodexAppServerClientJson.TryGetObject(result, "workspaceRouting");
 
         return new AccountReadResult
         {
             Account = account.HasValue ? account.Value.Clone() : null,
             AccountInfo = CodexAppServerAccountParsers.ParseAccountOrNull(result, "account", "account/read response"),
             RequiresOpenaiAuth = CodexAppServerClientJson.GetRequiredBool(result, "requiresOpenaiAuth", "account/read response"),
+            WorkspaceRouting = workspaceRouting is { } routing
+                ? new AccountWorkspaceRouting
+                {
+                    ChatGptAccountId = CodexAppServerClientJson.GetRequiredString(routing, "chatgptAccountId", "account/read workspaceRouting"),
+                    BackendOrigin = CodexAppServerClientJson.GetRequiredString(routing, "backendOrigin", "account/read workspaceRouting"),
+                    AccountRoutingOverride = CodexAppServerClientJson.GetRequiredString(routing, "accountRoutingOverride", "account/read workspaceRouting"),
+                    Raw = routing.Clone()
+                }
+                : null,
             Raw = result
         };
     }

@@ -346,7 +346,10 @@ internal static partial class JsonlEventResponseItemParsers
             {
                 PayloadType = payloadType,
                 Status = TryGetString(payload, "status"),
-                Action = action
+                Action = action,
+                Results = payload.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array
+                    ? results.EnumerateArray().Select(static result => result.Clone()).ToArray()
+                    : null
             };
         }
 

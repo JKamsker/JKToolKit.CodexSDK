@@ -36,7 +36,13 @@ public sealed record class TurnInputItem
     /// Creates an image input item referencing a URL.
     /// </summary>
     public static TurnInputItem ImageUrl(string url) =>
-        new(new ImageUserInput { Url = url });
+        new(new ImageUserInput { Url = RequireValue(url, nameof(url)) });
+
+    /// <summary>
+    /// Creates an image input item referencing an uploaded file identifier.
+    /// </summary>
+    public static TurnInputItem ImageFile(string fileId) =>
+        new(new ImageUserInput { FileId = RequireValue(fileId, nameof(fileId)) });
 
     /// <summary>
     /// Creates an image input item referencing a local file path.
@@ -55,4 +61,9 @@ public sealed record class TurnInputItem
     /// </summary>
     public static TurnInputItem Mention(string name, string path) =>
         new(new MentionUserInput { Name = name, Path = path });
+
+    private static string RequireValue(string value, string parameterName) =>
+        !string.IsNullOrWhiteSpace(value)
+            ? value
+            : throw new ArgumentException("Value cannot be empty or whitespace.", parameterName);
 }

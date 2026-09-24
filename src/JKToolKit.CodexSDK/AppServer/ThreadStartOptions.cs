@@ -81,6 +81,11 @@ public sealed class ThreadStartOptions
     public string? ProjectId { get; set; }
 
     /// <summary>
+    /// Gets or sets the initial Daybreak choice for this persistent thread (experimental).
+    /// </summary>
+    public bool? DaybreakEnabled { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional approval policy.
     /// </summary>
     /// <remarks>

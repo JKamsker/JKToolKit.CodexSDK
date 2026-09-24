@@ -48,6 +48,11 @@ public sealed record class McpServerStatusInfo
     public McpServerImplementationInfo? ServerInfo { get; init; }
 
     /// <summary>
+    /// Gets the capabilities advertised by the initialized MCP server, when available.
+    /// </summary>
+    public JsonElement? ServerCapabilities { get; init; }
+
+    /// <summary>
     /// Gets the tools exposed by this server.
     /// </summary>
     public required IReadOnlyList<McpServerToolInfo> Tools { get; init; }

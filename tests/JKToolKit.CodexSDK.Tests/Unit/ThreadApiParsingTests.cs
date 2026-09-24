@@ -363,6 +363,23 @@ public sealed class ThreadApiParsingTests
     }
 
     [Fact]
+    public void ThreadLifecycleResponse_ParsesDisabledPluginsAndCollaborationMode()
+    {
+        using var doc = JsonDocument.Parse("""
+        {
+          "thread": { "id": "t_1" },
+          "disabledPluginIds": ["plugin-a"],
+          "collaborationMode": { "mode": "plan" }
+        }
+        """);
+
+        var thread = CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(doc.RootElement);
+
+        thread.DisabledPluginIds.Should().Equal("plugin-a");
+        thread.CollaborationMode!.Value.GetProperty("mode").GetString().Should().Be("plan");
+    }
+
+    [Fact]
     public void ThreadUnarchiveResponse_CapturesExtensionData_ForForwardCompatibility()
     {
         var json = JsonFixtures.LoadText("thread-unarchive-response.json");

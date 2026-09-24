@@ -138,6 +138,7 @@ public sealed partial class CodexAppServerClient
         new
         {
             options.ThreadId,
+            options.DisabledPluginIds,
             options.Cwd,
             ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(
                 options.AskForApproval,

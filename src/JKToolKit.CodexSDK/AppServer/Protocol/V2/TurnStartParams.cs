@@ -10,6 +10,12 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 public sealed record class TurnStartParams
 {
     /// <summary>
+    /// Gets replacement disabled plugin identifiers. Null preserves the current list; an empty list clears it.
+    /// </summary>
+    [JsonPropertyName("disabledPluginIds")]
+    public IReadOnlyList<string>? DisabledPluginIds { get; init; }
+
+    /// <summary>
     /// Gets the thread identifier to start the turn in.
     /// </summary>
     [JsonPropertyName("threadId")]

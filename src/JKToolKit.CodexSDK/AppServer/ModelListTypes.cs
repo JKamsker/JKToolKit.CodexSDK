@@ -66,6 +66,16 @@ public sealed record class ModelListEntry
     public IReadOnlyList<string> InputModalities { get; init; } = Array.Empty<string>();
     public IReadOnlyList<ModelReasoningEffortOption> SupportedReasoningEfforts { get; init; } = Array.Empty<ModelReasoningEffortOption>();
     public ModelUpgradeInfo? UpgradeInfo { get; init; }
+    public ModelAccessPrograms? AvailableAccessPrograms { get; init; }
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Explicit access programs advertised for a model.
+/// </summary>
+public sealed record class ModelAccessPrograms
+{
+    public IReadOnlyList<string> Cyber { get; init; } = Array.Empty<string>();
     public required JsonElement Raw { get; init; }
 }
 

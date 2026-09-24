@@ -58,7 +58,7 @@ public class ResponseItemEventTests
     public async Task ParsesWebSearchCallResponseItem_WithUrlAndPattern()
     {
         var line = """
-                   {"timestamp":"2025-11-21T10:53:38Z","type":"response_item","payload":{"type":"web_search_call","status":"completed","action":{"type":"find_in_page","url":"https://example.com","pattern":"foo"}}}
+                   {"timestamp":"2025-11-21T10:53:38Z","type":"response_item","payload":{"type":"web_search_call","status":"completed","action":{"type":"find_in_page","url":"https://example.com","pattern":"foo"},"results":[{"title":"Result"}]}}
                    """;
 
         var evt = await ParseSingleAsync(line);
@@ -70,6 +70,8 @@ public class ResponseItemEventTests
         payload.Action!.Type.Should().Be("find_in_page");
         payload.Action.Url.Should().Be("https://example.com");
         payload.Action.Pattern.Should().Be("foo");
+        payload.Results.Should().ContainSingle();
+        payload.Results![0].GetProperty("title").GetString().Should().Be("Result");
     }
 
     [Fact]

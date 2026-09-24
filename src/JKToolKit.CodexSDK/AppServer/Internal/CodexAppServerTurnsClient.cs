@@ -59,6 +59,7 @@ internal sealed class CodexAppServerTurnsClient
         var turnStartParams = new TurnStartParams
         {
             ThreadId = threadId,
+            DisabledPluginIds = options.DisabledPluginIds,
             ClientUserMessageId = options.ClientUserMessageId,
             TurnTrigger = options.TurnTrigger,
             Input = options.Input.Select(i => i.Wire).ToArray(),

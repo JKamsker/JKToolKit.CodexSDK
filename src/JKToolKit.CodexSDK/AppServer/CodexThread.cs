@@ -54,6 +54,16 @@ public sealed record class CodexThread
     public CodexServiceTier? ServiceTier { get; }
 
     /// <summary>
+    /// Gets the disabled plugin identifiers saved for the thread.
+    /// </summary>
+    public IReadOnlyList<string> DisabledPluginIds { get; }
+
+    /// <summary>
+    /// Gets the effective collaboration mode returned when resuming the thread, when present.
+    /// </summary>
+    public JsonElement? CollaborationMode { get; }
+
+    /// <summary>
     /// Gets the thread-scoped runtime workspace roots returned by the lifecycle response.
     /// </summary>
     public IReadOnlyList<string> RuntimeWorkspaceRoots { get; }
@@ -102,6 +112,8 @@ public sealed record class CodexThread
         JsonElement? sandboxRaw = null,
         CodexServiceTier? serviceTier = null,
         CodexReasoningEffort? reasoningEffort = null,
+        IReadOnlyList<string>? disabledPluginIds = null,
+        JsonElement? collaborationMode = null,
         IReadOnlyList<string>? runtimeWorkspaceRoots = null,
         IReadOnlyList<string>? instructionSources = null,
         ActivePermissionProfileInfo? activePermissionProfile = null,
@@ -122,6 +134,8 @@ public sealed record class CodexThread
         SandboxRaw = sandboxRaw;
         ReasoningEffort = reasoningEffort;
         ServiceTier = serviceTier;
+        DisabledPluginIds = disabledPluginIds ?? Array.Empty<string>();
+        CollaborationMode = collaborationMode;
         RuntimeWorkspaceRoots = runtimeWorkspaceRoots ?? Array.Empty<string>();
         InstructionSources = instructionSources ?? Array.Empty<string>();
         ActivePermissionProfile = activePermissionProfile;

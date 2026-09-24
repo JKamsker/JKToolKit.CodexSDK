@@ -42,6 +42,7 @@ internal static partial class AppServerNotificationMapper
                 cwd: GetStringOrNull(GetAny(p, "threadSettings"), "cwd"),
                 model: GetStringOrNull(GetAny(p, "threadSettings"), "model"),
                 serviceTier: GetStringOrNull(GetAny(p, "threadSettings"), "serviceTier"),
+                disabledPluginIds: GetStringArray(GetAny(p, "threadSettings"), "disabledPluginIds"),
                 @params: p),
 
             "thread/goal/updated" => new ThreadGoalUpdatedNotification(

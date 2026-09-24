@@ -80,4 +80,22 @@ public sealed class TurnStartParamsSerializationTests
             .And.Contain("\"serviceTierForTurn\":\"default\"")
             .And.Contain("\"toolOutput\":{\"name\":\"memory_lookup\",\"namespace\":\"memories\",\"output\":\"Alice mentioned you.\"}");
     }
+
+    [Fact]
+    public void Serialize_WritesDisabledPluginsAndImageFileReference()
+    {
+        var json = JsonSerializer.Serialize(
+            new TurnStartParams
+            {
+                ThreadId = "thr_123",
+                DisabledPluginIds = ["plugin-a"],
+                Input = [TurnInputItem.ImageFile("file_123")]
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"disabledPluginIds\":[\"plugin-a\"]")
+            .And.Contain("\"type\":\"image\"")
+            .And.Contain("\"fileId\":\"file_123\"")
+            .And.NotContain("\"url\"");
+    }
 }

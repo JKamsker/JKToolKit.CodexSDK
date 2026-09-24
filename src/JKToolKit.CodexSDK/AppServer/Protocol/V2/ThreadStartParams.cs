@@ -63,6 +63,12 @@ public sealed record class ThreadStartParams
     public string? ProjectId { get; init; }
 
     /// <summary>
+    /// Gets the initial Daybreak choice for this persistent thread.
+    /// </summary>
+    [JsonPropertyName("daybreakEnabled")]
+    public bool? DaybreakEnabled { get; init; }
+
+    /// <summary>
     /// Gets an optional approval policy override for the thread.
     /// </summary>
     /// <remarks>

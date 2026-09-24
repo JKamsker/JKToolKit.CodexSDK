@@ -331,6 +331,11 @@ public sealed record WebSearchCallResponseItemPayload : ResponseItemPayload
     /// Gets the web search action, when provided.
     /// </summary>
     public WebSearchAction? Action { get; init; }
+
+    /// <summary>
+    /// Gets structured web-search results returned by Codex, when available.
+    /// </summary>
+    public IReadOnlyList<JsonElement>? Results { get; init; }
 }
 
 /// <summary>
