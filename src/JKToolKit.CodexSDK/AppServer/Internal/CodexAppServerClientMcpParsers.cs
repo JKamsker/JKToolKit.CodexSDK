@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -11,7 +12,7 @@ internal static class CodexAppServerClientMcpParsers
     {
         var servers = new List<McpServerStatusInfo>();
 
-        var data = TryGetArray(result, "data");
+        var data = TryGetArray(result, JsonFieldNames.Data);
         if (data is not null && data.Value.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in data.Value.EnumerateArray())
@@ -21,7 +22,7 @@ internal static class CodexAppServerClientMcpParsers
                     continue;
                 }
 
-                var name = GetStringOrNull(item, "name");
+                var name = GetStringOrNull(item, JsonFieldNames.Name);
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     continue;
@@ -36,11 +37,11 @@ internal static class CodexAppServerClientMcpParsers
                 servers.Add(new McpServerStatusInfo
                 {
                     Name = name,
-                    PluginId = GetStringOrNull(item, "pluginId") ?? GetStringOrNull(item, "plugin_id"),
+                    PluginId = GetStringOrNull(item, JsonFieldNames.PluginId) ?? GetStringOrNull(item, "plugin_id"),
                     AuthStatus = authStatus,
                     RuntimeStatus = ParseRuntimeStatus(GetStringOrNull(item, "runtimeStatus") ?? GetStringOrNull(item, "runtime_status")),
-                    StartupStatus = GetStringOrNull(item, "status"),
-                    Error = GetStringOrNull(item, "error"),
+                    StartupStatus = GetStringOrNull(item, JsonFieldNames.Status),
+                    Error = GetStringOrNull(item, JsonFieldNames.Error),
                     FailureReason = McpServerStartupFailureReason.TryParse(GetStringOrNull(item, "failureReason"), out var failureReason)
                         ? (McpServerStartupFailureReason?)failureReason
                         : null,
@@ -58,7 +59,7 @@ internal static class CodexAppServerClientMcpParsers
         return new McpServerStatusListPage
         {
             Servers = servers,
-            NextCursor = GetStringOrNull(result, "nextCursor") ?? GetStringOrNull(result, "next_cursor"),
+            NextCursor = GetStringOrNull(result, JsonFieldNames.NextCursor) ?? GetStringOrNull(result, JsonFieldNames.SnakeCase.NextCursor),
             Raw = result
         };
     }
@@ -92,11 +93,11 @@ internal static class CodexAppServerClientMcpParsers
 
         return new McpServerImplementationInfo
         {
-            Name = GetStringOrNull(serverInfo, "name"),
-            Version = GetStringOrNull(serverInfo, "version"),
-            Title = GetStringOrNull(serverInfo, "title"),
-            Description = GetStringOrNull(serverInfo, "description"),
-            WebsiteUrl = GetStringOrNull(serverInfo, "websiteUrl") ?? GetStringOrNull(serverInfo, "website_url"),
+            Name = GetStringOrNull(serverInfo, JsonFieldNames.Name),
+            Version = GetStringOrNull(serverInfo, JsonFieldNames.Version),
+            Title = GetStringOrNull(serverInfo, JsonFieldNames.Title),
+            Description = GetStringOrNull(serverInfo, JsonFieldNames.Description),
+            WebsiteUrl = GetStringOrNull(serverInfo, JsonFieldNames.WebsiteUrl) ?? GetStringOrNull(serverInfo, "website_url"),
             Raw = serverInfo.Clone()
         };
     }
@@ -133,13 +134,13 @@ internal static class CodexAppServerClientMcpParsers
                 throw new InvalidOperationException("mcpResource/read response contents[] must contain only objects.");
             }
 
-            var uri = GetStringOrNull(item, "uri");
+            var uri = GetStringOrNull(item, JsonFieldNames.Uri);
             if (string.IsNullOrWhiteSpace(uri))
             {
                 throw new InvalidOperationException("mcpResource/read response contents[] must contain a non-empty uri.");
             }
 
-            var text = TryGetAny(item, "text");
+            var text = TryGetAny(item, JsonFieldNames.Text);
             var blob = TryGetAny(item, "blob");
             var hasText = text is { ValueKind: JsonValueKind.String };
             var hasBlob = blob is { ValueKind: JsonValueKind.String };
@@ -153,7 +154,7 @@ internal static class CodexAppServerClientMcpParsers
             contents.Add(new McpResourceContent
             {
                 Uri = uri,
-                MimeType = GetStringOrNull(item, "mimeType") ?? GetStringOrNull(item, "mime_type"),
+                MimeType = GetStringOrNull(item, JsonFieldNames.MimeType) ?? GetStringOrNull(item, JsonFieldNames.SnakeCase.MimeType),
                 Text = hasText ? text!.Value.GetString() : null,
                 BlobBase64 = hasBlob ? blob!.Value.GetString() : null,
                 Raw = item.Clone()
@@ -190,7 +191,7 @@ internal static class CodexAppServerClientMcpParsers
 
     private static IReadOnlyList<McpServerToolInfo> ParseTools(JsonElement statusObj)
     {
-        var toolsObj = TryGetObject(statusObj, "tools");
+        var toolsObj = TryGetObject(statusObj, JsonFieldNames.Tools);
         if (toolsObj is null || toolsObj.Value.ValueKind != JsonValueKind.Object)
         {
             return Array.Empty<McpServerToolInfo>();
@@ -204,26 +205,26 @@ internal static class CodexAppServerClientMcpParsers
                 continue;
             }
 
-            var toolName = GetStringOrNull(p.Value, "name") ?? p.Name;
+            var toolName = GetStringOrNull(p.Value, JsonFieldNames.Name) ?? p.Name;
             if (string.IsNullOrWhiteSpace(toolName))
             {
                 continue;
             }
 
             // inputSchema is required in the upstream Tool definition; skip malformed entries.
-            var inputSchema = TryGetAny(p.Value, "inputSchema") ?? TryGetAny(p.Value, "input_schema");
+            var inputSchema = TryGetAny(p.Value, JsonFieldNames.InputSchema) ?? TryGetAny(p.Value, "input_schema");
             if (inputSchema is null)
             {
                 continue;
             }
 
-            var outputSchema = TryGetAny(p.Value, "outputSchema") ?? TryGetAny(p.Value, "output_schema");
+            var outputSchema = TryGetAny(p.Value, JsonFieldNames.OutputSchema) ?? TryGetAny(p.Value, "output_schema");
 
             tools.Add(new McpServerToolInfo
             {
                 Name = toolName,
-                Title = GetStringOrNull(p.Value, "title"),
-                Description = GetStringOrNull(p.Value, "description"),
+                Title = GetStringOrNull(p.Value, JsonFieldNames.Title),
+                Description = GetStringOrNull(p.Value, JsonFieldNames.Description),
                 InputSchema = inputSchema,
                 OutputSchema = outputSchema,
                 Raw = p.Value
@@ -254,8 +255,8 @@ internal static class CodexAppServerClientMcpParsers
                 continue;
             }
 
-            var name = GetStringOrNull(item, "name");
-            var uri = GetStringOrNull(item, "uri");
+            var name = GetStringOrNull(item, JsonFieldNames.Name);
+            var uri = GetStringOrNull(item, JsonFieldNames.Uri);
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(uri))
             {
                 continue;
@@ -265,9 +266,9 @@ internal static class CodexAppServerClientMcpParsers
             {
                 Name = name,
                 Uri = uri,
-                Title = GetStringOrNull(item, "title"),
-                Description = GetStringOrNull(item, "description"),
-                MimeType = GetStringOrNull(item, "mimeType") ?? GetStringOrNull(item, "mime_type"),
+                Title = GetStringOrNull(item, JsonFieldNames.Title),
+                Description = GetStringOrNull(item, JsonFieldNames.Description),
+                MimeType = GetStringOrNull(item, JsonFieldNames.MimeType) ?? GetStringOrNull(item, JsonFieldNames.SnakeCase.MimeType),
                 Size = item.ValueKind == JsonValueKind.Object && item.TryGetProperty("size", out var sizeProp) && sizeProp.ValueKind == JsonValueKind.Number && sizeProp.TryGetInt64(out var size)
                     ? size
                     : null,
@@ -297,7 +298,7 @@ internal static class CodexAppServerClientMcpParsers
                 continue;
             }
 
-            var name = GetStringOrNull(item, "name");
+            var name = GetStringOrNull(item, JsonFieldNames.Name);
             var uriTemplate = GetStringOrNull(item, "uriTemplate") ?? GetStringOrNull(item, "uri_template");
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(uriTemplate))
             {
@@ -308,9 +309,9 @@ internal static class CodexAppServerClientMcpParsers
             {
                 Name = name,
                 UriTemplate = uriTemplate,
-                Title = GetStringOrNull(item, "title"),
-                Description = GetStringOrNull(item, "description"),
-                MimeType = GetStringOrNull(item, "mimeType") ?? GetStringOrNull(item, "mime_type"),
+                Title = GetStringOrNull(item, JsonFieldNames.Title),
+                Description = GetStringOrNull(item, JsonFieldNames.Description),
+                MimeType = GetStringOrNull(item, JsonFieldNames.MimeType) ?? GetStringOrNull(item, JsonFieldNames.SnakeCase.MimeType),
                 Raw = item
             });
         }

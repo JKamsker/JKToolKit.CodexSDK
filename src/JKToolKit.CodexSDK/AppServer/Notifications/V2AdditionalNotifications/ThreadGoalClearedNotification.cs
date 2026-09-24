@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadGoalClearedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadGoalClearedNotification"/>.
     /// </summary>
     public ThreadGoalClearedNotification(string threadId, JsonElement @params)
-        : base("thread/goal/cleared", @params)
+        : base(AppServerMethods.ThreadGoalCleared, @params)
     {
         ThreadId = threadId;
     }

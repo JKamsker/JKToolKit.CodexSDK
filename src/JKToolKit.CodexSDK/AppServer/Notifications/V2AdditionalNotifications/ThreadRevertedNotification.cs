@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadRevertedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadRevertedNotification"/>.
     /// </summary>
     public ThreadRevertedNotification(string ThreadId, JsonElement Params)
-        : base("thread/reverted", Params)
+        : base(AppServerMethods.ThreadReverted, Params)
     {
         this.ThreadId = ThreadId;
     }

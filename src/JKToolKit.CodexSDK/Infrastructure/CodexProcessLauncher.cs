@@ -17,7 +17,6 @@ namespace JKToolKit.CodexSDK.Infrastructure;
 /// </remarks>
 public sealed class CodexProcessLauncher : ICodexProcessLauncher
 {
-    private const string CodexHomeEnvVar = "CODEX_HOME";
     private readonly ICodexPathProvider _pathProvider;
     private readonly ILogger<CodexProcessLauncher> _logger;
 

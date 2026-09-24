@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,12 +11,12 @@ public sealed record class TurnInterruptParams
     /// <summary>
     /// Gets the thread identifier containing the turn.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the turn identifier to interrupt.
     /// </summary>
-    [JsonPropertyName("turnId")]
+    [JsonPropertyName(JsonFieldNames.TurnId)]
     public required string TurnId { get; init; }
 }

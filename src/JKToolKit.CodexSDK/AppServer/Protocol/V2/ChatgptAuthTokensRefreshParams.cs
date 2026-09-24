@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,7 +11,7 @@ public sealed record class ChatgptAuthTokensRefreshParams
     /// <summary>
     /// Gets the refresh reason (wire value).
     /// </summary>
-    [JsonPropertyName("reason")]
+    [JsonPropertyName(JsonFieldNames.Reason)]
     public required string Reason { get; init; }
 
     /// <summary>

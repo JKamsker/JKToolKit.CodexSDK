@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -41,7 +42,7 @@ public sealed record class CommandExecOutputDeltaNotification : AppServerNotific
         string DeltaBase64,
         bool CapReached,
         JsonElement Params)
-        : base("command/exec/outputDelta", Params)
+        : base(AppServerMethods.CommandExecOutputDelta, Params)
     {
         this.ProcessId = ProcessId;
         this.Stream = Stream;

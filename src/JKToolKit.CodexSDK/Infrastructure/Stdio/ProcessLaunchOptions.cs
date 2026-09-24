@@ -8,7 +8,7 @@ internal sealed record ProcessLaunchOptions
     public string? WorkingDirectory { get; init; }
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>();
 
-    public TimeSpan StartupTimeout { get; init; } = TimeSpan.FromSeconds(30);
-    public TimeSpan ShutdownTimeout { get; init; } = TimeSpan.FromSeconds(5);
+    public TimeSpan StartupTimeout { get; init; } = ProcessDefaults.StartupTimeout;
+    public TimeSpan ShutdownTimeout { get; init; } = ProcessDefaults.ShutdownTimeout;
 }
 

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.IO;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -36,7 +37,7 @@ public abstract partial record class SandboxPolicy
         /// <summary>
         /// Gets a value indicating whether network access is allowed while this policy is active.
         /// </summary>
-        [JsonPropertyName("networkAccess")]
+        [JsonPropertyName(JsonFieldNames.NetworkAccess)]
         public bool NetworkAccess { get; init; }
 
         /// <summary>

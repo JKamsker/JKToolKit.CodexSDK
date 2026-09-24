@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer.ThreadRead;
@@ -50,10 +51,10 @@ public sealed record class CodexTurn
         }
 
         var id = CodexAppServerClientJson.ExtractTurnId(element) ?? string.Empty;
-        var status = CodexTurnStatusExtensions.Parse(CodexAppServerClientJson.GetStringOrNull(element, "status"));
+        var status = CodexTurnStatusExtensions.Parse(CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Status));
         var raw = element.Clone();
         var items = CodexThreadItemParser.ParseItems(element);
-        var error = CodexTurnError.Parse(CodexAppServerClientJson.TryGetObject(element, "error"));
+        var error = CodexTurnError.Parse(CodexAppServerClientJson.TryGetObject(element, JsonFieldNames.Error));
 
         return new CodexTurn(id, status, items, error, raw);
     }

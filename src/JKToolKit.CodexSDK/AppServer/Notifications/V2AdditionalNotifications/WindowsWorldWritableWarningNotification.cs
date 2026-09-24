@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -30,7 +31,7 @@ public sealed record class WindowsWorldWritableWarningNotification : AppServerNo
         int ExtraCount,
         bool FailedScan,
         JsonElement Params)
-        : base("windows/worldWritableWarning", Params)
+        : base(AppServerMethods.WindowsWorldWritableWarning, Params)
     {
         this.SamplePaths = SamplePaths ?? throw new ArgumentNullException(nameof(SamplePaths));
         this.ExtraCount = ExtraCount;

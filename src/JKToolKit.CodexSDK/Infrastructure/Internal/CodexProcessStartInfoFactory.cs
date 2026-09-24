@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
@@ -8,7 +9,6 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
 internal static class CodexProcessStartInfoFactory
 {
-    private const string CodexHomeEnvVar = "CODEX_HOME";
 
     internal static ProcessStartInfo CreateSessionStartInfo(
         ICodexPathProvider pathProvider,
@@ -93,6 +93,6 @@ internal static class CodexProcessStartInfoFactory
         }
 
         CodexHomeDirectoryHelpers.EnsureExists(clientOptions.CodexHomeDirectory);
-        startInfo.Environment[CodexHomeEnvVar] = clientOptions.CodexHomeDirectory;
+        startInfo.Environment[CodexEnvironmentVariables.Home] = clientOptions.CodexHomeDirectory;
     }
 }

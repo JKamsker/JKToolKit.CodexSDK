@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,7 +12,7 @@ public sealed record class ThreadReadResponse
     /// <summary>
     /// Gets the thread object when present (raw).
     /// </summary>
-    [JsonPropertyName("thread")]
+    [JsonPropertyName(JsonFieldNames.Thread)]
     public JsonElement? Thread { get; init; }
 
     /// <summary>

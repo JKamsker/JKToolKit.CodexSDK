@@ -127,7 +127,7 @@ public sealed class JsonlEventParser : IJsonlEventParser
 
             if (!TryParseLine(line, out var evt, out var error))
             {
-                var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+                var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: DiagnosticLimits.MalformedEventSnippetChars);
                 _logger.LogWarning(
                     "Error parsing line, skipping: {Error}. LineSnippet: {LineSnippet} (Length={LineLength})",
                     error,

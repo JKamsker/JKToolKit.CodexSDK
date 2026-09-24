@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.UserInput;
 
@@ -10,13 +11,13 @@ public sealed record class TextUserInput : IUserInput
     /// <summary>
     /// Gets the wire discriminator value (<c>text</c>).
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonPropertyName(JsonFieldNames.Type)]
     public string Type => "text";
 
     /// <summary>
     /// Gets the plain text content.
     /// </summary>
-    [JsonPropertyName("text")]
+    [JsonPropertyName(JsonFieldNames.Text)]
     public required string Text { get; init; }
 
     /// <summary>

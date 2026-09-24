@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class AccountRateLimitsUpdatedNotification : AppServerNotif
     /// Initializes a new instance of <see cref="AccountRateLimitsUpdatedNotification"/>.
     /// </summary>
     public AccountRateLimitsUpdatedNotification(JsonElement RateLimits, JsonElement Params)
-        : base("account/rateLimits/updated", Params)
+        : base(AppServerMethods.AccountRateLimitsUpdated, Params)
     {
         this.RateLimits = RateLimits;
     }

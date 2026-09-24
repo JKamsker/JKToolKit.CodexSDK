@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -39,7 +40,7 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
     /// </summary>
     public McpServerOauthLoginCompletedNotification(string Name, string? ThreadId, bool Success, string? Error, JsonElement Params)
-        : base("mcpServer/oauthLogin/completed", Params)
+        : base(AppServerMethods.McpServerOauthLoginCompleted, Params)
     {
         this.Name = Name;
         this.ThreadId = ThreadId;

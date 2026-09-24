@@ -5,6 +5,8 @@ namespace JKToolKit.CodexSDK.Exec.Internal;
 
 internal static class CodexResumeBootstrapMonitor
 {
+    private static readonly TimeSpan LogAdvancePollInterval = TimeSpan.FromMilliseconds(50);
+
     internal static long TryGetFileLength(string logPath)
     {
         try
@@ -52,7 +54,7 @@ internal static class CodexResumeBootstrapMonitor
 
             try
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(50), timeoutCts.Token).ConfigureAwait(false);
+                await Task.Delay(LogAdvancePollInterval, timeoutCts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {

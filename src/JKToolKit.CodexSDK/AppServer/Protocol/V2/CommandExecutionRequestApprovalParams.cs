@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,25 +12,25 @@ public sealed record class CommandExecutionRequestApprovalParams
     /// <summary>
     /// Gets the action kind under review. Older servers omit this field; upstream defaults that case to <c>command</c>.
     /// </summary>
-    [JsonPropertyName("kind")]
+    [JsonPropertyName(JsonFieldNames.Kind)]
     public string Kind { get; init; } = "command";
 
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the turn identifier.
     /// </summary>
-    [JsonPropertyName("turnId")]
+    [JsonPropertyName(JsonFieldNames.TurnId)]
     public required string TurnId { get; init; }
 
     /// <summary>
     /// Gets the item identifier that requested approval.
     /// </summary>
-    [JsonPropertyName("itemId")]
+    [JsonPropertyName(JsonFieldNames.ItemId)]
     public required string ItemId { get; init; }
 
     /// <summary>
@@ -41,7 +42,7 @@ public sealed record class CommandExecutionRequestApprovalParams
     /// <summary>
     /// Gets the optional explanatory reason for the approval request.
     /// </summary>
-    [JsonPropertyName("reason")]
+    [JsonPropertyName(JsonFieldNames.Reason)]
     public string? Reason { get; init; }
 
     /// <summary>
@@ -53,19 +54,19 @@ public sealed record class CommandExecutionRequestApprovalParams
     /// <summary>
     /// Gets the command to be executed, when present.
     /// </summary>
-    [JsonPropertyName("command")]
+    [JsonPropertyName(JsonFieldNames.Command)]
     public string? Command { get; init; }
 
     /// <summary>
     /// Gets the working directory for the command, when present.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets the best-effort parsed command actions as raw JSON.
     /// </summary>
-    [JsonPropertyName("commandActions")]
+    [JsonPropertyName(JsonFieldNames.CommandActions)]
     public List<JsonElement>? CommandActions { get; init; }
 
     /// <summary>
@@ -89,7 +90,7 @@ public sealed record class CommandExecutionRequestApprovalParams
     /// <summary>
     /// Gets the ordered list of available decisions as raw JSON union values.
     /// </summary>
-    [JsonPropertyName("availableDecisions")]
+    [JsonPropertyName(JsonFieldNames.AvailableDecisions)]
     public List<JsonElement>? AvailableDecisions { get; init; }
 }
 

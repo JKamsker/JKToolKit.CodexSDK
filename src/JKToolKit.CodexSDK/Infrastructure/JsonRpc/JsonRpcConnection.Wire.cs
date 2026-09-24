@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Wire;
 
@@ -42,7 +43,7 @@ internal sealed partial class JsonRpcConnection
             Id = id,
             Method = method,
             Params = @params,
-            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
+            JsonRpc = IncludeJsonRpcHeader ? JsonRpcProtocolConstants.Version : null
         };
     }
 
@@ -52,7 +53,7 @@ internal sealed partial class JsonRpcConnection
         {
             Method = method,
             Params = @params,
-            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
+            JsonRpc = IncludeJsonRpcHeader ? JsonRpcProtocolConstants.Version : null
         };
     }
 
@@ -63,7 +64,7 @@ internal sealed partial class JsonRpcConnection
             Id = response.Id.Value,
             Result = response.Error is null ? response.Result : null,
             Error = response.Error,
-            JsonRpc = IncludeJsonRpcHeader ? "2.0" : null
+            JsonRpc = IncludeJsonRpcHeader ? JsonRpcProtocolConstants.Version : null
         };
     }
 
@@ -71,19 +72,19 @@ internal sealed partial class JsonRpcConnection
     {
         if (errorProp.ValueKind != JsonValueKind.Object)
         {
-            return new JsonRpcError(-32000, "Remote error", Data: errorProp.Clone());
+            return new JsonRpcError(JsonRpcErrorCodes.ServerError, JsonRpcProtocolConstants.RemoteErrorMessage, Data: errorProp.Clone());
         }
 
         var code = errorProp.TryGetProperty("code", out var codeProp) && codeProp.TryGetInt32(out var c)
             ? c
-            : -32000;
+            : JsonRpcErrorCodes.ServerError;
 
-        var message = errorProp.TryGetProperty("message", out var messageProp) && messageProp.ValueKind == JsonValueKind.String
-            ? (messageProp.GetString() ?? "Remote error")
-            : "Remote error";
+        var message = errorProp.TryGetProperty(JsonFieldNames.Message, out var messageProp) && messageProp.ValueKind == JsonValueKind.String
+            ? (messageProp.GetString() ?? JsonRpcProtocolConstants.RemoteErrorMessage)
+            : JsonRpcProtocolConstants.RemoteErrorMessage;
 
         JsonElement? data = null;
-        if (errorProp.TryGetProperty("data", out var dataProp))
+        if (errorProp.TryGetProperty(JsonFieldNames.Data, out var dataProp))
         {
             data = dataProp.Clone();
         }

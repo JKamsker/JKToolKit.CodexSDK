@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,25 +12,25 @@ public sealed record class FileChangeRequestApprovalParams
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the turn identifier.
     /// </summary>
-    [JsonPropertyName("turnId")]
+    [JsonPropertyName(JsonFieldNames.TurnId)]
     public required string TurnId { get; init; }
 
     /// <summary>
     /// Gets the item identifier that requested approval.
     /// </summary>
-    [JsonPropertyName("itemId")]
+    [JsonPropertyName(JsonFieldNames.ItemId)]
     public required string ItemId { get; init; }
 
     /// <summary>
     /// Gets the optional explanatory reason for the file-change approval request.
     /// </summary>
-    [JsonPropertyName("reason")]
+    [JsonPropertyName(JsonFieldNames.Reason)]
     public string? Reason { get; init; }
 
     /// <summary>
@@ -41,6 +42,6 @@ public sealed record class FileChangeRequestApprovalParams
     /// <summary>
     /// Gets the ordered list of available decisions as raw JSON union values.
     /// </summary>
-    [JsonPropertyName("availableDecisions")]
+    [JsonPropertyName(JsonFieldNames.AvailableDecisions)]
     public List<JsonElement>? AvailableDecisions { get; init; }
 }

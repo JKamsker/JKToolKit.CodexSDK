@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -11,7 +12,7 @@ public sealed record class SkillsChangedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="SkillsChangedNotification"/>.
     /// </summary>
     public SkillsChangedNotification(JsonElement @params)
-        : base("skills/changed", @params)
+        : base(AppServerMethods.SkillsChanged, @params)
     {
     }
 }

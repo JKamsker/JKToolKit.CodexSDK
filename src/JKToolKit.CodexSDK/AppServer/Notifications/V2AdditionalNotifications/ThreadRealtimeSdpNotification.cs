@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +22,7 @@ public sealed record class ThreadRealtimeSdpNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadRealtimeSdpNotification"/>.
     /// </summary>
     public ThreadRealtimeSdpNotification(string threadId, string sdp, JsonElement @params)
-        : base("thread/realtime/sdp", @params)
+        : base(AppServerMethods.ThreadRealtimeSdp, @params)
     {
         ThreadId = threadId;
         Sdp = sdp;

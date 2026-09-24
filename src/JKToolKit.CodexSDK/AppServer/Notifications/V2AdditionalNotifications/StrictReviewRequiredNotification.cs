@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -9,4 +10,4 @@ public sealed record class StrictReviewRequiredNotification(
     string ThreadId,
     string TurnId,
     long StartedAtMs,
-    JsonElement Params) : AppServerNotification("autoApprovalReview/strictReviewRequired", Params);
+    JsonElement Params) : AppServerNotification(AppServerMethods.AutoApprovalReviewStrictReviewRequired, Params);

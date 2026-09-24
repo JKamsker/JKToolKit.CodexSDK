@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -36,7 +37,7 @@ internal static class CodexSessionDiagnostics
                 }
 
                 var scan = new StringBuilder(capacity: SessionIdScanWindowChars);
-                var buffer = new char[4096];
+                var buffer = new char[DiagnosticLimits.ReadBufferChars];
 
                 try
                 {

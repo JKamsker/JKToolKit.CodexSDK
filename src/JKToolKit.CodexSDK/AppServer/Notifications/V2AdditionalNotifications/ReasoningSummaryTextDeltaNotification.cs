@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -42,7 +43,7 @@ public sealed record class ReasoningSummaryTextDeltaNotification : AppServerNoti
         string Delta,
         long SummaryIndex,
         JsonElement Params)
-        : base("item/reasoning/summaryTextDelta", Params)
+        : base(AppServerMethods.ItemReasoningSummaryTextDelta, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

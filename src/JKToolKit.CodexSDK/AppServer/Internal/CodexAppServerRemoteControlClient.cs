@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -17,32 +19,32 @@ internal sealed class CodexAppServerRemoteControlClient
 
     public async Task<RemoteControlStatusResult> EnableAsync(CancellationToken ct = default)
     {
-        RequireExperimentalApi("remoteControl/enable");
-        var result = await _sendRequestAsync("remoteControl/enable", new { }, ct);
+        RequireExperimentalApi(AppServerMethods.RemoteControlEnable);
+        var result = await _sendRequestAsync(AppServerMethods.RemoteControlEnable, new { }, ct);
         return ParseStatusResult(result, "remoteControl/enable response");
     }
 
     public async Task<RemoteControlStatusResult> DisableAsync(CancellationToken ct = default)
     {
-        RequireExperimentalApi("remoteControl/disable");
-        var result = await _sendRequestAsync("remoteControl/disable", new { }, ct);
+        RequireExperimentalApi(AppServerMethods.RemoteControlDisable);
+        var result = await _sendRequestAsync(AppServerMethods.RemoteControlDisable, new { }, ct);
         return ParseStatusResult(result, "remoteControl/disable response");
     }
 
     public async Task<RemoteControlStatusResult> ReadStatusAsync(CancellationToken ct = default)
     {
-        RequireExperimentalApi("remoteControl/status/read");
-        var result = await _sendRequestAsync("remoteControl/status/read", new { }, ct);
+        RequireExperimentalApi(AppServerMethods.RemoteControlStatusRead);
+        var result = await _sendRequestAsync(AppServerMethods.RemoteControlStatusRead, new { }, ct);
         return ParseStatusResult(result, "remoteControl/status/read response");
     }
 
     public async Task<RemoteControlPairingStartResult> StartPairingAsync(RemoteControlPairingStartOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        RequireExperimentalApi("remoteControl/pairing/start");
+        RequireExperimentalApi(AppServerMethods.RemoteControlPairingStart);
 
         var result = await _sendRequestAsync(
-            "remoteControl/pairing/start",
+            AppServerMethods.RemoteControlPairingStart,
             new { manualCode = options.ManualCode },
             ct);
 
@@ -50,7 +52,7 @@ internal sealed class CodexAppServerRemoteControlClient
         {
             PairingCode = CodexAppServerClientJson.GetRequiredString(result, "pairingCode", "remoteControl/pairing/start response"),
             ManualPairingCode = CodexAppServerClientJson.GetStringOrNull(result, "manualPairingCode"),
-            EnvironmentId = CodexAppServerClientJson.GetRequiredString(result, "environmentId", "remoteControl/pairing/start response"),
+            EnvironmentId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.EnvironmentId, "remoteControl/pairing/start response"),
             ExpiresAt = CodexAppServerClientJson.GetRequiredInt64(result, "expiresAt", "remoteControl/pairing/start response"),
             Raw = result
         };
@@ -61,7 +63,7 @@ internal sealed class CodexAppServerRemoteControlClient
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        RequireExperimentalApi("remoteControl/pairing/status");
+        RequireExperimentalApi(AppServerMethods.RemoteControlPairingStatus);
 
         var hasPairingCode = !string.IsNullOrWhiteSpace(options.PairingCode);
         var hasManualPairingCode = !string.IsNullOrWhiteSpace(options.ManualPairingCode);
@@ -73,7 +75,7 @@ internal sealed class CodexAppServerRemoteControlClient
         }
 
         var result = await _sendRequestAsync(
-            "remoteControl/pairing/status",
+            AppServerMethods.RemoteControlPairingStatus,
             new
             {
                 pairingCode = hasPairingCode ? options.PairingCode : null,
@@ -91,7 +93,7 @@ internal sealed class CodexAppServerRemoteControlClient
     public async Task<RemoteControlClientsListResult> ListClientsAsync(RemoteControlClientsListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        RequireExperimentalApi("remoteControl/client/list");
+        RequireExperimentalApi(AppServerMethods.RemoteControlClientList);
         ValidateRequiredString(options.EnvironmentId, "EnvironmentId", nameof(options));
         if (options.Limit is < 0)
         {
@@ -99,7 +101,7 @@ internal sealed class CodexAppServerRemoteControlClient
         }
 
         var result = await _sendRequestAsync(
-            "remoteControl/client/list",
+            AppServerMethods.RemoteControlClientList,
             new
             {
                 environmentId = options.EnvironmentId,
@@ -112,7 +114,7 @@ internal sealed class CodexAppServerRemoteControlClient
         return new RemoteControlClientsListResult
         {
             Clients = ParseClients(result),
-            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, "nextCursor"),
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
@@ -120,12 +122,12 @@ internal sealed class CodexAppServerRemoteControlClient
     public async Task<RemoteControlClientsRevokeResult> RevokeClientAsync(RemoteControlClientsRevokeOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        RequireExperimentalApi("remoteControl/client/revoke");
+        RequireExperimentalApi(AppServerMethods.RemoteControlClientRevoke);
         ValidateRequiredString(options.EnvironmentId, "EnvironmentId", nameof(options));
         ValidateRequiredString(options.ClientId, "ClientId", nameof(options));
 
         var result = await _sendRequestAsync(
-            "remoteControl/client/revoke",
+            AppServerMethods.RemoteControlClientRevoke,
             new
             {
                 environmentId = options.EnvironmentId,
@@ -141,7 +143,7 @@ internal sealed class CodexAppServerRemoteControlClient
 
     internal static RemoteControlStatusResult ParseStatusResult(JsonElement result, string context)
     {
-        var status = CodexAppServerClientJson.GetRequiredString(result, "status", context);
+        var status = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.Status, context);
         if (!RemoteControlConnectionStatus.TryParse(status, out var statusValue))
         {
             throw new InvalidOperationException($"{context} property 'status' is missing or invalid.");
@@ -151,9 +153,9 @@ internal sealed class CodexAppServerRemoteControlClient
         {
             Status = status,
             StatusValue = statusValue,
-            ServerName = CodexAppServerClientJson.GetRequiredString(result, "serverName", context),
-            InstallationId = CodexAppServerClientJson.GetRequiredString(result, "installationId", context),
-            EnvironmentId = CodexAppServerClientJson.GetStringOrNull(result, "environmentId"),
+            ServerName = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.ServerName, context),
+            InstallationId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.InstallationId, context),
+            EnvironmentId = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.EnvironmentId),
             Raw = result
         };
     }
@@ -168,7 +170,7 @@ internal sealed class CodexAppServerRemoteControlClient
 
     private static IReadOnlyList<RemoteControlClientInfo> ParseClients(JsonElement result)
     {
-        var data = CodexAppServerClientJson.TryGetArray(result, "data");
+        var data = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data);
         if (data is null)
         {
             return Array.Empty<RemoteControlClientInfo>();
@@ -182,7 +184,7 @@ internal sealed class CodexAppServerRemoteControlClient
                 continue;
             }
 
-            var clientId = CodexAppServerClientJson.GetStringOrNull(item, "clientId");
+            var clientId = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.ClientId);
             if (string.IsNullOrWhiteSpace(clientId))
             {
                 continue;
@@ -191,7 +193,7 @@ internal sealed class CodexAppServerRemoteControlClient
             clients.Add(new RemoteControlClientInfo
             {
                 ClientId = clientId,
-                DisplayName = CodexAppServerClientJson.GetStringOrNull(item, "displayName"),
+                DisplayName = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.DisplayName),
                 DeviceType = CodexAppServerClientJson.GetStringOrNull(item, "deviceType"),
                 Platform = CodexAppServerClientJson.GetStringOrNull(item, "platform"),
                 OsVersion = CodexAppServerClientJson.GetStringOrNull(item, "osVersion"),

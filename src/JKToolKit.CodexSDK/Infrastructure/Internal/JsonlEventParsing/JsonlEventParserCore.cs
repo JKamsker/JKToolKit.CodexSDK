@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using Microsoft.Extensions.Logging;
@@ -12,16 +13,16 @@ internal static class JsonlEventParserCore
         using var doc = JsonDocument.Parse(line);
         var root = doc.RootElement;
 
-        if (!root.TryGetProperty("timestamp", out var timestampElement))
+        if (!root.TryGetProperty(JsonFieldNames.Timestamp, out var timestampElement))
         {
-            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: DiagnosticLimits.MalformedEventSnippetChars);
             ctx.Logger.LogWarning("Event missing 'timestamp' field, skipping. LineSnippet: {LineSnippet}", snippet);
             return null;
         }
 
-        if (!root.TryGetProperty("type", out var typeElement))
+        if (!root.TryGetProperty(JsonFieldNames.Type, out var typeElement))
         {
-            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: DiagnosticLimits.MalformedEventSnippetChars);
             ctx.Logger.LogWarning("Event missing 'type' field, skipping. LineSnippet: {LineSnippet}", snippet);
             return null;
         }
@@ -33,7 +34,7 @@ internal static class JsonlEventParserCore
 
         if (string.IsNullOrWhiteSpace(type))
         {
-            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: 300);
+            var snippet = CodexDiagnosticsSanitizer.Sanitize(line, maxChars: DiagnosticLimits.MalformedEventSnippetChars);
             ctx.Logger.LogWarning("Event has empty 'type' field, skipping. LineSnippet: {LineSnippet}", snippet);
             return null;
         }

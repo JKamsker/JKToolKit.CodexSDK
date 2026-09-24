@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -36,7 +37,7 @@ public sealed record class McpServerStartupStatusUpdatedNotification : AppServer
         string? Error,
         JsonElement Params,
         string? ThreadId = null)
-        : base("mcpServer/startupStatus/updated", Params)
+        : base(AppServerMethods.McpServerStartupStatusUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.Name = Name;

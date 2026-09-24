@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.UserInput;
 
@@ -10,13 +11,13 @@ public sealed record class ImageUserInput : IUserInput
     /// <summary>
     /// Gets the wire discriminator value (<c>image</c>).
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonPropertyName(JsonFieldNames.Type)]
     public string Type => "image";
 
     /// <summary>
     /// Gets the image URL, when the image is supplied inline/by URL.
     /// </summary>
-    [JsonPropertyName("url")]
+    [JsonPropertyName(JsonFieldNames.Url)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Url { get; init; }
 

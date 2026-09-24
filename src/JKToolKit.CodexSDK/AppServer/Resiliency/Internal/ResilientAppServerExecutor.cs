@@ -215,7 +215,7 @@ internal sealed class ResilientAppServerExecutor
 
     private static bool IsServerOverloaded(JsonRpcRemoteException rpc)
     {
-        if (rpc.Error.Code == -32001)
+        if (rpc.Error.Code == JsonRpcErrorCodes.ServerOverloaded)
         {
             return true;
         }

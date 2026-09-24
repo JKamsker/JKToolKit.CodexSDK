@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -29,8 +30,8 @@ internal static partial class CodexAppServerClientPluginParsers
                     throw new InvalidOperationException("plugin/list marketplaceLoadErrors[] entries must be objects.");
                 }
 
-                var marketplacePath = CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath");
-                var message = CodexAppServerClientJson.GetStringOrNull(item, "message");
+                var marketplacePath = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.MarketplacePath);
+                var message = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Message);
                 if (string.IsNullOrWhiteSpace(marketplacePath) || string.IsNullOrWhiteSpace(message))
                 {
                     throw new InvalidOperationException("plugin/list marketplaceLoadErrors[] entries must contain marketplacePath and message.");
@@ -59,7 +60,7 @@ internal static partial class CodexAppServerClientPluginParsers
 
     public static PluginReadResult ParsePluginReadResult(JsonElement result)
     {
-        var plugin = CodexAppServerClientJson.TryGetObject(result, "plugin")
+        var plugin = CodexAppServerClientJson.TryGetObject(result, JsonFieldNames.Plugin)
             ?? throw new InvalidOperationException("plugin/read returned no plugin object.");
 
         return new PluginReadResult
@@ -85,13 +86,13 @@ internal static partial class CodexAppServerClientPluginParsers
             apps.Add(ParsePluginApp(item));
         }
 
-        var authPolicy = CodexAppServerClientJson.GetRequiredString(result, "authPolicy", "plugin/install response");
+        var authPolicy = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.AuthPolicy, "plugin/install response");
 
         return new PluginInstallResult
         {
             AppsNeedingAuth = apps,
             AuthPolicy = authPolicy,
-            AuthPolicyValue = ParseRequiredPluginAuthPolicy(result, "authPolicy", "plugin/install response"),
+            AuthPolicyValue = ParseRequiredPluginAuthPolicy(result, JsonFieldNames.AuthPolicy, "plugin/install response"),
             Raw = result
         };
     }
@@ -111,7 +112,7 @@ internal static partial class CodexAppServerClientPluginParsers
 
     public static PluginSearchPage ParsePluginSearchPage(JsonElement result)
     {
-        var dataArray = CodexAppServerClientJson.TryGetArray(result, "data")
+        var dataArray = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data)
             ?? throw new InvalidOperationException("plugin/search returned no data array.");
 
         var data = new List<PluginSearchResult>();
@@ -122,15 +123,15 @@ internal static partial class CodexAppServerClientPluginParsers
                 throw new InvalidOperationException("plugin/search data[] entries must be objects.");
             }
 
-            var plugin = CodexAppServerClientJson.TryGetObject(item, "plugin")
+            var plugin = CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Plugin)
                 ?? throw new InvalidOperationException("plugin/search data[] entries must contain a plugin object.");
 
             data.Add(new PluginSearchResult
             {
                 Plugin = ParsePluginSummary(plugin),
-                MarketplaceName = CodexAppServerClientJson.GetRequiredString(item, "marketplaceName", "plugin/search data[]"),
+                MarketplaceName = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.MarketplaceName, "plugin/search data[]"),
                 MarketplacePath = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
-                    CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath"),
+                    CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.MarketplacePath),
                     "marketplacePath",
                     "plugin/search data[]"),
                 Raw = item.Clone()
@@ -140,7 +141,7 @@ internal static partial class CodexAppServerClientPluginParsers
         return new PluginSearchPage
         {
             Data = data,
-            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, "nextCursor"),
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
@@ -164,7 +165,7 @@ internal static partial class CodexAppServerClientPluginParsers
 
             changedPlugins.Add(new PluginReconcileChangedPlugin
             {
-                Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin/reconcile changedPlugins[]"),
+                Id = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Id, "plugin/reconcile changedPlugins[]"),
                 HasMcps = CodexAppServerClientJson.GetRequiredBool(item, "hasMcps", "plugin/reconcile changedPlugins[]"),
                 HasApps = CodexAppServerClientJson.GetRequiredBool(item, "hasApps", "plugin/reconcile changedPlugins[]"),
                 HasHooks = CodexAppServerClientJson.GetRequiredBool(item, "hasHooks", "plugin/reconcile changedPlugins[]"),
@@ -189,22 +190,22 @@ internal static partial class CodexAppServerClientPluginParsers
     {
         var availability = CodexAppServerClientJson.GetStringOrNull(item, "availability") ?? PluginAvailability.Available.Value;
         var installPolicySource = CodexAppServerClientJson.GetStringOrNull(item, "installPolicySource");
-        var disabledReason = CodexAppServerClientJson.GetStringOrNull(item, "disabledReason");
+        var disabledReason = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.DisabledReason);
 
         return new PluginSummaryDescriptor
         {
-            Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin summary"),
-            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin summary"),
-            RemotePluginId = CodexAppServerClientJson.GetStringOrNull(item, "remotePluginId"),
-            Version = CodexAppServerClientJson.GetStringOrNull(item, "version"),
+            Id = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Id, "plugin summary"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Name, "plugin summary"),
+            RemotePluginId = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.RemotePluginId),
+            Version = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Version),
             LocalVersion = CodexAppServerClientJson.GetStringOrNull(item, "localVersion"),
             Installed = CodexAppServerClientJson.GetRequiredBool(item, "installed", "plugin summary"),
             InstalledAt = GetUnixSecondsDateTimeOffset(item, "installedAt"),
-            Enabled = CodexAppServerClientJson.GetRequiredBool(item, "enabled", "plugin summary"),
-            AuthPolicy = CodexAppServerClientJson.GetRequiredString(item, "authPolicy", "plugin summary"),
-            AuthPolicyValue = ParseRequiredPluginAuthPolicy(item, "authPolicy", "plugin summary"),
-            InstallPolicy = CodexAppServerClientJson.GetRequiredString(item, "installPolicy", "plugin summary"),
-            InstallPolicyValue = ParseRequiredPluginInstallPolicy(item, "installPolicy", "plugin summary"),
+            Enabled = CodexAppServerClientJson.GetRequiredBool(item, JsonFieldNames.Enabled, "plugin summary"),
+            AuthPolicy = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.AuthPolicy, "plugin summary"),
+            AuthPolicyValue = ParseRequiredPluginAuthPolicy(item, JsonFieldNames.AuthPolicy, "plugin summary"),
+            InstallPolicy = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.InstallPolicy, "plugin summary"),
+            InstallPolicyValue = ParseRequiredPluginInstallPolicy(item, JsonFieldNames.InstallPolicy, "plugin summary"),
             InstallPolicySource = installPolicySource,
             InstallPolicySourceValue = PluginInstallPolicySource.TryParse(installPolicySource, out var parsedSource)
                 ? (PluginInstallPolicySource?)parsedSource
@@ -219,7 +220,7 @@ internal static partial class CodexAppServerClientPluginParsers
             ShareContext = CodexAppServerClientPluginShareParsers.ParseShareContextOrNull(item),
             Keywords = CodexAppServerClientJson.GetOptionalStringArray(item, "keywords") ?? Array.Empty<string>(),
             Interface = ParsePluginInterface(item),
-            Source = GetRequiredProperty(item, "source", "plugin summary"),
+            Source = GetRequiredProperty(item, JsonFieldNames.Source, "plugin summary"),
             SourceInfo = ParseRequiredPluginSource(item, "plugin summary"),
             Raw = item.Clone()
         };
@@ -227,26 +228,26 @@ internal static partial class CodexAppServerClientPluginParsers
 
     private static PluginMarketplaceInterfaceMetadata? ParsePluginMarketplaceInterface(JsonElement item)
     {
-        if (CodexAppServerClientJson.TryGetObject(item, "interface") is not { } interfaceObject)
+        if (CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Interface) is not { } interfaceObject)
         {
             return null;
         }
 
         return new PluginMarketplaceInterfaceMetadata
         {
-            DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "displayName"),
+            DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.DisplayName),
             Raw = interfaceObject.Clone()
         };
     }
 
     private static PluginInterfaceMetadata? ParsePluginInterface(JsonElement item)
     {
-        if (CodexAppServerClientJson.TryGetObject(item, "interface") is not { } interfaceObject)
+        if (CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Interface) is not { } interfaceObject)
         {
             return null;
         }
 
-        var capabilities = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "capabilities") ?? Array.Empty<string>();
+        var capabilities = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, JsonFieldNames.Capabilities) ?? Array.Empty<string>();
         var screenshots = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPaths(
             CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "screenshots"),
             "screenshots",
@@ -254,48 +255,48 @@ internal static partial class CodexAppServerClientPluginParsers
 
         return new PluginInterfaceMetadata
         {
-            DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "displayName"),
-            ShortDescription = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "shortDescription"),
+            DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.DisplayName),
+            ShortDescription = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.ShortDescription),
             LongDescription = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "longDescription"),
             Category = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "category"),
             DeveloperName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "developerName"),
-            BrandColor = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "brandColor"),
-            DefaultPrompts = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "defaultPrompt") ?? Array.Empty<string>(),
+            BrandColor = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.BrandColor),
+            DefaultPrompts = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, JsonFieldNames.DefaultPrompt) ?? Array.Empty<string>(),
             Capabilities = capabilities,
             Screenshots = screenshots,
             ScreenshotUrls = CodexAppServerClientJson.GetOptionalStringArray(interfaceObject, "screenshotUrls") ?? Array.Empty<string>(),
             PrivacyPolicyUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "privacyPolicyUrl"),
             TermsOfServiceUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "termsOfServiceUrl"),
-            WebsiteUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "websiteUrl"),
+            WebsiteUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.WebsiteUrl),
             ComposerIconPath = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
-                CodexAppServerClientJson.GetStringOrNull(interfaceObject, "composerIcon"),
+                CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.ComposerIcon),
                 "composerIcon",
                 "plugin interface"),
             ComposerIconUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "composerIconUrl"),
-            ComposerIcon = ClonePropertyOrNull(interfaceObject, "composerIcon"),
+            ComposerIcon = ClonePropertyOrNull(interfaceObject, JsonFieldNames.ComposerIcon),
             LogoPath = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
-                CodexAppServerClientJson.GetStringOrNull(interfaceObject, "logo"),
+                CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.Logo),
                 "logo",
                 "plugin interface"),
-            LogoUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "logoUrl"),
-            Logo = ClonePropertyOrNull(interfaceObject, "logo"),
+            LogoUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.LogoUrl),
+            Logo = ClonePropertyOrNull(interfaceObject, JsonFieldNames.Logo),
             Raw = interfaceObject.Clone()
         };
     }
 
     private static PluginSkillInterfaceMetadata? ParsePluginSkillInterface(JsonElement item)
     {
-        if (CodexAppServerClientJson.TryGetObject(item, "interface") is not { } interfaceObject)
+        if (CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Interface) is not { } interfaceObject)
         {
             return null;
         }
 
         return new PluginSkillInterfaceMetadata
         {
-            DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "displayName"),
-            ShortDescription = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "shortDescription"),
-            DefaultPrompt = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "defaultPrompt"),
-            BrandColor = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "brandColor"),
+            DisplayName = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.DisplayName),
+            ShortDescription = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.ShortDescription),
+            DefaultPrompt = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.DefaultPrompt),
+            BrandColor = CodexAppServerClientJson.GetStringOrNull(interfaceObject, JsonFieldNames.BrandColor),
             IconSmall = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconSmall"),
             IconLarge = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconLarge"),
             IconSmallUrl = CodexAppServerClientJson.GetStringOrNull(interfaceObject, "iconSmallUrl"),
@@ -306,13 +307,13 @@ internal static partial class CodexAppServerClientPluginParsers
 
     private static PluginSourceDescriptor ParseRequiredPluginSource(JsonElement item, string context)
     {
-        if (CodexAppServerClientJson.TryGetObject(item, "source") is not { } sourceObject)
+        if (CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Source) is not { } sourceObject)
         {
             throw new InvalidOperationException($"{context} is missing required object property 'source'.");
         }
 
-        var sourceType = ParseRequiredPluginSourceType(sourceObject, "type", "plugin source");
-        var sourcePath = CodexAppServerClientJson.GetStringOrNull(sourceObject, "path");
+        var sourceType = ParseRequiredPluginSourceType(sourceObject, JsonFieldNames.Type, "plugin source");
+        var sourcePath = CodexAppServerClientJson.GetStringOrNull(sourceObject, JsonFieldNames.Path);
         var path = string.Equals(sourceType.Value, PluginSourceType.Local.Value, StringComparison.Ordinal)
             ? CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(sourcePath, "path", "plugin source")
             : sourcePath;
@@ -321,9 +322,9 @@ internal static partial class CodexAppServerClientPluginParsers
         {
             Type = sourceType,
             Path = path,
-            Url = CodexAppServerClientJson.GetStringOrNull(sourceObject, "url"),
+            Url = CodexAppServerClientJson.GetStringOrNull(sourceObject, JsonFieldNames.Url),
             RefName = CodexAppServerClientJson.GetStringOrNull(sourceObject, "refName"),
-            Sha = CodexAppServerClientJson.GetStringOrNull(sourceObject, "sha"),
+            Sha = CodexAppServerClientJson.GetStringOrNull(sourceObject, JsonFieldNames.Sha),
             Raw = sourceObject.Clone()
         };
     }

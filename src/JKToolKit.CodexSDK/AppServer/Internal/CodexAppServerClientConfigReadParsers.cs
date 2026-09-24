@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -8,7 +9,7 @@ internal static class CodexAppServerClientConfigReadParsers
 {
     public static ConfigReadResult ParseConfigReadResult(JsonElement result)
     {
-        var config = TryGetObject(result, "config") ?? result;
+        var config = TryGetObject(result, JsonFieldNames.Config) ?? result;
         var layers = ParseLayers(result);
         var origins = ParseOrigins(result);
         var mcpServers = ParseMcpServers(config);
@@ -48,8 +49,8 @@ internal static class CodexAppServerClientConfigReadParsers
                 continue;
             }
 
-            var nameObj = TryGetObject(layer, "name");
-            var version = GetStringOrNull(layer, "version");
+            var nameObj = TryGetObject(layer, JsonFieldNames.Name);
+            var version = GetStringOrNull(layer, JsonFieldNames.Version);
             if (nameObj is null || string.IsNullOrWhiteSpace(version))
             {
                 continue;
@@ -59,8 +60,8 @@ internal static class CodexAppServerClientConfigReadParsers
             {
                 Name = ParseLayerSource(nameObj.Value),
                 Version = version,
-                Config = layer.TryGetProperty("config", out var cfg) ? cfg : default,
-                DisabledReason = GetStringOrNull(layer, "disabledReason") ?? GetStringOrNull(layer, "disabled_reason"),
+                Config = layer.TryGetProperty(JsonFieldNames.Config, out var cfg) ? cfg : default,
+                DisabledReason = GetStringOrNull(layer, JsonFieldNames.DisabledReason) ?? GetStringOrNull(layer, "disabled_reason"),
                 Raw = layer
             });
         }
@@ -70,7 +71,7 @@ internal static class CodexAppServerClientConfigReadParsers
 
     private static IReadOnlyDictionary<string, ConfigLayerMetadataInfo>? ParseOrigins(JsonElement result)
     {
-        var originsObj = TryGetObject(result, "origins");
+        var originsObj = TryGetObject(result, JsonFieldNames.Origins);
         if (originsObj is null)
         {
             return null;
@@ -92,9 +93,9 @@ internal static class CodexAppServerClientConfigReadParsers
 
     public static ConfigLayerMetadataInfo ParseConfigLayerMetadataInfo(JsonElement metadata, string context)
     {
-        var nameObj = TryGetObject(metadata, "name")
+        var nameObj = TryGetObject(metadata, JsonFieldNames.Name)
             ?? throw new InvalidOperationException($"Missing required object property 'name' on {context}.");
-        var version = GetStringOrNull(metadata, "version");
+        var version = GetStringOrNull(metadata, JsonFieldNames.Version);
         if (string.IsNullOrWhiteSpace(version))
         {
             throw new InvalidOperationException($"Missing required string property 'version' on {context}.");
@@ -136,8 +137,8 @@ internal static class CodexAppServerClientConfigReadParsers
 
     private static McpServerConfigInfo ParseMcpServerConfig(JsonElement obj)
     {
-        var hasCommand = GetStringOrNull(obj, "command");
-        var hasUrl = GetStringOrNull(obj, "url");
+        var hasCommand = GetStringOrNull(obj, JsonFieldNames.Command);
+        var hasUrl = GetStringOrNull(obj, JsonFieldNames.Url);
 
         var transport =
             !string.IsNullOrWhiteSpace(hasCommand) ? "stdio" :
@@ -149,20 +150,20 @@ internal static class CodexAppServerClientConfigReadParsers
             Transport = transport,
             Command = hasCommand,
             Args = GetOptionalStringArray(obj, "args"),
-            Env = TryGetStringDictionary(obj, "env"),
+            Env = TryGetStringDictionary(obj, JsonFieldNames.Env),
             EnvVars = GetOptionalStringArray(obj, "env_vars") ?? GetOptionalStringArray(obj, "envVars"),
-            Cwd = GetStringOrNull(obj, "cwd"),
+            Cwd = GetStringOrNull(obj, JsonFieldNames.Cwd),
             Url = hasUrl,
             BearerTokenEnvVar = GetStringOrNull(obj, "bearer_token_env_var") ?? GetStringOrNull(obj, "bearerTokenEnvVar"),
             HttpHeaders = TryGetStringDictionary(obj, "http_headers") ?? TryGetStringDictionary(obj, "httpHeaders"),
             EnvHttpHeaders = TryGetStringDictionary(obj, "env_http_headers") ?? TryGetStringDictionary(obj, "envHttpHeaders"),
-            Enabled = GetBoolOrNull(obj, "enabled"),
-            Required = GetBoolOrNull(obj, "required"),
+            Enabled = GetBoolOrNull(obj, JsonFieldNames.Enabled),
+            Required = GetBoolOrNull(obj, JsonFieldNames.Required),
             StartupTimeout = GetTimeSpanSecondsOrNull(obj, "startup_timeout_sec") ?? GetTimeSpanSecondsOrNull(obj, "startupTimeoutSec"),
             ToolTimeout = GetTimeSpanSecondsOrNull(obj, "tool_timeout_sec") ?? GetTimeSpanSecondsOrNull(obj, "toolTimeoutSec"),
             EnabledTools = GetOptionalStringArray(obj, "enabled_tools") ?? GetOptionalStringArray(obj, "enabledTools"),
             DisabledTools = GetOptionalStringArray(obj, "disabled_tools") ?? GetOptionalStringArray(obj, "disabledTools"),
-            Scopes = GetOptionalStringArray(obj, "scopes"),
+            Scopes = GetOptionalStringArray(obj, JsonFieldNames.Scopes),
             Raw = obj
         };
     }
@@ -228,17 +229,17 @@ internal static class CodexAppServerClientConfigReadParsers
 
     private static ConfigLayerSourceInfo ParseLayerSource(JsonElement obj)
     {
-        var type = GetStringOrNull(obj, "type") ?? "unknown";
+        var type = GetStringOrNull(obj, JsonFieldNames.Type) ?? "unknown";
 
         return new ConfigLayerSourceInfo
         {
             Type = type,
-            Id = GetStringOrNull(obj, "id"),
-            Name = GetStringOrNull(obj, "name"),
+            Id = GetStringOrNull(obj, JsonFieldNames.Id),
+            Name = GetStringOrNull(obj, JsonFieldNames.Name),
             Domain = GetStringOrNull(obj, "domain"),
-            Key = GetStringOrNull(obj, "key"),
+            Key = GetStringOrNull(obj, JsonFieldNames.Key),
             File = GetStringOrNull(obj, "file"),
-            Profile = GetStringOrNull(obj, "profile"),
+            Profile = GetStringOrNull(obj, JsonFieldNames.Profile),
             DotCodexFolder = GetStringOrNull(obj, "dotCodexFolder") ?? GetStringOrNull(obj, "dot_codex_folder"),
             Raw = obj
         };

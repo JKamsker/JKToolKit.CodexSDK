@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -36,7 +37,7 @@ public sealed record class RawResponseCompletedNotification : AppServerNotificat
     /// Initializes a new instance of <see cref="RawResponseCompletedNotification"/>.
     /// </summary>
     public RawResponseCompletedNotification(string ThreadId, string TurnId, string ResponseId, JsonElement? Usage, JsonElement? UsageMetadata, JsonElement Params)
-        : base("rawResponse/completed", Params)
+        : base(AppServerMethods.RawResponseCompleted, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

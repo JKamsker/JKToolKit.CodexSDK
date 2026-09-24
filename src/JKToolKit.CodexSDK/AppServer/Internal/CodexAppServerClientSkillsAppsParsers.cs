@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -9,7 +10,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
 {
     public static IReadOnlyList<SkillsListEntryResult> ParseSkillsListEntries(JsonElement skillsListResult)
     {
-        var data = TryGetArray(skillsListResult, "data");
+        var data = TryGetArray(skillsListResult, JsonFieldNames.Data);
         if (data is not null && data.Value.ValueKind == JsonValueKind.Array)
         {
             var entries = new List<SkillsListEntryResult>();
@@ -20,10 +21,10 @@ internal static class CodexAppServerClientSkillsAppsParsers
                     continue;
                 }
 
-                var cwd = GetStringOrNull(entry, "cwd");
+                var cwd = GetStringOrNull(entry, JsonFieldNames.Cwd);
 
                 var skills = new List<SkillDescriptor>();
-                var skillsArray = TryGetArray(entry, "skills");
+                var skillsArray = TryGetArray(entry, JsonFieldNames.Skills);
                 if (skillsArray is not null && skillsArray.Value.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var skill in skillsArray.Value.EnumerateArray())
@@ -33,7 +34,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
                             continue;
                         }
 
-                        var name = GetStringOrNull(skill, "name") ?? GetStringOrNull(skill, "id");
+                        var name = GetStringOrNull(skill, JsonFieldNames.Name) ?? GetStringOrNull(skill, JsonFieldNames.Id);
                         if (string.IsNullOrWhiteSpace(name))
                         {
                             continue;
@@ -42,14 +43,14 @@ internal static class CodexAppServerClientSkillsAppsParsers
                         skills.Add(new SkillDescriptor
                         {
                             Name = name,
-                            Description = GetStringOrNull(skill, "description"),
-                            ShortDescription = GetStringOrNull(skill, "shortDescription"),
-                            Path = GetStringOrNull(skill, "path"),
-                            Enabled = GetBoolOrNull(skill, "enabled"),
+                            Description = GetStringOrNull(skill, JsonFieldNames.Description),
+                            ShortDescription = GetStringOrNull(skill, JsonFieldNames.ShortDescription),
+                            Path = GetStringOrNull(skill, JsonFieldNames.Path),
+                            Enabled = GetBoolOrNull(skill, JsonFieldNames.Enabled),
                             Cwd = cwd,
-                            Scope = GetStringOrNull(skill, "scope"),
-                            Dependencies = TryGetObject(skill, "dependencies"),
-                            Interface = TryGetObject(skill, "interface"),
+                            Scope = GetStringOrNull(skill, JsonFieldNames.Scope),
+                            Dependencies = TryGetObject(skill, JsonFieldNames.Dependencies),
+                            Interface = TryGetObject(skill, JsonFieldNames.Interface),
                             Raw = skill
                         });
                     }
@@ -68,8 +69,8 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
                         errors.Add(new CodexSkillErrorInfo
                         {
-                            Message = GetStringOrNull(err, "message"),
-                            Path = GetStringOrNull(err, "path"),
+                            Message = GetStringOrNull(err, JsonFieldNames.Message),
+                            Path = GetStringOrNull(err, JsonFieldNames.Path),
                             Raw = err
                         });
                     }
@@ -87,7 +88,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
             return entries;
         }
 
-        var legacySkills = TryGetArray(skillsListResult, "skills") ?? TryGetArray(skillsListResult, "items");
+        var legacySkills = TryGetArray(skillsListResult, JsonFieldNames.Skills) ?? TryGetArray(skillsListResult, JsonFieldNames.Items);
         if (legacySkills is not null && legacySkills.Value.ValueKind == JsonValueKind.Array)
         {
             var skills = new List<SkillDescriptor>();
@@ -98,7 +99,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
                     continue;
                 }
 
-                var name = GetStringOrNull(item, "name") ?? GetStringOrNull(item, "id");
+                var name = GetStringOrNull(item, JsonFieldNames.Name) ?? GetStringOrNull(item, JsonFieldNames.Id);
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     continue;
@@ -107,13 +108,13 @@ internal static class CodexAppServerClientSkillsAppsParsers
                 skills.Add(new SkillDescriptor
                 {
                     Name = name,
-                    Description = GetStringOrNull(item, "description"),
-                    ShortDescription = GetStringOrNull(item, "shortDescription"),
-                    Path = GetStringOrNull(item, "path"),
-                    Enabled = GetBoolOrNull(item, "enabled"),
-                    Scope = GetStringOrNull(item, "scope"),
-                    Dependencies = TryGetObject(item, "dependencies"),
-                    Interface = TryGetObject(item, "interface"),
+                    Description = GetStringOrNull(item, JsonFieldNames.Description),
+                    ShortDescription = GetStringOrNull(item, JsonFieldNames.ShortDescription),
+                    Path = GetStringOrNull(item, JsonFieldNames.Path),
+                    Enabled = GetBoolOrNull(item, JsonFieldNames.Enabled),
+                    Scope = GetStringOrNull(item, JsonFieldNames.Scope),
+                    Dependencies = TryGetObject(item, JsonFieldNames.Dependencies),
+                    Interface = TryGetObject(item, JsonFieldNames.Interface),
                     Raw = item
                 });
             }
@@ -152,9 +153,9 @@ internal static class CodexAppServerClientSkillsAppsParsers
     public static IReadOnlyList<AppDescriptor> ParseAppsListApps(JsonElement appsListResult)
     {
         var array =
-            TryGetArray(appsListResult, "data") ??
-            TryGetArray(appsListResult, "apps") ??
-            TryGetArray(appsListResult, "items");
+            TryGetArray(appsListResult, JsonFieldNames.Data) ??
+            TryGetArray(appsListResult, JsonFieldNames.Apps) ??
+            TryGetArray(appsListResult, JsonFieldNames.Items);
 
         if (array is null || array.Value.ValueKind != JsonValueKind.Array)
         {
@@ -171,21 +172,21 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
             apps.Add(new AppDescriptor
             {
-                Id = GetStringOrNull(item, "id"),
-                Name = GetStringOrNull(item, "name"),
-                Description = GetStringOrNull(item, "description"),
-                LogoUrl = GetStringOrNull(item, "logoUrl") ?? GetStringOrNull(item, "logo_url"),
-                LogoUrlDark = GetStringOrNull(item, "logoUrlDark") ?? GetStringOrNull(item, "logo_url_dark"),
-                DistributionChannel = GetStringOrNull(item, "distributionChannel"),
+                Id = GetStringOrNull(item, JsonFieldNames.Id),
+                Name = GetStringOrNull(item, JsonFieldNames.Name),
+                Description = GetStringOrNull(item, JsonFieldNames.Description),
+                LogoUrl = GetStringOrNull(item, JsonFieldNames.LogoUrl) ?? GetStringOrNull(item, "logo_url"),
+                LogoUrlDark = GetStringOrNull(item, JsonFieldNames.LogoUrlDark) ?? GetStringOrNull(item, "logo_url_dark"),
+                DistributionChannel = GetStringOrNull(item, JsonFieldNames.DistributionChannel),
                 AppMetadata = TryGetObject(item, "appMetadata"),
                 Branding = TryGetObject(item, "branding"),
-                InstallUrl = GetStringOrNull(item, "installUrl"),
+                InstallUrl = GetStringOrNull(item, JsonFieldNames.InstallUrl),
                 IsAccessible = GetBoolOrNull(item, "isAccessible"),
-                IsEnabled = GetBoolOrNull(item, "isEnabled") ?? GetBoolOrNull(item, "enabled"),
-                Title = GetStringOrNull(item, "title"),
-                PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames") ?? Array.Empty<string>(),
+                IsEnabled = GetBoolOrNull(item, JsonFieldNames.IsEnabled) ?? GetBoolOrNull(item, JsonFieldNames.Enabled),
+                Title = GetStringOrNull(item, JsonFieldNames.Title),
+                PluginDisplayNames = GetOptionalStringArray(item, JsonFieldNames.PluginDisplayNames) ?? Array.Empty<string>(),
                 Labels = ParseStringMap(item, "labels"),
-                DisabledReason = GetStringOrNull(item, "disabledReason"),
+                DisabledReason = GetStringOrNull(item, JsonFieldNames.DisabledReason),
                 Raw = item
             });
         }
@@ -195,7 +196,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
     public static IReadOnlyList<AppConnectorMetadata> ParseAppsReadApps(JsonElement appsReadResult)
     {
-        var array = TryGetArray(appsReadResult, "apps")
+        var array = TryGetArray(appsReadResult, JsonFieldNames.Apps)
             ?? throw new InvalidOperationException("app/read returned no apps array.");
 
         var apps = new List<AppConnectorMetadata>();
@@ -208,14 +209,14 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
             apps.Add(new AppConnectorMetadata
             {
-                Id = GetRequiredString(item, "id", "app/read apps[]"),
-                Name = GetRequiredString(item, "name", "app/read apps[]"),
-                Description = GetStringOrNull(item, "description"),
+                Id = GetRequiredString(item, JsonFieldNames.Id, "app/read apps[]"),
+                Name = GetRequiredString(item, JsonFieldNames.Name, "app/read apps[]"),
+                Description = GetStringOrNull(item, JsonFieldNames.Description),
                 IconUrl = GetStringOrNull(item, "iconUrl"),
                 IconUrlDark = GetStringOrNull(item, "iconUrlDark"),
-                DistributionChannel = GetStringOrNull(item, "distributionChannel"),
-                InstallUrl = GetStringOrNull(item, "installUrl"),
-                PluginDisplayNames = GetOptionalStringArray(item, "pluginDisplayNames") ?? Array.Empty<string>(),
+                DistributionChannel = GetStringOrNull(item, JsonFieldNames.DistributionChannel),
+                InstallUrl = GetStringOrNull(item, JsonFieldNames.InstallUrl),
+                PluginDisplayNames = GetOptionalStringArray(item, JsonFieldNames.PluginDisplayNames) ?? Array.Empty<string>(),
                 ToolSummaries = ParseAppToolSummaries(item),
                 Raw = item.Clone()
             });
@@ -226,7 +227,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
     public static IReadOnlyList<InstalledAppDescriptor> ParseInstalledApps(JsonElement appsInstalledResult)
     {
-        var array = TryGetArray(appsInstalledResult, "apps")
+        var array = TryGetArray(appsInstalledResult, JsonFieldNames.Apps)
             ?? throw new InvalidOperationException("app/installed returned no apps array.");
 
         var apps = new List<InstalledAppDescriptor>();
@@ -239,9 +240,9 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
             apps.Add(new InstalledAppDescriptor
             {
-                Id = GetRequiredString(item, "id", "app/installed apps[]"),
+                Id = GetRequiredString(item, JsonFieldNames.Id, "app/installed apps[]"),
                 RuntimeName = GetStringOrNull(item, "runtimeName"),
-                Enabled = GetRequiredBool(item, "enabled", "app/installed apps[]"),
+                Enabled = GetRequiredBool(item, JsonFieldNames.Enabled, "app/installed apps[]"),
                 Callable = GetRequiredBool(item, "callable", "app/installed apps[]"),
                 Raw = item.Clone()
             });
@@ -253,8 +254,8 @@ internal static class CodexAppServerClientSkillsAppsParsers
     public static IReadOnlyList<RemoteSkillDescriptor> ParseRemoteSkillsReadSkills(JsonElement remoteSkillsResult)
     {
         var array =
-            TryGetArray(remoteSkillsResult, "data") ??
-            TryGetArray(remoteSkillsResult, "skills");
+            TryGetArray(remoteSkillsResult, JsonFieldNames.Data) ??
+            TryGetArray(remoteSkillsResult, JsonFieldNames.Skills);
 
         if (array is null || array.Value.ValueKind != JsonValueKind.Array)
         {
@@ -269,8 +270,8 @@ internal static class CodexAppServerClientSkillsAppsParsers
                 continue;
             }
 
-            var id = GetStringOrNull(item, "id");
-            var name = GetStringOrNull(item, "name");
+            var id = GetStringOrNull(item, JsonFieldNames.Id);
+            var name = GetStringOrNull(item, JsonFieldNames.Name);
             if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name))
             {
                 continue;
@@ -280,7 +281,7 @@ internal static class CodexAppServerClientSkillsAppsParsers
             {
                 Id = id,
                 Name = name,
-                Description = GetStringOrNull(item, "description"),
+                Description = GetStringOrNull(item, JsonFieldNames.Description),
                 Raw = item
             });
         }
@@ -325,11 +326,11 @@ internal static class CodexAppServerClientSkillsAppsParsers
 
             tools.Add(new AppToolSummaryDescriptor
             {
-                Name = GetRequiredString(tool, "name", "app/read toolSummaries[]"),
-                Title = GetStringOrNull(tool, "title"),
-                Description = GetRequiredString(tool, "description", "app/read toolSummaries[]"),
-                IsEnabled = GetBoolOrNull(tool, "isEnabled") ?? true,
-                DisabledReason = GetStringOrNull(tool, "disabledReason"),
+                Name = GetRequiredString(tool, JsonFieldNames.Name, "app/read toolSummaries[]"),
+                Title = GetStringOrNull(tool, JsonFieldNames.Title),
+                Description = GetRequiredString(tool, JsonFieldNames.Description, "app/read toolSummaries[]"),
+                IsEnabled = GetBoolOrNull(tool, JsonFieldNames.IsEnabled) ?? true,
+                DisabledReason = GetStringOrNull(tool, JsonFieldNames.DisabledReason),
                 IsReadOnly = GetBoolOrNull(tool, "isReadOnly") ?? false,
                 Raw = tool.Clone()
             });

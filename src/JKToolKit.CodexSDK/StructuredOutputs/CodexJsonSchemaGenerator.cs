@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using NJsonSchema;
 using NJsonSchema.Generation;
 
@@ -69,7 +70,7 @@ public static class CodexJsonSchemaGenerator
                     // If no explicit type, represent nullability via anyOf.
                     var anyOf = new JsonArray
                     {
-                        new JsonObject { ["type"] = "null" },
+                        new JsonObject { [JsonFieldNames.Type] = "null" },
                         obj.DeepClone()
                     };
                     obj.Clear();
@@ -89,7 +90,7 @@ public static class CodexJsonSchemaGenerator
     {
         if (typeNode is JsonValue typeValue && typeValue.TryGetValue<string>(out var typeStr))
         {
-            obj["type"] = new JsonArray(typeStr, "null");
+            obj[JsonFieldNames.Type] = new JsonArray(typeStr, "null");
             return;
         }
 
@@ -100,7 +101,7 @@ public static class CodexJsonSchemaGenerator
                 arr.Add("null");
             }
 
-            obj["type"] = arr;
+            obj[JsonFieldNames.Type] = arr;
         }
     }
 
@@ -120,7 +121,7 @@ public static class CodexJsonSchemaGenerator
                     }
                 }
 
-                obj["additionalProperties"] = false;
+                obj[JsonFieldNames.AdditionalProperties] = false;
 
                 if (obj.TryGetPropertyValue("properties", out var propsNode) && propsNode is JsonObject propsObj)
                 {
@@ -130,7 +131,7 @@ public static class CodexJsonSchemaGenerator
                         required.Add(name);
                     }
 
-                    obj["required"] = required;
+                    obj[JsonFieldNames.Required] = required;
                 }
             }
         }

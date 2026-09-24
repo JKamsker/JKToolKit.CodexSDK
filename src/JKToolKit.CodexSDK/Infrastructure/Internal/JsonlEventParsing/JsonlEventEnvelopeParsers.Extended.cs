@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ internal static partial class JsonlEventEnvelopeParsers
             return null;
 
         IReadOnlyList<string>? queries = null;
-        if (actionEl.TryGetProperty("queries", out var queriesEl) && queriesEl.ValueKind == JsonValueKind.Array)
+        if (actionEl.TryGetProperty(JsonFieldNames.Queries, out var queriesEl) && queriesEl.ValueKind == JsonValueKind.Array)
         {
             queries = queriesEl.EnumerateArray()
                 .Select(q => q.ValueKind == JsonValueKind.String ? q.GetString() : null)
@@ -25,24 +26,24 @@ internal static partial class JsonlEventEnvelopeParsers
         }
 
         return new WebSearchAction(
-            Type: TryGetString(actionEl, "type"),
-            Query: TryGetString(actionEl, "query"),
+            Type: TryGetString(actionEl, JsonFieldNames.Type),
+            Query: TryGetString(actionEl, JsonFieldNames.Query),
             Queries: queries)
         {
-            Url = TryGetString(actionEl, "url"),
-            Pattern = TryGetString(actionEl, "pattern")
+            Url = TryGetString(actionEl, JsonFieldNames.Url),
+            Pattern = TryGetString(actionEl, JsonFieldNames.Pattern)
         };
     }
 
     private static WebSearchEndEvent? ParseWebSearchEndEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var callId = TryGetString(payload, "call_id");
+        var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
         if (string.IsNullOrWhiteSpace(callId))
             return null;
 
         WebSearchAction? action = null;
-        if (payload.TryGetProperty("action", out var actionEl))
+        if (payload.TryGetProperty(JsonFieldNames.Action, out var actionEl))
         {
             action = ParseWebSearchAction(actionEl);
         }
@@ -53,7 +54,7 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            Query = TryGetString(payload, "query"),
+            Query = TryGetString(payload, JsonFieldNames.Query),
             Action = action
         };
     }
@@ -61,12 +62,12 @@ internal static partial class JsonlEventEnvelopeParsers
     private static ExecCommandEndEvent? ParseExecCommandEndEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var callId = TryGetString(payload, "call_id");
+        var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
         if (string.IsNullOrWhiteSpace(callId))
             return null;
 
         IReadOnlyList<string>? command = null;
-        if (payload.TryGetProperty("command", out var cmdEl) && cmdEl.ValueKind == JsonValueKind.Array)
+        if (payload.TryGetProperty(JsonFieldNames.Command, out var cmdEl) && cmdEl.ValueKind == JsonValueKind.Array)
         {
             command = cmdEl.EnumerateArray()
                 .Select(s => s.ValueKind == JsonValueKind.String ? s.GetString() : null)
@@ -82,25 +83,25 @@ internal static partial class JsonlEventEnvelopeParsers
             RawPayload = rawPayload,
             CallId = callId,
             ProcessId = TryGetString(payload, "process_id"),
-            TurnId = TryGetString(payload, "turn_id"),
+            TurnId = TryGetString(payload, JsonFieldNames.SnakeCase.TurnId),
             Command = command,
-            Cwd = TryGetString(payload, "cwd"),
-            Source = TryGetString(payload, "source"),
+            Cwd = TryGetString(payload, JsonFieldNames.Cwd),
+            Source = TryGetString(payload, JsonFieldNames.Source),
             InteractionInput = TryGetString(payload, "interaction_input"),
-            Stdout = TryGetString(payload, "stdout"),
-            Stderr = TryGetString(payload, "stderr"),
+            Stdout = TryGetString(payload, JsonFieldNames.Stdout),
+            Stderr = TryGetString(payload, JsonFieldNames.Stderr),
             AggregatedOutput = TryGetString(payload, "aggregated_output"),
             ExitCode = TryGetInt(payload, "exit_code"),
-            Duration = TryGetString(payload, "duration"),
+            Duration = TryGetString(payload, JsonFieldNames.Duration),
             FormattedOutput = TryGetString(payload, "formatted_output"),
-            Status = TryGetString(payload, "status")
+            Status = TryGetString(payload, JsonFieldNames.Status)
         };
     }
 
     private static McpToolCallEndEvent? ParseMcpToolCallEndEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var callId = TryGetString(payload, "call_id");
+        var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
         if (string.IsNullOrWhiteSpace(callId))
             return null;
 
@@ -109,16 +110,16 @@ internal static partial class JsonlEventEnvelopeParsers
         string? argsJson = null;
         if (payload.TryGetProperty("invocation", out var invocationEl) && invocationEl.ValueKind == JsonValueKind.Object)
         {
-            server = TryGetString(invocationEl, "server");
-            tool = TryGetString(invocationEl, "tool");
-            if (invocationEl.TryGetProperty("arguments", out var argsEl) && argsEl.ValueKind != JsonValueKind.Null)
+            server = TryGetString(invocationEl, JsonFieldNames.Server);
+            tool = TryGetString(invocationEl, JsonFieldNames.Tool);
+            if (invocationEl.TryGetProperty(JsonFieldNames.Arguments, out var argsEl) && argsEl.ValueKind != JsonValueKind.Null)
             {
                 argsJson = argsEl.ValueKind == JsonValueKind.String ? argsEl.GetString() : argsEl.GetRawText();
             }
         }
 
         string? resultJson = null;
-        if (payload.TryGetProperty("result", out var resultEl))
+        if (payload.TryGetProperty(JsonFieldNames.Result, out var resultEl))
         {
             resultJson = resultEl.ValueKind == JsonValueKind.String ? resultEl.GetString() : resultEl.GetRawText();
         }
@@ -131,7 +132,7 @@ internal static partial class JsonlEventEnvelopeParsers
             CallId = callId,
             Server = server,
             Tool = tool,
-            Duration = TryGetString(payload, "duration"),
+            Duration = TryGetString(payload, JsonFieldNames.Duration),
             ArgumentsJson = argsJson,
             ResultJson = resultJson
         };
@@ -140,8 +141,8 @@ internal static partial class JsonlEventEnvelopeParsers
     private static ViewImageToolCallEvent? ParseViewImageToolCallEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var callId = TryGetString(payload, "call_id");
-        var path = TryGetString(payload, "path");
+        var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
+        var path = TryGetString(payload, JsonFieldNames.Path);
         if (string.IsNullOrWhiteSpace(callId) || string.IsNullOrWhiteSpace(path))
             return null;
 
@@ -158,18 +159,18 @@ internal static partial class JsonlEventEnvelopeParsers
     private static EnteredReviewModeEvent? ParseEnteredReviewModeEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var prompt = TryGetString(payload, "prompt");
+        var prompt = TryGetString(payload, JsonFieldNames.Prompt);
         var hint = TryGetString(payload, "user_facing_hint");
 
         ReviewTarget? target = null;
-        if (payload.TryGetProperty("target", out var targetEl) && targetEl.ValueKind == JsonValueKind.Object)
+        if (payload.TryGetProperty(JsonFieldNames.Target, out var targetEl) && targetEl.ValueKind == JsonValueKind.Object)
         {
-            var targetType = TryGetString(targetEl, "type") ?? "unknown";
+            var targetType = TryGetString(targetEl, JsonFieldNames.Type) ?? "unknown";
             target = new ReviewTarget(
                 Type: targetType,
-                Branch: TryGetString(targetEl, "branch"),
-                Sha: TryGetString(targetEl, "sha"),
-                Title: TryGetString(targetEl, "title"),
+                Branch: TryGetString(targetEl, JsonFieldNames.Branch),
+                Sha: TryGetString(targetEl, JsonFieldNames.Sha),
+                Title: TryGetString(targetEl, JsonFieldNames.Title),
                 Instructions: TryGetString(targetEl, "instructions"));
         }
 
@@ -233,11 +234,11 @@ internal static partial class JsonlEventEnvelopeParsers
 
                 var priority = TryGetInt(f, "priority");
                 var findingConfidence = TryGetDouble(f, "confidence_score");
-                var title = TryGetString(f, "title");
+                var title = TryGetString(f, JsonFieldNames.Title);
                 var body = TryGetString(f, "body");
 
                 ReviewCodeLocation? location = null;
-                if (f.TryGetProperty("code_location", out _) || f.TryGetProperty("codeLocation", out _))
+                if (f.TryGetProperty(JsonFieldNames.SnakeCase.CodeLocation, out _) || f.TryGetProperty(JsonFieldNames.CodeLocation, out _))
                 {
                     location = TryParseReviewCodeLocation(f);
                 }
@@ -251,8 +252,8 @@ internal static partial class JsonlEventEnvelopeParsers
 
     private static ReviewCodeLocation? TryParseReviewCodeLocation(JsonElement finding)
     {
-        if (!finding.TryGetProperty("code_location", out var loc) &&
-            !finding.TryGetProperty("codeLocation", out loc))
+        if (!finding.TryGetProperty(JsonFieldNames.SnakeCase.CodeLocation, out var loc) &&
+            !finding.TryGetProperty(JsonFieldNames.CodeLocation, out loc))
             return null;
 
         if (loc.ValueKind != JsonValueKind.Object)
@@ -264,8 +265,8 @@ internal static partial class JsonlEventEnvelopeParsers
         if (loc.TryGetProperty("line_range", out var lineRange) && lineRange.ValueKind == JsonValueKind.Object)
         {
             range = new ReviewLineRange(
-                Start: TryGetInt(lineRange, "start"),
-                End: TryGetInt(lineRange, "end"));
+                Start: TryGetInt(lineRange, JsonFieldNames.Start),
+                End: TryGetInt(lineRange, JsonFieldNames.End));
         }
 
         if (file is null && range is null)
@@ -277,19 +278,19 @@ internal static partial class JsonlEventEnvelopeParsers
     private static PlanUpdateEvent? ParsePlanUpdateEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var name = TryGetString(payload, "name");
-        var explanation = TryGetString(payload, "explanation");
+        var name = TryGetString(payload, JsonFieldNames.Name);
+        var explanation = TryGetString(payload, JsonFieldNames.Explanation);
         var steps = new List<PlanStep>();
 
-        if (payload.TryGetProperty("plan", out var planEl) && planEl.ValueKind == JsonValueKind.Array)
+        if (payload.TryGetProperty(JsonFieldNames.Plan, out var planEl) && planEl.ValueKind == JsonValueKind.Array)
         {
             foreach (var p in planEl.EnumerateArray())
             {
                 if (p.ValueKind != JsonValueKind.Object)
                     continue;
 
-                var step = TryGetString(p, "step") ?? string.Empty;
-                var status = TryGetString(p, "status") ?? string.Empty;
+                var step = TryGetString(p, JsonFieldNames.Step) ?? string.Empty;
+                var status = TryGetString(p, JsonFieldNames.Status) ?? string.Empty;
                 steps.Add(new PlanStep(step, status));
             }
         }
@@ -308,14 +309,14 @@ internal static partial class JsonlEventEnvelopeParsers
     private static TaskStartedEvent ParseTaskStartedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var ctx = TryGetInt(payload, "model_context_window");
+        var ctx = TryGetInt(payload, JsonFieldNames.SnakeCase.ModelContextWindow);
 
         return new TaskStartedEvent
         {
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            TurnId = TryGetString(payload, "turn_id"),
+            TurnId = TryGetString(payload, JsonFieldNames.SnakeCase.TurnId),
             ModelContextWindow = ctx
         };
     }
@@ -329,7 +330,7 @@ internal static partial class JsonlEventEnvelopeParsers
             Timestamp = timestamp,
             Type = type,
             RawPayload = rawPayload,
-            TurnId = TryGetString(payload, "turn_id"),
+            TurnId = TryGetString(payload, JsonFieldNames.SnakeCase.TurnId),
             LastAgentMessage = last
         };
     }
@@ -337,7 +338,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static PatchApplyBeginEvent? ParsePatchApplyBeginEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var callId = TryGetString(payload, "call_id");
+        var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
         if (string.IsNullOrWhiteSpace(callId))
             return null;
 
@@ -349,7 +350,7 @@ internal static partial class JsonlEventEnvelopeParsers
         }
 
         var changes = new Dictionary<string, PatchApplyFileChange>(StringComparer.OrdinalIgnoreCase);
-        if (payload.TryGetProperty("changes", out var changesEl) && changesEl.ValueKind == JsonValueKind.Object)
+        if (payload.TryGetProperty(JsonFieldNames.Changes, out var changesEl) && changesEl.ValueKind == JsonValueKind.Object)
         {
             foreach (var prop in changesEl.EnumerateObject())
             {
@@ -383,7 +384,7 @@ internal static partial class JsonlEventEnvelopeParsers
         PatchApplyAddOperation? add = null;
         if (el.TryGetProperty("add", out var addEl) && addEl.ValueKind == JsonValueKind.Object)
         {
-            var content = TryGetString(addEl, "content") ?? string.Empty;
+            var content = TryGetString(addEl, JsonFieldNames.Content) ?? string.Empty;
             add = new PatchApplyAddOperation(content);
         }
 
@@ -391,7 +392,7 @@ internal static partial class JsonlEventEnvelopeParsers
         if (el.TryGetProperty("update", out var updateEl) && updateEl.ValueKind == JsonValueKind.Object)
         {
             update = new PatchApplyUpdateOperation(
-                UnifiedDiff: TryGetString(updateEl, "unified_diff"),
+                UnifiedDiff: TryGetString(updateEl, JsonFieldNames.SnakeCase.UnifiedDiff),
                 MovePath: TryGetString(updateEl, "move_path"),
                 OriginalContent: TryGetString(updateEl, "original_content"),
                 NewContent: TryGetString(updateEl, "new_content"));
@@ -412,19 +413,19 @@ internal static partial class JsonlEventEnvelopeParsers
     private static PatchApplyEndEvent? ParsePatchApplyEndEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var callId = TryGetString(payload, "call_id");
+        var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
         if (string.IsNullOrWhiteSpace(callId))
             return null;
 
         bool? success = null;
-        if (payload.TryGetProperty("success", out var successEl) &&
+        if (payload.TryGetProperty(JsonFieldNames.Success, out var successEl) &&
             (successEl.ValueKind == JsonValueKind.True || successEl.ValueKind == JsonValueKind.False))
         {
             success = successEl.GetBoolean();
         }
 
         var changes = new Dictionary<string, PatchApplyFileChange>(StringComparer.OrdinalIgnoreCase);
-        if (payload.TryGetProperty("changes", out var changesEl) && changesEl.ValueKind == JsonValueKind.Object)
+        if (payload.TryGetProperty(JsonFieldNames.Changes, out var changesEl) && changesEl.ValueKind == JsonValueKind.Object)
         {
             foreach (var prop in changesEl.EnumerateObject())
             {
@@ -445,10 +446,10 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             CallId = callId,
-            Stdout = TryGetString(payload, "stdout"),
-            Stderr = TryGetString(payload, "stderr"),
+            Stdout = TryGetString(payload, JsonFieldNames.Stdout),
+            Stderr = TryGetString(payload, JsonFieldNames.Stderr),
             Success = success,
-            Status = TryGetString(payload, "status"),
+            Status = TryGetString(payload, JsonFieldNames.Status),
             Changes = changes.Count == 0 ? null : changes
         };
     }

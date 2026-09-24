@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -10,7 +11,7 @@ public sealed class ExternalAgentConfigDetectOptions
     /// <summary>
     /// Gets or sets zero or more working directories to include for repo-scoped detection.
     /// </summary>
-    [JsonPropertyName("cwds")]
+    [JsonPropertyName(JsonFieldNames.Cwds)]
     public IReadOnlyList<string>? Cwds { get; set; }
 
     /// <summary>

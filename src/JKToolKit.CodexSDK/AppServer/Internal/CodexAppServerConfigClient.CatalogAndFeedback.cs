@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -114,7 +115,7 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new FeedbackUploadResult
         {
-            ThreadId = CodexAppServerClientJson.GetRequiredString(result, "threadId", "feedback/upload response"),
+            ThreadId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.ThreadId, "feedback/upload response"),
             PromptHash = CodexAppServerClientJson.GetStringOrNull(result, "promptHash"),
             Raw = result
         };
@@ -122,7 +123,7 @@ internal sealed partial class CodexAppServerConfigClient
 
     private static ModelListResult ParseModelListResult(JsonElement result)
     {
-        var data = CodexAppServerClientJson.TryGetArray(result, "data")
+        var data = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data)
             ?? throw new InvalidOperationException("Missing required property 'data' on model/list response.");
 
         var entries = new List<ModelListEntry>();
@@ -133,10 +134,10 @@ internal sealed partial class CodexAppServerConfigClient
                 throw new InvalidOperationException("model/list response contains a non-object entry in 'data'.");
             }
 
-            var id = CodexAppServerClientJson.GetRequiredString(item, "id", "model/list entry");
-            var model = CodexAppServerClientJson.GetRequiredString(item, "model", "model/list entry");
-            var displayName = CodexAppServerClientJson.GetRequiredString(item, "displayName", "model/list entry");
-            var description = CodexAppServerClientJson.GetRequiredString(item, "description", "model/list entry");
+            var id = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Id, "model/list entry");
+            var model = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Model, "model/list entry");
+            var displayName = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.DisplayName, "model/list entry");
+            var description = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Description, "model/list entry");
             var defaultReasoningEffort = CodexAppServerClientJson.GetRequiredString(item, "defaultReasoningEffort", "model/list entry");
 
             entries.Add(new ModelListEntry
@@ -157,7 +158,7 @@ internal sealed partial class CodexAppServerConfigClient
                 Upgrade = CodexAppServerClientJson.GetStringOrNull(item, "upgrade"),
                 DefaultReasoningEffort = defaultReasoningEffort,
                 AvailabilityNuxMessage = CodexAppServerClientJson.TryGetObject(item, "availabilityNux") is { } availabilityNux
-                    ? CodexAppServerClientJson.GetStringOrNull(availabilityNux, "message")
+                    ? CodexAppServerClientJson.GetStringOrNull(availabilityNux, JsonFieldNames.Message)
                     : null,
                 InputModalities = CodexAppServerClientJson.GetOptionalStringArray(item, "inputModalities") ?? ["text", "image"],
                 SupportedReasoningEfforts = ParseReasoningEfforts(item),
@@ -176,14 +177,14 @@ internal sealed partial class CodexAppServerConfigClient
         return new ModelListResult
         {
             Data = entries,
-            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, "nextCursor"),
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
 
     private static ExperimentalFeatureListResult ParseExperimentalFeatureListResult(JsonElement result)
     {
-        var data = CodexAppServerClientJson.TryGetArray(result, "data")
+        var data = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data)
             ?? throw new InvalidOperationException("Missing required property 'data' on experimentalFeature/list response.");
 
         var entries = new List<ExperimentalFeatureListEntry>();
@@ -194,9 +195,9 @@ internal sealed partial class CodexAppServerConfigClient
                 throw new InvalidOperationException("experimentalFeature/list response contains a non-object entry in 'data'.");
             }
 
-            var name = CodexAppServerClientJson.GetRequiredString(item, "name", "experimentalFeature/list entry");
+            var name = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Name, "experimentalFeature/list entry");
             var stage = CodexAppServerClientJson.GetRequiredString(item, "stage", "experimentalFeature/list entry");
-            var enabled = CodexAppServerClientJson.GetBoolOrNull(item, "enabled")
+            var enabled = CodexAppServerClientJson.GetBoolOrNull(item, JsonFieldNames.Enabled)
                 ?? throw new InvalidOperationException("Missing required boolean property 'enabled' on experimentalFeature/list entry.");
             var defaultEnabled = CodexAppServerClientJson.GetBoolOrNull(item, "defaultEnabled")
                 ?? throw new InvalidOperationException("Missing required boolean property 'defaultEnabled' on experimentalFeature/list entry.");
@@ -205,8 +206,8 @@ internal sealed partial class CodexAppServerConfigClient
             {
                 Name = name,
                 Stage = stage,
-                DisplayName = CodexAppServerClientJson.GetStringOrNull(item, "displayName"),
-                Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
+                DisplayName = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.DisplayName),
+                Description = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Description),
                 Announcement = CodexAppServerClientJson.GetStringOrNull(item, "announcement"),
                 Enabled = enabled,
                 DefaultEnabled = defaultEnabled,
@@ -217,7 +218,7 @@ internal sealed partial class CodexAppServerConfigClient
         return new ExperimentalFeatureListResult
         {
             Data = entries,
-            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, "nextCursor"),
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
@@ -238,7 +239,7 @@ internal sealed partial class CodexAppServerConfigClient
                 continue;
             }
 
-            var reasoningEffort = CodexAppServerClientJson.GetStringOrNull(effort, "reasoningEffort");
+            var reasoningEffort = CodexAppServerClientJson.GetStringOrNull(effort, JsonFieldNames.ReasoningEffort);
             if (string.IsNullOrWhiteSpace(reasoningEffort))
             {
                 continue;
@@ -247,7 +248,7 @@ internal sealed partial class CodexAppServerConfigClient
             parsed.Add(new ModelReasoningEffortOption
             {
                 ReasoningEffort = reasoningEffort,
-                Description = CodexAppServerClientJson.GetStringOrNull(effort, "description") ?? string.Empty
+                Description = CodexAppServerClientJson.GetStringOrNull(effort, JsonFieldNames.Description) ?? string.Empty
             });
         }
 
@@ -256,8 +257,8 @@ internal sealed partial class CodexAppServerConfigClient
 
     private static ConfigWriteResult ParseConfigWriteResult(JsonElement result)
     {
-        var status = ParseConfigWriteStatus(CodexAppServerClientJson.GetRequiredString(result, "status", "config write response"));
-        var version = CodexAppServerClientJson.GetRequiredString(result, "version", "config write response");
+        var status = ParseConfigWriteStatus(CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.Status, "config write response"));
+        var version = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.Version, "config write response");
         var filePath = CodexAppServerClientJson.GetRequiredString(result, "filePath", "config write response");
         var overriddenMetadata = ParseConfigWriteOverriddenMetadata(result);
 
@@ -286,7 +287,7 @@ internal sealed partial class CodexAppServerConfigClient
             return null;
         }
 
-        var message = CodexAppServerClientJson.GetRequiredString(metadata, "message", "config write overriddenMetadata");
+        var message = CodexAppServerClientJson.GetRequiredString(metadata, JsonFieldNames.Message, "config write overriddenMetadata");
         if (CodexAppServerClientJson.TryGetObject(metadata, "overridingLayer") is not JsonElement overridingLayer)
         {
             throw new InvalidOperationException("Missing required object property 'overridingLayer' on config write overriddenMetadata.");
@@ -317,7 +318,7 @@ internal sealed partial class CodexAppServerConfigClient
         }
 
         var upgrade = upgradeInfo.Value;
-        var model = CodexAppServerClientJson.GetStringOrNull(upgrade, "model");
+        var model = CodexAppServerClientJson.GetStringOrNull(upgrade, JsonFieldNames.Model);
         if (string.IsNullOrWhiteSpace(model))
         {
             return null;

@@ -36,8 +36,8 @@ internal sealed class StdioProcessFactory
             Arguments = launch.Arguments,
             WorkingDirectory = launch.WorkingDirectory,
             Environment = launch.Environment,
-            StartupTimeout = startupTimeout ?? TimeSpan.FromSeconds(30),
-            ShutdownTimeout = shutdownTimeout ?? TimeSpan.FromSeconds(5)
+            StartupTimeout = startupTimeout ?? ProcessDefaults.StartupTimeout,
+            ShutdownTimeout = shutdownTimeout ?? ProcessDefaults.ShutdownTimeout
         };
 
         _logger.LogDebug(

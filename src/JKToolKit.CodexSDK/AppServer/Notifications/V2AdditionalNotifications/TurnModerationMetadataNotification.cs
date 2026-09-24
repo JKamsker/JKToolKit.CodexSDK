@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class TurnModerationMetadataNotification : AppServerNotific
     /// Initializes a new instance of <see cref="TurnModerationMetadataNotification"/>.
     /// </summary>
     public TurnModerationMetadataNotification(string ThreadId, string TurnId, JsonElement Metadata, JsonElement Params)
-        : base("turn/moderationMetadata", Params)
+        : base(AppServerMethods.TurnModerationMetadata, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

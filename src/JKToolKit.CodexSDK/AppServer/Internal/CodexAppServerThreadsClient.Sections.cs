@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -26,11 +28,11 @@ internal sealed partial class CodexAppServerThreadsClient
         ValidateRequiredWireValue(options.Name, nameof(options.Name), nameof(options));
 
         var result = await _sendRequestAsync(
-            "threadSection/create",
+            AppServerMethods.ThreadSectionCreate,
             BuildThreadSectionCreateParams(options),
             ct);
 
-        return CodexAppServerClientThreadParsers.ParseThreadSectionResult(result, "threadSection/create");
+        return CodexAppServerClientThreadParsers.ParseThreadSectionResult(result, AppServerMethods.ThreadSectionCreate);
     }
 
     public async Task<ThreadSectionResult> UpdateThreadSectionAsync(ThreadSectionUpdateOptions options, CancellationToken ct = default)
@@ -40,11 +42,11 @@ internal sealed partial class CodexAppServerThreadsClient
         ValidateRequiredWireValue(options.Name, nameof(options.Name), nameof(options));
 
         var result = await _sendRequestAsync(
-            "threadSection/update",
+            AppServerMethods.ThreadSectionUpdate,
             BuildThreadSectionUpdateParams(options),
             ct);
 
-        return CodexAppServerClientThreadParsers.ParseThreadSectionResult(result, "threadSection/update");
+        return CodexAppServerClientThreadParsers.ParseThreadSectionResult(result, AppServerMethods.ThreadSectionUpdate);
     }
 
     public async Task<ThreadSectionResult> DeleteThreadSectionAsync(ThreadSectionDeleteOptions options, CancellationToken ct = default)
@@ -85,8 +87,8 @@ internal sealed partial class CodexAppServerThreadsClient
     {
         var values = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["threadId"] = options.ThreadId,
-            ["sectionId"] = options.SectionId
+            [JsonFieldNames.ThreadId] = options.ThreadId,
+            [JsonFieldNames.SectionId] = options.SectionId
         };
 
         if (options.BeforeThreadId is not null)
@@ -101,12 +103,12 @@ internal sealed partial class CodexAppServerThreadsClient
     {
         var values = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["name"] = options.Name
+            [JsonFieldNames.Name] = options.Name
         };
 
         if (options.Appearance is not null)
         {
-            values["appearance"] = BuildThreadSectionAppearance(options.Appearance);
+            values[JsonFieldNames.Appearance] = BuildThreadSectionAppearance(options.Appearance);
         }
 
         return values;
@@ -121,17 +123,17 @@ internal sealed partial class CodexAppServerThreadsClient
 
         var values = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["sectionId"] = options.SectionId,
-            ["name"] = options.Name
+            [JsonFieldNames.SectionId] = options.SectionId,
+            [JsonFieldNames.Name] = options.Name
         };
 
         if (options.ClearAppearance)
         {
-            values["appearance"] = null;
+            values[JsonFieldNames.Appearance] = null;
         }
         else if (options.Appearance is not null)
         {
-            values["appearance"] = BuildThreadSectionAppearance(options.Appearance);
+            values[JsonFieldNames.Appearance] = BuildThreadSectionAppearance(options.Appearance);
         }
 
         return values;
@@ -140,8 +142,8 @@ internal sealed partial class CodexAppServerThreadsClient
     private static Dictionary<string, object?> BuildThreadSectionAppearance(ThreadSectionAppearanceOptions appearance) =>
         new(StringComparer.Ordinal)
         {
-            ["color"] = appearance.Color,
-            ["icon"] = appearance.Icon
+            [JsonFieldNames.Color] = appearance.Color,
+            [JsonFieldNames.Icon] = appearance.Icon
         };
 
     private static JsonElement? BuildThreadListSectionId(ThreadListOptions options)

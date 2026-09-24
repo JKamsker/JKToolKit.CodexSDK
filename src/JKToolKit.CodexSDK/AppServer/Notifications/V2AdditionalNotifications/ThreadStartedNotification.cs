@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +23,7 @@ public sealed record class ThreadStartedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadStartedNotification"/>.
     /// </summary>
     public ThreadStartedNotification(JsonElement Thread, CodexThreadSummary? ThreadSummary, JsonElement Params)
-        : base("thread/started", Params)
+        : base(AppServerMethods.ThreadStarted, Params)
     {
         this.Thread = Thread;
         this.ThreadSummary = ThreadSummary;
@@ -33,7 +35,7 @@ public sealed record class ThreadStartedNotification : AppServerNotification
     public string? ThreadId =>
         ThreadSummary?.ThreadId ??
         (Thread.ValueKind == JsonValueKind.Object &&
-         Thread.TryGetProperty("id", out var id) &&
+         Thread.TryGetProperty(JsonFieldNames.Id, out var id) &&
          id.ValueKind == JsonValueKind.String
             ? id.GetString()
             : null);

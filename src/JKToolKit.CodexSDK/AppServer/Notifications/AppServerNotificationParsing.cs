@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
@@ -27,8 +28,8 @@ internal static partial class AppServerNotificationParsing
             results.Add(new FuzzyFileSearchResult
             {
                 Root = GetString(item, "root") ?? string.Empty,
-                Path = GetString(item, "path") ?? string.Empty,
-                FileName = GetString(item, "fileName") ?? GetString(item, "file_name") ?? string.Empty,
+                Path = GetString(item, JsonFieldNames.Path) ?? string.Empty,
+                FileName = GetString(item, JsonFieldNames.FileName) ?? GetString(item, "file_name") ?? string.Empty,
                 Score = GetUInt32(item, "score"),
                 MatchType = matchType,
                 MatchKind = ParseMatchType(matchType),

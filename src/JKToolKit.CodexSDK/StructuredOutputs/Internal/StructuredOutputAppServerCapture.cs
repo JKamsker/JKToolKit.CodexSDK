@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 
@@ -22,7 +23,7 @@ internal static class StructuredOutputAppServerCapture
                     break;
                 case ItemCompletedNotification ic when string.Equals(ic.ItemType, "agentMessage", StringComparison.Ordinal):
                     if (ic.Item.ValueKind == JsonValueKind.Object &&
-                        ic.Item.TryGetProperty("text", out var t) &&
+                        ic.Item.TryGetProperty(JsonFieldNames.Text, out var t) &&
                         t.ValueKind == JsonValueKind.String)
                     {
                         fullText = t.GetString();

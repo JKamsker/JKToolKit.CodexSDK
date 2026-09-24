@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,37 +12,37 @@ public sealed record class ThreadStartParams
     /// <summary>
     /// Gets an optional model identifier.
     /// </summary>
-    [JsonPropertyName("model")]
+    [JsonPropertyName(JsonFieldNames.Model)]
     public string? Model { get; init; }
 
     /// <summary>
     /// Gets an optional model provider identifier.
     /// </summary>
-    [JsonPropertyName("modelProvider")]
+    [JsonPropertyName(JsonFieldNames.ModelProvider)]
     public string? ModelProvider { get; init; }
 
     /// <summary>
     /// Gets an optional working directory for the thread.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets optional thread-scoped runtime workspace roots.
     /// </summary>
-    [JsonPropertyName("runtimeWorkspaceRoots")]
+    [JsonPropertyName(JsonFieldNames.RuntimeWorkspaceRoots)]
     public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; init; }
 
     /// <summary>
     /// Gets optional sticky execution environments for turns on this thread.
     /// </summary>
-    [JsonPropertyName("environments")]
+    [JsonPropertyName(JsonFieldNames.Environments)]
     public IReadOnlyList<TurnEnvironmentParams>? Environments { get; init; }
 
     /// <summary>
     /// Gets an optional service tier override for the thread.
     /// </summary>
-    [JsonPropertyName("serviceTier")]
+    [JsonPropertyName(JsonFieldNames.ServiceTier)]
     public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
@@ -59,7 +60,7 @@ public sealed record class ThreadStartParams
     /// <summary>
     /// Gets an optional project assignment for the new thread.
     /// </summary>
-    [JsonPropertyName("projectId")]
+    [JsonPropertyName(JsonFieldNames.ProjectId)]
     public string? ProjectId { get; init; }
 
     /// <summary>
@@ -75,13 +76,13 @@ public sealed record class ThreadStartParams
     /// This supports the upstream <c>AskForApproval</c> union:
     /// either a simple string policy (for example <c>untrusted</c>) or an object form (for example <c>{"reject":{...}}</c>).
     /// </remarks>
-    [JsonPropertyName("approvalPolicy")]
+    [JsonPropertyName(JsonFieldNames.ApprovalPolicy)]
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
     /// Gets an optional approval reviewer routing override.
     /// </summary>
-    [JsonPropertyName("approvalsReviewer")]
+    [JsonPropertyName(JsonFieldNames.ApprovalsReviewer)]
     public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
@@ -90,43 +91,43 @@ public sealed record class ThreadStartParams
     /// <remarks>
     /// Known values include <c>read-only</c>, <c>workspace-write</c>, and <c>danger-full-access</c>.
     /// </remarks>
-    [JsonPropertyName("sandbox")]
+    [JsonPropertyName(JsonFieldNames.Sandbox)]
     public string? Sandbox { get; init; }
 
     /// <summary>
     /// Gets an optional named permission profile id.
     /// </summary>
-    [JsonPropertyName("permissions")]
+    [JsonPropertyName(JsonFieldNames.Permissions)]
     public string? Permissions { get; init; }
 
     /// <summary>
     /// Gets optional config overrides (raw JSON object).
     /// </summary>
-    [JsonPropertyName("config")]
+    [JsonPropertyName(JsonFieldNames.Config)]
     public JsonElement? Config { get; init; }
 
     /// <summary>
     /// Gets optional base instructions.
     /// </summary>
-    [JsonPropertyName("baseInstructions")]
+    [JsonPropertyName(JsonFieldNames.BaseInstructions)]
     public string? BaseInstructions { get; init; }
 
     /// <summary>
     /// Gets optional developer instructions.
     /// </summary>
-    [JsonPropertyName("developerInstructions")]
+    [JsonPropertyName(JsonFieldNames.DeveloperInstructions)]
     public string? DeveloperInstructions { get; init; }
 
     /// <summary>
     /// Gets an optional personality identifier.
     /// </summary>
-    [JsonPropertyName("personality")]
+    [JsonPropertyName(JsonFieldNames.Personality)]
     public string? Personality { get; init; }
 
     /// <summary>
     /// Gets an optional value indicating whether the thread should be ephemeral (not persisted on disk).
     /// </summary>
-    [JsonPropertyName("ephemeral")]
+    [JsonPropertyName(JsonFieldNames.Ephemeral)]
     public bool? Ephemeral { get; init; }
 
     /// <summary>

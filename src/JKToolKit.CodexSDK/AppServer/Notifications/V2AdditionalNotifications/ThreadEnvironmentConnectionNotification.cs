@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -30,6 +31,6 @@ public sealed record class ThreadEnvironmentConnectionNotification : AppServerNo
     {
         ThreadId = threadId;
         EnvironmentId = environmentId;
-        Connected = method == "thread/environment/connected";
+        Connected = method == AppServerMethods.ThreadEnvironmentConnected;
     }
 }

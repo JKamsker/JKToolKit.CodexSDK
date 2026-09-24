@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +22,7 @@ public sealed record class AppListUpdatedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="AppListUpdatedNotification"/>.
     /// </summary>
     public AppListUpdatedNotification(IReadOnlyList<AppDescriptor> apps, JsonElement data, JsonElement @params)
-        : base("app/list/updated", @params)
+        : base(AppServerMethods.AppListUpdated, @params)
     {
         Apps = apps;
         Data = data;

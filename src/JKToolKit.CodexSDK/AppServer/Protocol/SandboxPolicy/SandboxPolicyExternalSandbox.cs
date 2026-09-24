@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -22,7 +23,7 @@ public abstract partial record class SandboxPolicy
         /// <remarks>
         /// When omitted, the server default is <c>restricted</c>.
         /// </remarks>
-        [JsonPropertyName("networkAccess")]
+        [JsonPropertyName(JsonFieldNames.NetworkAccess)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonConverter(typeof(SandboxNetworkAccessJsonConverter))]
         public SandboxNetworkAccess? NetworkAccess { get; init; }

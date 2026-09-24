@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class ThreadTokenUsageUpdatedNotification : AppServerNotifi
     /// Initializes a new instance of <see cref="ThreadTokenUsageUpdatedNotification"/>.
     /// </summary>
     public ThreadTokenUsageUpdatedNotification(string ThreadId, string TurnId, JsonElement TokenUsage, JsonElement Params)
-        : base("thread/tokenUsage/updated", Params)
+        : base(AppServerMethods.ThreadTokenUsageUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

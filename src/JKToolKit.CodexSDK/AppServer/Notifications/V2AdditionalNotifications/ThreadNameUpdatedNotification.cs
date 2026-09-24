@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +22,7 @@ public sealed record class ThreadNameUpdatedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadNameUpdatedNotification"/>.
     /// </summary>
     public ThreadNameUpdatedNotification(string ThreadId, string? ThreadName, JsonElement Params)
-        : base("thread/name/updated", Params)
+        : base(AppServerMethods.ThreadNameUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.ThreadName = ThreadName;

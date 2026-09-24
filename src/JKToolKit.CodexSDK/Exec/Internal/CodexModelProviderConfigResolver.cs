@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using JKToolKit.CodexSDK.Infrastructure.Json;
+using JKToolKit.CodexSDK.Infrastructure;
 
 namespace JKToolKit.CodexSDK.Exec.Internal;
 
@@ -104,7 +106,7 @@ internal static partial class CodexModelProviderConfigResolver
         {
             explicitCodexHomeDirectory,
             TryInferCodexHomeFromSessionsRoot(sessionsRoot),
-            Environment.GetEnvironmentVariable("CODEX_HOME")
+            Environment.GetEnvironmentVariable(CodexEnvironmentVariables.Home)
         };
 
         foreach (var candidate in candidates)
@@ -175,7 +177,7 @@ internal static partial class CodexModelProviderConfigResolver
             return true;
         }
 
-        profileName = match.Groups["profile"].Value;
+        profileName = match.Groups[JsonFieldNames.Profile].Value;
         return true;
     }
 

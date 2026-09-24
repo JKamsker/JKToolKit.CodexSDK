@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -86,7 +87,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
 
         NetworkRequirements? network = null;
         ApplicationRequirements? application = null;
-        if (experimentalApiEnabled && TryGetObject(req, "network") is { } net)
+        if (experimentalApiEnabled && TryGetObject(req, JsonFieldNames.Network) is { } net)
         {
             network = ParseNetworkRequirements(net);
         }
@@ -97,8 +98,8 @@ internal static class CodexAppServerClientConfigRequirementsParser
 
         return new ConfigRequirements
         {
-            ModelProvider = GetStringOrNull(req, "modelProvider"),
-            ModelProviders = ParseJsonMap(req, "modelProviders"),
+            ModelProvider = GetStringOrNull(req, JsonFieldNames.ModelProvider),
+            ModelProviders = ParseJsonMap(req, JsonFieldNames.ModelProviders),
             AllowedLoginMethods = GetOptionalStringArray(req, "allowedLoginMethods"),
             AllowedApprovalPolicies = allowedApprovalPolicyValues?.ToArray(),
             AllowedAskForApproval = allowedAskForApprovalValues?.ToArray(),
@@ -136,18 +137,18 @@ internal static class CodexAppServerClientConfigRequirementsParser
             Feedback = TryGetObject(req, "feedback") is { } feedback
                 ? new FeedbackRequirements
                 {
-                    Enabled = GetBoolOrNull(feedback, "enabled"),
+                    Enabled = GetBoolOrNull(feedback, JsonFieldNames.Enabled),
                     Raw = feedback.Clone()
                 }
                 : null,
             SqliteHome = GetStringOrNull(req, "sqliteHome"),
             LogDir = GetStringOrNull(req, "logDir"),
             ModelCatalogJson = GetStringOrNull(req, "modelCatalogJson"),
-            Hooks = TryGetObject(req, "hooks")?.Clone(),
+            Hooks = TryGetObject(req, JsonFieldNames.Hooks)?.Clone(),
             EnforceResidency = residency,
             Network = network,
             Application = application,
-            AutoReview = TryGetObject(req, "autoReview") is { } autoReview
+            AutoReview = TryGetObject(req, JsonFieldNames.AutoReview) is { } autoReview
                 ? new AutoReviewRequirements
                 {
                     RequiredOnModels = GetOptionalStringArray(autoReview, "requiredOnModels"),
@@ -209,7 +210,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             DefaultOriginPolicy = TryGetObject(browserUse, "defaultOriginPolicy") is { } defaultPolicy
                 ? ParseBrowserUseOriginPolicy(defaultPolicy)
                 : null,
-            Origins = ParseBrowserUseOriginPolicyMap(browserUse, "origins"),
+            Origins = ParseBrowserUseOriginPolicyMap(browserUse, JsonFieldNames.Origins),
             Raw = browserUse.Clone()
         };
     }
@@ -218,11 +219,11 @@ internal static class CodexAppServerClientConfigRequirementsParser
     {
         return new BrowserUseOriginPolicy
         {
-            Access = ParseAllowDenyRequirement(GetStringOrNull(policy, "access")),
+            Access = ParseAllowDenyRequirement(GetStringOrNull(policy, JsonFieldNames.Access)),
             Downloads = ParseAllowDenyRequirement(GetStringOrNull(policy, "downloads")),
             Uploads = ParseAllowDenyRequirement(GetStringOrNull(policy, "uploads")),
             FullCdpAccess = ParseAllowDenyRequirement(GetStringOrNull(policy, "fullCdpAccess")),
-            AutoReview = ParseAllowDenyRequirement(GetStringOrNull(policy, "autoReview")),
+            AutoReview = ParseAllowDenyRequirement(GetStringOrNull(policy, JsonFieldNames.AutoReview)),
             PersistentApproval = GetBoolOrNull(policy, "persistentApproval"),
             AccessApprovalLifetime = ParseBrowserUseAccessApprovalLifetime(GetStringOrNull(policy, "accessApprovalLifetime")),
             Raw = policy.Clone()
@@ -239,16 +240,16 @@ internal static class CodexAppServerClientConfigRequirementsParser
     {
         return new NetworkRequirements
         {
-            Enabled = GetBoolOrNull(network, "enabled"),
+            Enabled = GetBoolOrNull(network, JsonFieldNames.Enabled),
             HttpPort = GetInt32OrNull(network, "httpPort"),
             SocksPort = GetInt32OrNull(network, "socksPort"),
             AllowUpstreamProxy = GetBoolOrNull(network, "allowUpstreamProxy"),
             DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
             DangerouslyAllowAllUnixSockets = GetBoolOrNull(network, "dangerouslyAllowAllUnixSockets"),
-            Domains = ParseDomainPermissions(network, "domains"),
+            Domains = ParseDomainPermissions(network, JsonFieldNames.Domains),
             ManagedAllowedDomainsOnly = GetBoolOrNull(network, "managedAllowedDomainsOnly"),
-            AllowedDomains = GetOptionalStringArray(network, "allowedDomains"),
-            DeniedDomains = GetOptionalStringArray(network, "deniedDomains"),
+            AllowedDomains = GetOptionalStringArray(network, JsonFieldNames.AllowedDomains),
+            DeniedDomains = GetOptionalStringArray(network, JsonFieldNames.DeniedDomains),
             AllowUnixSockets = GetOptionalStringArray(network, "allowUnixSockets"),
             UnixSockets = ParseUnixSocketPermissions(network, "unixSockets"),
             AllowLocalBinding = GetBoolOrNull(network, "allowLocalBinding"),
@@ -260,11 +261,11 @@ internal static class CodexAppServerClientConfigRequirementsParser
     {
         return new ApplicationRequirements
         {
-            Network = TryGetObject(application, "network") is { } network
+            Network = TryGetObject(application, JsonFieldNames.Network) is { } network
                 ? new ApplicationNetworkRequirements
                 {
-                    Enabled = GetBoolOrNull(network, "enabled"),
-                    Domains = ParseDomainPermissions(network, "domains"),
+                    Enabled = GetBoolOrNull(network, JsonFieldNames.Enabled),
+                    Domains = ParseDomainPermissions(network, JsonFieldNames.Domains),
                     Raw = network.Clone()
                 }
                 : null,
@@ -353,7 +354,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             var productName = GetStringOrNull(exe, "productName");
             if (string.IsNullOrWhiteSpace(publisherName) ||
                 string.IsNullOrWhiteSpace(productName) ||
-                !AllowDenyRequirementValue.TryParse(GetStringOrNull(exe, "access"), out var access))
+                !AllowDenyRequirementValue.TryParse(GetStringOrNull(exe, JsonFieldNames.Access), out var access))
             {
                 continue;
             }

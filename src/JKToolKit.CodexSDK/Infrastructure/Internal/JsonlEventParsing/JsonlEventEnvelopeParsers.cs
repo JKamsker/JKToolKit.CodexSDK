@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using Microsoft.Extensions.Logging;
 
@@ -14,20 +15,20 @@ internal static partial class JsonlEventEnvelopeParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        if (!root.TryGetProperty(JsonFieldNames.Payload, out var payload) || payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("event_msg missing 'payload' object");
             return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event_msg", rawPayload, ctx);
         }
 
-        var innerType = TryGetString(payload, "type");
+        var innerType = TryGetString(payload, JsonFieldNames.Type);
         if (string.IsNullOrWhiteSpace(innerType))
         {
             ctx.Logger.LogDebug("event_msg missing inner 'payload.type'; returning unknown event");
             return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event_msg", rawPayload, ctx);
         }
 
-        var innerRoot = payload.TryGetProperty("payload", out var innerPayload) && innerPayload.ValueKind == JsonValueKind.Object
+        var innerRoot = payload.TryGetProperty(JsonFieldNames.Payload, out var innerPayload) && innerPayload.ValueKind == JsonValueKind.Object
             ? innerPayload
             : payload;
 
@@ -79,19 +80,19 @@ internal static partial class JsonlEventEnvelopeParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        if (!root.TryGetProperty(JsonFieldNames.Payload, out var payload) || payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("event missing 'payload' object");
             return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event", rawPayload, ctx);
         }
 
-        if (!payload.TryGetProperty("msg", out var msg) || msg.ValueKind != JsonValueKind.Object)
+        if (!payload.TryGetProperty(JsonFieldNames.Msg, out var msg) || msg.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("event missing 'payload.msg' object");
             return JsonlEventBasicParsers.ParseUnknownEvent(timestamp, "event", rawPayload, ctx);
         }
 
-        var msgType = TryGetString(msg, "type");
+        var msgType = TryGetString(msg, JsonFieldNames.Type);
         if (string.IsNullOrWhiteSpace(msgType))
         {
             ctx.Logger.LogWarning("event missing 'payload.msg.type'");
@@ -143,7 +144,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static BackgroundEvent? ParseBackgroundEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var msg = TryGetString(payload, "message") ?? TryGetString(payload, "text");
+        var msg = TryGetString(payload, JsonFieldNames.Message) ?? TryGetString(payload, JsonFieldNames.Text);
         if (string.IsNullOrWhiteSpace(msg))
             return null;
 
@@ -153,7 +154,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static CompactionCheckpointWarningEvent? ParseCompactionCheckpointWarningEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var msg = TryGetString(payload, "message") ?? TryGetString(payload, "text");
+        var msg = TryGetString(payload, JsonFieldNames.Message) ?? TryGetString(payload, JsonFieldNames.Text);
         if (string.IsNullOrWhiteSpace(msg))
             return null;
 
@@ -163,7 +164,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static ErrorEvent? ParseErrorEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var msg = TryGetString(payload, "message") ?? TryGetString(payload, "text");
+        var msg = TryGetString(payload, JsonFieldNames.Message) ?? TryGetString(payload, JsonFieldNames.Text);
         if (string.IsNullOrWhiteSpace(msg))
             return null;
 
@@ -177,7 +178,7 @@ internal static partial class JsonlEventEnvelopeParsers
         JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var text = TryGetString(payload, "text") ?? TryGetString(payload, "message");
+        var text = TryGetString(payload, JsonFieldNames.Text) ?? TryGetString(payload, JsonFieldNames.Message);
         if (string.IsNullOrWhiteSpace(text))
             return null;
 
@@ -197,7 +198,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static UndoCompletedEvent? ParseUndoCompletedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        if (!payload.TryGetProperty("success", out var successEl) ||
+        if (!payload.TryGetProperty(JsonFieldNames.Success, out var successEl) ||
             (successEl.ValueKind != JsonValueKind.True && successEl.ValueKind != JsonValueKind.False))
         {
             return null;
@@ -209,28 +210,28 @@ internal static partial class JsonlEventEnvelopeParsers
             Type = type,
             RawPayload = rawPayload,
             Success = successEl.GetBoolean(),
-            Message = TryGetString(payload, "message")
+            Message = TryGetString(payload, JsonFieldNames.Message)
         };
     }
 
     private static TurnItemCompletedEvent ParseItemCompletedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var threadId = TryGetString(payload, "thread_id");
-        var turnId = TryGetString(payload, "turn_id");
+        var threadId = TryGetString(payload, JsonFieldNames.SnakeCase.ThreadId);
+        var turnId = TryGetString(payload, JsonFieldNames.SnakeCase.TurnId);
 
         string? itemType = null;
         string? itemId = null;
         string? text = null;
 
-        if (payload.TryGetProperty("item", out var itemEl) && itemEl.ValueKind == JsonValueKind.Object)
+        if (payload.TryGetProperty(JsonFieldNames.Item, out var itemEl) && itemEl.ValueKind == JsonValueKind.Object)
         {
-            itemType = TryGetString(itemEl, "type");
-            itemId = TryGetString(itemEl, "id");
-            text = TryGetString(itemEl, "text");
+            itemType = TryGetString(itemEl, JsonFieldNames.Type);
+            itemId = TryGetString(itemEl, JsonFieldNames.Id);
+            text = TryGetString(itemEl, JsonFieldNames.Text);
 
             if (string.IsNullOrWhiteSpace(text) &&
-                itemEl.TryGetProperty("content", out var contentEl) &&
+                itemEl.TryGetProperty(JsonFieldNames.Content, out var contentEl) &&
                 contentEl.ValueKind == JsonValueKind.Array)
             {
                 foreach (var part in contentEl.EnumerateArray())
@@ -238,7 +239,7 @@ internal static partial class JsonlEventEnvelopeParsers
                     if (part.ValueKind != JsonValueKind.Object)
                         continue;
 
-                    var partText = TryGetString(part, "text");
+                    var partText = TryGetString(part, JsonFieldNames.Text);
                     if (!string.IsNullOrWhiteSpace(partText))
                     {
                         text = partText;
@@ -264,7 +265,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static TurnAbortedEvent? ParseTurnAbortedEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var reason = TryGetString(payload, "reason");
+        var reason = TryGetString(payload, JsonFieldNames.Reason);
         if (string.IsNullOrWhiteSpace(reason))
             return null;
 
@@ -274,7 +275,7 @@ internal static partial class JsonlEventEnvelopeParsers
     private static TurnDiffEvent? ParseTurnDiffEvent(JsonElement root, DateTimeOffset timestamp, string type, JsonElement rawPayload)
     {
         var payload = GetEventBody(root);
-        var diff = TryGetString(payload, "unified_diff");
+        var diff = TryGetString(payload, JsonFieldNames.SnakeCase.UnifiedDiff);
         if (string.IsNullOrWhiteSpace(diff))
             return null;
 

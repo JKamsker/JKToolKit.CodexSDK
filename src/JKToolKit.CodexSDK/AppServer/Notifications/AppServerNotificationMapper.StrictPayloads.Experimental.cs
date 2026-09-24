@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
@@ -7,13 +8,13 @@ internal static partial class AppServerNotificationMapper
 {
     private static ThreadRealtimeStartedNotification? TryMapThreadRealtimeStarted(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "version", out var version))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.Version, out var version))
         {
             return null;
         }
 
-        if (!TryGetOptionalString(p, "sessionId", out var sessionId))
+        if (!TryGetOptionalString(p, JsonFieldNames.SessionId, out var sessionId))
         {
             return null;
         }
@@ -23,8 +24,8 @@ internal static partial class AppServerNotificationMapper
 
     private static ThreadRealtimeItemAddedNotification? TryMapThreadRealtimeItemAdded(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredElement(p, "item", out var item))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredElement(p, JsonFieldNames.Item, out var item))
         {
             return null;
         }
@@ -34,13 +35,13 @@ internal static partial class AppServerNotificationMapper
 
     private static ThreadRealtimeOutputAudioDeltaNotification? TryMapThreadRealtimeOutputAudioDelta(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredObject(p, "audio", out var audio) ||
-            !TryGetRequiredString(audio, "data", out _) ||
-            !TryGetRequiredNonNegativeInt32(audio, "numChannels", out _) ||
-            !TryGetRequiredNonNegativeInt32(audio, "sampleRate", out _) ||
-            !TryGetOptionalString(audio, "itemId", out _) ||
-            !TryGetOptionalNonNegativeInt32(audio, "samplesPerChannel", out _))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredObject(p, JsonFieldNames.Audio, out var audio) ||
+            !TryGetRequiredString(audio, JsonFieldNames.Data, out _) ||
+            !TryGetRequiredNonNegativeInt32(audio, JsonFieldNames.NumChannels, out _) ||
+            !TryGetRequiredNonNegativeInt32(audio, JsonFieldNames.SampleRate, out _) ||
+            !TryGetOptionalString(audio, JsonFieldNames.ItemId, out _) ||
+            !TryGetOptionalNonNegativeInt32(audio, JsonFieldNames.SamplesPerChannel, out _))
         {
             return null;
         }
@@ -50,7 +51,7 @@ internal static partial class AppServerNotificationMapper
 
     private static ThreadRealtimeSdpNotification? TryMapThreadRealtimeSdp(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
             !TryGetRequiredString(p, "sdp", out var sdp))
         {
             return null;
@@ -61,8 +62,8 @@ internal static partial class AppServerNotificationMapper
 
     private static ThreadRealtimeErrorNotification? TryMapThreadRealtimeError(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "message", out var message))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.Message, out var message))
         {
             return null;
         }
@@ -72,8 +73,8 @@ internal static partial class AppServerNotificationMapper
 
     private static ThreadRealtimeClosedNotification? TryMapThreadRealtimeClosed(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetOptionalString(p, "reason", out var reason))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetOptionalString(p, JsonFieldNames.Reason, out var reason))
         {
             return null;
         }
@@ -83,9 +84,9 @@ internal static partial class AppServerNotificationMapper
 
     private static HookStartedNotification? TryMapHookStarted(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetOptionalString(p, "turnId", out var turnId) ||
-            !AppServerNotificationParsing.TryParseHookRunSummaryInfo(p, "run", out var runInfo, out var run))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetOptionalString(p, JsonFieldNames.TurnId, out var turnId) ||
+            !AppServerNotificationParsing.TryParseHookRunSummaryInfo(p, JsonFieldNames.Run, out var runInfo, out var run))
         {
             return null;
         }
@@ -95,9 +96,9 @@ internal static partial class AppServerNotificationMapper
 
     private static HookCompletedNotification? TryMapHookCompleted(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetOptionalString(p, "turnId", out var turnId) ||
-            !AppServerNotificationParsing.TryParseHookRunSummaryInfo(p, "run", out var runInfo, out var run))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetOptionalString(p, JsonFieldNames.TurnId, out var turnId) ||
+            !AppServerNotificationParsing.TryParseHookRunSummaryInfo(p, JsonFieldNames.Run, out var runInfo, out var run))
         {
             return null;
         }
@@ -107,10 +108,10 @@ internal static partial class AppServerNotificationMapper
 
     private static CommandExecutionOutputDeltaNotification? TryMapCommandExecutionOutputDelta(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "turnId", out var turnId) ||
-            !TryGetRequiredString(p, "itemId", out var itemId) ||
-            !TryGetRequiredString(p, "delta", out var delta))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.TurnId, out var turnId) ||
+            !TryGetRequiredString(p, JsonFieldNames.ItemId, out var itemId) ||
+            !TryGetRequiredString(p, JsonFieldNames.Delta, out var delta))
         {
             return null;
         }
@@ -120,8 +121,8 @@ internal static partial class AppServerNotificationMapper
 
     private static RawResponseCompletedNotification? TryMapRawResponseCompleted(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "turnId", out var turnId) ||
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.TurnId, out var turnId) ||
             !TryGetRequiredString(p, "responseId", out var responseId))
         {
             return null;
@@ -138,8 +139,8 @@ internal static partial class AppServerNotificationMapper
 
     private static ThreadEnvironmentConnectionNotification? TryMapThreadEnvironmentConnection(string method, JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "environmentId", out var environmentId))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.EnvironmentId, out var environmentId))
         {
             return null;
         }
@@ -149,11 +150,11 @@ internal static partial class AppServerNotificationMapper
 
     private static ItemAutoApprovalReviewStartedNotification? TryMapAutoApprovalReviewStarted(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "turnId", out var turnId) ||
-            !TryGetRequiredString(p, "reviewId", out var reviewId) ||
-            !TryGetOptionalString(p, "targetItemId", out var targetItemId) ||
-            !AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(p, "review", out var review))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.TurnId, out var turnId) ||
+            !TryGetRequiredString(p, JsonFieldNames.ReviewId, out var reviewId) ||
+            !TryGetOptionalString(p, JsonFieldNames.TargetItemId, out var targetItemId) ||
+            !AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(p, JsonFieldNames.Review, out var review))
         {
             return null;
         }
@@ -163,19 +164,19 @@ internal static partial class AppServerNotificationMapper
             turnId,
             reviewId,
             targetItemId,
-            GetOptionalAny(p, "action") ?? EmptyObject(),
+            GetOptionalAny(p, JsonFieldNames.Action) ?? EmptyObject(),
             review,
             p);
     }
 
     private static ItemAutoApprovalReviewCompletedNotification? TryMapAutoApprovalReviewCompleted(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "turnId", out var turnId) ||
-            !TryGetRequiredString(p, "reviewId", out var reviewId) ||
-            !TryGetOptionalString(p, "targetItemId", out var targetItemId) ||
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.TurnId, out var turnId) ||
+            !TryGetRequiredString(p, JsonFieldNames.ReviewId, out var reviewId) ||
+            !TryGetOptionalString(p, JsonFieldNames.TargetItemId, out var targetItemId) ||
             !TryGetRequiredString(p, "decisionSource", out var decisionSourceValue) ||
-            !AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(p, "review", out var review))
+            !AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(p, JsonFieldNames.Review, out var review))
         {
             return null;
         }
@@ -186,7 +187,7 @@ internal static partial class AppServerNotificationMapper
             reviewId,
             targetItemId,
             AppServerNotificationParsing.ParseAutoReviewDecisionSource(decisionSourceValue),
-            GetOptionalAny(p, "action") ?? EmptyObject(),
+            GetOptionalAny(p, JsonFieldNames.Action) ?? EmptyObject(),
             review,
             p);
     }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer;
@@ -59,12 +60,12 @@ public sealed partial class CodexAppServerClient
         if (string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options));
         if (!_core.ExperimentalApiEnabled)
-            throw new CodexExperimentalApiRequiredException("thread/settings/update");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.ThreadSettingsUpdate);
         if (options.SandboxPolicy is not null && !string.IsNullOrWhiteSpace(options.PermissionProfileId))
             throw new ArgumentException("SandboxPolicy and PermissionProfileId cannot both be set.", nameof(options));
 
         var result = await _core.SendRequestAsync(
-            "thread/settings/update",
+            AppServerMethods.ThreadSettingsUpdate,
             BuildThreadSettingsUpdateParams(options),
             ct).ConfigureAwait(false);
 

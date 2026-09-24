@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
@@ -12,19 +13,19 @@ public sealed record class TurnStartParams
     /// <summary>
     /// Gets replacement disabled plugin identifiers. Null preserves the current list; an empty list clears it.
     /// </summary>
-    [JsonPropertyName("disabledPluginIds")]
+    [JsonPropertyName(JsonFieldNames.DisabledPluginIds)]
     public IReadOnlyList<string>? DisabledPluginIds { get; init; }
 
     /// <summary>
     /// Gets the thread identifier to start the turn in.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets an optional client-provided id for the user message item created by this turn.
     /// </summary>
-    [JsonPropertyName("clientUserMessageId")]
+    [JsonPropertyName(JsonFieldNames.ClientUserMessageId)]
     public string? ClientUserMessageId { get; init; }
 
     /// <summary>
@@ -44,7 +45,7 @@ public sealed record class TurnStartParams
     /// <see cref="JKToolKit.CodexSDK.AppServer.TurnInputItem"/> API, pass <see cref="JKToolKit.CodexSDK.AppServer.TurnInputItem.Wire"/>
     /// for each item.
     /// </remarks>
-    [JsonPropertyName("input")]
+    [JsonPropertyName(JsonFieldNames.Input)]
     public required IReadOnlyList<object> Input { get; init; }
 
     /// <summary>
@@ -59,31 +60,31 @@ public sealed record class TurnStartParams
     /// <summary>
     /// Gets optional turn-scoped Responses API client metadata.
     /// </summary>
-    [JsonPropertyName("responsesapiClientMetadata")]
+    [JsonPropertyName(JsonFieldNames.ResponsesapiClientMetadata)]
     public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadata { get; init; }
 
     /// <summary>
     /// Gets optional client-provided context fragments keyed by opaque source identifier.
     /// </summary>
-    [JsonPropertyName("additionalContext")]
+    [JsonPropertyName(JsonFieldNames.AdditionalContext)]
     public IReadOnlyDictionary<string, TurnAdditionalContextEntryParams>? AdditionalContext { get; init; }
 
     /// <summary>
     /// Gets an optional working directory override for this turn and subsequent turns.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets optional turn-scoped execution environments.
     /// </summary>
-    [JsonPropertyName("environments")]
+    [JsonPropertyName(JsonFieldNames.Environments)]
     public IReadOnlyList<TurnEnvironmentParams>? Environments { get; init; }
 
     /// <summary>
     /// Gets optional runtime workspace roots for this and subsequent turns.
     /// </summary>
-    [JsonPropertyName("runtimeWorkspaceRoots")]
+    [JsonPropertyName(JsonFieldNames.RuntimeWorkspaceRoots)]
     public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; init; }
 
     /// <summary>
@@ -93,13 +94,13 @@ public sealed record class TurnStartParams
     /// This supports the upstream <c>AskForApproval</c> union:
     /// either a simple string policy (for example <c>untrusted</c>) or an object form (for example <c>{"reject":{...}}</c>).
     /// </remarks>
-    [JsonPropertyName("approvalPolicy")]
+    [JsonPropertyName(JsonFieldNames.ApprovalPolicy)]
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
     /// Gets an optional approval reviewer routing override for this turn and subsequent turns.
     /// </summary>
-    [JsonPropertyName("approvalsReviewer")]
+    [JsonPropertyName(JsonFieldNames.ApprovalsReviewer)]
     public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
@@ -111,13 +112,13 @@ public sealed record class TurnStartParams
     /// <summary>
     /// Gets an optional named permission profile id.
     /// </summary>
-    [JsonPropertyName("permissions")]
+    [JsonPropertyName(JsonFieldNames.Permissions)]
     public string? Permissions { get; init; }
 
     /// <summary>
     /// Gets an optional model override for this turn and subsequent turns.
     /// </summary>
-    [JsonPropertyName("model")]
+    [JsonPropertyName(JsonFieldNames.Model)]
     public string? Model { get; init; }
 
     /// <summary>
@@ -131,7 +132,7 @@ public sealed record class TurnStartParams
     /// <item><description>String: explicitly set a value (for example <c>"fast"</c>).</description></item>
     /// </list>
     /// </remarks>
-    [JsonPropertyName("serviceTier")]
+    [JsonPropertyName(JsonFieldNames.ServiceTier)]
     public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
@@ -149,7 +150,7 @@ public sealed record class TurnStartParams
     /// <remarks>
     /// Known values include <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, <c>max</c>, and <c>ultra</c>.
     /// </remarks>
-    [JsonPropertyName("effort")]
+    [JsonPropertyName(JsonFieldNames.Effort)]
     public string? Effort { get; init; }
 
     /// <summary>
@@ -158,19 +159,19 @@ public sealed record class TurnStartParams
     /// <remarks>
     /// Known values include <c>auto</c>, <c>concise</c>, <c>detailed</c>, and <c>none</c>.
     /// </remarks>
-    [JsonPropertyName("summary")]
+    [JsonPropertyName(JsonFieldNames.Summary)]
     public string? Summary { get; init; }
 
     /// <summary>
     /// Gets an optional personality override for this turn and subsequent turns.
     /// </summary>
-    [JsonPropertyName("personality")]
+    [JsonPropertyName(JsonFieldNames.Personality)]
     public string? Personality { get; init; }
 
     /// <summary>
     /// Gets an optional JSON Schema used to constrain the final assistant message.
     /// </summary>
-    [JsonPropertyName("outputSchema")]
+    [JsonPropertyName(JsonFieldNames.OutputSchema)]
     public JsonElement? OutputSchema { get; init; }
 
     /// <summary>
@@ -181,6 +182,6 @@ public sealed record class TurnStartParams
     /// and developer instructions.
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
-    [JsonPropertyName("collaborationMode")]
+    [JsonPropertyName(JsonFieldNames.CollaborationMode)]
     public JsonElement? CollaborationMode { get; init; }
 }

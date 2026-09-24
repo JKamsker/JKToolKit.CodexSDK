@@ -4,6 +4,8 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
 internal static class CodexDiagnosticsSanitizer
 {
+    private const int MaxRedactionMarkerLength = 64;
+
     internal static string Sanitize(string? input, int maxChars)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -45,7 +47,7 @@ internal static class CodexDiagnosticsSanitizer
             if (closeBeforeCut < 0 || closeBeforeCut >= cut)
             {
                 var close = sanitized.IndexOf(']', cut);
-                if (close >= 0 && close - open <= 64)
+                if (close >= 0 && close - open <= MaxRedactionMarkerLength)
                 {
                     cut = close + 1;
                 }

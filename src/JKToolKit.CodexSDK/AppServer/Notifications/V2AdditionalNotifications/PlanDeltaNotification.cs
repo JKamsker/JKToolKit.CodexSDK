@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -31,7 +32,7 @@ public sealed record class PlanDeltaNotification : AppServerNotification
     /// Initializes a new instance of <see cref="PlanDeltaNotification"/>.
     /// </summary>
     public PlanDeltaNotification(string ThreadId, string TurnId, string ItemId, string Delta, JsonElement Params)
-        : base("item/plan/delta", Params)
+        : base(AppServerMethods.ItemPlanDelta, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

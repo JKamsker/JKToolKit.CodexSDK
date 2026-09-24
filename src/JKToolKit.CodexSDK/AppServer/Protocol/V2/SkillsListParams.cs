@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -13,7 +14,7 @@ public sealed record class SkillsListParams
     /// <remarks>
     /// When empty or omitted, the server defaults to the current session working directory.
     /// </remarks>
-    [JsonPropertyName("cwds")]
+    [JsonPropertyName(JsonFieldNames.Cwds)]
     public IReadOnlyList<string>? Cwds { get; init; }
 
     /// <summary>
@@ -41,7 +42,7 @@ public sealed record class SkillsListExtraRootsForCwd
     /// <summary>
     /// Gets the working directory this entry applies to.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public required string Cwd { get; init; }
 
     /// <summary>

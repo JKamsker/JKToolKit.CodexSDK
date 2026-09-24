@@ -6,6 +6,8 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 
 internal sealed class CodexAppServerSkillsAppsClient
 {
+    private const int MaxInstalledAppIds = 100;
+
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
 
     public CodexAppServerSkillsAppsClient(Func<string, object?, CancellationToken, Task<JsonElement>> sendRequestAsync)
@@ -115,9 +117,9 @@ internal sealed class CodexAppServerSkillsAppsClient
             throw new ArgumentException("AppIds cannot be empty.", nameof(options));
         }
 
-        if (options.AppIds.Count > 100)
+        if (options.AppIds.Count > MaxInstalledAppIds)
         {
-            throw new ArgumentOutOfRangeException(nameof(options), options.AppIds.Count, "AppIds cannot contain more than 100 entries.");
+            throw new ArgumentOutOfRangeException(nameof(options), options.AppIds.Count, $"AppIds cannot contain more than {MaxInstalledAppIds} entries.");
         }
 
         for (var i = 0; i < options.AppIds.Count; i++)

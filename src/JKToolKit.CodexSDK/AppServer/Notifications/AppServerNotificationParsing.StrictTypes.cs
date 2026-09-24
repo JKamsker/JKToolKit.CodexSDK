@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
@@ -13,7 +14,7 @@ internal static partial class AppServerNotificationParsing
             return false;
         }
 
-        var statusValue = GetString(parsedReview, "status");
+        var statusValue = GetString(parsedReview, JsonFieldNames.Status);
         if (string.IsNullOrWhiteSpace(statusValue))
         {
             return false;
@@ -49,18 +50,18 @@ internal static partial class AppServerNotificationParsing
             return false;
         }
 
-        if (!TryGetRequiredString(run, "id", out var id) ||
-            !TryGetRequiredString(run, "eventName", out var eventName) ||
+        if (!TryGetRequiredString(run, JsonFieldNames.Id, out var id) ||
+            !TryGetRequiredString(run, JsonFieldNames.EventName, out var eventName) ||
             !TryGetRequiredString(run, "handlerType", out var handlerType) ||
             !TryGetRequiredString(run, "executionMode", out var executionMode) ||
-            !TryGetRequiredString(run, "scope", out var scope) ||
+            !TryGetRequiredString(run, JsonFieldNames.Scope, out var scope) ||
             !TryGetRequiredString(run, "sourcePath", out var sourcePath) ||
             !TryGetRequiredInt64(run, "displayOrder", out var displayOrder) ||
-            !TryGetRequiredString(run, "status", out var status) ||
+            !TryGetRequiredString(run, JsonFieldNames.Status, out var status) ||
             !TryGetRequiredInt64(run, "startedAt", out var startedAt) ||
             !TryGetOptionalString(run, "statusMessage", out var statusMessage) ||
             !TryGetOptionalInt64(run, "completedAt", out var completedAt) ||
-            !TryGetOptionalInt64(run, "durationMs", out var durationMs) ||
+            !TryGetOptionalInt64(run, JsonFieldNames.DurationMs, out var durationMs) ||
             !TryParseHookOutputEntries(run, out var entries))
         {
             return false;
@@ -101,7 +102,7 @@ internal static partial class AppServerNotificationParsing
     private static bool TryParseHookOutputEntries(JsonElement run, out IReadOnlyList<HookOutputEntryInfo> entries)
     {
         entries = Array.Empty<HookOutputEntryInfo>();
-        if (!TryGetArray(run, "entries", out var entriesArray))
+        if (!TryGetArray(run, JsonFieldNames.Entries, out var entriesArray))
         {
             return false;
         }
@@ -110,8 +111,8 @@ internal static partial class AppServerNotificationParsing
         foreach (var entry in entriesArray.EnumerateArray())
         {
             if (entry.ValueKind != JsonValueKind.Object ||
-                !TryGetRequiredString(entry, "kind", out var kind) ||
-                !TryGetRequiredString(entry, "text", out var text))
+                !TryGetRequiredString(entry, JsonFieldNames.Kind, out var kind) ||
+                !TryGetRequiredString(entry, JsonFieldNames.Text, out var text))
             {
                 return false;
             }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -36,7 +37,7 @@ public sealed record class CommandExecutionOutputDeltaNotification : AppServerNo
         string ItemId,
         string Delta,
         JsonElement Params)
-        : base("item/commandExecution/outputDelta", Params)
+        : base(AppServerMethods.ItemCommandExecutionOutputDelta, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

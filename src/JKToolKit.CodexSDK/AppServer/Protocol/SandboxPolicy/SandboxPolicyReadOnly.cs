@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -18,7 +19,7 @@ public abstract partial record class SandboxPolicy
         /// <remarks>
         /// When omitted, the server default is <c>false</c>.
         /// </remarks>
-        [JsonPropertyName("networkAccess")]
+        [JsonPropertyName(JsonFieldNames.NetworkAccess)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public bool? NetworkAccess { get; init; }
 
@@ -28,7 +29,7 @@ public abstract partial record class SandboxPolicy
         /// <remarks>
         /// When set, older Codex app-server builds may reject this field as invalid params.
         /// </remarks>
-        [JsonPropertyName("access")]
+        [JsonPropertyName(JsonFieldNames.Access)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ReadOnlyAccess? Access { get; init; }
     }

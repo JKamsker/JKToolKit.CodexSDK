@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -17,19 +18,19 @@ public sealed record class ThreadListParams
     /// <summary>
     /// Gets an optional section filter. Omit to include every section; send JSON null to include only unsectioned threads.
     /// </summary>
-    [JsonPropertyName("sectionId")]
+    [JsonPropertyName(JsonFieldNames.SectionId)]
     public JsonElement? SectionId { get; init; }
 
     /// <summary>
     /// Gets an optional project filter. Omit to include every project; send JSON null to include only unassigned threads.
     /// </summary>
-    [JsonPropertyName("projectId")]
+    [JsonPropertyName(JsonFieldNames.ProjectId)]
     public JsonElement? ProjectId { get; init; }
 
     /// <summary>
     /// Gets an optional working directory filter.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
@@ -41,13 +42,13 @@ public sealed record class ThreadListParams
     /// <summary>
     /// Gets an optional limit (page size), if supported upstream.
     /// </summary>
-    [JsonPropertyName("limit")]
+    [JsonPropertyName(JsonFieldNames.Limit)]
     public int? Limit { get; init; }
 
     /// <summary>
     /// Gets an optional model provider filter, if supported upstream.
     /// </summary>
-    [JsonPropertyName("modelProviders")]
+    [JsonPropertyName(JsonFieldNames.ModelProviders)]
     public IReadOnlyList<string>? ModelProviders { get; init; }
 
     /// <summary>
@@ -65,7 +66,7 @@ public sealed record class ThreadListParams
     /// <summary>
     /// Gets an optional cursor for paging.
     /// </summary>
-    [JsonPropertyName("cursor")]
+    [JsonPropertyName(JsonFieldNames.Cursor)]
     public string? Cursor { get; init; }
 
     /// <summary>

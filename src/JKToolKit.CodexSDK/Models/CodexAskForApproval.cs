@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.Models;
 
@@ -127,7 +128,7 @@ public readonly record struct CodexAskForApproval
         }
 
         if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty("granular", out var granularElement) &&
+            element.TryGetProperty(JsonFieldNames.Granular, out var granularElement) &&
             TryParseGranular(granularElement, out var granular))
         {
             askForApproval = FromGranular(granular);
@@ -140,9 +141,9 @@ public readonly record struct CodexAskForApproval
 
     private static bool TryParseGranular(JsonElement element, out CodexAskForApprovalGranular granular)
     {
-        if (!TryGetBoolProperty(element, "sandbox_approval", out var sandbox) ||
-            !TryGetBoolProperty(element, "rules", out var rules) ||
-            !TryGetBoolProperty(element, "mcp_elicitations", out var mcp))
+        if (!TryGetBoolProperty(element, JsonFieldNames.SnakeCase.SandboxApproval, out var sandbox) ||
+            !TryGetBoolProperty(element, JsonFieldNames.Rules, out var rules) ||
+            !TryGetBoolProperty(element, JsonFieldNames.SnakeCase.McpElicitations, out var mcp))
         {
             granular = default!;
             return false;
@@ -153,8 +154,8 @@ public readonly record struct CodexAskForApproval
             SandboxApproval = sandbox,
             Rules = rules,
             McpElicitations = mcp,
-            SkillApproval = GetBoolProperty(element, "skill_approval"),
-            RequestPermissions = GetBoolProperty(element, "request_permissions")
+            SkillApproval = GetBoolProperty(element, JsonFieldNames.SnakeCase.SkillApproval),
+            RequestPermissions = GetBoolProperty(element, JsonFieldNames.SnakeCase.RequestPermissions)
         };
 
         return true;
@@ -191,7 +192,7 @@ public readonly record struct CodexAskForApproval
 
     private sealed record class GranularAskForApprovalWire
     {
-        [JsonPropertyName("granular")]
+        [JsonPropertyName(JsonFieldNames.Granular)]
         public required CodexAskForApprovalGranular Granular { get; init; }
     }
 }
@@ -204,13 +205,13 @@ public sealed record class CodexAskForApprovalGranular
     /// <summary>
     /// Enable sandbox escalation approvals (for example, requests for extra sandbox permissions).
     /// </summary>
-    [JsonPropertyName("sandbox_approval")]
+    [JsonPropertyName(JsonFieldNames.SnakeCase.SandboxApproval)]
     public required bool SandboxApproval { get; init; }
 
     /// <summary>
     /// Enable approvals for rules prompts.
     /// </summary>
-    [JsonPropertyName("rules")]
+    [JsonPropertyName(JsonFieldNames.Rules)]
     public required bool Rules { get; init; }
 
     /// <summary>
@@ -219,7 +220,7 @@ public sealed record class CodexAskForApprovalGranular
     /// <remarks>
     /// Defaults to <c>false</c> when omitted.
     /// </remarks>
-    [JsonPropertyName("skill_approval")]
+    [JsonPropertyName(JsonFieldNames.SnakeCase.SkillApproval)]
     public bool SkillApproval { get; init; }
 
     /// <summary>
@@ -228,13 +229,13 @@ public sealed record class CodexAskForApprovalGranular
     /// <remarks>
     /// Defaults to <c>false</c> when omitted.
     /// </remarks>
-    [JsonPropertyName("request_permissions")]
+    [JsonPropertyName(JsonFieldNames.SnakeCase.RequestPermissions)]
     public bool RequestPermissions { get; init; }
 
     /// <summary>
     /// Enable MCP elicitation approvals (for example, forms/questions).
     /// </summary>
-    [JsonPropertyName("mcp_elicitations")]
+    [JsonPropertyName(JsonFieldNames.SnakeCase.McpElicitations)]
     public required bool McpElicitations { get; init; }
 }
 
@@ -250,19 +251,19 @@ public sealed record class CodexAskForApprovalReject
     /// <summary>
     /// Reject MCP elicitation approvals (for example, forms/questions).
     /// </summary>
-    [JsonPropertyName("mcp_elicitations")]
+    [JsonPropertyName(JsonFieldNames.SnakeCase.McpElicitations)]
     public required bool McpElicitations { get; init; }
 
     /// <summary>
     /// Reject approvals for rules prompts.
     /// </summary>
-    [JsonPropertyName("rules")]
+    [JsonPropertyName(JsonFieldNames.Rules)]
     public required bool Rules { get; init; }
 
     /// <summary>
     /// Reject sandbox escalation approvals (for example, requests for extra sandbox permissions).
     /// </summary>
-    [JsonPropertyName("sandbox_approval")]
+    [JsonPropertyName(JsonFieldNames.SnakeCase.SandboxApproval)]
     public required bool SandboxApproval { get; init; }
 
     internal CodexAskForApprovalGranular ToGranular() =>

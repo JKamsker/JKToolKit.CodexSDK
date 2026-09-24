@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -28,11 +29,11 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStart");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.FuzzyFileSearchSessionStart);
         }
 
         _ = await _sendRequestAsync(
-            "fuzzyFileSearch/sessionStart",
+            AppServerMethods.FuzzyFileSearchSessionStart,
             new FuzzyFileSearchSessionStartParams
             {
                 SessionId = sessionId,
@@ -50,11 +51,11 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionUpdate");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.FuzzyFileSearchSessionUpdate);
         }
 
         _ = await _sendRequestAsync(
-            "fuzzyFileSearch/sessionUpdate",
+            AppServerMethods.FuzzyFileSearchSessionUpdate,
             new FuzzyFileSearchSessionUpdateParams
             {
                 SessionId = sessionId,
@@ -70,11 +71,11 @@ internal sealed class CodexAppServerFuzzyFileSearchClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("fuzzyFileSearch/sessionStop");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.FuzzyFileSearchSessionStop);
         }
 
         _ = await _sendRequestAsync(
-            "fuzzyFileSearch/sessionStop",
+            AppServerMethods.FuzzyFileSearchSessionStop,
             new FuzzyFileSearchSessionStopParams
             {
                 SessionId = sessionId

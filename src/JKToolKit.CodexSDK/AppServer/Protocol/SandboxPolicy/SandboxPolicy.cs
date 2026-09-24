@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -13,6 +14,6 @@ public abstract partial record class SandboxPolicy
     /// <summary>
     /// Gets the wire discriminator for the sandbox policy type.
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonPropertyName(JsonFieldNames.Type)]
     public abstract string Type { get; }
 }

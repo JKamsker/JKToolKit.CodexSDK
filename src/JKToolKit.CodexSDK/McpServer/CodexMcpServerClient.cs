@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using JKToolKit.CodexSDK.Abstractions;
@@ -18,6 +19,10 @@ namespace JKToolKit.CodexSDK.McpServer;
 /// </summary>
 public sealed partial class CodexMcpServerClient : IAsyncDisposable
 {
+    private const int MaxToolListPages = 100;
+    private const int MaxToolListDiagnosticChars = 4000;
+    private const string ProtocolVersion = "2025-11-25";
+
     private static readonly JsonElement DefaultElicitationDeniedResult = CreateDefaultElicitationDeniedResult();
 
     private readonly CodexMcpServerClientOptions _options;
@@ -100,7 +105,7 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
             return launch;
         }
 
-        return launch.WithEnvironment("CODEX_HOME", codexHomeDirectory);
+        return launch.WithEnvironment(CodexEnvironmentVariables.Home, codexHomeDirectory);
     }
 
     /// <summary>
@@ -117,8 +122,8 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
     /// </summary>
     public async Task<IReadOnlyList<McpToolDescriptor>> ListToolsAsync(CancellationToken ct = default)
     {
-        var result = await _rpc.SendRequestAsync("tools/list", @params: null, ct);
-        var transformed = ApplyResponseTransformers("tools/list", result);
+        var result = await _rpc.SendRequestAsync(McpMethods.ToolsList, @params: null, ct);
+        var transformed = ApplyResponseTransformers(McpMethods.ToolsList, result);
 
         var customMappers = _options.ToolsListMappers;
         if (customMappers is { Count: > 0 })
@@ -145,16 +150,15 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
             }
         }
 
-        const int maxPages = 100;
         var tools = new List<McpToolDescriptor>();
         string? cursor = null;
 
-        for (var i = 0; i < maxPages; i++)
+        for (var i = 0; i < MaxToolListPages; i++)
         {
             if (i != 0)
             {
-                result = await _rpc.SendRequestAsync("tools/list", @params: new { cursor }, ct);
-                transformed = ApplyResponseTransformers("tools/list", result);
+                result = await _rpc.SendRequestAsync(McpMethods.ToolsList, @params: new { cursor }, ct);
+                transformed = ApplyResponseTransformers(McpMethods.ToolsList, result);
             }
 
             if (!McpToolsListParser.TryParse(transformed, out var pageTools, out var nextCursor))
@@ -164,7 +168,7 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
                     throw new JsonException("Unexpected tools/list result shape.");
                 }
 
-                _logger.LogWarning("Unexpected tools/list result shape: {Result}", Truncate(transformed.GetRawText(), maxChars: 4000));
+                _logger.LogWarning("Unexpected tools/list result shape: {Result}", Truncate(transformed.GetRawText(), maxChars: MaxToolListDiagnosticChars));
                 return tools;
             }
 
@@ -181,12 +185,12 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
         {
             if (_options.StrictParsing)
             {
-                throw new JsonException("tools/list exceeded maxPages pagination cap.");
+                throw new JsonException("tools/list exceeded MaxToolListPages pagination cap.");
             }
 
             _logger.LogWarning(
-                "tools/list exceeded maxPages pagination cap (maxPages={MaxPages}, cursor={Cursor}); results truncated.",
-                maxPages,
+                "tools/list exceeded MaxToolListPages pagination cap (MaxToolListPages={MaxPages}, cursor={Cursor}); results truncated.",
+                MaxToolListPages,
                 cursor);
         }
 
@@ -220,11 +224,11 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
         }
 
         var result = await _rpc.SendRequestAsync(
-            "tools/call",
+            McpMethods.ToolsCall,
             new { name = toolName, arguments = gatedArguments },
             ct);
 
-        var transformed = ApplyResponseTransformers("tools/call", result);
+        var transformed = ApplyResponseTransformers(McpMethods.ToolsCall, result);
         return new McpToolCallResult(transformed);
     }
 
@@ -239,7 +243,7 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
 
         var args = new Dictionary<string, object>
         {
-            ["prompt"] = options.Prompt
+            [JsonFieldNames.Prompt] = options.Prompt
         };
 
         if (options.ApprovalPolicy is { } approvalPolicy)
@@ -249,17 +253,17 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
 
         if (options.Sandbox is { } sandbox)
         {
-            args["sandbox"] = sandbox.ToMcpWireValue();
+            args[JsonFieldNames.Sandbox] = sandbox.ToMcpWireValue();
         }
 
         if (!string.IsNullOrWhiteSpace(options.Cwd))
         {
-            args["cwd"] = options.Cwd;
+            args[JsonFieldNames.Cwd] = options.Cwd;
         }
 
         if (options.Model is { } model)
         {
-            args["model"] = model.Value;
+            args[JsonFieldNames.Model] = model.Value;
         }
 
         if (options.IncludePlanTool is { } includePlanTool)
@@ -284,8 +288,8 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
 
         var args = new Dictionary<string, object?>
         {
-            ["threadId"] = threadId,
-            ["prompt"] = prompt
+            [JsonFieldNames.ThreadId] = threadId,
+            [JsonFieldNames.Prompt] = prompt
         };
 
         var call = await CallToolAsync("codex-reply", args, ct);
@@ -402,16 +406,16 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
             };
 
         await _rpc.SendRequestAsync(
-            "initialize",
+            McpMethods.Initialize,
             new
             {
-                protocolVersion = "2025-11-25",
+                protocolVersion = ProtocolVersion,
                 clientInfo = new { name = clientInfo.Name, title = clientInfo.Title, version = clientInfo.Version },
                 capabilities
             },
             ct);
 
-        await _rpc.SendNotificationAsync("notifications/initialized", @params: null, ct);
+        await _rpc.SendNotificationAsync(McpMethods.Initialized, @params: null, ct);
     }
 
     private async ValueTask<JsonRpcResponse> OnRpcServerRequestAsync(JsonRpcRequest req)
@@ -427,7 +431,7 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
             return new JsonRpcResponse(
                 req.Id,
                 Result: null,
-                Error: new JsonRpcError(-32601, $"Unhandled server request '{req.Method}'."));
+                Error: new JsonRpcError(JsonRpcErrorCodes.MethodNotFound, $"Unhandled server request '{req.Method}'."));
         }
 
         try
@@ -437,7 +441,7 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(-32000, ex.Message));
+            return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(JsonRpcErrorCodes.ServerError, ex.Message));
         }
     }
 

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.IO;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -15,7 +16,7 @@ public abstract record class ReadOnlyAccess
     /// <summary>
     /// Gets the wire discriminator for the read-only access type.
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonPropertyName(JsonFieldNames.Type)]
     public abstract string Type { get; }
 
     /// <summary>
@@ -40,13 +41,13 @@ public abstract record class ReadOnlyAccess
         /// <summary>
         /// Gets a value indicating whether to include platform default readable roots.
         /// </summary>
-        [JsonPropertyName("includePlatformDefaults")]
+        [JsonPropertyName(JsonFieldNames.IncludePlatformDefaults)]
         public bool IncludePlatformDefaults { get; init; } = true;
 
         /// <summary>
         /// Gets the explicitly readable roots.
         /// </summary>
-        [JsonPropertyName("readableRoots")]
+        [JsonPropertyName(JsonFieldNames.ReadableRoots)]
         public IReadOnlyList<string> ReadableRoots
         {
             get => _readableRoots;

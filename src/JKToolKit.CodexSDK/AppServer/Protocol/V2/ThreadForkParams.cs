@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -17,7 +18,7 @@ public sealed record class ThreadForkParams
     /// <remarks>
     /// Ignored when <see cref="Path"/> is set.
     /// </remarks>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
@@ -29,49 +30,49 @@ public sealed record class ThreadForkParams
     /// <summary>
     /// Gets an optional rollout path to fork from (experimental-gated in newer upstream Codex builds).
     /// </summary>
-    [JsonPropertyName("path")]
+    [JsonPropertyName(JsonFieldNames.Path)]
     public string? Path { get; init; }
 
     /// <summary>
     /// Gets an optional service tier override for the forked thread.
     /// </summary>
-    [JsonPropertyName("serviceTier")]
+    [JsonPropertyName(JsonFieldNames.ServiceTier)]
     public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
     /// Gets an optional model identifier.
     /// </summary>
-    [JsonPropertyName("model")]
+    [JsonPropertyName(JsonFieldNames.Model)]
     public string? Model { get; init; }
 
     /// <summary>
     /// Gets an optional model provider identifier.
     /// </summary>
-    [JsonPropertyName("modelProvider")]
+    [JsonPropertyName(JsonFieldNames.ModelProvider)]
     public string? ModelProvider { get; init; }
 
     /// <summary>
     /// Gets an optional working directory override.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets optional thread-scoped runtime workspace roots.
     /// </summary>
-    [JsonPropertyName("runtimeWorkspaceRoots")]
+    [JsonPropertyName(JsonFieldNames.RuntimeWorkspaceRoots)]
     public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; init; }
 
     /// <summary>
     /// Gets an optional approval policy override.
     /// </summary>
-    [JsonPropertyName("approvalPolicy")]
+    [JsonPropertyName(JsonFieldNames.ApprovalPolicy)]
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
     /// Gets an optional approval reviewer routing override.
     /// </summary>
-    [JsonPropertyName("approvalsReviewer")]
+    [JsonPropertyName(JsonFieldNames.ApprovalsReviewer)]
     public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
@@ -80,31 +81,31 @@ public sealed record class ThreadForkParams
     /// <remarks>
     /// Known values include <c>read-only</c>, <c>workspace-write</c>, and <c>danger-full-access</c>.
     /// </remarks>
-    [JsonPropertyName("sandbox")]
+    [JsonPropertyName(JsonFieldNames.Sandbox)]
     public string? Sandbox { get; init; }
 
     /// <summary>
     /// Gets an optional named permission profile id.
     /// </summary>
-    [JsonPropertyName("permissions")]
+    [JsonPropertyName(JsonFieldNames.Permissions)]
     public string? Permissions { get; init; }
 
     /// <summary>
     /// Gets optional config overrides (raw JSON object).
     /// </summary>
-    [JsonPropertyName("config")]
+    [JsonPropertyName(JsonFieldNames.Config)]
     public JsonElement? Config { get; init; }
 
     /// <summary>
     /// Gets optional base instructions.
     /// </summary>
-    [JsonPropertyName("baseInstructions")]
+    [JsonPropertyName(JsonFieldNames.BaseInstructions)]
     public string? BaseInstructions { get; init; }
 
     /// <summary>
     /// Gets optional developer instructions.
     /// </summary>
-    [JsonPropertyName("developerInstructions")]
+    [JsonPropertyName(JsonFieldNames.DeveloperInstructions)]
     public string? DeveloperInstructions { get; init; }
 
     /// <summary>
@@ -114,14 +115,14 @@ public sealed record class ThreadForkParams
     /// Full-history hydration is deprecated for paginated threads; use this with <c>thread/turns/list</c>
     /// and <c>thread/items/list</c> where available.
     /// </remarks>
-    [JsonPropertyName("excludeTurns")]
+    [JsonPropertyName(JsonFieldNames.ExcludeTurns)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ExcludeTurns { get; init; }
 
     /// <summary>
     /// Gets an optional value indicating whether the forked thread should be ephemeral.
     /// </summary>
-    [JsonPropertyName("ephemeral")]
+    [JsonPropertyName(JsonFieldNames.Ephemeral)]
     public bool? Ephemeral { get; init; }
 
 }

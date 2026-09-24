@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -28,7 +29,7 @@ internal static class CodexAppServerClientPluginAppTemplateParsers
 
     private static PluginAppTemplateDescriptor ParseAppTemplate(JsonElement item)
     {
-        var reason = CodexAppServerClientJson.GetStringOrNull(item, "reason");
+        var reason = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Reason);
         var reasonValue = PluginAppTemplateUnavailableReason.TryParse(reason, out var parsedReason)
             ? parsedReason
             : (PluginAppTemplateUnavailableReason?)null;
@@ -36,11 +37,11 @@ internal static class CodexAppServerClientPluginAppTemplateParsers
         return new PluginAppTemplateDescriptor
         {
             TemplateId = CodexAppServerClientJson.GetRequiredString(item, "templateId", "plugin app template"),
-            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin app template"),
-            Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Name, "plugin app template"),
+            Description = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Description),
             CanonicalConnectorId = CodexAppServerClientJson.GetStringOrNull(item, "canonicalConnectorId"),
-            LogoUrl = CodexAppServerClientJson.GetStringOrNull(item, "logoUrl"),
-            LogoUrlDark = CodexAppServerClientJson.GetStringOrNull(item, "logoUrlDark"),
+            LogoUrl = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.LogoUrl),
+            LogoUrlDark = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.LogoUrlDark),
             MaterializedAppIds = CodexAppServerClientJson.GetOptionalStringArray(item, "materializedAppIds") ?? Array.Empty<string>(),
             Reason = reason,
             ReasonValue = reasonValue,

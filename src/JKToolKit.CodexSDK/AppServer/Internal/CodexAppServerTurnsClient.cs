@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
@@ -97,7 +98,7 @@ internal sealed class CodexAppServerTurnsClient
         {
             result = await _sendRequestAsync("turn/start", turnStartParams, ct);
         }
-        catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32602 && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
+        catch (JsonRpcRemoteException ex) when (ex.Error.Code == JsonRpcErrorCodes.InvalidParams && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
         {
             if (CodexAppServerReadOnlyAccessOverridesSupport.ShouldMarkRejected(ex))
             {
@@ -106,7 +107,7 @@ internal sealed class CodexAppServerTurnsClient
 
             var ua = _initializeResult()?.UserAgent ?? "<unknown userAgent>";
             var sandboxJson = JsonSerializer.Serialize(options.SandboxPolicy, CodexAppServerClient.CreateDefaultSerializerOptions());
-            sandboxJson = CodexDiagnosticsSanitizer.Sanitize(sandboxJson, maxChars: 2000);
+            sandboxJson = CodexDiagnosticsSanitizer.Sanitize(sandboxJson, maxChars: DiagnosticLimits.JsonSnippetChars);
 
             var dataJson = ex.Error.Data is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }
                 ? ex.Error.Data.Value.GetRawText()
@@ -114,7 +115,7 @@ internal sealed class CodexAppServerTurnsClient
 
             if (!string.IsNullOrWhiteSpace(dataJson))
             {
-                dataJson = CodexDiagnosticsSanitizer.Sanitize(dataJson, maxChars: 2000);
+                dataJson = CodexDiagnosticsSanitizer.Sanitize(dataJson, maxChars: DiagnosticLimits.JsonSnippetChars);
             }
 
             var data = string.IsNullOrWhiteSpace(dataJson) ? string.Empty : $" Data: {dataJson}";
@@ -158,7 +159,7 @@ internal sealed class CodexAppServerTurnsClient
         try
         {
             var raw = await _sendRequestAsync(
-                "turn/steer",
+                AppServerMethods.TurnSteer,
                 CodexAppServerClient.BuildTurnSteerParams(options),
                 ct);
 
@@ -179,7 +180,7 @@ internal sealed class CodexAppServerTurnsClient
         {
             var ua = _initializeResult()?.UserAgent;
             throw new CodexAppServerRequestFailedException(
-                method: "turn/steer",
+                method: AppServerMethods.TurnSteer,
                 errorCode: ex.Error.Code,
                 errorMessage: $"{ex.Error.Message} (expectedTurnId='{options.ExpectedTurnId}')",
                 errorData: ex.Error.Data,
@@ -199,7 +200,7 @@ internal sealed class CodexAppServerTurnsClient
         try
         {
             result = await _sendRequestAsync(
-                "review/start",
+                AppServerMethods.ReviewStart,
                 CodexAppServerClient.BuildReviewStartParams(options),
                 ct);
         }
@@ -207,7 +208,7 @@ internal sealed class CodexAppServerTurnsClient
         {
             var ua = _initializeResult()?.UserAgent;
             throw new CodexAppServerRequestFailedException(
-                method: "review/start",
+                method: AppServerMethods.ReviewStart,
                 errorCode: ex.Error.Code,
                 errorMessage: ex.Error.Message,
                 errorData: ex.Error.Data,
@@ -215,7 +216,7 @@ internal sealed class CodexAppServerTurnsClient
                 innerException: ex);
         }
 
-        var turnObj = CodexAppServerClientJson.TryGetObject(result, "turn") ?? result;
+        var turnObj = CodexAppServerClientJson.TryGetObject(result, JsonFieldNames.Turn) ?? result;
         var reviewThreadId = CodexAppServerClientJson.GetStringOrNull(result, "reviewThreadId");
         if (string.IsNullOrWhiteSpace(reviewThreadId))
         {

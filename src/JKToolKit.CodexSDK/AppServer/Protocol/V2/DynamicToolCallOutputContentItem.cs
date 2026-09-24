@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,13 +11,13 @@ public sealed record class DynamicToolCallOutputContentItem
     /// <summary>
     /// Gets the content item type discriminator (for example <c>inputText</c> or <c>inputImage</c>).
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonPropertyName(JsonFieldNames.Type)]
     public required string Type { get; init; }
 
     /// <summary>
     /// Gets the text content (when <see cref="Type"/> is <c>inputText</c>).
     /// </summary>
-    [JsonPropertyName("text")]
+    [JsonPropertyName(JsonFieldNames.Text)]
     public string? Text { get; init; }
 
     /// <summary>

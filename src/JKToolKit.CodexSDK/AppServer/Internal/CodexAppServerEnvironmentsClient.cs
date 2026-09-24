@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -20,14 +21,14 @@ internal sealed class CodexAppServerEnvironmentsClient
         ArgumentNullException.ThrowIfNull(options);
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("environment/add");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.EnvironmentAdd);
         }
 
         ValidateRequiredString(options.EnvironmentId, "EnvironmentId", nameof(options));
         ValidateRequiredString(options.ExecServerUrl, "ExecServerUrl", nameof(options));
 
         var result = await _sendRequestAsync(
-            "environment/add",
+            AppServerMethods.EnvironmentAdd,
             new
             {
                 environmentId = options.EnvironmentId,

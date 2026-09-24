@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -173,17 +174,17 @@ public sealed partial class CodexAppServerClient
     {
         var patch = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["threadId"] = options.ThreadId
+            [JsonFieldNames.ThreadId] = options.ThreadId
         };
 
         if (options.GitInfo is { } gitInfo)
         {
-            patch["gitInfo"] = BuildGitInfoPatch(gitInfo);
+            patch[JsonFieldNames.GitInfo] = BuildGitInfoPatch(gitInfo);
         }
 
         if (options.UpdateProjectId || options.ClearProjectId)
         {
-            patch["projectId"] = BuildProjectIdPatch(options);
+            patch[JsonFieldNames.ProjectId] = BuildProjectIdPatch(options);
         }
 
         if (patch.Count == 1)
@@ -220,19 +221,19 @@ public sealed partial class CodexAppServerClient
         if (gitInfo.UpdateBranch)
         {
             ValidateGitInfoValue(gitInfo.Branch, nameof(ThreadGitInfoUpdate.Branch));
-            patch["branch"] = gitInfo.Branch;
+            patch[JsonFieldNames.Branch] = gitInfo.Branch;
         }
 
         if (gitInfo.UpdateOriginUrl)
         {
             ValidateGitInfoValue(gitInfo.OriginUrl, nameof(ThreadGitInfoUpdate.OriginUrl));
-            patch["originUrl"] = gitInfo.OriginUrl;
+            patch[JsonFieldNames.OriginUrl] = gitInfo.OriginUrl;
         }
 
         if (gitInfo.UpdateSha)
         {
             ValidateGitInfoValue(gitInfo.Sha, nameof(ThreadGitInfoUpdate.Sha));
-            patch["sha"] = gitInfo.Sha;
+            patch[JsonFieldNames.Sha] = gitInfo.Sha;
         }
 
         if (patch.Count == 0)

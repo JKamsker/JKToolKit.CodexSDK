@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Models;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
@@ -75,7 +77,7 @@ internal sealed partial class CodexAppServerThreadsClient
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
 
         var result = await _sendRequestAsync(
-            "thread/resume",
+            AppServerMethods.ThreadResume,
             new ThreadResumeParams { ThreadId = threadId },
             ct);
 
@@ -98,7 +100,7 @@ internal sealed partial class CodexAppServerThreadsClient
 
         var history = hasHistory ? options.History : null;
         var result = await _sendRequestAsync(
-            "thread/resume",
+            AppServerMethods.ThreadResume,
             new ThreadResumeParams
             {
                 ThreadId = CodexAppServerWireBuilders.BuildThreadIdOrPlaceholder(options.ThreadId),
@@ -233,7 +235,7 @@ internal sealed partial class CodexAppServerThreadsClient
             new UpstreamV2.ThreadUnsubscribeParams { ThreadId = threadId },
             ct);
 
-        var status = ParseThreadUnsubscribeStatus(CodexAppServerClientJson.GetStringOrNull(result, "status"));
+        var status = ParseThreadUnsubscribeStatus(CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.Status));
 
         return new ThreadUnsubscribeResult
         {
@@ -260,11 +262,11 @@ internal sealed partial class CodexAppServerThreadsClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("thread/realtime/start");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.ThreadRealtimeStart);
         }
 
         _ = await _sendRequestAsync(
-            "thread/realtime/start",
+            AppServerMethods.ThreadRealtimeStart,
             CodexAppServerThreadRealtimeStartWiring.BuildParams(options),
             ct).ConfigureAwait(false);
     }
@@ -277,11 +279,11 @@ internal sealed partial class CodexAppServerThreadsClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("thread/realtime/appendAudio");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.ThreadRealtimeAppendAudio);
         }
 
         _ = await _sendRequestAsync(
-            "thread/realtime/appendAudio",
+            AppServerMethods.ThreadRealtimeAppendAudio,
             new ThreadRealtimeAppendAudioParams
             {
                 ThreadId = threadId,
@@ -298,11 +300,11 @@ internal sealed partial class CodexAppServerThreadsClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("thread/realtime/appendText");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.ThreadRealtimeAppendText);
         }
 
         _ = await _sendRequestAsync(
-            "thread/realtime/appendText",
+            AppServerMethods.ThreadRealtimeAppendText,
             new ThreadRealtimeAppendTextParams
             {
                 ThreadId = threadId,
@@ -318,11 +320,11 @@ internal sealed partial class CodexAppServerThreadsClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("thread/realtime/stop");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.ThreadRealtimeStop);
         }
 
         _ = await _sendRequestAsync(
-            "thread/realtime/stop",
+            AppServerMethods.ThreadRealtimeStop,
             new ThreadRealtimeStopParams { ThreadId = threadId },
             ct);
     }
@@ -363,7 +365,7 @@ internal sealed partial class CodexAppServerThreadsClient
             },
             ct);
 
-        var threadObj = CodexAppServerClientJson.TryGetObject(result, "thread") ?? result;
+        var threadObj = CodexAppServerClientJson.TryGetObject(result, JsonFieldNames.Thread) ?? result;
         var id = CodexAppServerClientJson.ExtractThreadId(threadObj) ?? threadId;
         return CodexAppServerClientThreadResponseParsers.ParseLifecycleThread(result, id);
     }
@@ -375,11 +377,11 @@ internal sealed partial class CodexAppServerThreadsClient
 
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("thread/backgroundTerminals/clean");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.ThreadBackgroundTerminalsClean);
         }
 
         _ = await _sendRequestAsync(
-            "thread/backgroundTerminals/clean",
+            AppServerMethods.ThreadBackgroundTerminalsClean,
             new ThreadBackgroundTerminalsCleanParams { ThreadId = threadId },
             ct);
     }

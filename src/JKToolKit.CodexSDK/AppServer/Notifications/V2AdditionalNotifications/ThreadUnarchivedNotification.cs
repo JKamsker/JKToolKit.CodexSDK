@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadUnarchivedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadUnarchivedNotification"/>.
     /// </summary>
     public ThreadUnarchivedNotification(string ThreadId, JsonElement Params)
-        : base("thread/unarchived", Params)
+        : base(AppServerMethods.ThreadUnarchived, Params)
     {
         this.ThreadId = ThreadId;
     }

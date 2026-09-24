@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +23,7 @@ public sealed record class ThreadRealtimeItemAddedNotification : AppServerNotifi
     /// Initializes a new instance of <see cref="ThreadRealtimeItemAddedNotification"/>.
     /// </summary>
     public ThreadRealtimeItemAddedNotification(string ThreadId, JsonElement Item, JsonElement Params)
-        : base("thread/realtime/itemAdded", Params)
+        : base(AppServerMethods.ThreadRealtimeItemAdded, Params)
     {
         this.ThreadId = ThreadId;
         this.Item = Item;
@@ -32,7 +34,7 @@ public sealed record class ThreadRealtimeItemAddedNotification : AppServerNotifi
     /// </summary>
     public string? ItemType =>
         Item.ValueKind == JsonValueKind.Object &&
-        Item.TryGetProperty("type", out var t) &&
+        Item.TryGetProperty(JsonFieldNames.Type, out var t) &&
         t.ValueKind == JsonValueKind.String
             ? t.GetString()
             : null;

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,13 +12,13 @@ public sealed record class ThreadListResponse
     /// <summary>
     /// Gets the threads array when present (raw).
     /// </summary>
-    [JsonPropertyName("data")]
+    [JsonPropertyName(JsonFieldNames.Data)]
     public JsonElement? Data { get; init; }
 
     /// <summary>
     /// Gets the next cursor token when present.
     /// </summary>
-    [JsonPropertyName("nextCursor")]
+    [JsonPropertyName(JsonFieldNames.NextCursor)]
     public string? NextCursor { get; init; }
 
     /// <summary>

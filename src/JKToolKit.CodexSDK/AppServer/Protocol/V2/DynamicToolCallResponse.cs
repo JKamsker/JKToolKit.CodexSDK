@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,12 +11,12 @@ public sealed record class DynamicToolCallResponse
     /// <summary>
     /// Gets the output content items.
     /// </summary>
-    [JsonPropertyName("contentItems")]
+    [JsonPropertyName(JsonFieldNames.ContentItems)]
     public required IReadOnlyList<DynamicToolCallOutputContentItem> ContentItems { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the tool call succeeded.
     /// </summary>
-    [JsonPropertyName("success")]
+    [JsonPropertyName(JsonFieldNames.Success)]
     public required bool Success { get; init; }
 }

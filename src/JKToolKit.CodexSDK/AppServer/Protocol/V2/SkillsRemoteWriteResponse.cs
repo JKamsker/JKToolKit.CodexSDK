@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,19 +12,19 @@ public sealed record class SkillsRemoteWriteResponse
     /// <summary>
     /// Gets the skill identifier, when present.
     /// </summary>
-    [JsonPropertyName("id")]
+    [JsonPropertyName(JsonFieldNames.Id)]
     public string? Id { get; init; }
 
     /// <summary>
     /// Gets the skill name, when present.
     /// </summary>
-    [JsonPropertyName("name")]
+    [JsonPropertyName(JsonFieldNames.Name)]
     public string? Name { get; init; }
 
     /// <summary>
     /// Gets the skill path, when present.
     /// </summary>
-    [JsonPropertyName("path")]
+    [JsonPropertyName(JsonFieldNames.Path)]
     public string? Path { get; init; }
 
     /// <summary>

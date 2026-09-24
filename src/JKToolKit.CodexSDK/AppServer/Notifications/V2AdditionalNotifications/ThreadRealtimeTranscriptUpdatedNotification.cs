@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class ThreadRealtimeTranscriptUpdatedNotification : AppServ
     /// Initializes a new instance of <see cref="ThreadRealtimeTranscriptUpdatedNotification"/>.
     /// </summary>
     public ThreadRealtimeTranscriptUpdatedNotification(string ThreadId, string Role, string Text, JsonElement Params)
-        : base("thread/realtime/transcriptUpdated", Params)
+        : base(AppServerMethods.ThreadRealtimeTranscriptUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.Role = Role;

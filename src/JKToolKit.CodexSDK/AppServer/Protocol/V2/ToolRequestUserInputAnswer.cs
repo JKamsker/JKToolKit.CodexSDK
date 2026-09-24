@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,6 +11,6 @@ public sealed record class ToolRequestUserInputAnswer
     /// <summary>
     /// Gets the answer values.
     /// </summary>
-    [JsonPropertyName("answers")]
+    [JsonPropertyName(JsonFieldNames.Answers)]
     public required IReadOnlyList<string> Answers { get; init; }
 }

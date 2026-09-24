@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -54,7 +55,7 @@ public sealed record class ModelSafetyBufferingUpdatedNotification : AppServerNo
         bool ShowBufferingUi,
         string? FasterModel,
         JsonElement Params)
-        : base("model/safetyBuffering/updated", Params)
+        : base(AppServerMethods.ModelSafetyBufferingUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

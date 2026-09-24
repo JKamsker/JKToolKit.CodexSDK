@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -8,4 +9,4 @@ namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 public sealed record class ThreadProjectUpdatedNotification(
     string ThreadId,
     string? ProjectId,
-    JsonElement Params) : AppServerNotification("thread/project/updated", Params);
+    JsonElement Params) : AppServerNotification(AppServerMethods.ThreadProjectUpdated, Params);

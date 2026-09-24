@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 
@@ -16,6 +17,6 @@ public sealed record class InitializeParams
     /// <summary>
     /// Gets optional client capabilities sent during initialization.
     /// </summary>
-    [JsonPropertyName("capabilities")]
+    [JsonPropertyName(JsonFieldNames.Capabilities)]
     public InitializeCapabilities? Capabilities { get; init; }
 }

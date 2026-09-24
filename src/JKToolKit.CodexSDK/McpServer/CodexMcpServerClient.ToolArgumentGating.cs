@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
+using JKToolKit.CodexSDK.McpServer.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.McpServer;
@@ -65,18 +67,17 @@ public sealed partial class CodexMcpServerClient
 
     private async Task<Dictionary<string, HashSet<string>>> LoadAllowedArgumentKeysByToolNameAsync(CancellationToken ct)
     {
-        const int maxPages = 100;
         var tools = new List<McpToolDescriptor>();
         string? cursor = null;
 
-        for (var i = 0; i < maxPages; i++)
+        for (var i = 0; i < MaxToolListPages; i++)
         {
             var result = await _rpc.SendRequestAsync(
-                "tools/list",
+                McpMethods.ToolsList,
                 @params: i == 0 ? null : new { cursor },
                 ct).ConfigureAwait(false);
 
-            var transformed = ApplyResponseTransformers("tools/list", result);
+            var transformed = ApplyResponseTransformers(McpMethods.ToolsList, result);
 
             if (!Internal.McpToolsListParser.TryParse(transformed, out var pageTools, out var nextCursor))
             {
@@ -85,7 +86,7 @@ public sealed partial class CodexMcpServerClient
                     throw new JsonException("Unexpected tools/list result shape.");
                 }
 
-                _logger.LogWarning("Unexpected tools/list result shape: {Result}", Truncate(transformed.GetRawText(), maxChars: 4000));
+                _logger.LogWarning("Unexpected tools/list result shape: {Result}", Truncate(transformed.GetRawText(), maxChars: MaxToolListDiagnosticChars));
                 break;
             }
 
@@ -96,15 +97,15 @@ public sealed partial class CodexMcpServerClient
                 break;
             }
 
-            if (i == maxPages - 1)
+            if (i == MaxToolListPages - 1)
             {
                 _logger.LogWarning(
                     "tools/list pagination cap exhausted (maxPages={MaxPages}, cursor={Cursor}, nextCursor={NextCursor}, strictParsing={StrictParsing}); last transformed result: {Result}",
-                    maxPages,
+                    MaxToolListPages,
                     cursor,
                     nextCursor,
                     _options.StrictParsing,
-                    Truncate(transformed.GetRawText(), maxChars: 4000));
+                    Truncate(transformed.GetRawText(), maxChars: MaxToolListDiagnosticChars));
 
                 if (_options.StrictParsing)
                 {
@@ -147,7 +148,7 @@ public sealed partial class CodexMcpServerClient
 
         // Only gate arguments when the schema is explicitly closed. In JSON Schema,
         // additionalProperties defaults to allowed (true), so treat an absent field as open.
-        if (!schema.TryGetProperty("additionalProperties", out var additionalProperties) ||
+        if (!schema.TryGetProperty(JsonFieldNames.AdditionalProperties, out var additionalProperties) ||
             additionalProperties.ValueKind != JsonValueKind.False)
         {
             return false;

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,13 +11,13 @@ public sealed record class McpServerOauthLoginParams
     /// <summary>
     /// Gets the configured MCP server name.
     /// </summary>
-    [JsonPropertyName("name")]
+    [JsonPropertyName(JsonFieldNames.Name)]
     public required string Name { get; init; }
 
     /// <summary>
     /// Gets the thread id that the OAuth flow belongs to, when scoped to a thread.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public string? ThreadId { get; init; }
 
     /// <summary>
@@ -28,7 +29,7 @@ public sealed record class McpServerOauthLoginParams
     /// <summary>
     /// Gets optional OAuth scopes to request.
     /// </summary>
-    [JsonPropertyName("scopes")]
+    [JsonPropertyName(JsonFieldNames.Scopes)]
     public IReadOnlyList<string>? Scopes { get; init; }
 
     /// <summary>

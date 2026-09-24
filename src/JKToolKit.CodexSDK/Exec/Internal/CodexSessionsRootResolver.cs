@@ -1,10 +1,10 @@
+using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Abstractions;
 
 namespace JKToolKit.CodexSDK.Exec.Internal;
 
 internal static class CodexSessionsRootResolver
 {
-    private const string CodexHomeEnvVar = "CODEX_HOME";
 
     internal static string GetEffectiveSessionsRootDirectory(CodexClientOptions clientOptions, ICodexPathProvider pathProvider)
     {
@@ -13,7 +13,7 @@ internal static class CodexSessionsRootResolver
         {
             var home =
                 clientOptions.CodexHomeDirectory ??
-                Environment.GetEnvironmentVariable(CodexHomeEnvVar);
+                Environment.GetEnvironmentVariable(CodexEnvironmentVariables.Home);
 
             if (!string.IsNullOrWhiteSpace(home))
             {

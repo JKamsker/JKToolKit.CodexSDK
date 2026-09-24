@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,7 +12,7 @@ public sealed record class SkillsConfigWriteResponse
     /// <summary>
     /// Gets the effective enabled value after applying the config update.
     /// </summary>
-    [JsonPropertyName("effectiveEnabled")]
+    [JsonPropertyName(JsonFieldNames.EffectiveEnabled)]
     public bool? EffectiveEnabled { get; init; }
 
     /// <summary>

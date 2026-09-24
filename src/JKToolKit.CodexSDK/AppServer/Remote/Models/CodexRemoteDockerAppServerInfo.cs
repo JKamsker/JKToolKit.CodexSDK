@@ -38,7 +38,7 @@ public sealed record class CodexRemoteDockerAppServerInfo
     /// <summary>
     /// Gets the app-server WebSocket port inside the container.
     /// </summary>
-    public int ContainerPort { get; init; } = 4500;
+    public int ContainerPort { get; init; } = RemoteAppServerDefaults.ContainerPort;
 
     /// <summary>
     /// Gets the host port published to loopback for managed-container mode.

@@ -8,6 +8,8 @@ namespace JKToolKit.CodexSDK.Exec.Internal;
 
 internal sealed class CodexSessionHandleEventPipeline
 {
+    private static readonly TimeSpan ProcessExitPollInterval = TimeSpan.FromMilliseconds(100);
+
     private readonly CodexSessionInfo _info;
     private readonly Process? _process;
     private readonly ICodexProcessLauncher? _processLauncher;
@@ -136,7 +138,7 @@ internal sealed class CodexSessionHandleEventPipeline
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(ProcessExitPollInterval, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {

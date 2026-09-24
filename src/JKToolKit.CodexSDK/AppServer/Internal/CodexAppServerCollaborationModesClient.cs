@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -19,15 +21,15 @@ internal sealed class CodexAppServerCollaborationModesClient
     {
         if (!_experimentalApiEnabled())
         {
-            throw new CodexExperimentalApiRequiredException("collaborationMode/list");
+            throw new CodexExperimentalApiRequiredException(AppServerMethods.CollaborationModeList);
         }
 
-        var raw = await _sendRequestAsync("collaborationMode/list", new { }, ct);
+        var raw = await _sendRequestAsync(AppServerMethods.CollaborationModeList, new { }, ct);
 
         var masks = new List<CollaborationModeMask>();
 
         if (raw.ValueKind == JsonValueKind.Object &&
-            raw.TryGetProperty("data", out var data) &&
+            raw.TryGetProperty(JsonFieldNames.Data, out var data) &&
             data.ValueKind == JsonValueKind.Array)
         {
             foreach (var m in data.EnumerateArray())
@@ -37,7 +39,7 @@ internal sealed class CodexAppServerCollaborationModesClient
                     continue;
                 }
 
-                var name = TryGetString(m, "name");
+                var name = TryGetString(m, JsonFieldNames.Name);
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     continue;
@@ -46,9 +48,9 @@ internal sealed class CodexAppServerCollaborationModesClient
                 masks.Add(new CollaborationModeMask
                 {
                     Name = name,
-                    Mode = TryGetString(m, "mode"),
-                    Model = TryGetString(m, "model"),
-                    ReasoningEffort = TryGetString(m, "reasoning_effort") ?? TryGetString(m, "reasoningEffort"),
+                    Mode = TryGetString(m, JsonFieldNames.Mode),
+                    Model = TryGetString(m, JsonFieldNames.Model),
+                    ReasoningEffort = TryGetString(m, JsonFieldNames.SnakeCase.ReasoningEffort) ?? TryGetString(m, JsonFieldNames.ReasoningEffort),
                     Raw = m.Clone()
                 });
             }

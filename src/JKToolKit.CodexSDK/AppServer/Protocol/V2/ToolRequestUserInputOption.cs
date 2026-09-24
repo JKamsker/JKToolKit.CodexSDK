@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,12 +11,12 @@ public sealed record class ToolRequestUserInputOption
     /// <summary>
     /// Gets the display label for the option.
     /// </summary>
-    [JsonPropertyName("label")]
+    [JsonPropertyName(JsonFieldNames.Label)]
     public required string Label { get; init; }
 
     /// <summary>
     /// Gets the description for the option.
     /// </summary>
-    [JsonPropertyName("description")]
+    [JsonPropertyName(JsonFieldNames.Description)]
     public required string Description { get; init; }
 }

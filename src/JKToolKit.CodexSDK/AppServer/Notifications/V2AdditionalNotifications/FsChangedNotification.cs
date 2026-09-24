@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +22,7 @@ public sealed record class FsChangedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="FsChangedNotification"/>.
     /// </summary>
     public FsChangedNotification(string WatchId, IReadOnlyList<string> ChangedPaths, JsonElement Params)
-        : base("fs/changed", Params)
+        : base(AppServerMethods.FsChanged, Params)
     {
         this.WatchId = WatchId;
         this.ChangedPaths = ChangedPaths;

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -42,7 +43,7 @@ public sealed record class TerminalInteractionNotification : AppServerNotificati
         string ProcessId,
         string Stdin,
         JsonElement Params)
-        : base("item/commandExecution/terminalInteraction", Params)
+        : base(AppServerMethods.ItemCommandExecutionTerminalInteraction, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
@@ -64,18 +66,18 @@ internal sealed partial class CodexAppServerConfigClient
             },
             ct);
 
-        var account = CodexAppServerClientJson.TryGetObject(result, "account");
+        var account = CodexAppServerClientJson.TryGetObject(result, JsonFieldNames.Account);
         var workspaceRouting = CodexAppServerClientJson.TryGetObject(result, "workspaceRouting");
 
         return new AccountReadResult
         {
             Account = account.HasValue ? account.Value.Clone() : null,
-            AccountInfo = CodexAppServerAccountParsers.ParseAccountOrNull(result, "account", "account/read response"),
-            RequiresOpenaiAuth = CodexAppServerClientJson.GetRequiredBool(result, "requiresOpenaiAuth", "account/read response"),
+            AccountInfo = CodexAppServerAccountParsers.ParseAccountOrNull(result, JsonFieldNames.Account, "account/read response"),
+            RequiresOpenaiAuth = CodexAppServerClientJson.GetRequiredBool(result, JsonFieldNames.RequiresOpenaiAuth, "account/read response"),
             WorkspaceRouting = workspaceRouting is { } routing
                 ? new AccountWorkspaceRouting
                 {
-                    ChatGptAccountId = CodexAppServerClientJson.GetRequiredString(routing, "chatgptAccountId", "account/read workspaceRouting"),
+                    ChatGptAccountId = CodexAppServerClientJson.GetRequiredString(routing, JsonFieldNames.ChatgptAccountId, "account/read workspaceRouting"),
                     BackendOrigin = CodexAppServerClientJson.GetRequiredString(routing, "backendOrigin", "account/read workspaceRouting"),
                     AccountRoutingOverride = CodexAppServerClientJson.GetRequiredString(routing, "accountRoutingOverride", "account/read workspaceRouting"),
                     Raw = routing.Clone()
@@ -94,7 +96,7 @@ internal sealed partial class CodexAppServerConfigClient
             BuildAccountRateLimitsReadParams(options),
             ct);
 
-        var rateLimits = CodexAppServerClientJson.TryGetObject(result, "rateLimits");
+        var rateLimits = CodexAppServerClientJson.TryGetObject(result, JsonFieldNames.RateLimits);
 
         IReadOnlyDictionary<string, JsonElement>? rateLimitsByLimitId = null;
         var byLimitId = CodexAppServerClientJson.TryGetObject(result, "rateLimitsByLimitId");
@@ -146,9 +148,9 @@ internal sealed partial class CodexAppServerConfigClient
         JsonElement result;
         try
         {
-            result = await _sendRequestAsync("skills/remote/list", emptyParams, ct);
+            result = await _sendRequestAsync(AppServerMethods.SkillsRemoteList, emptyParams, ct);
         }
-        catch (JsonRpcRemoteException ex) when (IsUnknownVariant(ex, "skills/remote/list"))
+        catch (JsonRpcRemoteException ex) when (IsUnknownVariant(ex, AppServerMethods.SkillsRemoteList))
         {
             result = await _sendRequestAsync("skills/remote/read", emptyParams, ct);
         }
@@ -175,11 +177,11 @@ internal sealed partial class CodexAppServerConfigClient
         try
         {
             result = await _sendRequestAsync(
-                "skills/remote/export",
+                AppServerMethods.SkillsRemoteExport,
                 writeParams,
                 ct);
         }
-        catch (JsonRpcRemoteException ex) when (IsUnknownVariant(ex, "skills/remote/export"))
+        catch (JsonRpcRemoteException ex) when (IsUnknownVariant(ex, AppServerMethods.SkillsRemoteExport))
         {
             result = await _sendRequestAsync(
                 "skills/remote/write",
@@ -189,9 +191,9 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new RemoteSkillWriteResult
         {
-            Id = CodexAppServerClientJson.GetStringOrNull(result, "id"),
-            Name = CodexAppServerClientJson.GetStringOrNull(result, "name"),
-            Path = CodexAppServerClientJson.GetStringOrNull(result, "path"),
+            Id = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.Id),
+            Name = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.Name),
+            Path = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.Path),
             Raw = result
         };
     }
@@ -224,7 +226,7 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new SkillsConfigWriteResult
         {
-            EffectiveEnabled = CodexAppServerClientJson.GetBoolOrNull(result, "effectiveEnabled"),
+            EffectiveEnabled = CodexAppServerClientJson.GetBoolOrNull(result, JsonFieldNames.EffectiveEnabled),
             Raw = result
         };
     }
@@ -238,7 +240,7 @@ internal sealed partial class CodexAppServerConfigClient
         }
 
         var result = await _sendRequestAsync(
-            "account/login/start",
+            AppServerMethods.AccountLoginStart,
             CodexAppServerAccountLoginParsers.BuildStartParams(options),
             ct);
 
@@ -270,7 +272,7 @@ internal sealed partial class CodexAppServerConfigClient
             options,
             ct);
 
-        var itemsArray = CodexAppServerClientJson.TryGetArray(result, "items")
+        var itemsArray = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Items)
             ?? throw new InvalidOperationException("Missing required property 'items' on externalAgentConfig/detect response.");
 
         var items = new List<ExternalAgentConfigMigrationItem>();
@@ -283,14 +285,14 @@ internal sealed partial class CodexAppServerConfigClient
                     $"externalAgentConfig/detect items[{i}] must be an object. valueKind={item.ValueKind}");
             }
 
-            var description = CodexAppServerClientJson.GetStringOrNull(item, "description");
+            var description = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Description);
             if (string.IsNullOrWhiteSpace(description))
             {
                 throw new InvalidOperationException(
                     $"externalAgentConfig/detect items[{i}] missing required string property 'description'.");
             }
 
-            var itemTypeRaw = CodexAppServerClientJson.GetStringOrNull(item, "itemType");
+            var itemTypeRaw = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.ItemType);
             if (!ExternalAgentConfigMigrationItemTypeExtensions.TryParseWireValue(itemTypeRaw, out var itemType))
             {
                 throw new InvalidOperationException(
@@ -299,7 +301,7 @@ internal sealed partial class CodexAppServerConfigClient
 
             items.Add(new ExternalAgentConfigMigrationItem
             {
-                Cwd = ParseOptionalStringProperty(item, "cwd", $"externalAgentConfig/detect items[{i}]"),
+                Cwd = ParseOptionalStringProperty(item, JsonFieldNames.Cwd, $"externalAgentConfig/detect items[{i}]"),
                 Description = description,
                 ItemType = itemType
             });
@@ -354,7 +356,7 @@ internal sealed partial class CodexAppServerConfigClient
         var started = CodexAppServerClientJson.GetBoolOrNull(result, "started");
         if (started is null)
         {
-            var raw = CodexDiagnosticsSanitizer.Sanitize(result.GetRawText(), maxChars: 2000);
+            var raw = CodexDiagnosticsSanitizer.Sanitize(result.GetRawText(), maxChars: DiagnosticLimits.JsonSnippetChars);
             throw new InvalidOperationException($"windowsSandbox/setupStart response missing boolean 'started'. result={raw}");
         }
 
@@ -391,12 +393,12 @@ internal sealed partial class CodexAppServerConfigClient
             return false;
         }
 
-        if (error.Code == -32601)
+        if (error.Code == JsonRpcErrorCodes.MethodNotFound)
         {
             return true;
         }
 
-        if (error.Code != -32600)
+        if (error.Code != JsonRpcErrorCodes.InvalidRequest)
         {
             return false;
         }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -21,9 +22,9 @@ internal static partial class CodexAppServerClientPluginParsers
 
         return new PluginMarketplace
         {
-            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin/list marketplaces[]"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Name, "plugin/list marketplaces[]"),
             Path = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
-                CodexAppServerClientJson.GetStringOrNull(item, "path"),
+                CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Path),
                 "path",
                 "plugin/list marketplaces[]"),
             Interface = ParsePluginMarketplaceInterface(item),
@@ -34,11 +35,11 @@ internal static partial class CodexAppServerClientPluginParsers
 
     private static PluginDetailDescriptor ParsePluginDetail(JsonElement item)
     {
-        var summary = CodexAppServerClientJson.TryGetObject(item, "summary")
+        var summary = CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Summary)
             ?? throw new InvalidOperationException("plugin/read returned a plugin without summary.");
 
         var skills = new List<PluginSkillDescriptor>();
-        var skillsArray = CodexAppServerClientJson.TryGetArray(item, "skills")
+        var skillsArray = CodexAppServerClientJson.TryGetArray(item, JsonFieldNames.Skills)
             ?? throw new InvalidOperationException("plugin/read returned a plugin without skills.");
         foreach (var skill in skillsArray.EnumerateArray())
         {
@@ -51,7 +52,7 @@ internal static partial class CodexAppServerClientPluginParsers
         }
 
         var apps = new List<PluginAppDescriptor>();
-        var appsArray = CodexAppServerClientJson.TryGetArray(item, "apps")
+        var appsArray = CodexAppServerClientJson.TryGetArray(item, JsonFieldNames.Apps)
             ?? throw new InvalidOperationException("plugin/read returned a plugin without apps.");
         foreach (var app in appsArray.EnumerateArray())
         {
@@ -70,10 +71,10 @@ internal static partial class CodexAppServerClientPluginParsers
         return new PluginDetailDescriptor
         {
             Summary = ParsePluginSummary(summary),
-            Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
-            MarketplaceName = CodexAppServerClientJson.GetRequiredString(item, "marketplaceName", "plugin/read plugin"),
+            Description = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Description),
+            MarketplaceName = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.MarketplaceName, "plugin/read plugin"),
             MarketplacePath = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
-                CodexAppServerClientJson.GetStringOrNull(item, "marketplacePath"),
+                CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.MarketplacePath),
                 "marketplacePath",
                 "plugin/read plugin"),
             McpServers = mcpServers,
@@ -111,14 +112,14 @@ internal static partial class CodexAppServerClientPluginParsers
     {
         return new PluginSkillDescriptor
         {
-            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin skill"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Name, "plugin skill"),
             Path = CodexAppServerPathValidation.GetOptionalAbsolutePayloadPath(
-                CodexAppServerClientJson.GetStringOrNull(item, "path"),
+                CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Path),
                 "path",
                 "plugin skill"),
-            Enabled = CodexAppServerClientJson.GetRequiredBool(item, "enabled", "plugin skill"),
-            Description = CodexAppServerClientJson.GetRequiredString(item, "description", "plugin skill"),
-            ShortDescription = CodexAppServerClientJson.GetStringOrNull(item, "shortDescription"),
+            Enabled = CodexAppServerClientJson.GetRequiredBool(item, JsonFieldNames.Enabled, "plugin skill"),
+            Description = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Description, "plugin skill"),
+            ShortDescription = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.ShortDescription),
             Interface = ParsePluginSkillInterface(item),
             Raw = item.Clone()
         };
@@ -128,18 +129,18 @@ internal static partial class CodexAppServerClientPluginParsers
     {
         return new PluginAppDescriptor
         {
-            Id = CodexAppServerClientJson.GetRequiredString(item, "id", "plugin app"),
-            Name = CodexAppServerClientJson.GetRequiredString(item, "name", "plugin app"),
+            Id = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Id, "plugin app"),
+            Name = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.Name, "plugin app"),
             NeedsAuth = CodexAppServerClientJson.GetRequiredBool(item, "needsAuth", "plugin app"),
-            Description = CodexAppServerClientJson.GetStringOrNull(item, "description"),
-            InstallUrl = CodexAppServerClientJson.GetStringOrNull(item, "installUrl"),
+            Description = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Description),
+            InstallUrl = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.InstallUrl),
             Raw = item.Clone()
         };
     }
 
     private static IReadOnlyList<PluginHookDescriptor> ParsePluginHooks(JsonElement item)
     {
-        var hooksArray = CodexAppServerClientJson.TryGetArray(item, "hooks");
+        var hooksArray = CodexAppServerClientJson.TryGetArray(item, JsonFieldNames.Hooks);
         if (hooksArray is null)
         {
             return Array.Empty<PluginHookDescriptor>();
@@ -155,8 +156,8 @@ internal static partial class CodexAppServerClientPluginParsers
 
             hooks.Add(new PluginHookDescriptor
             {
-                Key = CodexAppServerClientJson.GetRequiredString(hook, "key", "plugin hook"),
-                EventName = CodexAppServerClientJson.GetRequiredString(hook, "eventName", "plugin hook"),
+                Key = CodexAppServerClientJson.GetRequiredString(hook, JsonFieldNames.Key, "plugin hook"),
+                EventName = CodexAppServerClientJson.GetRequiredString(hook, JsonFieldNames.EventName, "plugin hook"),
                 Raw = hook.Clone()
             });
         }

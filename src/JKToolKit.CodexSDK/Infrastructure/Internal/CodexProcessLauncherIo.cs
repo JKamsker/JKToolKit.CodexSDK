@@ -5,6 +5,8 @@ namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
 internal static class CodexProcessLauncherIo
 {
+    private static readonly TimeSpan DiagnosticReadTimeout = TimeSpan.FromMilliseconds(200);
+
     internal static async Task WritePromptAndCloseStdinAsync(
         Process process,
         string prompt,
@@ -78,7 +80,7 @@ internal static class CodexProcessLauncherIo
         try
         {
             var readTask = process.StandardError.ReadToEndAsync();
-            var completed = await Task.WhenAny(readTask, Task.Delay(200)).ConfigureAwait(false);
+            var completed = await Task.WhenAny(readTask, Task.Delay(DiagnosticReadTimeout)).ConfigureAwait(false);
             if (completed == readTask)
             {
                 return (await readTask.ConfigureAwait(false)).Trim();

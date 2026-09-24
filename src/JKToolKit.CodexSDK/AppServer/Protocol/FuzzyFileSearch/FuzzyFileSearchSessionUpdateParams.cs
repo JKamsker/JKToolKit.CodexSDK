@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
 
@@ -10,13 +11,13 @@ public sealed record class FuzzyFileSearchSessionUpdateParams
     /// <summary>
     /// Gets the fuzzy file search session identifier.
     /// </summary>
-    [JsonPropertyName("sessionId")]
+    [JsonPropertyName(JsonFieldNames.SessionId)]
     public required string SessionId { get; init; }
 
     /// <summary>
     /// Gets the updated query text.
     /// </summary>
-    [JsonPropertyName("query")]
+    [JsonPropertyName(JsonFieldNames.Query)]
     public required string Query { get; init; }
 }
 

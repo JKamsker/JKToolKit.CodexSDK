@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -22,7 +23,7 @@ internal sealed partial class CodexAppServerConfigClient
 
         var outcome = CodexAppServerClientJson.GetRequiredString(
             result,
-            "outcome",
+            JsonFieldNames.Outcome,
             "account/rateLimitResetCredit/consume response");
 
         return new AccountRateLimitResetCreditConsumeResult

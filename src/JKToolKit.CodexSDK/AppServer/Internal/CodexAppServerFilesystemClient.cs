@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -86,8 +87,8 @@ internal sealed class CodexAppServerFilesystemClient
 
         return new FsGetMetadataResult
         {
-            IsDirectory = CodexAppServerClientJson.GetRequiredBool(result, "isDirectory", "fs/getMetadata response"),
-            IsFile = CodexAppServerClientJson.GetRequiredBool(result, "isFile", "fs/getMetadata response"),
+            IsDirectory = CodexAppServerClientJson.GetRequiredBool(result, JsonFieldNames.IsDirectory, "fs/getMetadata response"),
+            IsFile = CodexAppServerClientJson.GetRequiredBool(result, JsonFieldNames.IsFile, "fs/getMetadata response"),
             CreatedAtMs = CodexAppServerClientJson.GetRequiredInt64(result, "createdAtMs", "fs/getMetadata response"),
             ModifiedAtMs = CodexAppServerClientJson.GetRequiredInt64(result, "modifiedAtMs", "fs/getMetadata response"),
             Raw = result
@@ -224,7 +225,7 @@ internal sealed class CodexAppServerFilesystemClient
 
     private static string GetRequiredResponsePath(JsonElement obj, string context)
     {
-        var path = CodexAppServerClientJson.GetRequiredString(obj, "path", context);
+        var path = CodexAppServerClientJson.GetRequiredString(obj, JsonFieldNames.Path, context);
         if (!Path.IsPathFullyQualified(path))
         {
             throw new InvalidOperationException($"Path returned from {context} must be absolute.");
@@ -235,7 +236,7 @@ internal sealed class CodexAppServerFilesystemClient
 
     private static IReadOnlyList<FsDirectoryEntry> ParseDirectoryEntries(JsonElement result)
     {
-        var entries = GetRequiredArray(result, "entries", "fs/readDirectory response");
+        var entries = GetRequiredArray(result, JsonFieldNames.Entries, "fs/readDirectory response");
 
         var parsed = new List<FsDirectoryEntry>();
         foreach (var entry in entries.EnumerateArray())
@@ -247,9 +248,9 @@ internal sealed class CodexAppServerFilesystemClient
 
             parsed.Add(new FsDirectoryEntry
             {
-                FileName = CodexAppServerClientJson.GetRequiredString(entry, "fileName", "fs/readDirectory entry"),
-                IsDirectory = CodexAppServerClientJson.GetRequiredBool(entry, "isDirectory", "fs/readDirectory entry"),
-                IsFile = CodexAppServerClientJson.GetRequiredBool(entry, "isFile", "fs/readDirectory entry"),
+                FileName = CodexAppServerClientJson.GetRequiredString(entry, JsonFieldNames.FileName, "fs/readDirectory entry"),
+                IsDirectory = CodexAppServerClientJson.GetRequiredBool(entry, JsonFieldNames.IsDirectory, "fs/readDirectory entry"),
+                IsFile = CodexAppServerClientJson.GetRequiredBool(entry, JsonFieldNames.IsFile, "fs/readDirectory entry"),
                 Raw = entry.Clone()
             });
         }

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 
 using System.Text;
+using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Stdio;
@@ -44,7 +45,7 @@ internal static class StdioProcessStartInfoBuilder
             startInfo.Environment[key] = value;
         }
 
-        if (options.Environment.TryGetValue("CODEX_HOME", out var codexHomeDirectory))
+        if (options.Environment.TryGetValue(CodexEnvironmentVariables.Home, out var codexHomeDirectory))
         {
             CodexHomeDirectoryHelpers.EnsureExists(codexHomeDirectory);
         }

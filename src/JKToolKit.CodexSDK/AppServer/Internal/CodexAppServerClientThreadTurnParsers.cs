@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.ThreadRead;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -10,20 +11,20 @@ internal static class CodexAppServerClientThreadTurnParsers
 {
     public static IReadOnlyList<CodexTurn>? ParseTurns(JsonElement envelope)
     {
-        var thread = TryGetObject(envelope, "thread") ?? (envelope.ValueKind == JsonValueKind.Object ? envelope : (JsonElement?)null);
+        var thread = TryGetObject(envelope, JsonFieldNames.Thread) ?? (envelope.ValueKind == JsonValueKind.Object ? envelope : (JsonElement?)null);
         return thread is { } threadObject ? ParseTurnsFromThread(threadObject) : null;
     }
 
     public static IReadOnlyList<CodexTurn>? ParseTurns(JsonElement primary, JsonElement secondary)
     {
         if (primary.ValueKind == JsonValueKind.Object &&
-            TryGetArray(primary, "turns") is not null)
+            TryGetArray(primary, JsonFieldNames.Turns) is not null)
         {
             return ParseTurnsFromThread(primary);
         }
 
         if (secondary.ValueKind == JsonValueKind.Object &&
-            TryGetArray(secondary, "turns") is not null)
+            TryGetArray(secondary, JsonFieldNames.Turns) is not null)
         {
             return ParseTurnsFromThread(secondary);
         }
@@ -33,7 +34,7 @@ internal static class CodexAppServerClientThreadTurnParsers
 
     private static IReadOnlyList<CodexTurn>? ParseTurnsFromThread(JsonElement thread)
     {
-        var turns = TryGetArray(thread, "turns");
+        var turns = TryGetArray(thread, JsonFieldNames.Turns);
         if (turns is null)
         {
             return null;

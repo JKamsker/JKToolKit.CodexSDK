@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +22,7 @@ public sealed record class ThreadRealtimeErrorNotification : AppServerNotificati
     /// Initializes a new instance of <see cref="ThreadRealtimeErrorNotification"/>.
     /// </summary>
     public ThreadRealtimeErrorNotification(string ThreadId, string Message, JsonElement Params)
-        : base("thread/realtime/error", Params)
+        : base(AppServerMethods.ThreadRealtimeError, Params)
     {
         this.ThreadId = ThreadId;
         this.Message = Message;

@@ -2,6 +2,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
@@ -59,7 +60,7 @@ internal static class CodexSessionLocatorHelpers
                     createdAt ??= RolloutLineParsing.GetTopLevelTimestampOrNull(root) ??
                                   RolloutLineParsing.GetPayloadTimestampOrNull(payload);
 
-                    if (payload.TryGetProperty("id", out var idElement))
+                    if (payload.TryGetProperty(JsonFieldNames.Id, out var idElement))
                     {
                         var idString = idElement.GetString();
                         if (!string.IsNullOrWhiteSpace(idString) &&
@@ -69,18 +70,18 @@ internal static class CodexSessionLocatorHelpers
                         }
                     }
 
-                    if (payload.TryGetProperty("cwd", out var cwdElement) &&
+                    if (payload.TryGetProperty(JsonFieldNames.Cwd, out var cwdElement) &&
                         cwdElement.ValueKind == JsonValueKind.String)
                     {
                         sessionMetaWorkingDirectory = cwdElement.GetString();
                     }
 
-                    modelProvider = TryGetOptionalString(payload, "model_provider") ?? modelProvider;
+                    modelProvider = TryGetOptionalString(payload, JsonFieldNames.SnakeCase.ModelProvider) ?? modelProvider;
 
                     humanLabel ??=
-                        TryGetOptionalString(payload, "thread_name") ??
-                        TryGetOptionalString(payload, "name") ??
-                        TryGetOptionalString(payload, "label");
+                        TryGetOptionalString(payload, JsonFieldNames.SnakeCase.ThreadName) ??
+                        TryGetOptionalString(payload, JsonFieldNames.Name) ??
+                        TryGetOptionalString(payload, JsonFieldNames.Label);
 
                     continue;
                 }
@@ -88,13 +89,13 @@ internal static class CodexSessionLocatorHelpers
                 if (RolloutLineParsing.TryGetPayloadObject(root, "turn_context", out payload))
                 {
                     UpdateLatestTimestamp(RolloutLineParsing.GetPayloadTimestampOrNull(payload));
-                    if (payload.TryGetProperty("cwd", out var cwdElement) &&
+                    if (payload.TryGetProperty(JsonFieldNames.Cwd, out var cwdElement) &&
                         cwdElement.ValueKind == JsonValueKind.String)
                     {
                         latestTurnContextWorkingDirectory = cwdElement.GetString();
                     }
 
-                    if (payload.TryGetProperty("model", out var modelElement) &&
+                    if (payload.TryGetProperty(JsonFieldNames.Model, out var modelElement) &&
                         modelElement.ValueKind == JsonValueKind.String)
                     {
                         var modelString = modelElement.GetString();

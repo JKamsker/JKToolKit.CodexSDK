@@ -81,7 +81,7 @@ internal sealed class RemoteAppServerManagerContext
                 return;
             }
 
-            await Task.Delay(TimeSpan.FromMilliseconds(200), ct).ConfigureAwait(false);
+            await Task.Delay(RemoteAppServerDefaults.StartupPollInterval, ct).ConfigureAwait(false);
         }
 
         if (!await HealthProbe.IsReadyAsync(uri, Options.HealthCheckTimeout, ct).ConfigureAwait(false))

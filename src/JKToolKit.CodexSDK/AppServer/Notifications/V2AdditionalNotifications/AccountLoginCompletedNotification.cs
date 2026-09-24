@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class AccountLoginCompletedNotification : AppServerNotifica
     /// Initializes a new instance of <see cref="AccountLoginCompletedNotification"/>.
     /// </summary>
     public AccountLoginCompletedNotification(string? LoginId, bool Success, string? Error, JsonElement Params)
-        : base("account/login/completed", Params)
+        : base(AppServerMethods.AccountLoginCompleted, Params)
     {
         this.LoginId = LoginId;
         this.Success = Success;

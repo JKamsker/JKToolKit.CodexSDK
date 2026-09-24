@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using Microsoft.Extensions.Logging;
 
@@ -181,8 +182,8 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                         continue;
                     }
 
-                    var hasId = root.TryGetProperty("id", out var idProp);
-                    var hasMethod = root.TryGetProperty("method", out var methodProp);
+                    var hasId = root.TryGetProperty(JsonFieldNames.Id, out var idProp);
+                    var hasMethod = root.TryGetProperty(JsonFieldNames.Method, out var methodProp);
 
                     if (hasId && hasMethod)
                     {
@@ -268,14 +269,14 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
             return;
         }
 
-        if (root.TryGetProperty("error", out var errorProp) && errorProp.ValueKind == JsonValueKind.Object)
+        if (root.TryGetProperty(JsonFieldNames.Error, out var errorProp) && errorProp.ValueKind == JsonValueKind.Object)
         {
             var error = ParseError(errorProp);
             tcs.TrySetException(new JsonRpcRemoteException(error));
             return;
         }
 
-        if (root.TryGetProperty("error", out errorProp) && errorProp.ValueKind != JsonValueKind.Undefined &&
+        if (root.TryGetProperty(JsonFieldNames.Error, out errorProp) && errorProp.ValueKind != JsonValueKind.Undefined &&
             errorProp.ValueKind != JsonValueKind.Null)
         {
             var error = ParseError(errorProp);
@@ -283,7 +284,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
             return;
         }
 
-        if (!root.TryGetProperty("result", out var resultProp))
+        if (!root.TryGetProperty(JsonFieldNames.Result, out var resultProp))
         {
             tcs.TrySetException(new JsonRpcProtocolException("JSON-RPC response missing 'result'/'error'."));
             return;
@@ -341,7 +342,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                             CreateResponseObject(new JsonRpcResponse(
                                 id,
                                 Result: null,
-                                Error: new JsonRpcError(-32600, "Invalid Request"))),
+                                Error: new JsonRpcError(JsonRpcErrorCodes.InvalidRequest, "Invalid Request"))),
                             CancellationToken.None).ConfigureAwait(false);
                     }
                     catch (Exception ex)
@@ -365,7 +366,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                             CreateResponseObject(new JsonRpcResponse(
                                 id,
                                 Result: null,
-                                Error: new JsonRpcError(-32600, "Invalid Request"))),
+                                Error: new JsonRpcError(JsonRpcErrorCodes.InvalidRequest, "Invalid Request"))),
                             CancellationToken.None).ConfigureAwait(false);
                     }
                     catch (Exception ex)
@@ -388,7 +389,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                 response = new JsonRpcResponse(
                     id,
                     Result: null,
-                    Error: new JsonRpcError(-32601, $"Unhandled server request '{method}'."));
+                    Error: new JsonRpcError(JsonRpcErrorCodes.MethodNotFound, $"Unhandled server request '{method}'."));
             }
             else
             {
@@ -401,7 +402,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                     response = new JsonRpcResponse(
                         id,
                         Result: null,
-                        Error: new JsonRpcError(-32000, ex.Message));
+                        Error: new JsonRpcError(JsonRpcErrorCodes.ServerError, ex.Message));
                 }
             }
 

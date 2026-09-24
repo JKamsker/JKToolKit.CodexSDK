@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -31,12 +33,12 @@ public sealed record class ThreadStatusChangedNotification : AppServerNotificati
     /// Initializes a new instance of <see cref="ThreadStatusChangedNotification"/>.
     /// </summary>
     public ThreadStatusChangedNotification(string ThreadId, JsonElement Status, JsonElement Params)
-        : base("thread/status/changed", Params)
+        : base(AppServerMethods.ThreadStatusChanged, Params)
     {
         this.ThreadId = ThreadId;
         this.Status = Status;
-        StatusType = TryGetString(Status, "type");
-        ActiveFlags = TryGetStringArray(Status, "activeFlags");
+        StatusType = TryGetString(Status, JsonFieldNames.Type);
+        ActiveFlags = TryGetStringArray(Status, JsonFieldNames.ActiveFlags);
     }
 
     private static string? TryGetString(JsonElement obj, string propertyName) =>

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -41,7 +42,7 @@ public sealed record class RemoteControlStatusChangedNotification : AppServerNot
         string? installationId,
         string? environmentId,
         JsonElement @params)
-        : base("remoteControl/status/changed", @params)
+        : base(AppServerMethods.RemoteControlStatusChanged, @params)
     {
         Status = status;
         StatusValue = RemoteControlConnectionStatus.Parse(status);

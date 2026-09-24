@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,19 +11,19 @@ public sealed record class AppListParams
     /// <summary>
     /// Gets an optional cursor for paging.
     /// </summary>
-    [JsonPropertyName("cursor")]
+    [JsonPropertyName(JsonFieldNames.Cursor)]
     public string? Cursor { get; init; }
 
     /// <summary>
     /// Gets an optional page size, if supported upstream.
     /// </summary>
-    [JsonPropertyName("limit")]
+    [JsonPropertyName(JsonFieldNames.Limit)]
     public int? Limit { get; init; }
 
     /// <summary>
     /// Gets an optional thread identifier used to evaluate app feature gating from that thread's config.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public string? ThreadId { get; init; }
 
     /// <summary>

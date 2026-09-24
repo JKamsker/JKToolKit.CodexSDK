@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class ThreadRealtimeStartedNotification : AppServerNotifica
     /// Initializes a new instance of <see cref="ThreadRealtimeStartedNotification"/>.
     /// </summary>
     public ThreadRealtimeStartedNotification(string ThreadId, string? SessionId, string Version, JsonElement Params)
-        : base("thread/realtime/started", Params)
+        : base(AppServerMethods.ThreadRealtimeStarted, Params)
     {
         this.ThreadId = ThreadId;
         this.SessionId = SessionId;

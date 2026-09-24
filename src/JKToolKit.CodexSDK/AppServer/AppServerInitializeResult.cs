@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -33,7 +34,7 @@ public sealed record AppServerInitializeResult
         Raw = raw;
 
         UserAgent = raw.ValueKind == JsonValueKind.Object &&
-                    raw.TryGetProperty("userAgent", out var ua) &&
+                    raw.TryGetProperty(JsonFieldNames.UserAgent, out var ua) &&
                     ua.ValueKind == JsonValueKind.String
             ? ua.GetString()
             : null;

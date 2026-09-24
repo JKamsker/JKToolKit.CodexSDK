@@ -7,6 +7,8 @@ namespace JKToolKit.CodexSDK.AppServer.Resiliency.Internal;
 
 internal sealed class ResilientAppServerConnection : IAsyncDisposable
 {
+    private const int MaxBackoffExponent = 10;
+
     private readonly Func<CancellationToken, Task<ICodexAppServerClientAdapter>> _startInner;
     private readonly CodexAppServerResilienceOptions _options;
     private readonly ILogger _logger;
@@ -392,7 +394,7 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
         }
 
         var exponent = windowAttempt - 2;
-        var factor = Math.Pow(2, Math.Min(exponent, 10));
+        var factor = Math.Pow(2, Math.Min(exponent, MaxBackoffExponent));
         var raw = TimeSpan.FromMilliseconds(policy.InitialBackoff.TotalMilliseconds * factor);
         var capped = raw <= policy.MaxBackoff ? raw : policy.MaxBackoff;
 

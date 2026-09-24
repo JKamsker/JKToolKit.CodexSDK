@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
@@ -16,7 +17,7 @@ internal static partial class JsonlEventBasicParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload))
+        if (!root.TryGetProperty(JsonFieldNames.Payload, out var payload))
         {
             ctx.Logger.LogWarning("session_meta event missing 'payload' field");
             return null;
@@ -30,7 +31,7 @@ internal static partial class JsonlEventBasicParsers
 
         var sessionTimestamp = RolloutLineParsing.GetPayloadTimestampOrNull(payload);
 
-        if (!payload.TryGetProperty("id", out var idElement))
+        if (!payload.TryGetProperty(JsonFieldNames.Id, out var idElement))
         {
             ctx.Logger.LogWarning("session_meta event missing 'payload.id' field");
             return null;
@@ -54,15 +55,15 @@ internal static partial class JsonlEventBasicParsers
             return null;
         }
 
-        var cwd = TryGetString(payload, "cwd");
+        var cwd = TryGetString(payload, JsonFieldNames.Cwd);
         var cliVersion = TryGetString(payload, "cli_version");
         var originator = TryGetString(payload, "originator");
         var (source, sourceSubagent) = ParseSessionSource(payload);
-        var sourceJson = payload.TryGetProperty("source", out var sourceEl) &&
+        var sourceJson = payload.TryGetProperty(JsonFieldNames.Source, out var sourceEl) &&
                          sourceEl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined
             ? sourceEl.Clone()
             : (JsonElement?)null;
-        var modelProvider = TryGetString(payload, "model_provider");
+        var modelProvider = TryGetString(payload, JsonFieldNames.SnakeCase.ModelProvider);
         var forkedFromSessionId = TryParseSessionId(payload, "forked_from_id");
         var baseInstructions = payload.TryGetProperty("base_instructions", out var baseInstructionsEl) &&
                                baseInstructionsEl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined
@@ -91,8 +92,8 @@ internal static partial class JsonlEventBasicParsers
             SourceJson = sourceJson,
             SourceSubagent = sourceSubagent,
             ForkedFromSessionId = forkedFromSessionId,
-            AgentNickname = TryGetString(payload, "agent_nickname"),
-            AgentRole = TryGetString(payload, "agent_role") ?? TryGetString(payload, "agent_type"),
+            AgentNickname = TryGetString(payload, JsonFieldNames.SnakeCase.AgentNickname),
+            AgentRole = TryGetString(payload, JsonFieldNames.SnakeCase.AgentRole) ?? TryGetString(payload, JsonFieldNames.SnakeCase.AgentType),
             AgentPath = TryGetString(payload, "agent_path"),
             ModelProvider = modelProvider,
             BaseInstructions = baseInstructions,
@@ -118,7 +119,7 @@ internal static partial class JsonlEventBasicParsers
         ref bool? networkAccess,
         ref string? networkAccessMode)
     {
-        if (sandboxPolicy.TryGetProperty("network_access", out var networkAccessEl))
+        if (sandboxPolicy.TryGetProperty(JsonFieldNames.SnakeCase.NetworkAccess, out var networkAccessEl))
         {
             if (TryParseNetworkAccessValue(networkAccessEl, out var parsedAccess, out var parsedMode))
             {
@@ -180,7 +181,7 @@ internal static partial class JsonlEventBasicParsers
             }
             case JsonValueKind.Object:
             {
-                if (!value.TryGetProperty("network_access", out var nestedNetworkAccess))
+                if (!value.TryGetProperty(JsonFieldNames.SnakeCase.NetworkAccess, out var nestedNetworkAccess))
                 {
                     return false;
                 }
@@ -194,7 +195,7 @@ internal static partial class JsonlEventBasicParsers
 
     private static (string? Source, string? SourceSubagent) ParseSessionSource(JsonElement payload)
     {
-        if (!payload.TryGetProperty("source", out var sourceEl))
+        if (!payload.TryGetProperty(JsonFieldNames.Source, out var sourceEl))
         {
             return (null, null);
         }
@@ -229,7 +230,7 @@ internal static partial class JsonlEventBasicParsers
             return null;
         }
 
-        if (subagentEl.TryGetProperty("thread_spawn", out _))
+        if (subagentEl.TryGetProperty(JsonFieldNames.SnakeCase.ThreadSpawn, out _))
         {
             return "thread_spawn";
         }

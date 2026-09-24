@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -34,7 +36,7 @@ internal static class CodexAppServerAccountLoginParsers
 
     public static AccountLoginStartResult ParseStartResult(JsonElement result)
     {
-        var type = GetStringOrNull(result, "type");
+        var type = GetStringOrNull(result, JsonFieldNames.Type);
 
         return type switch
         {
@@ -44,15 +46,15 @@ internal static class CodexAppServerAccountLoginParsers
             },
             "chatgpt" => new AccountLoginStartResult.ChatGptBrowser
             {
-                LoginId = GetRequiredString(result, "loginId", "account/login/start"),
-                AuthUrl = GetRequiredString(result, "authUrl", "account/login/start"),
+                LoginId = GetRequiredString(result, JsonFieldNames.LoginId, AppServerMethods.AccountLoginStart),
+                AuthUrl = GetRequiredString(result, "authUrl", AppServerMethods.AccountLoginStart),
                 Raw = result
             },
             "chatgptDeviceCode" => new AccountLoginStartResult.ChatGptDeviceCode
             {
-                LoginId = GetRequiredString(result, "loginId", "account/login/start"),
-                VerificationUrl = GetRequiredString(result, "verificationUrl", "account/login/start"),
-                UserCode = GetRequiredString(result, "userCode", "account/login/start"),
+                LoginId = GetRequiredString(result, JsonFieldNames.LoginId, AppServerMethods.AccountLoginStart),
+                VerificationUrl = GetRequiredString(result, "verificationUrl", AppServerMethods.AccountLoginStart),
+                UserCode = GetRequiredString(result, "userCode", AppServerMethods.AccountLoginStart),
                 Raw = result
             },
             "chatgptAuthTokens" => new AccountLoginStartResult.ChatGptAuthTokens
@@ -67,7 +69,7 @@ internal static class CodexAppServerAccountLoginParsers
     public static AccountLoginCancelResult ParseCancelResult(JsonElement result) =>
         new()
         {
-            Status = ParseCancelStatus(GetStringOrNull(result, "status")),
+            Status = ParseCancelStatus(GetStringOrNull(result, JsonFieldNames.Status)),
             Raw = result
         };
 

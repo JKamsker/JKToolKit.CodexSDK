@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -63,7 +64,7 @@ public sealed record class ThreadAttachmentUpdatedNotification : AppServerNotifi
         string attachmentId,
         ThreadAttachmentOperation operation,
         JsonElement @params)
-        : base("thread/attachment/updated", @params)
+        : base(AppServerMethods.ThreadAttachmentUpdated, @params)
     {
         ThreadId = threadId;
         AttachmentType = attachmentType;

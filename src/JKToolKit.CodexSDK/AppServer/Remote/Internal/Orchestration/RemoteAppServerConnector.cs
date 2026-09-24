@@ -5,6 +5,9 @@ namespace JKToolKit.CodexSDK.AppServer.Remote.Internal;
 
 internal sealed class RemoteAppServerConnector
 {
+    private const int MaxAttachAttempts = 5;
+    private const int AttachRetryDelayMilliseconds = 100;
+
     private readonly RemoteAppServerManagerContext _context;
 
     public RemoteAppServerConnector(RemoteAppServerManagerContext context)
@@ -90,7 +93,7 @@ internal sealed class RemoteAppServerConnector
     {
         var info = entry.Ssh ?? throw new InvalidOperationException($"SSH entry '{entry.Id}' is missing SSH details.");
         Exception? lastError = null;
-        for (var attempt = 0; attempt < 5; attempt++)
+        for (var attempt = 0; attempt < MaxAttachAttempts; attempt++)
         {
             var localPort = LocalPortAllocator.GetFreeLoopbackPort();
             var tunnel = await _context.ProcessRunner.StartAsync(
@@ -111,9 +114,9 @@ internal sealed class RemoteAppServerConnector
 
             lastError = new TimeoutException($"SSH tunnel for '{entry.Id}' did not become ready on local port {localPort}.");
             await tunnel.DisposeAsync().ConfigureAwait(false);
-            if (attempt < 4)
+            if (attempt < MaxAttachAttempts - 1)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(100 * (attempt + 1)), ct).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromMilliseconds(AttachRetryDelayMilliseconds * (attempt + 1)), ct).ConfigureAwait(false);
             }
         }
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,49 +12,49 @@ public sealed record class ThreadStartResponse
     /// <summary>
     /// Gets the approval policy returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("approvalPolicy")]
+    [JsonPropertyName(JsonFieldNames.ApprovalPolicy)]
     public string? ApprovalPolicy { get; init; }
 
     /// <summary>
     /// Gets the approval reviewer returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("approvalsReviewer")]
+    [JsonPropertyName(JsonFieldNames.ApprovalsReviewer)]
     public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
     /// Gets the working directory returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets the model returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("model")]
+    [JsonPropertyName(JsonFieldNames.Model)]
     public string? Model { get; init; }
 
     /// <summary>
     /// Gets the model provider returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("modelProvider")]
+    [JsonPropertyName(JsonFieldNames.ModelProvider)]
     public string? ModelProvider { get; init; }
 
     /// <summary>
     /// Gets the sandbox returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("sandbox")]
+    [JsonPropertyName(JsonFieldNames.Sandbox)]
     public string? Sandbox { get; init; }
 
     /// <summary>
     /// Gets the service tier returned for the started thread, when present.
     /// </summary>
-    [JsonPropertyName("serviceTier")]
+    [JsonPropertyName(JsonFieldNames.ServiceTier)]
     public string? ServiceTier { get; init; }
 
     /// <summary>
     /// Gets the started thread object when present (raw).
     /// </summary>
-    [JsonPropertyName("thread")]
+    [JsonPropertyName(JsonFieldNames.Thread)]
     public JsonElement? Thread { get; init; }
 
     /// <summary>

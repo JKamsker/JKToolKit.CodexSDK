@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.ApprovalHandlers;
@@ -13,19 +15,19 @@ public sealed class AlwaysApproveHandler : IAppServerApprovalHandler
     {
         var response = method switch
         {
-            "item/commandExecution/requestApproval" =>
+            AppServerMethods.ItemCommandExecutionRequestApproval =>
                 AppServerApprovalDecisionJson.CreateCommandExecutionResponse(DeserializeOrNull<CommandExecutionRequestApprovalParams>(@params), approve: true),
-            "item/fileChange/requestApproval" =>
+            AppServerMethods.ItemFileChangeRequestApproval =>
                 AppServerApprovalDecisionJson.CreateFileChangeResponse(DeserializeOrNull<FileChangeRequestApprovalParams>(@params), approve: true),
             "execCommandApproval" or "applyPatchApproval" =>
                 JsonSerializer.SerializeToElement(new { decision = "approved" }),
-            "item/permissions/requestApproval" => JsonSerializer.SerializeToElement(
+            AppServerMethods.ItemPermissionsRequestApproval => JsonSerializer.SerializeToElement(
                 new PermissionsRequestApprovalResponse
                 {
                     Permissions = GetRequestedPermissions(@params),
                     Scope = PermissionGrantScope.Turn
                 }),
-            "mcpServer/elicitation/request" => JsonSerializer.SerializeToElement(
+            AppServerMethods.McpServerElicitationRequest => JsonSerializer.SerializeToElement(
                 new McpServerElicitationRequestResponse
                 {
                     Action = McpServerElicitationAction.Accept,
@@ -57,7 +59,7 @@ public sealed class AlwaysApproveHandler : IAppServerApprovalHandler
     private static JsonElement GetRequestedPermissions(JsonElement? @params)
     {
         if (@params is { ValueKind: JsonValueKind.Object } payload &&
-            payload.TryGetProperty("permissions", out var permissions) &&
+            payload.TryGetProperty(JsonFieldNames.Permissions, out var permissions) &&
             permissions.ValueKind == JsonValueKind.Object)
         {
             return permissions.Clone();
@@ -69,7 +71,7 @@ public sealed class AlwaysApproveHandler : IAppServerApprovalHandler
     private static JsonElement? GetDefaultElicitationContent(JsonElement? @params)
     {
         if (@params is { ValueKind: JsonValueKind.Object } payload &&
-            payload.TryGetProperty("mode", out var mode) &&
+            payload.TryGetProperty(JsonFieldNames.Mode, out var mode) &&
             mode.ValueKind == JsonValueKind.String &&
             string.Equals(mode.GetString(), "url", StringComparison.Ordinal))
         {

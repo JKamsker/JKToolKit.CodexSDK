@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
@@ -8,16 +10,16 @@ internal static partial class AppServerNotificationMapper
     private static AppServerNotification? TryMapCodex149Notification(string method, JsonElement p) =>
         method switch
         {
-            "thread/project/updated" => TryMapThreadProjectUpdated(p),
-            "project/changed" => TryMapProjectChanged(p),
-            "autoApprovalReview/strictReviewRequired" => TryMapStrictReviewRequired(p),
+            AppServerMethods.ThreadProjectUpdated => TryMapThreadProjectUpdated(p),
+            AppServerMethods.ProjectChanged => TryMapProjectChanged(p),
+            AppServerMethods.AutoApprovalReviewStrictReviewRequired => TryMapStrictReviewRequired(p),
             _ => null
         };
 
     private static AppServerNotification? TryMapThreadProjectUpdated(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetOptionalString(p, "projectId", out var projectId))
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetOptionalString(p, JsonFieldNames.ProjectId, out var projectId))
         {
             return null;
         }
@@ -27,7 +29,7 @@ internal static partial class AppServerNotificationMapper
 
     private static AppServerNotification? TryMapProjectChanged(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "projectId", out var projectId) ||
+        if (!TryGetRequiredString(p, JsonFieldNames.ProjectId, out var projectId) ||
             !TryGetRequiredString(p, "changeType", out var changeType))
         {
             return null;
@@ -38,8 +40,8 @@ internal static partial class AppServerNotificationMapper
 
     private static AppServerNotification? TryMapStrictReviewRequired(JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "turnId", out var turnId) ||
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.TurnId, out var turnId) ||
             !TryGetRequiredInt64(p, "startedAtMs", out var startedAtMs))
         {
             return null;

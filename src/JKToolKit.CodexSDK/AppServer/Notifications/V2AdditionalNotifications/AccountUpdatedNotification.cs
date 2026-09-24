@@ -1,3 +1,4 @@
+using JKToolKit.CodexSDK.AppServer.Protocol;
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
 /// <summary>
@@ -29,7 +30,7 @@ public sealed record class AccountUpdatedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="AccountUpdatedNotification"/>.
     /// </summary>
     public AccountUpdatedNotification(CodexAuthMode? AuthMode, CodexPlanType? PlanType, System.Text.Json.JsonElement Params)
-        : base("account/updated", Params)
+        : base(AppServerMethods.AccountUpdated, Params)
     {
         this.AuthMode = AuthMode;
         this.PlanType = PlanType;

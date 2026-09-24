@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -36,7 +37,7 @@ public sealed record class TurnPlanUpdatedNotification : AppServerNotification
         string? Explanation,
         IReadOnlyList<TurnPlanStep> Plan,
         JsonElement Params)
-        : base("turn/plan/updated", Params)
+        : base(AppServerMethods.TurnPlanUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

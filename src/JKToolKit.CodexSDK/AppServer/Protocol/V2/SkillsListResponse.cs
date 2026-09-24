@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,7 +12,7 @@ public sealed record class SkillsListResponse
     /// <summary>
     /// Gets the response data array when present (raw).
     /// </summary>
-    [JsonPropertyName("data")]
+    [JsonPropertyName(JsonFieldNames.Data)]
     public JsonElement? Data { get; init; }
 
     /// <summary>

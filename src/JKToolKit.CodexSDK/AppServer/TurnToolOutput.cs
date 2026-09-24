@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -14,19 +15,19 @@ public sealed class TurnToolOutput
     /// <summary>
     /// Gets or sets the tool name.
     /// </summary>
-    [JsonPropertyName("name")]
+    [JsonPropertyName(JsonFieldNames.Name)]
     public required string Name { get; set; }
 
     /// <summary>
     /// Gets or sets the optional tool namespace.
     /// </summary>
-    [JsonPropertyName("namespace")]
+    [JsonPropertyName(JsonFieldNames.Namespace)]
     public string? Namespace { get; set; }
 
     /// <summary>
     /// Gets or sets the raw output body.
     /// </summary>
-    [JsonPropertyName("output")]
+    [JsonPropertyName(JsonFieldNames.Output)]
     public required JsonElement Output { get; set; }
 
     /// <summary>

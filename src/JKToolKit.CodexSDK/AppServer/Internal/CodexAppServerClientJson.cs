@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -30,10 +31,10 @@ internal static class CodexAppServerClientJson
         // - { "id": "..." }
         // - { "thread": { "id": "..." } }
         // - { "thread": { "threadId": "..." } }
-        return ExtractId(result, "threadId", "id") ??
-               ExtractIdByPath(result, "thread", "threadId") ??
-               ExtractIdByPath(result, "thread", "id") ??
-               FindStringPropertyRecursive(result, propertyName: "threadId", maxDepth: 6);
+        return ExtractId(result, JsonFieldNames.ThreadId, "id") ??
+               ExtractIdByPath(result, JsonFieldNames.Thread, "threadId") ??
+               ExtractIdByPath(result, JsonFieldNames.Thread, "id") ??
+               FindStringPropertyRecursive(result, propertyName: JsonFieldNames.ThreadId, maxDepth: 6);
     }
 
     public static string? ExtractTurnId(JsonElement result)
@@ -43,10 +44,10 @@ internal static class CodexAppServerClientJson
         // - { "id": "..." }
         // - { "turn": { "id": "..." } }
         // - { "turn": { "turnId": "..." } }
-        return ExtractId(result, "turnId", "id") ??
-               ExtractIdByPath(result, "turn", "turnId") ??
-               ExtractIdByPath(result, "turn", "id") ??
-               FindStringPropertyRecursive(result, propertyName: "turnId", maxDepth: 6);
+        return ExtractId(result, JsonFieldNames.TurnId, "id") ??
+               ExtractIdByPath(result, JsonFieldNames.Turn, "turnId") ??
+               ExtractIdByPath(result, JsonFieldNames.Turn, "id") ??
+               FindStringPropertyRecursive(result, propertyName: JsonFieldNames.TurnId, maxDepth: 6);
     }
 
     public static string? ExtractIdByPath(JsonElement element, string p1, string p2)

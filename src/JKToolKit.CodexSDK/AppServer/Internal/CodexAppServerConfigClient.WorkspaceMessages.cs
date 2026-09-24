@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -53,7 +54,7 @@ internal sealed partial class CodexAppServerConfigClient
                     item,
                     "messageBody",
                     "account/workspaceMessages/read messages[]"),
-                CreatedAt = CodexAppServerClientJson.GetInt64OrNull(item, "createdAt"),
+                CreatedAt = CodexAppServerClientJson.GetInt64OrNull(item, JsonFieldNames.CreatedAt),
                 ArchivedAt = CodexAppServerClientJson.GetInt64OrNull(item, "archivedAt"),
                 Raw = item.Clone()
             });

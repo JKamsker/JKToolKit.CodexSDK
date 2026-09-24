@@ -51,7 +51,7 @@ internal sealed class CodexMcpServerClientFactory : ICodexMcpServerClientFactory
             return launch;
         }
 
-        return launch.WithEnvironment("CODEX_HOME", codexHomeDirectory);
+        return launch.WithEnvironment(CodexEnvironmentVariables.Home, codexHomeDirectory);
     }
 }
 

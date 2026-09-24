@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -13,14 +14,14 @@ internal static class CodexAppServerClientPluginShareParsers
 
         return new PluginShareContextDescriptor
         {
-            RemotePluginId = CodexAppServerClientJson.GetRequiredString(context, "remotePluginId", "plugin share context"),
-            RemoteVersion = CodexAppServerClientJson.GetStringOrNull(context, "remoteVersion"),
-            Discoverability = ParseOptionalDiscoverability(context, "discoverability"),
-            ShareUrl = CodexAppServerClientJson.GetStringOrNull(context, "shareUrl"),
+            RemotePluginId = CodexAppServerClientJson.GetRequiredString(context, JsonFieldNames.RemotePluginId, "plugin share context"),
+            RemoteVersion = CodexAppServerClientJson.GetStringOrNull(context, JsonFieldNames.RemoteVersion),
+            Discoverability = ParseOptionalDiscoverability(context, JsonFieldNames.Discoverability),
+            ShareUrl = CodexAppServerClientJson.GetStringOrNull(context, JsonFieldNames.ShareUrl),
             CreatorAccountUserId = CodexAppServerClientJson.GetStringOrNull(context, "creatorAccountUserId"),
             CreatorName = CodexAppServerClientJson.GetStringOrNull(context, "creatorName"),
             SharePrincipals = ParseOptionalPrincipals(context, "sharePrincipals"),
-            CanPublishToWorkspace = CodexAppServerClientJson.GetBoolOrNull(context, "canPublishToWorkspace"),
+            CanPublishToWorkspace = CodexAppServerClientJson.GetBoolOrNull(context, JsonFieldNames.CanPublishToWorkspace),
             Raw = context.Clone()
         };
     }
@@ -28,9 +29,9 @@ internal static class CodexAppServerClientPluginShareParsers
     public static PluginShareSaveResult ParseSaveResult(JsonElement result) =>
         new()
         {
-            RemotePluginId = CodexAppServerClientJson.GetRequiredString(result, "remotePluginId", "plugin/share/save response"),
-            ShareUrl = CodexAppServerClientJson.GetRequiredString(result, "shareUrl", "plugin/share/save response"),
-            CanPublishToWorkspace = CodexAppServerClientJson.GetBoolOrNull(result, "canPublishToWorkspace"),
+            RemotePluginId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.RemotePluginId, "plugin/share/save response"),
+            ShareUrl = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.ShareUrl, "plugin/share/save response"),
+            CanPublishToWorkspace = CodexAppServerClientJson.GetBoolOrNull(result, JsonFieldNames.CanPublishToWorkspace),
             Raw = result
         };
 
@@ -38,13 +39,13 @@ internal static class CodexAppServerClientPluginShareParsers
         new()
         {
             Principals = ParseRequiredPrincipals(result, "principals", "plugin/share/updateTargets response"),
-            Discoverability = ParseRequiredDiscoverability(result, "discoverability", "plugin/share/updateTargets response"),
+            Discoverability = ParseRequiredDiscoverability(result, JsonFieldNames.Discoverability, "plugin/share/updateTargets response"),
             Raw = result
         };
 
     public static PluginShareListResult ParseListResult(JsonElement result)
     {
-        var dataArray = CodexAppServerClientJson.TryGetArray(result, "data")
+        var dataArray = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data)
             ?? throw new InvalidOperationException("plugin/share/list returned no data array.");
 
         var items = new List<PluginShareListItem>();
@@ -55,7 +56,7 @@ internal static class CodexAppServerClientPluginShareParsers
                 throw new InvalidOperationException("plugin/share/list data[] entries must be objects.");
             }
 
-            var plugin = CodexAppServerClientJson.TryGetObject(item, "plugin")
+            var plugin = CodexAppServerClientJson.TryGetObject(item, JsonFieldNames.Plugin)
                 ?? throw new InvalidOperationException("plugin/share/list data[] entries must contain a plugin object.");
 
             items.Add(new PluginShareListItem
@@ -79,19 +80,19 @@ internal static class CodexAppServerClientPluginShareParsers
     public static PluginShareCheckoutResult ParseCheckoutResult(JsonElement result) =>
         new()
         {
-            RemotePluginId = CodexAppServerClientJson.GetRequiredString(result, "remotePluginId", "plugin/share/checkout response"),
-            PluginId = CodexAppServerClientJson.GetRequiredString(result, "pluginId", "plugin/share/checkout response"),
+            RemotePluginId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.RemotePluginId, "plugin/share/checkout response"),
+            PluginId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.PluginId, "plugin/share/checkout response"),
             PluginName = CodexAppServerClientJson.GetRequiredString(result, "pluginName", "plugin/share/checkout response"),
             PluginPath = CodexAppServerPathValidation.RequireAbsolutePayloadPath(
                 CodexAppServerClientJson.GetStringOrNull(result, "pluginPath"),
                 "pluginPath",
                 "plugin/share/checkout response"),
-            MarketplaceName = CodexAppServerClientJson.GetRequiredString(result, "marketplaceName", "plugin/share/checkout response"),
+            MarketplaceName = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.MarketplaceName, "plugin/share/checkout response"),
             MarketplacePath = CodexAppServerPathValidation.RequireAbsolutePayloadPath(
-                CodexAppServerClientJson.GetStringOrNull(result, "marketplacePath"),
+                CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.MarketplacePath),
                 "marketplacePath",
                 "plugin/share/checkout response"),
-            RemoteVersion = CodexAppServerClientJson.GetStringOrNull(result, "remoteVersion"),
+            RemoteVersion = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.RemoteVersion),
             Raw = result
         };
 
@@ -170,7 +171,7 @@ internal static class CodexAppServerClientPluginShareParsers
                     "role",
                     "plugin share principal",
                     PluginSharePrincipalRole.TryParse),
-                Name = CodexAppServerClientJson.GetRequiredString(principal, "name", "plugin share principal"),
+                Name = CodexAppServerClientJson.GetRequiredString(principal, JsonFieldNames.Name, "plugin share principal"),
                 Raw = principal.Clone()
             });
         }

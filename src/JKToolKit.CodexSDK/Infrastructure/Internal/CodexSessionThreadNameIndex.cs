@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
+using JKToolKit.CodexSDK.Infrastructure;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
@@ -38,7 +40,7 @@ internal static class CodexSessionThreadNameIndex
             }
         }
 
-        AddCandidate(Environment.GetEnvironmentVariable("CODEX_HOME"));
+        AddCandidate(Environment.GetEnvironmentVariable(CodexEnvironmentVariables.Home));
         return candidates;
 
         void AddCandidate(string? codexHome)
@@ -100,8 +102,8 @@ internal static class CodexSessionThreadNameIndex
             using var doc = JsonDocument.Parse(line);
             var root = doc.RootElement;
 
-            if (!TryGetRequiredString(root, "id", out sessionId) ||
-                !TryGetRequiredString(root, "thread_name", out threadName))
+            if (!TryGetRequiredString(root, JsonFieldNames.Id, out sessionId) ||
+                !TryGetRequiredString(root, JsonFieldNames.SnakeCase.ThreadName, out threadName))
             {
                 return false;
             }

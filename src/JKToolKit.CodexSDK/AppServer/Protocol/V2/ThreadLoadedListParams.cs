@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,13 +11,13 @@ public sealed record class ThreadLoadedListParams
     /// <summary>
     /// Gets an optional cursor for paging.
     /// </summary>
-    [JsonPropertyName("cursor")]
+    [JsonPropertyName(JsonFieldNames.Cursor)]
     public string? Cursor { get; init; }
 
     /// <summary>
     /// Gets an optional page size, if supported upstream.
     /// </summary>
-    [JsonPropertyName("limit")]
+    [JsonPropertyName(JsonFieldNames.Limit)]
     public int? Limit { get; init; }
 }
 

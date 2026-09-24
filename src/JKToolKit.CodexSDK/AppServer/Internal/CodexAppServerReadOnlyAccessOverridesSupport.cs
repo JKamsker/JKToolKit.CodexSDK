@@ -23,7 +23,7 @@ internal sealed class CodexAppServerReadOnlyAccessOverridesSupport
 
         if (!string.IsNullOrWhiteSpace(data))
         {
-            data = CodexDiagnosticsSanitizer.Sanitize(data, maxChars: 2000);
+            data = CodexDiagnosticsSanitizer.Sanitize(data, maxChars: DiagnosticLimits.JsonSnippetChars);
         }
 
         var haystack = msg + "\n" + data;

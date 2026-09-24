@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadClosedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadClosedNotification"/>.
     /// </summary>
     public ThreadClosedNotification(string ThreadId, JsonElement Params)
-        : base("thread/closed", Params)
+        : base(AppServerMethods.ThreadClosed, Params)
     {
         this.ThreadId = ThreadId;
     }

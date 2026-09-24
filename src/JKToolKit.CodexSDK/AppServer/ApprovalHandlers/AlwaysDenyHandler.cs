@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.ApprovalHandlers;
@@ -13,19 +14,19 @@ public sealed class AlwaysDenyHandler : IAppServerApprovalHandler
     {
         var response = method switch
         {
-            "item/commandExecution/requestApproval" =>
+            AppServerMethods.ItemCommandExecutionRequestApproval =>
                 AppServerApprovalDecisionJson.CreateCommandExecutionResponse(DeserializeOrNull<CommandExecutionRequestApprovalParams>(@params), approve: false),
-            "item/fileChange/requestApproval" =>
+            AppServerMethods.ItemFileChangeRequestApproval =>
                 AppServerApprovalDecisionJson.CreateFileChangeResponse(DeserializeOrNull<FileChangeRequestApprovalParams>(@params), approve: false),
             "execCommandApproval" or "applyPatchApproval" =>
                 JsonSerializer.SerializeToElement(new { decision = "denied" }),
-            "item/permissions/requestApproval" => JsonSerializer.SerializeToElement(
+            AppServerMethods.ItemPermissionsRequestApproval => JsonSerializer.SerializeToElement(
                 new PermissionsRequestApprovalResponse
                 {
                     Permissions = EmptyObject(),
                     Scope = PermissionGrantScope.Turn
                 }),
-            "mcpServer/elicitation/request" => JsonSerializer.SerializeToElement(
+            AppServerMethods.McpServerElicitationRequest => JsonSerializer.SerializeToElement(
                 new McpServerElicitationRequestResponse
                 {
                     Action = McpServerElicitationAction.Decline,

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
@@ -185,7 +186,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                 : null;
             if (!string.IsNullOrWhiteSpace(dataJson))
             {
-                dataJson = CodexDiagnosticsSanitizer.Sanitize(dataJson, maxChars: 2000);
+                dataJson = CodexDiagnosticsSanitizer.Sanitize(dataJson, maxChars: DiagnosticLimits.JsonSnippetChars);
             }
 
             var wantsCapabilities = requestedCapabilities is not null ||
@@ -201,7 +202,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                 ex.Error.Message,
                 dataJson,
                 help,
-                stderrTail: CodexDiagnosticsSanitizer.SanitizeLines(_lifetime.DiagnosticTail, maxLines: 20, maxCharsPerLine: 400),
+                stderrTail: CodexDiagnosticsSanitizer.SanitizeLines(_lifetime.DiagnosticTail, maxLines: DiagnosticLimits.StderrTailLines, maxCharsPerLine: DiagnosticLimits.StderrLineChars),
                 innerException: ex);
         }
     }
@@ -315,7 +316,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
                 TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
 
                 var completed = mapped as TurnCompletedNotification;
-                if (completed is null && method == "turn/completed")
+                if (completed is null && method == AppServerMethods.TurnCompleted)
                 {
                     if (usedCustomMapper)
                     {
@@ -418,7 +419,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
             return new JsonRpcResponse(
                 req.Id,
                 Result: null,
-                Error: new JsonRpcError(-32601, $"Unhandled server request '{req.Method}'."));
+                Error: new JsonRpcError(JsonRpcErrorCodes.MethodNotFound, $"Unhandled server request '{req.Method}'."));
         }
 
         try
@@ -428,7 +429,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(-32000, ex.Message));
+            return new JsonRpcResponse(req.Id, Result: null, Error: new JsonRpcError(JsonRpcErrorCodes.ServerError, ex.Message));
         }
     }
 

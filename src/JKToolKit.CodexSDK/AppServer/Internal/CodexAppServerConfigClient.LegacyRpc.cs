@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -63,8 +64,8 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new GitDiffToRemoteResult
         {
-            Sha = GetRequiredString(result, "sha", "gitDiffToRemote response"),
-            Diff = GetRequiredString(result, "diff", "gitDiffToRemote response"),
+            Sha = GetRequiredString(result, JsonFieldNames.Sha, "gitDiffToRemote response"),
+            Diff = GetRequiredString(result, JsonFieldNames.Diff, "gitDiffToRemote response"),
             Raw = result
         };
     }
@@ -86,34 +87,34 @@ internal sealed partial class CodexAppServerConfigClient
         {
             AuthMethod = CodexAppServerAccountParsers.ParseAuthModeOrNull(result, "authMethod", "getAuthStatus response"),
             AuthToken = GetStringOrNull(result, "authToken"),
-            RequiresOpenaiAuth = GetBoolOrNull(result, "requiresOpenaiAuth"),
+            RequiresOpenaiAuth = GetBoolOrNull(result, JsonFieldNames.RequiresOpenaiAuth),
             Raw = result
         };
     }
 
     private static CodexConversationSummary ParseConversationSummary(JsonElement result)
     {
-        var summary = TryGetObject(result, "summary")
+        var summary = TryGetObject(result, JsonFieldNames.Summary)
             ?? throw new InvalidOperationException("Missing required object property 'summary' on getConversationSummary response.");
 
         var context = "getConversationSummary response.summary";
         return new CodexConversationSummary
         {
-            ConversationId = GetRequiredString(summary, "conversationId", context),
+            ConversationId = GetRequiredString(summary, JsonFieldNames.ConversationId, context),
             Path = CodexAppServerPathValidation.RequireAbsolutePayloadPath(
-                GetRequiredString(summary, "path", context),
+                GetRequiredString(summary, JsonFieldNames.Path, context),
                 "path",
                 context),
             Preview = GetRequiredString(summary, "preview", context),
-            Timestamp = GetStringOrNull(summary, "timestamp"),
-            UpdatedAt = GetStringOrNull(summary, "updatedAt"),
-            ModelProvider = GetRequiredString(summary, "modelProvider", context),
+            Timestamp = GetStringOrNull(summary, JsonFieldNames.Timestamp),
+            UpdatedAt = GetStringOrNull(summary, JsonFieldNames.UpdatedAt),
+            ModelProvider = GetRequiredString(summary, JsonFieldNames.ModelProvider, context),
             Cwd = CodexAppServerPathValidation.RequireAbsolutePayloadPath(
-                GetRequiredString(summary, "cwd", context),
+                GetRequiredString(summary, JsonFieldNames.Cwd, context),
                 "cwd",
                 context),
             CliVersion = GetRequiredString(summary, "cliVersion", context),
-            Source = GetRequiredString(summary, "source", context),
+            Source = GetRequiredString(summary, JsonFieldNames.Source, context),
             GitInfo = ParseConversationGitInfoOrNull(summary, context),
             Raw = summary.Clone()
         };
@@ -121,7 +122,7 @@ internal sealed partial class CodexAppServerConfigClient
 
     private static CodexThreadGitInfo? ParseConversationGitInfoOrNull(JsonElement summary, string context)
     {
-        var gitInfo = TryGetObject(summary, "gitInfo");
+        var gitInfo = TryGetObject(summary, JsonFieldNames.GitInfo);
         if (!gitInfo.HasValue)
         {
             return null;
@@ -129,9 +130,9 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new CodexThreadGitInfo
         {
-            Sha = GetStringOrNull(gitInfo.Value, "sha"),
-            Branch = GetStringOrNull(gitInfo.Value, "branch"),
-            OriginUrl = GetStringOrNull(gitInfo.Value, "originUrl"),
+            Sha = GetStringOrNull(gitInfo.Value, JsonFieldNames.Sha),
+            Branch = GetStringOrNull(gitInfo.Value, JsonFieldNames.Branch),
+            OriginUrl = GetStringOrNull(gitInfo.Value, JsonFieldNames.OriginUrl),
             Raw = gitInfo.Value.Clone()
         };
     }

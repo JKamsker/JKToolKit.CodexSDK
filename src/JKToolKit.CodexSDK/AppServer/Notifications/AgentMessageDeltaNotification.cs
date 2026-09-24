@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
@@ -36,7 +37,7 @@ public sealed record class AgentMessageDeltaNotification : AppServerNotification
         string ItemId,
         string Delta,
         JsonElement Params)
-        : base("item/agentMessage/delta", Params)
+        : base(AppServerMethods.ItemAgentMessageDelta, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

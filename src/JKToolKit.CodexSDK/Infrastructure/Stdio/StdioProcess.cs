@@ -5,6 +5,9 @@ namespace JKToolKit.CodexSDK.Infrastructure.Stdio;
 
 internal sealed class StdioProcess : IStdioProcess
 {
+    private static readonly TimeSpan StartupPollInterval = TimeSpan.FromMilliseconds(10);
+    private static readonly TimeSpan StderrDrainTimeout = TimeSpan.FromSeconds(1);
+
     private readonly ILogger _logger;
     private readonly TimeSpan _shutdownTimeout;
     private readonly CancellationTokenSource _shutdownCts = new();
@@ -113,7 +116,7 @@ internal sealed class StdioProcess : IStdioProcess
         // (The protocol handshake will provide stronger readiness guarantees.)
         try
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(10), startupCts.Token);
+            await Task.Delay(StartupPollInterval, startupCts.Token);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -185,7 +188,7 @@ internal sealed class StdioProcess : IStdioProcess
 
         try
         {
-            await _stderrDrainTask.WaitAsync(TimeSpan.FromSeconds(1));
+            await _stderrDrainTask.WaitAsync(StderrDrainTimeout);
         }
         catch
         {

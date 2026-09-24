@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ internal static partial class JsonlEventResponseItemParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload))
+        if (!root.TryGetProperty(JsonFieldNames.Payload, out var payload))
         {
             ctx.Logger.LogWarning("response_item event missing 'payload' field");
             return new ResponseItemEvent
@@ -67,7 +68,7 @@ internal static partial class JsonlEventResponseItemParsers
             };
         }
 
-        var payloadType = TryGetString(payload, "type");
+        var payloadType = TryGetString(payload, JsonFieldNames.Type);
 
         if (string.IsNullOrWhiteSpace(payloadType))
         {
@@ -103,17 +104,17 @@ internal static partial class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "reasoning", StringComparison.OrdinalIgnoreCase))
         {
             var summaries = Array.Empty<string>();
-            if (payload.TryGetProperty("summary", out var summaryArray) && summaryArray.ValueKind == JsonValueKind.Array)
+            if (payload.TryGetProperty(JsonFieldNames.Summary, out var summaryArray) && summaryArray.ValueKind == JsonValueKind.Array)
             {
                 summaries = summaryArray
                     .EnumerateArray()
-                    .Select(s => s.ValueKind == JsonValueKind.Object ? TryGetString(s, "text") : null)
+                    .Select(s => s.ValueKind == JsonValueKind.Object ? TryGetString(s, JsonFieldNames.Text) : null)
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .Cast<string>()
                     .ToArray();
             }
 
-            var encrypted = TryGetString(payload, "encrypted_content");
+            var encrypted = TryGetString(payload, JsonFieldNames.SnakeCase.EncryptedContent);
             var content = ParseReasoningContent(payload);
 
             return new ReasoningResponseItemPayload
@@ -127,15 +128,15 @@ internal static partial class JsonlEventResponseItemParsers
 
         if (string.Equals(payloadType, "message", StringComparison.OrdinalIgnoreCase))
         {
-            var role = TryGetString(payload, "role");
-            var phase = TryGetString(payload, "phase");
+            var role = TryGetString(payload, JsonFieldNames.Role);
+            var phase = TryGetString(payload, JsonFieldNames.Phase);
             var parts = ParseMessageContent(payload);
             return new MessageResponseItemPayload
             {
                 PayloadType = payloadType,
                 Role = role,
                 Phase = phase,
-                EndTurn = ParseNullableBoolean(payload, "end_turn"),
+                EndTurn = ParseNullableBoolean(payload, JsonFieldNames.SnakeCase.EndTurn),
                 Content = parts
             };
         }
@@ -150,14 +151,14 @@ internal static partial class JsonlEventResponseItemParsers
             string? user = null;
             JsonElement? actionJson = null;
 
-            if (payload.TryGetProperty("action", out var actionEl) && actionEl.ValueKind == JsonValueKind.Object)
+            if (payload.TryGetProperty(JsonFieldNames.Action, out var actionEl) && actionEl.ValueKind == JsonValueKind.Object)
             {
                 actionJson = actionEl.Clone();
-                actionType = TryGetString(actionEl, "type");
+                actionType = TryGetString(actionEl, JsonFieldNames.Type);
 
                 if (string.Equals(actionType, "exec", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (actionEl.TryGetProperty("command", out var cmdEl) && cmdEl.ValueKind == JsonValueKind.Array)
+                    if (actionEl.TryGetProperty(JsonFieldNames.Command, out var cmdEl) && cmdEl.ValueKind == JsonValueKind.Array)
                     {
                         command = cmdEl.EnumerateArray()
                             .Select(s => s.ValueKind == JsonValueKind.String
@@ -178,7 +179,7 @@ internal static partial class JsonlEventResponseItemParsers
 
                     workingDirectory = TryGetString(actionEl, "working_directory");
 
-                    if (actionEl.TryGetProperty("env", out var envEl) && envEl.ValueKind == JsonValueKind.Object)
+                    if (actionEl.TryGetProperty(JsonFieldNames.Env, out var envEl) && envEl.ValueKind == JsonValueKind.Object)
                     {
                         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
                         foreach (var prop in envEl.EnumerateObject())
@@ -198,8 +199,8 @@ internal static partial class JsonlEventResponseItemParsers
             return new LocalShellCallResponseItemPayload
             {
                 PayloadType = payloadType,
-                Status = TryGetString(payload, "status"),
-                CallId = TryGetString(payload, "call_id"),
+                Status = TryGetString(payload, JsonFieldNames.Status),
+                CallId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId),
                 ActionType = actionType,
                 Command = command,
                 TimeoutMs = timeoutMs,
@@ -212,10 +213,10 @@ internal static partial class JsonlEventResponseItemParsers
 
         if (string.Equals(payloadType, "function_call", StringComparison.OrdinalIgnoreCase))
         {
-            var name = TryGetString(payload, "name");
+            var name = TryGetString(payload, JsonFieldNames.Name);
             string? argsJson = null;
             JsonElement? arguments = null;
-            if (payload.TryGetProperty("arguments", out var argsEl))
+            if (payload.TryGetProperty(JsonFieldNames.Arguments, out var argsEl))
             {
                 argsJson = argsEl.ValueKind == JsonValueKind.String
                     ? argsEl.GetString()
@@ -226,13 +227,13 @@ internal static partial class JsonlEventResponseItemParsers
                     arguments = argsEl.Clone();
                 }
             }
-            var callId = TryGetString(payload, "call_id");
+            var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
 
             return new FunctionCallResponseItemPayload
             {
                 PayloadType = payloadType,
                 Name = name,
-                Namespace = TryGetString(payload, "namespace"),
+                Namespace = TryGetString(payload, JsonFieldNames.Namespace),
                 ArgumentsJson = argsJson,
                 Arguments = arguments,
                 CallId = callId
@@ -241,8 +242,8 @@ internal static partial class JsonlEventResponseItemParsers
 
         if (string.Equals(payloadType, "function_call_output", StringComparison.OrdinalIgnoreCase))
         {
-            var callId = TryGetString(payload, "call_id");
-            var (output, outputJson) = ParseStringOrStructured(payload, "output");
+            var callId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId);
+            var (output, outputJson) = ParseStringOrStructured(payload, JsonFieldNames.Output);
             var outputContent = ParseFunctionToolOutputContent(outputJson);
 
             return new FunctionCallOutputResponseItemPayload
@@ -257,13 +258,13 @@ internal static partial class JsonlEventResponseItemParsers
 
         if (string.Equals(payloadType, "custom_tool_call", StringComparison.OrdinalIgnoreCase))
         {
-            var (input, inputJson) = ParseStringOrStructured(payload, "input");
+            var (input, inputJson) = ParseStringOrStructured(payload, JsonFieldNames.Input);
             return new CustomToolCallResponseItemPayload
             {
                 PayloadType = payloadType,
-                Status = TryGetString(payload, "status"),
-                CallId = TryGetString(payload, "call_id"),
-                Name = TryGetString(payload, "name"),
+                Status = TryGetString(payload, JsonFieldNames.Status),
+                CallId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId),
+                Name = TryGetString(payload, JsonFieldNames.Name),
                 Input = input,
                 InputJson = inputJson
             };
@@ -271,13 +272,13 @@ internal static partial class JsonlEventResponseItemParsers
 
         if (string.Equals(payloadType, "custom_tool_call_output", StringComparison.OrdinalIgnoreCase))
         {
-            var (output, outputJson) = ParseStringOrStructured(payload, "output");
+            var (output, outputJson) = ParseStringOrStructured(payload, JsonFieldNames.Output);
             var outputContent = ParseFunctionToolOutputContent(outputJson);
             return new CustomToolCallOutputResponseItemPayload
             {
                 PayloadType = payloadType,
-                CallId = TryGetString(payload, "call_id"),
-                Name = TryGetString(payload, "name"),
+                CallId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId),
+                Name = TryGetString(payload, JsonFieldNames.Name),
                 Output = output,
                 OutputJson = outputJson,
                 OutputContent = outputContent
@@ -287,7 +288,7 @@ internal static partial class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "tool_search_call", StringComparison.OrdinalIgnoreCase))
         {
             JsonElement? arguments = null;
-            if (payload.TryGetProperty("arguments", out var argumentsEl))
+            if (payload.TryGetProperty(JsonFieldNames.Arguments, out var argumentsEl))
             {
                 arguments = argumentsEl.Clone();
             }
@@ -295,9 +296,9 @@ internal static partial class JsonlEventResponseItemParsers
             return new ToolSearchCallResponseItemPayload
             {
                 PayloadType = payloadType,
-                Status = TryGetString(payload, "status"),
-                CallId = TryGetString(payload, "call_id"),
-                Execution = TryGetString(payload, "execution"),
+                Status = TryGetString(payload, JsonFieldNames.Status),
+                CallId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId),
+                Execution = TryGetString(payload, JsonFieldNames.Execution),
                 Arguments = arguments
             };
         }
@@ -305,7 +306,7 @@ internal static partial class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "tool_search_output", StringComparison.OrdinalIgnoreCase))
         {
             var tools = Array.Empty<JsonElement>();
-            if (payload.TryGetProperty("tools", out var toolsEl) && toolsEl.ValueKind == JsonValueKind.Array)
+            if (payload.TryGetProperty(JsonFieldNames.Tools, out var toolsEl) && toolsEl.ValueKind == JsonValueKind.Array)
             {
                 tools = toolsEl.EnumerateArray()
                     .Select(tool => tool.Clone())
@@ -315,9 +316,9 @@ internal static partial class JsonlEventResponseItemParsers
             return new ToolSearchOutputResponseItemPayload
             {
                 PayloadType = payloadType,
-                Status = TryGetString(payload, "status"),
-                CallId = TryGetString(payload, "call_id"),
-                Execution = TryGetString(payload, "execution"),
+                Status = TryGetString(payload, JsonFieldNames.Status),
+                CallId = TryGetString(payload, JsonFieldNames.SnakeCase.CallId),
+                Execution = TryGetString(payload, JsonFieldNames.Execution),
                 Tools = tools
             };
         }
@@ -327,17 +328,17 @@ internal static partial class JsonlEventResponseItemParsers
             return new ImageGenerationCallResponseItemPayload
             {
                 PayloadType = payloadType,
-                Id = TryGetString(payload, "id"),
-                Status = TryGetString(payload, "status"),
-                RevisedPrompt = TryGetString(payload, "revised_prompt"),
-                Result = TryGetString(payload, "result")
+                Id = TryGetString(payload, JsonFieldNames.Id),
+                Status = TryGetString(payload, JsonFieldNames.Status),
+                RevisedPrompt = TryGetString(payload, JsonFieldNames.SnakeCase.RevisedPrompt),
+                Result = TryGetString(payload, JsonFieldNames.Result)
             };
         }
 
         if (string.Equals(payloadType, "web_search_call", StringComparison.OrdinalIgnoreCase))
         {
             WebSearchAction? action = null;
-            if (payload.TryGetProperty("action", out var actionEl))
+            if (payload.TryGetProperty(JsonFieldNames.Action, out var actionEl))
             {
                 action = JsonlEventEnvelopeParsers.ParseWebSearchAction(actionEl);
             }
@@ -345,7 +346,7 @@ internal static partial class JsonlEventResponseItemParsers
             return new WebSearchCallResponseItemPayload
             {
                 PayloadType = payloadType,
-                Status = TryGetString(payload, "status"),
+                Status = TryGetString(payload, JsonFieldNames.Status),
                 Action = action,
                 Results = payload.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array
                     ? results.EnumerateArray().Select(static result => result.Clone()).ToArray()
@@ -356,7 +357,7 @@ internal static partial class JsonlEventResponseItemParsers
         if (string.Equals(payloadType, "ghost_snapshot", StringComparison.OrdinalIgnoreCase))
         {
             GhostCommit? commit = null;
-            if (payload.TryGetProperty("ghost_commit", out var commitEl) && commitEl.ValueKind == JsonValueKind.Object)
+            if (payload.TryGetProperty(JsonFieldNames.SnakeCase.GhostCommit, out var commitEl) && commitEl.ValueKind == JsonValueKind.Object)
             {
                 IReadOnlyList<string>? files = null;
                 if (commitEl.TryGetProperty("preexisting_untracked_files", out var filesEl) && filesEl.ValueKind == JsonValueKind.Array)
@@ -379,7 +380,7 @@ internal static partial class JsonlEventResponseItemParsers
                 }
 
                 commit = new GhostCommit(
-                    Id: TryGetString(commitEl, "id"),
+                    Id: TryGetString(commitEl, JsonFieldNames.Id),
                     Parent: TryGetString(commitEl, "parent"),
                     PreexistingUntrackedFiles: files,
                     PreexistingUntrackedDirs: dirs);
@@ -398,7 +399,7 @@ internal static partial class JsonlEventResponseItemParsers
             return new CompactionResponseItemPayload
             {
                 PayloadType = payloadType,
-                EncryptedContent = TryGetString(payload, "encrypted_content")
+                EncryptedContent = TryGetString(payload, JsonFieldNames.SnakeCase.EncryptedContent)
             };
         }
 

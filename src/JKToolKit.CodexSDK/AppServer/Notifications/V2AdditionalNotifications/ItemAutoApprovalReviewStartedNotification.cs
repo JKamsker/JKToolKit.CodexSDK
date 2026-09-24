@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -48,7 +49,7 @@ public sealed record class ItemAutoApprovalReviewStartedNotification : AppServer
         JsonElement action,
         GuardianApprovalReviewInfo review,
         JsonElement @params)
-        : base("item/autoApprovalReview/started", @params)
+        : base(AppServerMethods.ItemAutoApprovalReviewStarted, @params)
     {
         ThreadId = threadId;
         TurnId = turnId;

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 using JKToolKit.CodexSDK.Infrastructure.Internal;
@@ -49,7 +50,7 @@ internal sealed partial class CodexAppServerClientCore
             // ignore
         }
 
-        var stderrTail = CodexDiagnosticsSanitizer.SanitizeLines(stderrTailRaw, maxLines: 20, maxCharsPerLine: 400);
+        var stderrTail = CodexDiagnosticsSanitizer.SanitizeLines(stderrTailRaw, maxLines: DiagnosticLimits.StderrTailLines, maxCharsPerLine: DiagnosticLimits.StderrLineChars);
 
         int? exitCode = null;
         int? pid = null;
@@ -141,7 +142,7 @@ internal sealed partial class CodexAppServerClientCore
             return null;
         }
 
-        if (@params.TryGetProperty("turnId", out var turnIdProp) &&
+        if (@params.TryGetProperty(JsonFieldNames.TurnId, out var turnIdProp) &&
             turnIdProp.ValueKind == JsonValueKind.String)
         {
             var value = turnIdProp.GetString();
@@ -151,7 +152,7 @@ internal sealed partial class CodexAppServerClientCore
             }
         }
 
-        if (@params.TryGetProperty("turn", out var turnProp))
+        if (@params.TryGetProperty(JsonFieldNames.Turn, out var turnProp))
         {
             if (turnProp.ValueKind == JsonValueKind.String)
             {
@@ -163,7 +164,7 @@ internal sealed partial class CodexAppServerClientCore
             }
 
             if (turnProp.ValueKind == JsonValueKind.Object &&
-                turnProp.TryGetProperty("id", out var turnIdNestedProp) &&
+                turnProp.TryGetProperty(JsonFieldNames.Id, out var turnIdNestedProp) &&
                 turnIdNestedProp.ValueKind == JsonValueKind.String)
             {
                 var value = turnIdNestedProp.GetString();

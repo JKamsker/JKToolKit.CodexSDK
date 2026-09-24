@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Protocol;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
@@ -43,7 +44,7 @@ internal static partial class JsonlEventResponseItemParsers
 
     private static IReadOnlyList<ReasoningContentPart> ParseReasoningContent(JsonElement payload)
     {
-        if (!payload.TryGetProperty("content", out var contentArray) || contentArray.ValueKind != JsonValueKind.Array)
+        if (!payload.TryGetProperty(JsonFieldNames.Content, out var contentArray) || contentArray.ValueKind != JsonValueKind.Array)
         {
             return Array.Empty<ReasoningContentPart>();
         }
@@ -56,7 +57,7 @@ internal static partial class JsonlEventResponseItemParsers
                 continue;
             }
 
-            var contentType = TryGetString(content, "type");
+            var contentType = TryGetString(content, JsonFieldNames.Type);
             if (string.IsNullOrWhiteSpace(contentType))
             {
                 continue;
@@ -68,7 +69,7 @@ internal static partial class JsonlEventResponseItemParsers
                 parts.Add(new ReasoningTextContentPart
                 {
                     ContentType = contentType,
-                    Text = TryGetString(content, "text") ?? string.Empty
+                    Text = TryGetString(content, JsonFieldNames.Text) ?? string.Empty
                 });
                 continue;
             }
@@ -98,7 +99,7 @@ internal static partial class JsonlEventResponseItemParsers
                 continue;
             }
 
-            var contentType = TryGetString(item, "type");
+            var contentType = TryGetString(item, JsonFieldNames.Type);
             if (string.IsNullOrWhiteSpace(contentType))
             {
                 continue;
@@ -109,7 +110,7 @@ internal static partial class JsonlEventResponseItemParsers
                 parts.Add(new FunctionToolOutputInputTextPart
                 {
                     ContentType = contentType,
-                    Text = TryGetString(item, "text") ?? string.Empty
+                    Text = TryGetString(item, JsonFieldNames.Text) ?? string.Empty
                 });
                 continue;
             }
@@ -119,8 +120,8 @@ internal static partial class JsonlEventResponseItemParsers
                 parts.Add(new FunctionToolOutputInputImagePart
                 {
                     ContentType = contentType,
-                    ImageUrl = TryGetString(item, "image_url") ?? string.Empty,
-                    Detail = TryGetString(item, "detail")
+                    ImageUrl = TryGetString(item, JsonFieldNames.SnakeCase.ImageUrl) ?? string.Empty,
+                    Detail = TryGetString(item, JsonFieldNames.Detail)
                 });
                 continue;
             }
@@ -137,7 +138,7 @@ internal static partial class JsonlEventResponseItemParsers
 
     private static IReadOnlyList<ResponseMessageContentPart> ParseMessageContent(JsonElement payload)
     {
-        if (!payload.TryGetProperty("content", out var contentArray) || contentArray.ValueKind != JsonValueKind.Array)
+        if (!payload.TryGetProperty(JsonFieldNames.Content, out var contentArray) || contentArray.ValueKind != JsonValueKind.Array)
         {
             return Array.Empty<ResponseMessageContentPart>();
         }
@@ -150,7 +151,7 @@ internal static partial class JsonlEventResponseItemParsers
                 continue;
             }
 
-            var contentType = TryGetString(content, "type");
+            var contentType = TryGetString(content, JsonFieldNames.Type);
             if (string.IsNullOrWhiteSpace(contentType))
             {
                 continue;
@@ -161,7 +162,7 @@ internal static partial class JsonlEventResponseItemParsers
                 parts.Add(new ResponseMessageOutputTextPart
                 {
                     ContentType = contentType,
-                    Text = TryGetString(content, "text") ?? string.Empty
+                    Text = TryGetString(content, JsonFieldNames.Text) ?? string.Empty
                 });
                 continue;
             }
@@ -171,7 +172,7 @@ internal static partial class JsonlEventResponseItemParsers
                 parts.Add(new ResponseMessageInputTextPart
                 {
                     ContentType = contentType,
-                    Text = TryGetString(content, "text") ?? string.Empty
+                    Text = TryGetString(content, JsonFieldNames.Text) ?? string.Empty
                 });
                 continue;
             }
@@ -181,7 +182,7 @@ internal static partial class JsonlEventResponseItemParsers
                 parts.Add(new ResponseMessageInputImagePart
                 {
                     ContentType = contentType,
-                    ImageUrl = TryGetString(content, "image_url") ?? string.Empty
+                    ImageUrl = TryGetString(content, JsonFieldNames.SnakeCase.ImageUrl) ?? string.Empty
                 });
                 continue;
             }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -14,13 +15,13 @@ internal static class CodexAppServerAccountParsers
 
     public static CodexAccountInfo ParseAccount(JsonElement account, string context)
     {
-        var type = GetRequiredString(account, "type", context);
+        var type = GetRequiredString(account, JsonFieldNames.Type, context);
         return type switch
         {
             "apiKey" => new CodexApiKeyAccountInfo(account.Clone()),
             "chatgpt" => new CodexChatGptAccountInfo(
                 Email: GetRequiredString(account, "email", context),
-                PlanType: CodexPlanType.Parse(GetRequiredString(account, "planType", context)),
+                PlanType: CodexPlanType.Parse(GetRequiredString(account, JsonFieldNames.PlanType, context)),
                 Raw: account.Clone()),
             _ => throw new InvalidOperationException(
                 $"{context} returned unsupported account type '{type}'. Raw result: {account}")

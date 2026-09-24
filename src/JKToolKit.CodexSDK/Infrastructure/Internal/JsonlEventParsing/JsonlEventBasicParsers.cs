@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
@@ -109,24 +110,24 @@ internal static partial class JsonlEventBasicParsers
                 totalTokenUsage = ParseTokenUsage(totalEl);
             }
 
-            if (info.TryGetProperty("model_context_window", out var ctxEl) && ctxEl.ValueKind == JsonValueKind.Number)
+            if (info.TryGetProperty(JsonFieldNames.SnakeCase.ModelContextWindow, out var ctxEl) && ctxEl.ValueKind == JsonValueKind.Number)
             {
                 modelContextWindow = ctxEl.GetInt32();
             }
         }
 
         // Older schema: { input_tokens, output_tokens, reasoning_output_tokens, rate_limits }
-        if (payload.TryGetProperty("input_tokens", out var inputElement) && inputElement.ValueKind == JsonValueKind.Number)
+        if (payload.TryGetProperty(JsonFieldNames.SnakeCase.InputTokens, out var inputElement) && inputElement.ValueKind == JsonValueKind.Number)
         {
             inputTokens = inputElement.GetInt32();
         }
 
-        if (payload.TryGetProperty("output_tokens", out var outputElement) && outputElement.ValueKind == JsonValueKind.Number)
+        if (payload.TryGetProperty(JsonFieldNames.SnakeCase.OutputTokens, out var outputElement) && outputElement.ValueKind == JsonValueKind.Number)
         {
             outputTokens = outputElement.GetInt32();
         }
 
-        if (payload.TryGetProperty("reasoning_output_tokens", out var reasoningElement) && reasoningElement.ValueKind == JsonValueKind.Number)
+        if (payload.TryGetProperty(JsonFieldNames.SnakeCase.ReasoningOutputTokens, out var reasoningElement) && reasoningElement.ValueKind == JsonValueKind.Number)
         {
             reasoningTokens = reasoningElement.GetInt32();
         }
@@ -175,13 +176,13 @@ internal static partial class JsonlEventBasicParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        if (!root.TryGetProperty(JsonFieldNames.Payload, out var payload) || payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("compacted event missing 'payload' object");
             return null;
         }
 
-        var message = payload.TryGetProperty("message", out var messageEl) && messageEl.ValueKind == JsonValueKind.String
+        var message = payload.TryGetProperty(JsonFieldNames.Message, out var messageEl) && messageEl.ValueKind == JsonValueKind.String
             ? messageEl.GetString() ?? string.Empty
             : string.Empty;
 
@@ -193,7 +194,7 @@ internal static partial class JsonlEventBasicParsers
                 if (item.ValueKind != JsonValueKind.Object)
                     continue;
 
-                var itemType = TryGetString(item, "type");
+                var itemType = TryGetString(item, JsonFieldNames.Type);
                 if (string.IsNullOrWhiteSpace(itemType))
                 {
                     replacementHistory.Add(new UnknownResponseItemPayload { PayloadType = "unknown", Raw = item.Clone() });
@@ -233,10 +234,10 @@ internal static partial class JsonlEventBasicParsers
     private static TokenUsage ParseTokenUsage(JsonElement el)
     {
         return new TokenUsage(
-            InputTokens: TryGetInt(el, "input_tokens"),
+            InputTokens: TryGetInt(el, JsonFieldNames.SnakeCase.InputTokens),
             CachedInputTokens: TryGetInt(el, "cached_input_tokens"),
-            OutputTokens: TryGetInt(el, "output_tokens"),
-            ReasoningOutputTokens: TryGetInt(el, "reasoning_output_tokens"),
+            OutputTokens: TryGetInt(el, JsonFieldNames.SnakeCase.OutputTokens),
+            ReasoningOutputTokens: TryGetInt(el, JsonFieldNames.SnakeCase.ReasoningOutputTokens),
             TotalTokens: TryGetInt(el, "total_tokens"));
     }
 
@@ -348,13 +349,13 @@ internal static partial class JsonlEventBasicParsers
 
     private static bool TryGetMessageOrText(JsonElement payload, out string? value)
     {
-        if (payload.TryGetProperty("message", out var messageEl) && messageEl.ValueKind == JsonValueKind.String)
+        if (payload.TryGetProperty(JsonFieldNames.Message, out var messageEl) && messageEl.ValueKind == JsonValueKind.String)
         {
             value = messageEl.GetString();
             return true;
         }
 
-        if (payload.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+        if (payload.TryGetProperty(JsonFieldNames.Text, out var textEl) && textEl.ValueKind == JsonValueKind.String)
         {
             value = textEl.GetString();
             return true;

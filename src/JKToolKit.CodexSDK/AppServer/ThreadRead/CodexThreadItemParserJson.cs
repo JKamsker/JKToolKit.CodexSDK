@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer.ThreadRead;
@@ -10,14 +11,14 @@ internal static class CodexThreadItemParserJson
 
     public static string? ExtractErrorMessage(JsonElement element)
     {
-        if (!element.TryGetProperty("error", out var error))
+        if (!element.TryGetProperty(JsonFieldNames.Error, out var error))
         {
             return null;
         }
 
         return error.ValueKind switch
         {
-            JsonValueKind.Object => CodexAppServerClientJson.GetStringOrNull(error, "message"),
+            JsonValueKind.Object => CodexAppServerClientJson.GetStringOrNull(error, JsonFieldNames.Message),
             JsonValueKind.String => error.GetString(),
             _ => null
         };

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -31,7 +32,7 @@ public sealed record class HookCompletedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="HookCompletedNotification"/>.
     /// </summary>
     public HookCompletedNotification(string ThreadId, string? TurnId, JsonElement Run, HookRunSummaryInfo RunInfo, JsonElement Params)
-        : base("hook/completed", Params)
+        : base(AppServerMethods.HookCompleted, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

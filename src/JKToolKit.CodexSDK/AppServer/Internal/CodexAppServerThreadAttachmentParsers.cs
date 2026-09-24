@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -11,7 +12,7 @@ internal static class CodexAppServerThreadAttachmentParsers
 
         return new ThreadAttachmentAddResult
         {
-            Outcome = ParseAddOutcome(CodexAppServerClientJson.GetStringOrNull(result, "outcome")),
+            Outcome = ParseAddOutcome(CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.Outcome)),
             Attachment = ParseAttachment(attachment),
             Raw = result
         };
@@ -19,7 +20,7 @@ internal static class CodexAppServerThreadAttachmentParsers
 
     public static ThreadAttachmentListPage ParseListPage(JsonElement result)
     {
-        var data = CodexAppServerClientJson.TryGetArray(result, "data")
+        var data = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data)
             ?? throw new InvalidOperationException("Missing required property 'data' on thread/attachment/list response.");
         var attachments = new List<ThreadAttachmentInfo>();
 
@@ -36,25 +37,25 @@ internal static class CodexAppServerThreadAttachmentParsers
         return new ThreadAttachmentListPage
         {
             Attachments = attachments,
-            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, "nextCursor"),
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
 
     private static ThreadAttachmentInfo ParseAttachment(JsonElement attachment)
     {
-        if (!attachment.TryGetProperty("payload", out var payload))
+        if (!attachment.TryGetProperty(JsonFieldNames.Payload, out var payload))
         {
             throw new InvalidOperationException("Missing required property 'payload' on thread attachment.");
         }
 
         return new ThreadAttachmentInfo
         {
-            Id = CodexAppServerClientJson.GetRequiredString(attachment, "id", "thread attachment"),
-            AttachmentType = CodexAppServerClientJson.GetRequiredString(attachment, "attachmentType", "thread attachment"),
-            IdentityKey = CodexAppServerClientJson.GetRequiredString(attachment, "identityKey", "thread attachment"),
+            Id = CodexAppServerClientJson.GetRequiredString(attachment, JsonFieldNames.Id, "thread attachment"),
+            AttachmentType = CodexAppServerClientJson.GetRequiredString(attachment, JsonFieldNames.AttachmentType, "thread attachment"),
+            IdentityKey = CodexAppServerClientJson.GetRequiredString(attachment, JsonFieldNames.IdentityKey, "thread attachment"),
             Payload = payload.Clone(),
-            CreatedAt = CodexAppServerClientJson.GetRequiredInt64(attachment, "createdAt", "thread attachment"),
+            CreatedAt = CodexAppServerClientJson.GetRequiredInt64(attachment, JsonFieldNames.CreatedAt, "thread attachment"),
             Raw = attachment.Clone()
         };
     }

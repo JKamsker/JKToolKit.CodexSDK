@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Models;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -10,9 +11,9 @@ internal static class CodexAppServerClientThreadParsers
     public static IReadOnlyList<CodexThreadSummary> ParseThreadListThreads(JsonElement listResult)
     {
         var array =
-            TryGetArray(listResult, "data") ??
-            TryGetArray(listResult, "threads") ??
-            TryGetArray(listResult, "items") ??
+            TryGetArray(listResult, JsonFieldNames.Data) ??
+            TryGetArray(listResult, JsonFieldNames.Threads) ??
+            TryGetArray(listResult, JsonFieldNames.Items) ??
             TryGetArray(listResult, "sessions");
 
         if (array is null || array.Value.ValueKind != JsonValueKind.Array)
@@ -40,7 +41,7 @@ internal static class CodexAppServerClientThreadParsers
             return null;
         }
 
-        var primary = TryGetObject(threadObject, "thread") ?? threadObject;
+        var primary = TryGetObject(threadObject, JsonFieldNames.Thread) ?? threadObject;
         var secondary = envelope is { ValueKind: JsonValueKind.Object } other ? other : threadObject;
 
         var threadId = ExtractThreadId(threadObject);
@@ -53,12 +54,12 @@ internal static class CodexAppServerClientThreadParsers
         var preview = GetString(primary, secondary, "preview");
         var projectId = GetString(primary, secondary, "projectId");
 
-        var statusRaw = TryGetObject(primary, "status") ?? TryGetObject(secondary, "status");
-        var statusType = statusRaw is { } st ? GetStringOrNull(st, "type") : null;
+        var statusRaw = TryGetObject(primary, JsonFieldNames.Status) ?? TryGetObject(secondary, JsonFieldNames.Status);
+        var statusType = statusRaw is { } st ? GetStringOrNull(st, JsonFieldNames.Type) : null;
         var activeFlags =
             string.Equals(statusType, "active", StringComparison.OrdinalIgnoreCase) &&
             statusRaw is { } sf
-                ? GetOptionalStringArray(sf, "activeFlags")
+                ? GetOptionalStringArray(sf, JsonFieldNames.ActiveFlags)
                 : null;
         var status = statusType is { } type && statusRaw is { } raw
             ? new CodexThreadStatus(type, activeFlags, raw.Clone())
@@ -72,7 +73,7 @@ internal static class CodexAppServerClientThreadParsers
             archived = true;
         }
         var isPinned = GetBool(primary, secondary, "isPinned");
-        var section = ParseThreadSection(TryGetObject(primary, "section") ?? TryGetObject(secondary, "section"));
+        var section = ParseThreadSection(TryGetObject(primary, JsonFieldNames.Section) ?? TryGetObject(secondary, JsonFieldNames.Section));
         var sectionEnteredAt = GetUnixSecondsDateTimeOffset(primary, secondary, "sectionEnteredAt");
         var createdAt = GetDateTimeOffset(primary, secondary, "createdAt");
         var updatedAt = GetDateTimeOffset(primary, secondary, "updatedAt");
@@ -140,12 +141,12 @@ internal static class CodexAppServerClientThreadParsers
     }
 
     public static string? ExtractNextCursor(JsonElement listResult) =>
-        GetStringOrNull(listResult, "nextCursor") ??
-        GetStringOrNull(listResult, "cursor");
+        GetStringOrNull(listResult, JsonFieldNames.NextCursor) ??
+        GetStringOrNull(listResult, JsonFieldNames.Cursor);
 
     public static ThreadSectionListPage ParseThreadSectionListPage(JsonElement result)
     {
-        var array = TryGetArray(result, "data")
+        var array = TryGetArray(result, JsonFieldNames.Data)
             ?? throw new InvalidOperationException("threadSection/list response must contain a data array.");
         var sections = new List<ThreadSectionDescriptor>();
         foreach (var item in array.EnumerateArray())
@@ -161,14 +162,14 @@ internal static class CodexAppServerClientThreadParsers
         return new ThreadSectionListPage
         {
             Sections = sections,
-            NextCursor = GetStringOrNull(result, "nextCursor"),
+            NextCursor = GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
 
     public static ThreadSectionResult ParseThreadSectionResult(JsonElement result, string methodName)
     {
-        var section = TryGetObject(result, "section")
+        var section = TryGetObject(result, JsonFieldNames.Section)
             ?? throw new InvalidOperationException($"{methodName} response must contain a section object.");
 
         return new ThreadSectionResult
@@ -181,8 +182,8 @@ internal static class CodexAppServerClientThreadParsers
     public static IReadOnlyList<string> ParseThreadLoadedListThreadIds(JsonElement loadedListResult)
     {
         var array =
-            TryGetArray(loadedListResult, "data") ??
-            TryGetArray(loadedListResult, "threads");
+            TryGetArray(loadedListResult, JsonFieldNames.Data) ??
+            TryGetArray(loadedListResult, JsonFieldNames.Threads);
 
         if (array is null || array.Value.ValueKind != JsonValueKind.Array)
         {
@@ -262,9 +263,9 @@ internal static class CodexAppServerClientThreadParsers
     private static ThreadSectionDescriptor ParseRequiredThreadSection(JsonElement section, string context) =>
         new()
         {
-            Id = GetRequiredString(section, "id", context),
-            Name = GetRequiredString(section, "name", context),
-            Appearance = ParseThreadSectionAppearance(TryGetObject(section, "appearance")),
+            Id = GetRequiredString(section, JsonFieldNames.Id, context),
+            Name = GetRequiredString(section, JsonFieldNames.Name, context),
+            Appearance = ParseThreadSectionAppearance(TryGetObject(section, JsonFieldNames.Appearance)),
             Raw = section.Clone()
         };
 
@@ -272,8 +273,8 @@ internal static class CodexAppServerClientThreadParsers
         appearance is { ValueKind: JsonValueKind.Object } value
             ? new ThreadSectionAppearance
             {
-                Color = GetStringOrNull(value, "color"),
-                Icon = GetStringOrNull(value, "icon"),
+                Color = GetStringOrNull(value, JsonFieldNames.Color),
+                Icon = GetStringOrNull(value, JsonFieldNames.Icon),
                 Raw = value.Clone()
             }
             : null;
@@ -291,27 +292,27 @@ internal static class CodexAppServerClientThreadParsers
 
     private static string? GetSourceKind(JsonElement primary, JsonElement secondary)
     {
-        var source = GetStringOrNull(primary, "source") ?? GetStringOrNull(secondary, "source");
+        var source = GetStringOrNull(primary, JsonFieldNames.Source) ?? GetStringOrNull(secondary, JsonFieldNames.Source);
         if (!string.IsNullOrWhiteSpace(source))
         {
             return source;
         }
 
-        var sourceObject = TryGetObject(primary, "source") ?? TryGetObject(secondary, "source");
+        var sourceObject = TryGetObject(primary, JsonFieldNames.Source) ?? TryGetObject(secondary, JsonFieldNames.Source);
         if (sourceObject is not { } so)
         {
             return null;
         }
 
-        var kind = GetStringOrNull(so, "kind") ?? GetStringOrNull(so, "type");
+        var kind = GetStringOrNull(so, JsonFieldNames.Kind) ?? GetStringOrNull(so, JsonFieldNames.Type);
         if (!string.IsNullOrWhiteSpace(kind))
         {
             return kind;
         }
 
-        if (TryGetObject(so, "subAgent") is { } subAgent)
+        if (TryGetObject(so, JsonFieldNames.SubAgent) is { } subAgent)
         {
-            if (TryGetObject(subAgent, "review") is not null)
+            if (TryGetObject(subAgent, JsonFieldNames.Review) is not null)
             {
                 return "subAgentReview";
             }
@@ -321,8 +322,8 @@ internal static class CodexAppServerClientThreadParsers
                 return "subAgentCompact";
             }
 
-            if (TryGetObject(subAgent, "threadSpawn") is not null ||
-                TryGetObject(subAgent, "thread_spawn") is not null)
+            if (TryGetObject(subAgent, JsonFieldNames.ThreadSpawn) is not null ||
+                TryGetObject(subAgent, JsonFieldNames.SnakeCase.ThreadSpawn) is not null)
             {
                 return "subAgentThreadSpawn";
             }
@@ -344,15 +345,15 @@ internal static class CodexAppServerClientThreadParsers
 
     private static string? GetSourceParentThreadId(JsonElement sourceOwner)
     {
-        if (TryGetObject(sourceOwner, "source") is not { } source ||
-            TryGetObject(source, "subAgent") is not { } subAgent)
+        if (TryGetObject(sourceOwner, JsonFieldNames.Source) is not { } source ||
+            TryGetObject(source, JsonFieldNames.SubAgent) is not { } subAgent)
         {
             return null;
         }
 
         var threadSpawn =
-            TryGetObject(subAgent, "threadSpawn") ??
-            TryGetObject(subAgent, "thread_spawn");
+            TryGetObject(subAgent, JsonFieldNames.ThreadSpawn) ??
+            TryGetObject(subAgent, JsonFieldNames.SnakeCase.ThreadSpawn);
 
         return threadSpawn is { } spawn
             ? GetStringOrNull(spawn, "parentThreadId") ?? GetStringOrNull(spawn, "parent_thread_id")
@@ -361,7 +362,7 @@ internal static class CodexAppServerClientThreadParsers
 
     private static CodexThreadGitInfo? ParseGitInfo(JsonElement primary, JsonElement secondary)
     {
-        var gitInfo = TryGetObject(primary, "gitInfo") ?? TryGetObject(secondary, "gitInfo");
+        var gitInfo = TryGetObject(primary, JsonFieldNames.GitInfo) ?? TryGetObject(secondary, JsonFieldNames.GitInfo);
         if (gitInfo is not { } raw)
         {
             return null;
@@ -369,9 +370,9 @@ internal static class CodexAppServerClientThreadParsers
 
         return new CodexThreadGitInfo
         {
-            Sha = GetStringOrNull(raw, "sha"),
-            Branch = GetStringOrNull(raw, "branch"),
-            OriginUrl = GetStringOrNull(raw, "originUrl"),
+            Sha = GetStringOrNull(raw, JsonFieldNames.Sha),
+            Branch = GetStringOrNull(raw, JsonFieldNames.Branch),
+            OriginUrl = GetStringOrNull(raw, JsonFieldNames.OriginUrl),
             Raw = raw.Clone()
         };
     }

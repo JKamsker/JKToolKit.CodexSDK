@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.FuzzyFileSearch;
 
@@ -11,13 +12,13 @@ public sealed record class FuzzyFileSearchParams
     /// <summary>
     /// Gets the search query to match against.
     /// </summary>
-    [JsonPropertyName("query")]
+    [JsonPropertyName(JsonFieldNames.Query)]
     public required string Query { get; init; }
 
     /// <summary>
     /// Gets the roots to scan under.
     /// </summary>
-    [JsonPropertyName("roots")]
+    [JsonPropertyName(JsonFieldNames.Roots)]
     public required IReadOnlyList<string> Roots { get; init; }
 
     /// <summary>

@@ -124,7 +124,7 @@ public sealed class CodexDockerContainerWebSocketAppServerOptions
     /// <summary>
     /// Gets or sets the app-server WebSocket port inside the container.
     /// </summary>
-    public int ContainerPort { get; set; } = 4500;
+    public int ContainerPort { get; set; } = RemoteAppServerDefaults.ContainerPort;
 
     /// <summary>
     /// Gets or sets the Codex executable inside the container.
@@ -200,7 +200,7 @@ public sealed class CodexDockerExecWebSocketAppServerOptions
     /// <summary>
     /// Gets or sets the container port the app-server should listen on.
     /// </summary>
-    public int ContainerPort { get; set; } = 4500;
+    public int ContainerPort { get; set; } = RemoteAppServerDefaults.ContainerPort;
 
     /// <summary>
     /// Gets or sets the Codex executable inside the container.

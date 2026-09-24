@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -31,7 +32,7 @@ public sealed record class McpToolCallProgressNotification : AppServerNotificati
     /// Initializes a new instance of <see cref="McpToolCallProgressNotification"/>.
     /// </summary>
     public McpToolCallProgressNotification(string ThreadId, string TurnId, string ItemId, string Message, JsonElement Params)
-        : base("item/mcpToolCall/progress", Params)
+        : base(AppServerMethods.ItemMcpToolCallProgress, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

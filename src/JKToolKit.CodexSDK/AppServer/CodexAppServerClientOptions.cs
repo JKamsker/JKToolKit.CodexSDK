@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 using JKToolKit.CodexSDK.AppServer.Overrides;
@@ -10,6 +12,8 @@ namespace JKToolKit.CodexSDK.AppServer;
 /// </summary>
 public sealed class CodexAppServerClientOptions
 {
+    private const int DefaultNotificationBufferCapacity = 5000;
+
     /// <summary>
     /// Gets or sets the app-server endpoint. When null, <see cref="Launch"/> is used as a stdio endpoint.
     /// </summary>
@@ -33,20 +37,20 @@ public sealed class CodexAppServerClientOptions
     /// <summary>
     /// Gets or sets the timeout for the app-server startup handshake.
     /// </summary>
-    public TimeSpan StartupTimeout { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan StartupTimeout { get; set; } = ProcessDefaults.StartupTimeout;
 
     /// <summary>
     /// Gets or sets the timeout used when shutting down the app-server process.
     /// </summary>
-    public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ShutdownTimeout { get; set; } = ProcessDefaults.ShutdownTimeout;
 
     /// <summary>
     /// Gets or sets the default client info sent during initialization.
     /// </summary>
     public AppServerClientInfo DefaultClientInfo { get; set; } = new(
-        "ncodexsdk",
-        "JKToolKit.CodexSDK",
-        "1.0.0");
+        ClientInfoDefaults.Name,
+        ClientInfoDefaults.Title,
+        ClientInfoDefaults.Version);
 
     /// <summary>
     /// Gets or sets an optional override for JSON serialization options used by the client.
@@ -56,7 +60,7 @@ public sealed class CodexAppServerClientOptions
     /// <summary>
     /// Gets or sets the size of the internal notifications buffer.
     /// </summary>
-    public int NotificationBufferCapacity { get; set; } = 5000;
+    public int NotificationBufferCapacity { get; set; } = DefaultNotificationBufferCapacity;
 
     /// <summary>
     /// Gets or sets an optional handler for server requests coming from the app server.

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,31 +12,31 @@ public sealed record class McpServerElicitationRequestParams
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the optional correlated turn identifier.
     /// </summary>
-    [JsonPropertyName("turnId")]
+    [JsonPropertyName(JsonFieldNames.TurnId)]
     public string? TurnId { get; init; }
 
     /// <summary>
     /// Gets the MCP server name that initiated the elicitation.
     /// </summary>
-    [JsonPropertyName("serverName")]
+    [JsonPropertyName(JsonFieldNames.ServerName)]
     public required string ServerName { get; init; }
 
     /// <summary>
     /// Gets the elicitation mode.
     /// </summary>
-    [JsonPropertyName("mode")]
+    [JsonPropertyName(JsonFieldNames.Mode)]
     public required McpServerElicitationMode Mode { get; init; }
 
     /// <summary>
     /// Gets the user-facing prompt message.
     /// </summary>
-    [JsonPropertyName("message")]
+    [JsonPropertyName(JsonFieldNames.Message)]
     public required string Message { get; init; }
 
     /// <summary>
@@ -47,7 +48,7 @@ public sealed record class McpServerElicitationRequestParams
     /// <summary>
     /// Gets the URL for URL-mode elicitations.
     /// </summary>
-    [JsonPropertyName("url")]
+    [JsonPropertyName(JsonFieldNames.Url)]
     public string? Url { get; init; }
 
     /// <summary>
@@ -110,13 +111,13 @@ public sealed record class McpServerElicitationRequestResponse
     /// <summary>
     /// Gets the client response action.
     /// </summary>
-    [JsonPropertyName("action")]
+    [JsonPropertyName(JsonFieldNames.Action)]
     public required McpServerElicitationAction Action { get; init; }
 
     /// <summary>
     /// Gets optional structured content for accepted elicitations.
     /// </summary>
-    [JsonPropertyName("content")]
+    [JsonPropertyName(JsonFieldNames.Content)]
     public JsonElement? Content { get; init; }
 
     /// <summary>

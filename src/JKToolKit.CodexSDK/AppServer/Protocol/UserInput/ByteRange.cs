@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.UserInput;
 
@@ -10,12 +11,12 @@ public sealed record class ByteRange
     /// <summary>
     /// Gets the start offset (inclusive).
     /// </summary>
-    [JsonPropertyName("start")]
+    [JsonPropertyName(JsonFieldNames.Start)]
     public uint Start { get; init; }
 
     /// <summary>
     /// Gets the end offset (exclusive).
     /// </summary>
-    [JsonPropertyName("end")]
+    [JsonPropertyName(JsonFieldNames.End)]
     public uint End { get; init; }
 }

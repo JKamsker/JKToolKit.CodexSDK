@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.Models;
 
@@ -12,7 +13,7 @@ internal static class CodexThreadItemParser
 {
     public static IReadOnlyList<CodexThreadItem> ParseItems(JsonElement turnElement)
     {
-        var array = CodexAppServerClientJson.TryGetArray(turnElement, "items");
+        var array = CodexAppServerClientJson.TryGetArray(turnElement, JsonFieldNames.Items);
         if (array is null)
         {
             return Array.Empty<CodexThreadItem>();
@@ -34,8 +35,8 @@ internal static class CodexThreadItemParser
             return new CodexThreadItemUnknown(string.Empty, string.Empty, element.Clone());
         }
 
-        var type = CodexAppServerClientJson.GetStringOrNull(element, "type") ?? string.Empty;
-        var id = CodexAppServerClientJson.GetStringOrNull(element, "id") ?? string.Empty;
+        var type = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Type) ?? string.Empty;
+        var id = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Id) ?? string.Empty;
         var raw = element.Clone();
 
         var item = type switch
@@ -64,10 +65,10 @@ internal static class CodexThreadItemParser
     }
 
     private static CodexThreadItem? ParseUserMessage(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredArray(element, "content", out var content)
+        TryGetRequiredArray(element, JsonFieldNames.Content, out var content)
             ? new CodexThreadItemUserMessage(id, type, CloneElements(content), raw)
             {
-                ClientId = CodexAppServerClientJson.GetStringOrNull(element, "clientId")
+                ClientId = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.ClientId)
             }
             : null;
 
@@ -81,7 +82,7 @@ internal static class CodexThreadItemParser
         var parsed = new List<CodexHookPromptFragment>();
         foreach (var fragment in fragments.EnumerateArray())
         {
-            if (!TryGetRequiredString(fragment, "text", out var text) ||
+            if (!TryGetRequiredString(fragment, JsonFieldNames.Text, out var text) ||
                 !TryGetRequiredString(fragment, "hookRunId", out var hookRunId))
             {
                 return null;
@@ -94,8 +95,8 @@ internal static class CodexThreadItemParser
     }
 
     private static CodexThreadItem? ParseAgentMessage(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "text", out var text) &&
-        TryGetOptionalString(element, "phase", out var phase)
+        TryGetRequiredString(element, JsonFieldNames.Text, out var text) &&
+        TryGetOptionalString(element, JsonFieldNames.Phase, out var phase)
             ? new CodexThreadItemAgentMessage(
                 id,
                 type,
@@ -106,15 +107,15 @@ internal static class CodexThreadItemParser
             : null;
 
     private static CodexThreadItem? ParsePlan(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "text", out var text)
+        TryGetRequiredString(element, JsonFieldNames.Text, out var text)
             ? new CodexThreadItemPlan(id, type, text, raw)
             : null;
 
     private static CodexThreadItem? ParseReasoning(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetStringArray(element, "summary", out var summary) ||
-            !TryGetStringArray(element, "content", out var content) ||
-            !TryGetOptionalString(element, "encrypted_content", out var encryptedContent))
+        if (!TryGetStringArray(element, JsonFieldNames.Summary, out var summary) ||
+            !TryGetStringArray(element, JsonFieldNames.Content, out var content) ||
+            !TryGetOptionalString(element, JsonFieldNames.SnakeCase.EncryptedContent, out var encryptedContent))
         {
             return null;
         }
@@ -124,16 +125,16 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseCommandExecution(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetRequiredString(element, "command", out var command) ||
-            !TryGetRequiredString(element, "cwd", out var cwd) ||
-            !TryGetRequiredString(element, "status", out var statusValue) ||
-            !TryGetOptionalString(element, "processId", out var processId) ||
-            !TryGetOptionalString(element, "pluginId", out var pluginId) ||
+        if (!TryGetRequiredString(element, JsonFieldNames.Command, out var command) ||
+            !TryGetRequiredString(element, JsonFieldNames.Cwd, out var cwd) ||
+            !TryGetRequiredString(element, JsonFieldNames.Status, out var statusValue) ||
+            !TryGetOptionalString(element, JsonFieldNames.ProcessId, out var processId) ||
+            !TryGetOptionalString(element, JsonFieldNames.PluginId, out var pluginId) ||
             !TryGetOptionalString(element, "scriptPath", out var scriptPath) ||
-            !TryGetOptionalString(element, "source", out var sourceValue) ||
+            !TryGetOptionalString(element, JsonFieldNames.Source, out var sourceValue) ||
             !TryGetOptionalString(element, "aggregatedOutput", out var aggregatedOutput) ||
-            !TryGetOptionalInt32(element, "exitCode", out var exitCode) ||
-            !TryGetOptionalInt64(element, "durationMs", out var durationMs) ||
+            !TryGetOptionalInt32(element, JsonFieldNames.ExitCode, out var exitCode) ||
+            !TryGetOptionalInt64(element, JsonFieldNames.DurationMs, out var durationMs) ||
             !TryParseCommandActions(element, out var actions))
         {
             return null;
@@ -160,7 +161,7 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseFileChange(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetRequiredString(element, "status", out var statusValue) ||
+        if (!TryGetRequiredString(element, JsonFieldNames.Status, out var statusValue) ||
             !TryParseFileChanges(element, out var changes))
         {
             return null;
@@ -176,16 +177,16 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseMcpToolCall(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetRequiredString(element, "server", out var server) ||
-            !TryGetRequiredString(element, "tool", out var tool) ||
-            !TryGetRequiredString(element, "status", out var statusValue) ||
-            !TryGetRequiredElement(element, "arguments", out var arguments) ||
-            !TryGetOptionalInt64(element, "durationMs", out var durationMs))
+        if (!TryGetRequiredString(element, JsonFieldNames.Server, out var server) ||
+            !TryGetRequiredString(element, JsonFieldNames.Tool, out var tool) ||
+            !TryGetRequiredString(element, JsonFieldNames.Status, out var statusValue) ||
+            !TryGetRequiredElement(element, JsonFieldNames.Arguments, out var arguments) ||
+            !TryGetOptionalInt64(element, JsonFieldNames.DurationMs, out var durationMs))
         {
             return null;
         }
 
-        var result = element.TryGetProperty("result", out var resultValue) ? resultValue.Clone() : (JsonElement?)null;
+        var result = element.TryGetProperty(JsonFieldNames.Result, out var resultValue) ? resultValue.Clone() : (JsonElement?)null;
         return new CodexThreadItemMcpToolCall(
             id,
             type,
@@ -201,12 +202,12 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseDynamicToolCall(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetRequiredString(element, "tool", out var tool) ||
-            !TryGetRequiredString(element, "status", out var status) ||
-            !TryGetRequiredElement(element, "arguments", out var arguments) ||
-            !TryGetOptionalArray(element, "contentItems", out var contentItemsArray) ||
-            !TryGetOptionalBool(element, "success", out var success) ||
-            !TryGetOptionalInt64(element, "durationMs", out var durationMs))
+        if (!TryGetRequiredString(element, JsonFieldNames.Tool, out var tool) ||
+            !TryGetRequiredString(element, JsonFieldNames.Status, out var status) ||
+            !TryGetRequiredElement(element, JsonFieldNames.Arguments, out var arguments) ||
+            !TryGetOptionalArray(element, JsonFieldNames.ContentItems, out var contentItemsArray) ||
+            !TryGetOptionalBool(element, JsonFieldNames.Success, out var success) ||
+            !TryGetOptionalInt64(element, JsonFieldNames.DurationMs, out var durationMs))
         {
             return null;
         }
@@ -225,9 +226,9 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseFunctionCallOutput(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetRequiredString(element, "name", out var name) ||
-            !TryGetOptionalString(element, "namespace", out var @namespace) ||
-            !TryGetRequiredElement(element, "output", out var output))
+        if (!TryGetRequiredString(element, JsonFieldNames.Name, out var name) ||
+            !TryGetOptionalString(element, JsonFieldNames.Namespace, out var @namespace) ||
+            !TryGetRequiredElement(element, JsonFieldNames.Output, out var output))
         {
             return null;
         }
@@ -243,13 +244,13 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseCollabAgentToolCall(string id, string type, JsonElement element, JsonElement raw)
     {
-        if (!TryGetRequiredString(element, "tool", out var tool) ||
-            !TryGetRequiredString(element, "status", out var status) ||
+        if (!TryGetRequiredString(element, JsonFieldNames.Tool, out var tool) ||
+            !TryGetRequiredString(element, JsonFieldNames.Status, out var status) ||
             !TryGetRequiredString(element, "senderThreadId", out var senderThreadId) ||
             !TryGetRequiredArray(element, "receiverThreadIds", out var receiverThreadIdsArray) ||
-            !TryGetOptionalString(element, "prompt", out var prompt) ||
-            !TryGetOptionalString(element, "model", out var model) ||
-            !TryGetOptionalString(element, "reasoningEffort", out var reasoningEffortValue) ||
+            !TryGetOptionalString(element, JsonFieldNames.Prompt, out var prompt) ||
+            !TryGetOptionalString(element, JsonFieldNames.Model, out var model) ||
+            !TryGetOptionalString(element, JsonFieldNames.ReasoningEffort, out var reasoningEffortValue) ||
             !TryGetRequiredObject(element, "agentsStates", out var agentsStatesObject))
         {
             return null;
@@ -266,8 +267,8 @@ internal static class CodexThreadItemParser
         var agentsStates = new Dictionary<string, CodexCollabAgentState>(StringComparer.Ordinal);
         foreach (var property in agentsStatesObject.EnumerateObject())
         {
-            if (!TryGetRequiredString(property.Value, "status", out var agentStatus) ||
-                !TryGetOptionalString(property.Value, "message", out var message))
+            if (!TryGetRequiredString(property.Value, JsonFieldNames.Status, out var agentStatus) ||
+                !TryGetOptionalString(property.Value, JsonFieldNames.Message, out var message))
             {
                 return null;
             }
@@ -296,38 +297,38 @@ internal static class CodexThreadItemParser
     }
 
     private static CodexThreadItem? ParseWebSearch(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "query", out var query) &&
+        TryGetRequiredString(element, JsonFieldNames.Query, out var query) &&
         TryParseWebSearchAction(element, out var action)
             ? new CodexThreadItemWebSearch(id, type, query, action, raw)
             : null;
 
     private static CodexThreadItem? ParseImageView(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "path", out var path)
+        TryGetRequiredString(element, JsonFieldNames.Path, out var path)
             ? new CodexThreadItemImageView(id, type, path, raw)
             : null;
 
     private static CodexThreadItem? ParseImageGeneration(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "status", out var status) &&
-        TryGetRequiredString(element, "result", out var result) &&
+        TryGetRequiredString(element, JsonFieldNames.Status, out var status) &&
+        TryGetRequiredString(element, JsonFieldNames.Result, out var result) &&
         TryGetOptionalString(element, "revisedPrompt", out var revisedPrompt) &&
         TryGetOptionalString(element, "savedPath", out var savedPath)
             ? new CodexThreadItemImageGeneration(id, type, status, result, revisedPrompt, savedPath, raw)
             : null;
 
     private static CodexThreadItem? ParseEnteredReviewMode(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "review", out var review)
+        TryGetRequiredString(element, JsonFieldNames.Review, out var review)
             ? new CodexThreadItemEnteredReviewMode(id, type, review, raw)
             : null;
 
     private static CodexThreadItem? ParseExitedReviewMode(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, "review", out var review)
+        TryGetRequiredString(element, JsonFieldNames.Review, out var review)
             ? new CodexThreadItemExitedReviewMode(id, type, review, raw)
             : null;
 
     private static bool TryParseCommandActions(JsonElement element, out IReadOnlyList<CodexCommandAction> actions)
     {
         actions = Array.Empty<CodexCommandAction>();
-        if (!TryGetOptionalArray(element, "commandActions", out var commandActionsArray))
+        if (!TryGetOptionalArray(element, JsonFieldNames.CommandActions, out var commandActionsArray))
         {
             return false;
         }
@@ -338,18 +339,18 @@ internal static class CodexThreadItemParser
         }
 
         actions = commandActionsArray.Value.EnumerateArray().Select(action => new CodexCommandAction(
-            CodexAppServerClientJson.GetStringOrNull(action, "command") ?? string.Empty,
-            CodexAppServerClientJson.GetStringOrNull(action, "type") ?? string.Empty,
-            CodexAppServerClientJson.GetStringOrNull(action, "name"),
-            CodexAppServerClientJson.GetStringOrNull(action, "path"),
-            CodexAppServerClientJson.GetStringOrNull(action, "query"))).ToArray();
+            CodexAppServerClientJson.GetStringOrNull(action, JsonFieldNames.Command) ?? string.Empty,
+            CodexAppServerClientJson.GetStringOrNull(action, JsonFieldNames.Type) ?? string.Empty,
+            CodexAppServerClientJson.GetStringOrNull(action, JsonFieldNames.Name),
+            CodexAppServerClientJson.GetStringOrNull(action, JsonFieldNames.Path),
+            CodexAppServerClientJson.GetStringOrNull(action, JsonFieldNames.Query))).ToArray();
         return actions.All(action => !string.IsNullOrWhiteSpace(action.Type));
     }
 
     private static bool TryParseFileChanges(JsonElement element, out IReadOnlyList<CodexFileUpdateChange> changes)
     {
         changes = Array.Empty<CodexFileUpdateChange>();
-        if (!TryGetRequiredArray(element, "changes", out var changesArray))
+        if (!TryGetRequiredArray(element, JsonFieldNames.Changes, out var changesArray))
         {
             return false;
         }
@@ -357,8 +358,8 @@ internal static class CodexThreadItemParser
         var parsed = new List<CodexFileUpdateChange>();
         foreach (var change in changesArray.EnumerateArray())
         {
-            if (!TryGetRequiredString(change, "path", out var path) ||
-                !TryGetRequiredString(change, "diff", out var diff) ||
+            if (!TryGetRequiredString(change, JsonFieldNames.Path, out var path) ||
+                !TryGetRequiredString(change, JsonFieldNames.Diff, out var diff) ||
                 !TryParsePatchChangeKind(change, out var kind))
             {
                 return false;
@@ -374,7 +375,7 @@ internal static class CodexThreadItemParser
     private static bool TryParsePatchChangeKind(JsonElement change, out CodexPatchChangeKind kind)
     {
         kind = new CodexPatchChangeKind(CodexPatchChangeKindType.Unknown);
-        if (!change.TryGetProperty("kind", out var kindValue))
+        if (!change.TryGetProperty(JsonFieldNames.Kind, out var kindValue))
         {
             return false;
         }
@@ -392,7 +393,7 @@ internal static class CodexThreadItemParser
             return kind.Type != CodexPatchChangeKindType.Unknown;
         }
 
-        if (!TryGetRequiredString(kindValue, "type", out var type) ||
+        if (!TryGetRequiredString(kindValue, JsonFieldNames.Type, out var type) ||
             !TryGetOptionalString(kindValue, "movePath", out var movePath))
         {
             return false;
@@ -412,7 +413,7 @@ internal static class CodexThreadItemParser
     private static bool TryParseWebSearchAction(JsonElement element, out CodexWebSearchAction? action)
     {
         action = null;
-        if (!TryGetOptionalObject(element, "action", out var actionObject))
+        if (!TryGetOptionalObject(element, JsonFieldNames.Action, out var actionObject))
         {
             return false;
         }
@@ -422,11 +423,11 @@ internal static class CodexThreadItemParser
             return true;
         }
 
-        if (!TryGetRequiredString(actionObject.Value, "type", out var type) ||
-            !TryGetOptionalString(actionObject.Value, "query", out var query) ||
-            !TryGetStringArray(actionObject.Value, "queries", out var queries) ||
-            !TryGetOptionalString(actionObject.Value, "url", out var url) ||
-            !TryGetOptionalString(actionObject.Value, "pattern", out var pattern))
+        if (!TryGetRequiredString(actionObject.Value, JsonFieldNames.Type, out var type) ||
+            !TryGetOptionalString(actionObject.Value, JsonFieldNames.Query, out var query) ||
+            !TryGetStringArray(actionObject.Value, JsonFieldNames.Queries, out var queries) ||
+            !TryGetOptionalString(actionObject.Value, JsonFieldNames.Url, out var url) ||
+            !TryGetOptionalString(actionObject.Value, JsonFieldNames.Pattern, out var pattern))
         {
             return false;
         }

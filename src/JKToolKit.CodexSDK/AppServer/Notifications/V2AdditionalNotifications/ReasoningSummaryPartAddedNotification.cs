@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -36,7 +37,7 @@ public sealed record class ReasoningSummaryPartAddedNotification : AppServerNoti
         string ItemId,
         long SummaryIndex,
         JsonElement Params)
-        : base("item/reasoning/summaryPartAdded", Params)
+        : base(AppServerMethods.ItemReasoningSummaryPartAdded, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

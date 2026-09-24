@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -40,20 +41,20 @@ public sealed record class ExternalAgentConfigMigrationItem
     /// <remarks>
     /// Null or empty means home-scoped migration; non-empty means repo-scoped migration.
     /// </remarks>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets a human-readable description of what will be migrated.
     /// </summary>
-    [JsonPropertyName("description")]
+    [JsonPropertyName(JsonFieldNames.Description)]
     public required string Description { get; init; }
 
     /// <summary>
     /// Gets the migration item type identifier.
     /// </summary>
-    [JsonPropertyName("itemType")]
+    [JsonPropertyName(JsonFieldNames.ItemType)]
     [JsonConverter(typeof(ExternalAgentConfigMigrationItemTypeJsonConverter))]
     public required ExternalAgentConfigMigrationItemType ItemType { get; init; }
 }

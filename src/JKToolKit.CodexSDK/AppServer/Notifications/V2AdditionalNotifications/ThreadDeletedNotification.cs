@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadDeletedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ThreadDeletedNotification"/>.
     /// </summary>
     public ThreadDeletedNotification(string ThreadId, JsonElement Params)
-        : base("thread/deleted", Params)
+        : base(AppServerMethods.ThreadDeleted, Params)
     {
         this.ThreadId = ThreadId;
     }

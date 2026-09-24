@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
@@ -12,8 +14,8 @@ internal static partial class AppServerNotificationMapper
         try
         {
             return new AccountUpdatedNotification(
-                AuthMode: CodexAppServerAccountParsers.ParseAuthModeOrNull(p, "authMode", "account/updated"),
-                PlanType: CodexAppServerAccountParsers.ParsePlanTypeOrNull(p, "planType", "account/updated"),
+                AuthMode: CodexAppServerAccountParsers.ParseAuthModeOrNull(p, "authMode", AppServerMethods.AccountUpdated),
+                PlanType: CodexAppServerAccountParsers.ParsePlanTypeOrNull(p, JsonFieldNames.PlanType, AppServerMethods.AccountUpdated),
                 Params: p);
         }
         catch (InvalidOperationException)
@@ -45,7 +47,7 @@ internal static partial class AppServerNotificationMapper
                 changedPaths.Add(CodexAppServerPathValidation.RequireAbsolutePayloadPath(
                     item.GetString(),
                     "changedPaths",
-                    "fs/changed"));
+                    AppServerMethods.FsChanged));
             }
             catch (InvalidOperationException)
             {
@@ -61,8 +63,8 @@ internal static partial class AppServerNotificationMapper
 
     private static McpServerStartupStatusUpdatedNotification? TryMapMcpServerStartupStatusUpdated(JsonElement p)
     {
-        var name = GetString(p, "name");
-        var status = GetString(p, "status");
+        var name = GetString(p, JsonFieldNames.Name);
+        var status = GetString(p, JsonFieldNames.Status);
         if (string.IsNullOrWhiteSpace(name) ||
             !TryParseMcpServerStartupState(status, out var parsedStatus))
         {
@@ -72,14 +74,14 @@ internal static partial class AppServerNotificationMapper
         return new McpServerStartupStatusUpdatedNotification(
             Name: name,
             Status: parsedStatus,
-            Error: GetStringOrNull(p, "error"),
+            Error: GetStringOrNull(p, JsonFieldNames.Error),
             Params: p,
-            ThreadId: GetStringOrNull(p, "threadId"));
+            ThreadId: GetStringOrNull(p, JsonFieldNames.ThreadId));
     }
 
     private static ServerRequestResolvedNotification? TryMapServerRequestResolved(JsonElement p)
     {
-        var threadId = GetString(p, "threadId");
+        var threadId = GetString(p, JsonFieldNames.ThreadId);
         if (string.IsNullOrWhiteSpace(threadId) ||
             !p.TryGetProperty("requestId", out var requestIdElement) ||
             !CodexRequestId.TryParse(requestIdElement, out var requestId))
@@ -92,10 +94,10 @@ internal static partial class AppServerNotificationMapper
 
     private static ModelProviderAuthRecoveryNotification? TryMapModelProviderAuthRecovery(string method, JsonElement p)
     {
-        if (!TryGetRequiredString(p, "threadId", out var threadId) ||
-            !TryGetRequiredString(p, "turnId", out var turnId) ||
+        if (!TryGetRequiredString(p, JsonFieldNames.ThreadId, out var threadId) ||
+            !TryGetRequiredString(p, JsonFieldNames.TurnId, out var turnId) ||
             !TryGetRequiredString(p, "provider", out var provider) ||
-            !TryGetRequiredString(p, "message", out var message))
+            !TryGetRequiredString(p, JsonFieldNames.Message, out var message))
         {
             return null;
         }

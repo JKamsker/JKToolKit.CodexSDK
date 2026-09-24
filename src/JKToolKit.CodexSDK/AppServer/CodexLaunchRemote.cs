@@ -187,7 +187,7 @@ public sealed class CodexSshAppServerOptions
             throw new ArgumentException("SSH executable cannot be empty or whitespace.", nameof(SshExecutable));
         if (Password is not null && string.IsNullOrWhiteSpace(SshpassExecutable))
             throw new ArgumentException("sshpass executable cannot be empty or whitespace when Password is set.", nameof(SshpassExecutable));
-        if (Port is < 1 or > 65535)
+        if (Port is < 1 or > System.Net.IPEndPoint.MaxPort)
             throw new ArgumentOutOfRangeException(nameof(Port), "SSH port must be between 1 and 65535.");
     }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadResumeParams
     /// <summary>
     /// Gets the thread identifier to resume (when resuming by ID).
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
@@ -37,37 +38,37 @@ public sealed record class ThreadResumeParams
     /// This field is unstable. If specified, the server loads the thread from the given path on disk.
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
-    [JsonPropertyName("path")]
+    [JsonPropertyName(JsonFieldNames.Path)]
     public string? Path { get; init; }
 
     /// <summary>
     /// Gets an optional model identifier.
     /// </summary>
-    [JsonPropertyName("model")]
+    [JsonPropertyName(JsonFieldNames.Model)]
     public string? Model { get; init; }
 
     /// <summary>
     /// Gets an optional model provider identifier.
     /// </summary>
-    [JsonPropertyName("modelProvider")]
+    [JsonPropertyName(JsonFieldNames.ModelProvider)]
     public string? ModelProvider { get; init; }
 
     /// <summary>
     /// Gets an optional working directory for the resumed thread.
     /// </summary>
-    [JsonPropertyName("cwd")]
+    [JsonPropertyName(JsonFieldNames.Cwd)]
     public string? Cwd { get; init; }
 
     /// <summary>
     /// Gets optional thread-scoped runtime workspace roots.
     /// </summary>
-    [JsonPropertyName("runtimeWorkspaceRoots")]
+    [JsonPropertyName(JsonFieldNames.RuntimeWorkspaceRoots)]
     public IReadOnlyList<string>? RuntimeWorkspaceRoots { get; init; }
 
     /// <summary>
     /// Gets an optional service tier override for the resumed thread.
     /// </summary>
-    [JsonPropertyName("serviceTier")]
+    [JsonPropertyName(JsonFieldNames.ServiceTier)]
     public JsonElement? ServiceTier { get; init; }
 
     /// <summary>
@@ -81,13 +82,13 @@ public sealed record class ThreadResumeParams
     /// When deserializing into <see cref="object"/>, System.Text.Json materializes this value as a <see cref="JsonElement"/>;
     /// do not rely on strong-typed reads after deserialization.
     /// </remarks>
-    [JsonPropertyName("approvalPolicy")]
+    [JsonPropertyName(JsonFieldNames.ApprovalPolicy)]
     public object? ApprovalPolicy { get; init; }
 
     /// <summary>
     /// Gets an optional approval reviewer routing override.
     /// </summary>
-    [JsonPropertyName("approvalsReviewer")]
+    [JsonPropertyName(JsonFieldNames.ApprovalsReviewer)]
     public CodexApprovalsReviewer? ApprovalsReviewer { get; init; }
 
     /// <summary>
@@ -96,37 +97,37 @@ public sealed record class ThreadResumeParams
     /// <remarks>
     /// Known values include <c>read-only</c>, <c>workspace-write</c>, and <c>danger-full-access</c>.
     /// </remarks>
-    [JsonPropertyName("sandbox")]
+    [JsonPropertyName(JsonFieldNames.Sandbox)]
     public string? Sandbox { get; init; }
 
     /// <summary>
     /// Gets an optional named permission profile id.
     /// </summary>
-    [JsonPropertyName("permissions")]
+    [JsonPropertyName(JsonFieldNames.Permissions)]
     public string? Permissions { get; init; }
 
     /// <summary>
     /// Gets optional config overrides (raw JSON object).
     /// </summary>
-    [JsonPropertyName("config")]
+    [JsonPropertyName(JsonFieldNames.Config)]
     public JsonElement? Config { get; init; }
 
     /// <summary>
     /// Gets optional base instructions.
     /// </summary>
-    [JsonPropertyName("baseInstructions")]
+    [JsonPropertyName(JsonFieldNames.BaseInstructions)]
     public string? BaseInstructions { get; init; }
 
     /// <summary>
     /// Gets optional developer instructions.
     /// </summary>
-    [JsonPropertyName("developerInstructions")]
+    [JsonPropertyName(JsonFieldNames.DeveloperInstructions)]
     public string? DeveloperInstructions { get; init; }
 
     /// <summary>
     /// Gets an optional personality identifier.
     /// </summary>
-    [JsonPropertyName("personality")]
+    [JsonPropertyName(JsonFieldNames.Personality)]
     public string? Personality { get; init; }
 
     /// <summary>
@@ -136,7 +137,7 @@ public sealed record class ThreadResumeParams
     /// Full-history hydration is deprecated for paginated threads; use this with <c>thread/turns/list</c>
     /// and <c>thread/items/list</c> where available.
     /// </remarks>
-    [JsonPropertyName("excludeTurns")]
+    [JsonPropertyName(JsonFieldNames.ExcludeTurns)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ExcludeTurns { get; init; }
 
@@ -146,6 +147,6 @@ public sealed record class ThreadResumeParams
     /// <remarks>
     /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
     /// </remarks>
-    [JsonPropertyName("initialTurnsPage")]
+    [JsonPropertyName(JsonFieldNames.InitialTurnsPage)]
     public ThreadResumeInitialTurnsPageParams? InitialTurnsPage { get; init; }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -48,7 +49,7 @@ public sealed record class ThreadSettingsUpdatedNotification : AppServerNotifica
         string? serviceTier,
         IReadOnlyList<string>? disabledPluginIds,
         JsonElement @params)
-        : base("thread/settings/updated", @params)
+        : base(AppServerMethods.ThreadSettingsUpdated, @params)
     {
         ThreadId = threadId;
         ThreadSettings = threadSettings;

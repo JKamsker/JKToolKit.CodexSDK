@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,37 +12,37 @@ public sealed record class PermissionsRequestApprovalParams
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the turn identifier.
     /// </summary>
-    [JsonPropertyName("turnId")]
+    [JsonPropertyName(JsonFieldNames.TurnId)]
     public required string TurnId { get; init; }
 
     /// <summary>
     /// Gets the item identifier that requested additional permissions.
     /// </summary>
-    [JsonPropertyName("itemId")]
+    [JsonPropertyName(JsonFieldNames.ItemId)]
     public required string ItemId { get; init; }
 
     /// <summary>
     /// Gets the optional environment identifier associated with the permission request.
     /// </summary>
-    [JsonPropertyName("environmentId")]
+    [JsonPropertyName(JsonFieldNames.EnvironmentId)]
     public string? EnvironmentId { get; init; }
 
     /// <summary>
     /// Gets the optional user-facing reason for the request.
     /// </summary>
-    [JsonPropertyName("reason")]
+    [JsonPropertyName(JsonFieldNames.Reason)]
     public string? Reason { get; init; }
 
     /// <summary>
     /// Gets the requested permission profile as raw JSON.
     /// </summary>
-    [JsonPropertyName("permissions")]
+    [JsonPropertyName(JsonFieldNames.Permissions)]
     public required JsonElement Permissions { get; init; }
 }
 
@@ -70,13 +71,13 @@ public sealed record class PermissionsRequestApprovalResponse
     /// <summary>
     /// Gets the granted subset of the requested permission profile.
     /// </summary>
-    [JsonPropertyName("permissions")]
+    [JsonPropertyName(JsonFieldNames.Permissions)]
     public required JsonElement Permissions { get; init; }
 
     /// <summary>
     /// Gets or sets the grant scope. Defaults to the current turn.
     /// </summary>
-    [JsonPropertyName("scope")]
+    [JsonPropertyName(JsonFieldNames.Scope)]
     public PermissionGrantScope Scope { get; init; } = PermissionGrantScope.Turn;
 }
 

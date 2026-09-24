@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer.ThreadRead;
@@ -15,7 +16,7 @@ public sealed record class CodexTurnError(string Message, string? AdditionalDeta
             return null;
         }
 
-        var message = CodexAppServerClientJson.GetStringOrNull(obj, "message") ?? string.Empty;
+        var message = CodexAppServerClientJson.GetStringOrNull(obj, JsonFieldNames.Message) ?? string.Empty;
         var additionalDetails = CodexAppServerClientJson.GetStringOrNull(obj, "additionalDetails");
         var codexErrorInfo = obj.TryGetProperty("codexErrorInfo", out var info) ? info.Clone() : (JsonElement?)null;
 

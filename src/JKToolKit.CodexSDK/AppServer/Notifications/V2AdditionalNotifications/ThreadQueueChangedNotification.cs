@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class ThreadQueueChangedNotification : AppServerNotificatio
     /// Initializes a new instance of <see cref="ThreadQueueChangedNotification"/>.
     /// </summary>
     public ThreadQueueChangedNotification(string ThreadId, JsonElement Params)
-        : base("thread/queue/changed", Params)
+        : base(AppServerMethods.ThreadQueueChanged, Params)
     {
         this.ThreadId = ThreadId;
     }

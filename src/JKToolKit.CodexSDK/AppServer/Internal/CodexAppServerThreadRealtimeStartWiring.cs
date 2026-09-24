@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -38,14 +39,14 @@ internal static class CodexAppServerThreadRealtimeStartWiring
             case ThreadRealtimePromptMode.Custom:
                 extensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
                 {
-                    ["prompt"] = JsonSerializer.SerializeToElement(options.Prompt)
+                    [JsonFieldNames.Prompt] = JsonSerializer.SerializeToElement(options.Prompt)
                 };
                 break;
 
             case ThreadRealtimePromptMode.None:
                 extensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
                 {
-                    ["prompt"] = JsonSerializer.SerializeToElement<string?>(null)
+                    [JsonFieldNames.Prompt] = JsonSerializer.SerializeToElement<string?>(null)
                 };
                 break;
         }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -21,7 +22,7 @@ public sealed record class ContextCompactedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ContextCompactedNotification"/>.
     /// </summary>
     public ContextCompactedNotification(string ThreadId, string TurnId, JsonElement Params)
-        : base("thread/compacted", Params)
+        : base(AppServerMethods.ThreadCompacted, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

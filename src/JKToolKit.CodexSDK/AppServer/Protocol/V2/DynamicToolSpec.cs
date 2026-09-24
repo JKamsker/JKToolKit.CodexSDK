@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -14,13 +15,13 @@ public sealed record class DynamicToolSpec
     /// <summary>
     /// Gets the tool name.
     /// </summary>
-    [JsonPropertyName("name")]
+    [JsonPropertyName(JsonFieldNames.Name)]
     public required string Name { get; init; }
 
     /// <summary>
     /// Gets the tool description.
     /// </summary>
-    [JsonPropertyName("description")]
+    [JsonPropertyName(JsonFieldNames.Description)]
     public required string Description { get; init; }
 
     /// <summary>
@@ -29,6 +30,6 @@ public sealed record class DynamicToolSpec
     /// <remarks>
     /// This should be a JSON Schema object.
     /// </remarks>
-    [JsonPropertyName("inputSchema")]
+    [JsonPropertyName(JsonFieldNames.InputSchema)]
     public required JsonElement InputSchema { get; init; }
 }

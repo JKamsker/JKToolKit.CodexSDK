@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,13 +12,13 @@ public sealed record class DynamicToolCallParams
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the turn identifier.
     /// </summary>
-    [JsonPropertyName("turnId")]
+    [JsonPropertyName(JsonFieldNames.TurnId)]
     public required string TurnId { get; init; }
 
     /// <summary>
@@ -29,12 +30,12 @@ public sealed record class DynamicToolCallParams
     /// <summary>
     /// Gets the tool name.
     /// </summary>
-    [JsonPropertyName("tool")]
+    [JsonPropertyName(JsonFieldNames.Tool)]
     public required string Tool { get; init; }
 
     /// <summary>
     /// Gets the tool arguments payload.
     /// </summary>
-    [JsonPropertyName("arguments")]
+    [JsonPropertyName(JsonFieldNames.Arguments)]
     public required JsonElement Arguments { get; init; }
 }

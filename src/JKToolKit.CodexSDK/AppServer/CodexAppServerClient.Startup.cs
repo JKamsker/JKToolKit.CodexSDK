@@ -169,6 +169,6 @@ public sealed partial class CodexAppServerClient
             return launch;
         }
 
-        return launch.WithEnvironment("CODEX_HOME", codexHomeDirectory);
+        return launch.WithEnvironment(CodexEnvironmentVariables.Home, codexHomeDirectory);
     }
 }

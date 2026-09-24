@@ -139,9 +139,9 @@ internal sealed class RemoteAppServerStarter
                 break;
             }
 
-            var delay = remaining < TimeSpan.FromMilliseconds(200)
+            var delay = remaining < RemoteAppServerDefaults.StartupPollInterval
                 ? remaining
-                : TimeSpan.FromMilliseconds(200);
+                : RemoteAppServerDefaults.StartupPollInterval;
             await Task.Delay(delay, ct).ConfigureAwait(false);
         }
 

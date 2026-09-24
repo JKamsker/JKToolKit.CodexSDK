@@ -12,6 +12,11 @@ namespace JKToolKit.CodexSDK.Exec.Internal;
 
 internal sealed partial class CodexSessionRunner
 {
+    private const int MinimumCaptureTimeoutSeconds = 10;
+    private const int ResumeCaptureTimeoutMilliseconds = 2000;
+    private const int SelectedSessionCaptureTimeoutMilliseconds = 250;
+    private const int SelectedSessionTimeoutDivisor = 4;
+
     private readonly CodexClientOptions _clientOptions;
     private readonly ICodexProcessLauncher _processLauncher;
     private readonly ICodexSessionLocator _sessionLocator;
@@ -178,7 +183,7 @@ internal sealed partial class CodexSessionRunner
             _logger.LogDebug("Codex process started with PID {Pid} after {ElapsedMilliseconds} ms", process.Id, sw.ElapsedMilliseconds);
             sw.Restart();
 
-            var captureTimeout = TimeSpan.FromSeconds(Math.Max(10, _clientOptions.StartTimeout.TotalSeconds));
+            var captureTimeout = TimeSpan.FromSeconds(Math.Max(MinimumCaptureTimeoutSeconds, _clientOptions.StartTimeout.TotalSeconds));
             var (sessionIdCaptureTask, getStartStdoutDiag, getStartStderrDiag) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, _logger);
 
             string logPath;
@@ -380,8 +385,8 @@ internal sealed partial class CodexSessionRunner
 
             var requiresCapturedSessionSelection = selectedSession is null;
             var captureTimeout = requiresCapturedSessionSelection
-                ? TimeSpan.FromMilliseconds(Math.Min(2_000, _clientOptions.StartTimeout.TotalMilliseconds))
-                : TimeSpan.FromMilliseconds(Math.Min(250, _clientOptions.StartTimeout.TotalMilliseconds / 4));
+                ? TimeSpan.FromMilliseconds(Math.Min(ResumeCaptureTimeoutMilliseconds, _clientOptions.StartTimeout.TotalMilliseconds))
+                : TimeSpan.FromMilliseconds(Math.Min(SelectedSessionCaptureTimeoutMilliseconds, _clientOptions.StartTimeout.TotalMilliseconds / SelectedSessionTimeoutDivisor));
             var (sessionIdCaptureTask, _, _) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, _logger);
             SessionId? capturedId = null;
             try

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -31,7 +32,7 @@ public sealed record class ServerRequestResolvedNotification : AppServerNotifica
     /// Initializes a new instance of <see cref="ServerRequestResolvedNotification"/>.
     /// </summary>
     public ServerRequestResolvedNotification(string threadId, CodexRequestId requestId, JsonElement @params)
-        : base("serverRequest/resolved", @params)
+        : base(AppServerMethods.ServerRequestResolved, @params)
     {
         ThreadId = threadId;
         RequestId = requestId;

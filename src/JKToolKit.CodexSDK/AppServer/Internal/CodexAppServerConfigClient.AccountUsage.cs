@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -23,7 +24,7 @@ internal sealed partial class CodexAppServerConfigClient
 
     private static AccountTokenUsageReadResult ParseAccountTokenUsage(JsonElement result)
     {
-        var summary = CodexAppServerClientJson.TryGetObject(result, "summary")
+        var summary = CodexAppServerClientJson.TryGetObject(result, JsonFieldNames.Summary)
             ?? throw new InvalidOperationException("account/usage/read response missing required object property 'summary'.");
 
         return new AccountTokenUsageReadResult
@@ -77,8 +78,8 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new AccountThreadUsage
         {
-            ThreadId = CodexAppServerClientJson.GetStringOrNull(usage, "threadId"),
-            EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(usage, "estimatedUsageCreditsMicros"),
+            ThreadId = CodexAppServerClientJson.GetStringOrNull(usage, JsonFieldNames.ThreadId),
+            EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(usage, JsonFieldNames.EstimatedUsageCreditsMicros),
             EstimatedUsageUsdMicros = CodexAppServerClientJson.GetInt64OrNull(usage, "estimatedUsageUsdMicros"),
             Groups = ParseThreadUsageGroups(usage),
             Raw = usage.Clone()
@@ -103,15 +104,15 @@ internal sealed partial class CodexAppServerConfigClient
 
             groups.Add(new AccountThreadUsageBreakdownGroup
             {
-                Model = CodexAppServerClientJson.GetStringOrNull(item, "model"),
-                ReasoningEffort = CodexAppServerClientJson.GetStringOrNull(item, "reasoningEffort"),
+                Model = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Model),
+                ReasoningEffort = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.ReasoningEffort),
                 Speed = CodexAppServerClientJson.GetStringOrNull(item, "speed"),
                 InputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "inputTokens"),
                 CachedInputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "cachedInputTokens"),
                 NetNewInputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "netNewInputTokens"),
                 OutputTokens = CodexAppServerClientJson.GetInt64OrNull(item, "outputTokens"),
                 TotalTokens = CodexAppServerClientJson.GetInt64OrNull(item, "totalTokens"),
-                EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(item, "estimatedUsageCreditsMicros"),
+                EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(item, JsonFieldNames.EstimatedUsageCreditsMicros),
                 Raw = item.Clone()
             });
         }

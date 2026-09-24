@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using UpstreamV2 = JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
@@ -52,9 +53,9 @@ internal sealed class CodexAppServerCommandExecClient
 
         return new CommandExecResult
         {
-            ExitCode = CodexAppServerClientJson.GetRequiredInt32(result, "exitCode", "command/exec response"),
-            Stdout = CodexAppServerClientJson.GetRequiredString(result, "stdout", "command/exec response"),
-            Stderr = CodexAppServerClientJson.GetRequiredString(result, "stderr", "command/exec response"),
+            ExitCode = CodexAppServerClientJson.GetRequiredInt32(result, JsonFieldNames.ExitCode, "command/exec response"),
+            Stdout = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.Stdout, "command/exec response"),
+            Stderr = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.Stderr, "command/exec response"),
             Raw = result
         };
     }

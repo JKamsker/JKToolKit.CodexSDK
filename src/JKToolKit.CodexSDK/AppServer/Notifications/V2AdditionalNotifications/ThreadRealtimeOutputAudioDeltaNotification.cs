@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -46,15 +48,15 @@ public sealed record class ThreadRealtimeOutputAudioDeltaNotification : AppServe
     /// Initializes a new instance of <see cref="ThreadRealtimeOutputAudioDeltaNotification"/>.
     /// </summary>
     public ThreadRealtimeOutputAudioDeltaNotification(string ThreadId, JsonElement Audio, JsonElement Params)
-        : base("thread/realtime/outputAudio/delta", Params)
+        : base(AppServerMethods.ThreadRealtimeOutputAudioDelta, Params)
     {
         this.ThreadId = ThreadId;
         this.Audio = Audio;
-        ItemId = TryGetString(Audio, "itemId");
-        Data = TryGetString(Audio, "data");
-        SampleRate = TryGetInt32(Audio, "sampleRate");
-        NumChannels = TryGetInt32(Audio, "numChannels");
-        SamplesPerChannel = TryGetInt32OrNull(Audio, "samplesPerChannel");
+        ItemId = TryGetString(Audio, JsonFieldNames.ItemId);
+        Data = TryGetString(Audio, JsonFieldNames.Data);
+        SampleRate = TryGetInt32(Audio, JsonFieldNames.SampleRate);
+        NumChannels = TryGetInt32(Audio, JsonFieldNames.NumChannels);
+        SamplesPerChannel = TryGetInt32OrNull(Audio, JsonFieldNames.SamplesPerChannel);
     }
 
     private static string? TryGetString(JsonElement obj, string propertyName) =>

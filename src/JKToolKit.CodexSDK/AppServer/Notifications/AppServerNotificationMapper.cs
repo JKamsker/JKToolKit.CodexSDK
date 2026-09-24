@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
@@ -20,113 +22,113 @@ internal static partial class AppServerNotificationMapper
         return method switch
         {
             "error" => new ErrorNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Error: GetAny(p, "error"),
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                Error: GetAny(p, JsonFieldNames.Error),
                 WillRetry: GetBool(p, "willRetry"),
                 Params: p),
 
-            "thread/started" => new ThreadStartedNotification(
-                Thread: GetAny(p, "thread"),
-                ThreadSummary: CodexAppServerClientThreadParsers.ParseThreadSummary(GetAny(p, "thread"), p),
+            AppServerMethods.ThreadStarted => new ThreadStartedNotification(
+                Thread: GetAny(p, JsonFieldNames.Thread),
+                ThreadSummary: CodexAppServerClientThreadParsers.ParseThreadSummary(GetAny(p, JsonFieldNames.Thread), p),
                 Params: p),
 
-            "thread/name/updated" => new ThreadNameUpdatedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadNameUpdated => new ThreadNameUpdatedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 ThreadName: GetStringOrNull(p, "threadName"),
                 Params: p),
 
-            "thread/settings/updated" => new ThreadSettingsUpdatedNotification(
-                threadId: GetString(p, "threadId") ?? string.Empty,
-                threadSettings: GetAny(p, "threadSettings"),
-                cwd: GetStringOrNull(GetAny(p, "threadSettings"), "cwd"),
-                model: GetStringOrNull(GetAny(p, "threadSettings"), "model"),
-                serviceTier: GetStringOrNull(GetAny(p, "threadSettings"), "serviceTier"),
-                disabledPluginIds: GetStringArray(GetAny(p, "threadSettings"), "disabledPluginIds"),
+            AppServerMethods.ThreadSettingsUpdated => new ThreadSettingsUpdatedNotification(
+                threadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                threadSettings: GetAny(p, JsonFieldNames.ThreadSettings),
+                cwd: GetStringOrNull(GetAny(p, JsonFieldNames.ThreadSettings), JsonFieldNames.Cwd),
+                model: GetStringOrNull(GetAny(p, JsonFieldNames.ThreadSettings), JsonFieldNames.Model),
+                serviceTier: GetStringOrNull(GetAny(p, JsonFieldNames.ThreadSettings), JsonFieldNames.ServiceTier),
+                disabledPluginIds: GetStringArray(GetAny(p, JsonFieldNames.ThreadSettings), JsonFieldNames.DisabledPluginIds),
                 @params: p),
 
-            "thread/goal/updated" => new ThreadGoalUpdatedNotification(
-                threadId: GetString(p, "threadId") ?? string.Empty,
-                turnId: GetStringOrNull(p, "turnId"),
-                goal: CodexAppServerThreadManagementParsers.ParseThreadGoal(GetAny(p, "goal")),
+            AppServerMethods.ThreadGoalUpdated => new ThreadGoalUpdatedNotification(
+                threadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                turnId: GetStringOrNull(p, JsonFieldNames.TurnId),
+                goal: CodexAppServerThreadManagementParsers.ParseThreadGoal(GetAny(p, JsonFieldNames.Goal)),
                 @params: p),
 
-            "thread/goal/cleared" => new ThreadGoalClearedNotification(
-                threadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadGoalCleared => new ThreadGoalClearedNotification(
+                threadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 @params: p),
 
-            "thread/tokenUsage/updated" => new ThreadTokenUsageUpdatedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
+            AppServerMethods.ThreadTokenUsageUpdated => new ThreadTokenUsageUpdatedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
                 TokenUsage: GetAny(p, "tokenUsage"),
                 Params: p),
 
-            "thread/status/changed" => new ThreadStatusChangedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Status: GetAny(p, "status"),
+            AppServerMethods.ThreadStatusChanged => new ThreadStatusChangedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                Status: GetAny(p, JsonFieldNames.Status),
                 Params: p),
 
-            "thread/archived" => new ThreadArchivedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadArchived => new ThreadArchivedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 Params: p),
 
-            "thread/deleted" when TryGetRequiredString(p, "threadId", out var deletedThreadId)
+            AppServerMethods.ThreadDeleted when TryGetRequiredString(p, JsonFieldNames.ThreadId, out var deletedThreadId)
                 => new ThreadDeletedNotification(
                     ThreadId: deletedThreadId,
                     Params: p),
 
-            "thread/deleted" => new UnknownNotification(method, p),
+            AppServerMethods.ThreadDeleted => new UnknownNotification(method, p),
 
-            "thread/unarchived" => new ThreadUnarchivedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadUnarchived => new ThreadUnarchivedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 Params: p),
 
-            "thread/reverted" => new ThreadRevertedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadReverted => new ThreadRevertedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 Params: p),
 
-            "thread/queue/changed" => new ThreadQueueChangedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadQueueChanged => new ThreadQueueChangedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 Params: p),
 
-            "thread/closed" => new ThreadClosedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
+            AppServerMethods.ThreadClosed => new ThreadClosedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
                 Params: p),
 
-            "thread/realtime/started" => (AppServerNotification?)TryMapThreadRealtimeStarted(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadRealtimeStarted => (AppServerNotification?)TryMapThreadRealtimeStarted(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/itemAdded" => (AppServerNotification?)TryMapThreadRealtimeItemAdded(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadRealtimeItemAdded => (AppServerNotification?)TryMapThreadRealtimeItemAdded(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/transcriptUpdated" when
-                TryGetRequiredString(p, "threadId", out var transcriptThreadId) &&
-                TryGetRequiredString(p, "role", out var transcriptRole) &&
-                TryGetRequiredString(p, "text", out var transcriptText)
+            AppServerMethods.ThreadRealtimeTranscriptUpdated when
+                TryGetRequiredString(p, JsonFieldNames.ThreadId, out var transcriptThreadId) &&
+                TryGetRequiredString(p, JsonFieldNames.Role, out var transcriptRole) &&
+                TryGetRequiredString(p, JsonFieldNames.Text, out var transcriptText)
                 => new ThreadRealtimeTranscriptUpdatedNotification(
                     ThreadId: transcriptThreadId,
                     Role: transcriptRole,
                     Text: transcriptText,
                     Params: p),
 
-            "thread/realtime/outputAudio/delta" => (AppServerNotification?)TryMapThreadRealtimeOutputAudioDelta(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadRealtimeOutputAudioDelta => (AppServerNotification?)TryMapThreadRealtimeOutputAudioDelta(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/sdp" => (AppServerNotification?)TryMapThreadRealtimeSdp(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadRealtimeSdp => (AppServerNotification?)TryMapThreadRealtimeSdp(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/error" => (AppServerNotification?)TryMapThreadRealtimeError(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadRealtimeError => (AppServerNotification?)TryMapThreadRealtimeError(p) ?? new UnknownNotification(method, p),
 
-            "thread/realtime/closed" => (AppServerNotification?)TryMapThreadRealtimeClosed(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadRealtimeClosed => (AppServerNotification?)TryMapThreadRealtimeClosed(p) ?? new UnknownNotification(method, p),
 
-            "model/rerouted" => new ModelReroutedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
+            AppServerMethods.ModelRerouted => new ModelReroutedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
                 FromModel: GetString(p, "fromModel") ?? string.Empty,
                 ToModel: GetString(p, "toModel") ?? string.Empty,
-                Reason: GetString(p, "reason") ?? string.Empty,
+                Reason: GetString(p, JsonFieldNames.Reason) ?? string.Empty,
                 Params: p),
 
-            "model/safetyBuffering/updated" when
-                TryGetRequiredString(p, "threadId", out var safetyBufferingThreadId) &&
-                TryGetRequiredString(p, "turnId", out var safetyBufferingTurnId) &&
-                TryGetRequiredString(p, "model", out var safetyBufferingModel) &&
+            AppServerMethods.ModelSafetyBufferingUpdated when
+                TryGetRequiredString(p, JsonFieldNames.ThreadId, out var safetyBufferingThreadId) &&
+                TryGetRequiredString(p, JsonFieldNames.TurnId, out var safetyBufferingTurnId) &&
+                TryGetRequiredString(p, JsonFieldNames.Model, out var safetyBufferingModel) &&
                 TryGetRequiredBool(p, "showBufferingUi", out var showBufferingUi)
                 => new ModelSafetyBufferingUpdatedNotification(
                     ThreadId: safetyBufferingThreadId,
@@ -138,69 +140,69 @@ internal static partial class AppServerNotificationMapper
                     FasterModel: GetStringOrNull(p, "fasterModel"),
                     Params: p),
 
-            "model/safetyBuffering/updated" => new UnknownNotification(method, p),
+            AppServerMethods.ModelSafetyBufferingUpdated => new UnknownNotification(method, p),
 
-            "turn/started" => new TurnStartedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Turn: GetAny(p, "turn"),
+            AppServerMethods.TurnStarted => new TurnStartedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                Turn: GetAny(p, JsonFieldNames.Turn),
                 Params: p),
 
-            "hook/started" => (AppServerNotification?)TryMapHookStarted(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.HookStarted => (AppServerNotification?)TryMapHookStarted(p) ?? new UnknownNotification(method, p),
 
-            "hook/completed" => (AppServerNotification?)TryMapHookCompleted(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.HookCompleted => (AppServerNotification?)TryMapHookCompleted(p) ?? new UnknownNotification(method, p),
 
-            "item/agentMessage/delta" => new AgentMessageDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
+            AppServerMethods.ItemAgentMessageDelta => new AgentMessageDeltaNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                Delta: GetString(p, JsonFieldNames.Delta) ?? string.Empty,
                 Params: p),
 
-            "item/started" => new ItemStartedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Item: GetAny(p, "item"),
+            AppServerMethods.ItemStarted => new ItemStartedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                Item: GetAny(p, JsonFieldNames.Item),
                 Params: p),
 
-            "item/completed" => new ItemCompletedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Item: GetAny(p, "item"),
+            AppServerMethods.ItemCompleted => new ItemCompletedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                Item: GetAny(p, JsonFieldNames.Item),
                 Params: p),
 
-            "turn/completed" => new TurnCompletedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                Turn: GetAny(p, "turn"),
+            AppServerMethods.TurnCompleted => new TurnCompletedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                Turn: GetAny(p, JsonFieldNames.Turn),
                 Params: p),
 
-            "turn/moderationMetadata" => new TurnModerationMetadataNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
+            AppServerMethods.TurnModerationMetadata => new TurnModerationMetadataNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
                 Metadata: GetAny(p, "metadata"),
                 Params: p),
 
-            "turn/diff/updated" => new TurnDiffUpdatedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Diff: GetString(p, "diff") ?? string.Empty,
+            AppServerMethods.TurnDiffUpdated => new TurnDiffUpdatedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                Diff: GetString(p, JsonFieldNames.Diff) ?? string.Empty,
                 Params: p),
 
-            "turn/plan/updated" => new TurnPlanUpdatedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Explanation: GetStringOrNull(p, "explanation"),
+            AppServerMethods.TurnPlanUpdated => new TurnPlanUpdatedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                Explanation: GetStringOrNull(p, JsonFieldNames.Explanation),
                 Plan: ParsePlan(p),
                 Params: p),
 
-            "item/plan/delta" => new PlanDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
+            AppServerMethods.ItemPlanDelta => new PlanDeltaNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                Delta: GetString(p, JsonFieldNames.Delta) ?? string.Empty,
                 Params: p),
 
-            "command/exec/outputDelta" when
-                TryGetRequiredString(p, "processId", out var processId) &&
+            AppServerMethods.CommandExecOutputDelta when
+                TryGetRequiredString(p, JsonFieldNames.ProcessId, out var processId) &&
                 TryGetRequiredString(p, "stream", out var stream) &&
                 TryGetRequiredString(p, "deltaBase64", out var deltaBase64) &&
                 TryGetRequiredBool(p, "capReached", out var capReached)
@@ -211,147 +213,147 @@ internal static partial class AppServerNotificationMapper
                     CapReached: capReached,
                     Params: p),
 
-            "rawResponse/completed" => (AppServerNotification?)TryMapRawResponseCompleted(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.RawResponseCompleted => (AppServerNotification?)TryMapRawResponseCompleted(p) ?? new UnknownNotification(method, p),
 
-            "rawResponseItem/completed" => new RawResponseItemCompletedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                Item: GetAny(p, "item"),
+            AppServerMethods.RawResponseItemCompleted => new RawResponseItemCompletedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                Item: GetAny(p, JsonFieldNames.Item),
                 Params: p),
 
-            "item/commandExecution/outputDelta" => (AppServerNotification?)TryMapCommandExecutionOutputDelta(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ItemCommandExecutionOutputDelta => (AppServerNotification?)TryMapCommandExecutionOutputDelta(p) ?? new UnknownNotification(method, p),
 
-            "item/commandExecution/terminalInteraction" => new TerminalInteractionNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                ProcessId: GetString(p, "processId") ?? string.Empty,
+            AppServerMethods.ItemCommandExecutionTerminalInteraction => new TerminalInteractionNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                ProcessId: GetString(p, JsonFieldNames.ProcessId) ?? string.Empty,
                 Stdin: GetString(p, "stdin") ?? string.Empty,
                 Params: p),
 
-            "item/fileChange/outputDelta" => new FileChangeOutputDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
+            AppServerMethods.ItemFileChangeOutputDelta => new FileChangeOutputDeltaNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                Delta: GetString(p, JsonFieldNames.Delta) ?? string.Empty,
                 Params: p),
 
-            "item/mcpToolCall/progress" => new McpToolCallProgressNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Message: GetString(p, "message") ?? string.Empty,
+            AppServerMethods.ItemMcpToolCallProgress => new McpToolCallProgressNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                Message: GetString(p, JsonFieldNames.Message) ?? string.Empty,
                 Params: p),
 
-            "mcpServer/oauthLogin/completed" => new McpServerOauthLoginCompletedNotification(
-                Name: GetString(p, "name") ?? string.Empty,
-                ThreadId: GetStringOrNull(p, "threadId"),
-                Success: GetBool(p, "success"),
-                Error: GetStringOrNull(p, "error"),
+            AppServerMethods.McpServerOauthLoginCompleted => new McpServerOauthLoginCompletedNotification(
+                Name: GetString(p, JsonFieldNames.Name) ?? string.Empty,
+                ThreadId: GetStringOrNull(p, JsonFieldNames.ThreadId),
+                Success: GetBool(p, JsonFieldNames.Success),
+                Error: GetStringOrNull(p, JsonFieldNames.Error),
                 Params: p),
 
-            "mcpServer/startupStatus/updated" => (AppServerNotification?)TryMapMcpServerStartupStatusUpdated(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.McpServerStartupStatusUpdated => (AppServerNotification?)TryMapMcpServerStartupStatusUpdated(p) ?? new UnknownNotification(method, p),
 
-            "account/updated" => (AppServerNotification?)TryMapAccountUpdated(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.AccountUpdated => (AppServerNotification?)TryMapAccountUpdated(p) ?? new UnknownNotification(method, p),
 
-            "account/rateLimits/updated" => new AccountRateLimitsUpdatedNotification(
-                RateLimits: GetAny(p, "rateLimits"),
+            AppServerMethods.AccountRateLimitsUpdated => new AccountRateLimitsUpdatedNotification(
+                RateLimits: GetAny(p, JsonFieldNames.RateLimits),
                 Params: p),
 
-            "thread/environment/connected" => (AppServerNotification?)TryMapThreadEnvironmentConnection(method, p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ThreadEnvironmentConnected => (AppServerNotification?)TryMapThreadEnvironmentConnection(method, p) ?? new UnknownNotification(method, p),
 
             "thread/environment/disconnected" => (AppServerNotification?)TryMapThreadEnvironmentConnection(method, p) ?? new UnknownNotification(method, p),
 
-            "app/list/updated" => new AppListUpdatedNotification(
+            AppServerMethods.AppListUpdated => new AppListUpdatedNotification(
                 apps: AppServerNotificationParsing.ParseAppsList(p),
-                data: GetOptionalAny(p, "data") ?? GetAny(p, "apps"),
+                data: GetOptionalAny(p, JsonFieldNames.Data) ?? GetAny(p, JsonFieldNames.Apps),
                 @params: p),
 
-            "remoteControl/status/changed" when TryGetRequiredString(p, "status", out var remoteControlStatus)
+            AppServerMethods.RemoteControlStatusChanged when TryGetRequiredString(p, JsonFieldNames.Status, out var remoteControlStatus)
                 => new RemoteControlStatusChangedNotification(
                     status: remoteControlStatus,
-                    serverName: GetStringOrNull(p, "serverName"),
-                    installationId: GetStringOrNull(p, "installationId"),
-                    environmentId: GetStringOrNull(p, "environmentId"),
+                    serverName: GetStringOrNull(p, JsonFieldNames.ServerName),
+                    installationId: GetStringOrNull(p, JsonFieldNames.InstallationId),
+                    environmentId: GetStringOrNull(p, JsonFieldNames.EnvironmentId),
                     @params: p),
 
-            "skills/changed" => new SkillsChangedNotification(
+            AppServerMethods.SkillsChanged => new SkillsChangedNotification(
                 @params: p),
 
-            "serverRequest/resolved" => (AppServerNotification?)TryMapServerRequestResolved(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ServerRequestResolved => (AppServerNotification?)TryMapServerRequestResolved(p) ?? new UnknownNotification(method, p),
 
-            "fs/changed" => (AppServerNotification?)TryMapFsChanged(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.FsChanged => (AppServerNotification?)TryMapFsChanged(p) ?? new UnknownNotification(method, p),
 
-            "fuzzyFileSearch/sessionUpdated" => new FuzzyFileSearchSessionUpdatedNotification(
-                sessionId: GetString(p, "sessionId") ?? string.Empty,
-                query: GetString(p, "query") ?? string.Empty,
+            AppServerMethods.FuzzyFileSearchSessionUpdated => new FuzzyFileSearchSessionUpdatedNotification(
+                sessionId: GetString(p, JsonFieldNames.SessionId) ?? string.Empty,
+                query: GetString(p, JsonFieldNames.Query) ?? string.Empty,
                 files: AppServerNotificationParsing.ParseFuzzyFileSearchResults(p),
                 @params: p),
 
-            "fuzzyFileSearch/sessionCompleted" => new FuzzyFileSearchSessionCompletedNotification(
-                sessionId: GetString(p, "sessionId") ?? string.Empty,
+            AppServerMethods.FuzzyFileSearchSessionCompleted => new FuzzyFileSearchSessionCompletedNotification(
+                sessionId: GetString(p, JsonFieldNames.SessionId) ?? string.Empty,
                 @params: p),
 
-            "item/autoApprovalReview/started" => (AppServerNotification?)TryMapAutoApprovalReviewStarted(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ItemAutoApprovalReviewStarted => (AppServerNotification?)TryMapAutoApprovalReviewStarted(p) ?? new UnknownNotification(method, p),
 
-            "item/autoApprovalReview/completed" => (AppServerNotification?)TryMapAutoApprovalReviewCompleted(p) ?? new UnknownNotification(method, p),
+            AppServerMethods.ItemAutoApprovalReviewCompleted => (AppServerNotification?)TryMapAutoApprovalReviewCompleted(p) ?? new UnknownNotification(method, p),
 
-            "item/reasoning/summaryTextDelta" => new ReasoningSummaryTextDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
-                SummaryIndex: GetInt64(p, "summaryIndex"),
+            AppServerMethods.ItemReasoningSummaryTextDelta => new ReasoningSummaryTextDeltaNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                Delta: GetString(p, JsonFieldNames.Delta) ?? string.Empty,
+                SummaryIndex: GetInt64(p, JsonFieldNames.SummaryIndex),
                 Params: p),
 
-            "item/reasoning/summaryPartAdded" => new ReasoningSummaryPartAddedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                SummaryIndex: GetInt64(p, "summaryIndex"),
+            AppServerMethods.ItemReasoningSummaryPartAdded => new ReasoningSummaryPartAddedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                SummaryIndex: GetInt64(p, JsonFieldNames.SummaryIndex),
                 Params: p),
 
-            "item/reasoning/textDelta" => new ReasoningTextDeltaNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
-                ItemId: GetString(p, "itemId") ?? string.Empty,
-                Delta: GetString(p, "delta") ?? string.Empty,
+            AppServerMethods.ItemReasoningTextDelta => new ReasoningTextDeltaNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
+                ItemId: GetString(p, JsonFieldNames.ItemId) ?? string.Empty,
+                Delta: GetString(p, JsonFieldNames.Delta) ?? string.Empty,
                 ContentIndex: GetInt64(p, "contentIndex"),
                 Params: p),
 
-            "thread/compacted" => new ContextCompactedNotification(
-                ThreadId: GetString(p, "threadId") ?? string.Empty,
-                TurnId: GetString(p, "turnId") ?? string.Empty,
+            AppServerMethods.ThreadCompacted => new ContextCompactedNotification(
+                ThreadId: GetString(p, JsonFieldNames.ThreadId) ?? string.Empty,
+                TurnId: GetString(p, JsonFieldNames.TurnId) ?? string.Empty,
                 Params: p),
 
             "deprecationNotice" => new DeprecationNoticeNotification(
-                Summary: GetString(p, "summary") ?? string.Empty,
-                Details: GetStringOrNull(p, "details"),
+                Summary: GetString(p, JsonFieldNames.Summary) ?? string.Empty,
+                Details: GetStringOrNull(p, JsonFieldNames.Details),
                 Params: p),
 
             "configWarning" => new ConfigWarningNotification(
-                Summary: GetString(p, "summary") ?? string.Empty,
-                Details: GetStringOrNull(p, "details"),
-                Path: GetStringOrNull(p, "path"),
+                Summary: GetString(p, JsonFieldNames.Summary) ?? string.Empty,
+                Details: GetStringOrNull(p, JsonFieldNames.Details),
+                Path: GetStringOrNull(p, JsonFieldNames.Path),
                 Range: GetOptionalAny(p, "range"),
                 Params: p),
 
-            "windows/worldWritableWarning" => new WindowsWorldWritableWarningNotification(
+            AppServerMethods.WindowsWorldWritableWarning => new WindowsWorldWritableWarningNotification(
                 SamplePaths: GetStringArray(p, "samplePaths"),
                 ExtraCount: GetInt32(p, "extraCount"),
                 FailedScan: GetBool(p, "failedScan"),
                 Params: p),
 
-            "windowsSandbox/setupCompleted" => new WindowsSandboxSetupCompletedNotification(
-                Mode: GetString(p, "mode") ?? string.Empty,
-                Success: GetBool(p, "success"),
-                Error: GetStringOrNull(p, "error"),
+            AppServerMethods.WindowsSandboxSetupCompleted => new WindowsSandboxSetupCompletedNotification(
+                Mode: GetString(p, JsonFieldNames.Mode) ?? string.Empty,
+                Success: GetBool(p, JsonFieldNames.Success),
+                Error: GetStringOrNull(p, JsonFieldNames.Error),
                 Params: p),
 
-            "account/login/completed" => new AccountLoginCompletedNotification(
-                LoginId: GetStringOrNull(p, "loginId"),
-                Success: GetBool(p, "success"),
-                Error: GetStringOrNull(p, "error"),
+            AppServerMethods.AccountLoginCompleted => new AccountLoginCompletedNotification(
+                LoginId: GetStringOrNull(p, JsonFieldNames.LoginId),
+                Success: GetBool(p, JsonFieldNames.Success),
+                Error: GetStringOrNull(p, JsonFieldNames.Error),
                 Params: p),
 
             _ => TryMapCodex155Notification(method, p) ?? TryMapCodex152Notification(method, p) ?? TryMapCodex149Notification(method, p) ?? new UnknownNotification(method, p)
@@ -469,7 +471,7 @@ internal static partial class AppServerNotificationMapper
 
     private static IReadOnlyList<TurnPlanStep> ParsePlan(JsonElement obj)
     {
-        if (!obj.TryGetProperty("plan", out var prop) || prop.ValueKind != JsonValueKind.Array)
+        if (!obj.TryGetProperty(JsonFieldNames.Plan, out var prop) || prop.ValueKind != JsonValueKind.Array)
         {
             return Array.Empty<TurnPlanStep>();
         }
@@ -483,8 +485,8 @@ internal static partial class AppServerNotificationMapper
             }
 
             list.Add(new TurnPlanStep(
-                Step: GetString(el, "step") ?? string.Empty,
-                Status: GetString(el, "status") ?? string.Empty));
+                Step: GetString(el, JsonFieldNames.Step) ?? string.Empty,
+                Status: GetString(el, JsonFieldNames.Status) ?? string.Empty));
         }
 
         return list;

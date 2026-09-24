@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Internal.JsonlEventParsing;
 
@@ -51,14 +52,14 @@ internal static class JsonlEventJson
     public static JsonElement GetEventBody(JsonElement root)
     {
         if (root.ValueKind == JsonValueKind.Object &&
-            root.TryGetProperty("payload", out var payload) &&
+            root.TryGetProperty(JsonFieldNames.Payload, out var payload) &&
             payload.ValueKind == JsonValueKind.Object)
         {
             root = payload;
         }
 
         if (root.ValueKind == JsonValueKind.Object &&
-            root.TryGetProperty("msg", out var msg) &&
+            root.TryGetProperty(JsonFieldNames.Msg, out var msg) &&
             msg.ValueKind == JsonValueKind.Object)
         {
             root = msg;

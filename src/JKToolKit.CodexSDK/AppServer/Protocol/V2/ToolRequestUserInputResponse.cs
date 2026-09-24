@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,6 +11,6 @@ public sealed record class ToolRequestUserInputResponse
     /// <summary>
     /// Gets the mapping from question id to answers.
     /// </summary>
-    [JsonPropertyName("answers")]
+    [JsonPropertyName(JsonFieldNames.Answers)]
     public required IReadOnlyDictionary<string, ToolRequestUserInputAnswer> Answers { get; init; }
 }

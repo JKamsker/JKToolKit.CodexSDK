@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class TurnDiffUpdatedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="TurnDiffUpdatedNotification"/>.
     /// </summary>
     public TurnDiffUpdatedNotification(string ThreadId, string TurnId, string Diff, JsonElement Params)
-        : base("turn/diff/updated", Params)
+        : base(AppServerMethods.TurnDiffUpdated, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

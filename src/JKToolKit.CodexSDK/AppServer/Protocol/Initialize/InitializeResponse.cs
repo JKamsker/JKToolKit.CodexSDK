@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.Initialize;
 
@@ -10,6 +11,6 @@ public sealed record class InitializeResponse
     /// <summary>
     /// Gets the server user agent string.
     /// </summary>
-    [JsonPropertyName("userAgent")]
+    [JsonPropertyName(JsonFieldNames.UserAgent)]
     public required string UserAgent { get; init; }
 }

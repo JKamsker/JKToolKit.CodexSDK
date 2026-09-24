@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -26,7 +27,7 @@ public sealed record class WindowsSandboxSetupCompletedNotification : AppServerN
     /// Initializes a new instance of <see cref="WindowsSandboxSetupCompletedNotification"/>.
     /// </summary>
     public WindowsSandboxSetupCompletedNotification(string Mode, bool Success, string? Error, JsonElement Params)
-        : base("windowsSandbox/setupCompleted", Params)
+        : base(AppServerMethods.WindowsSandboxSetupCompleted, Params)
     {
         this.Mode = Mode;
         this.Success = Success;

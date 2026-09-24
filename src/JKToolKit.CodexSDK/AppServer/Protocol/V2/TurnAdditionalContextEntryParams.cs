@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -16,6 +17,6 @@ public sealed record class TurnAdditionalContextEntryParams
     /// <summary>
     /// Gets the context kind. Known values are <c>untrusted</c> and <c>application</c>.
     /// </summary>
-    [JsonPropertyName("kind")]
+    [JsonPropertyName(JsonFieldNames.Kind)]
     public required string Kind { get; init; }
 }

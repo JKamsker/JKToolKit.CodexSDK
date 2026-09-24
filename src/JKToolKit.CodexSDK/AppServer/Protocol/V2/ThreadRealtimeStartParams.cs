@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -11,13 +12,13 @@ public sealed record class ThreadRealtimeStartParams
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
-    [JsonPropertyName("threadId")]
+    [JsonPropertyName(JsonFieldNames.ThreadId)]
     public required string ThreadId { get; init; }
 
     /// <summary>
     /// Gets the optional realtime session identifier.
     /// </summary>
-    [JsonPropertyName("sessionId")]
+    [JsonPropertyName(JsonFieldNames.SessionId)]
     public string? SessionId { get; init; }
 
     /// <summary>

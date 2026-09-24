@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications;
 
@@ -26,7 +28,7 @@ public sealed record class ItemStartedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ItemStartedNotification"/>.
     /// </summary>
     public ItemStartedNotification(string ThreadId, string TurnId, JsonElement Item, JsonElement Params)
-        : base("item/started", Params)
+        : base(AppServerMethods.ItemStarted, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;
@@ -38,7 +40,7 @@ public sealed record class ItemStartedNotification : AppServerNotification
     /// </summary>
     public string? ItemId =>
         Item.ValueKind == JsonValueKind.Object &&
-        Item.TryGetProperty("id", out var id) &&
+        Item.TryGetProperty(JsonFieldNames.Id, out var id) &&
         id.ValueKind == JsonValueKind.String
             ? id.GetString()
             : null;
@@ -48,7 +50,7 @@ public sealed record class ItemStartedNotification : AppServerNotification
     /// </summary>
     public string? ItemType =>
         Item.ValueKind == JsonValueKind.Object &&
-        Item.TryGetProperty("type", out var t) &&
+        Item.TryGetProperty(JsonFieldNames.Type, out var t) &&
         t.ValueKind == JsonValueKind.String
             ? t.GetString()
             : null;

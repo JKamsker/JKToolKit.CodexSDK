@@ -1,4 +1,6 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Infrastructure;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.McpServer.Overrides;
 
@@ -9,6 +11,8 @@ namespace JKToolKit.CodexSDK.McpServer;
 /// </summary>
 public sealed class CodexMcpServerClientOptions
 {
+    private const int DefaultNotificationBufferCapacity = 1000;
+
     /// <summary>
     /// Gets or sets the process launch configuration for the Codex executable.
     /// </summary>
@@ -27,12 +31,12 @@ public sealed class CodexMcpServerClientOptions
     /// <summary>
     /// Gets or sets the timeout for the MCP server startup handshake.
     /// </summary>
-    public TimeSpan StartupTimeout { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan StartupTimeout { get; set; } = ProcessDefaults.StartupTimeout;
 
     /// <summary>
     /// Gets or sets the timeout used when shutting down the MCP server process.
     /// </summary>
-    public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ShutdownTimeout { get; set; } = ProcessDefaults.ShutdownTimeout;
 
     /// <summary>
     /// Gets or sets an optional override for JSON serialization options used by the client.
@@ -42,12 +46,12 @@ public sealed class CodexMcpServerClientOptions
     /// <summary>
     /// Gets or sets the size of the internal buffer used for JSON-RPC notifications.
     /// </summary>
-    public int NotificationBufferCapacity { get; set; } = 1000;
+    public int NotificationBufferCapacity { get; set; } = DefaultNotificationBufferCapacity;
 
     /// <summary>
     /// Gets or sets the client identity sent during MCP initialization.
     /// </summary>
-    public McpClientInfo ClientInfo { get; set; } = new("ncodexsdk", "JKToolKit.CodexSDK", "1.0.0");
+    public McpClientInfo ClientInfo { get; set; } = new(ClientInfoDefaults.Name, ClientInfoDefaults.Title, ClientInfoDefaults.Version);
 
     /// <summary>
     /// Gets or sets an optional handler for server-initiated elicitation requests.

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using JKToolKit.CodexSDK.Infrastructure.Internal;
 using JKToolKit.CodexSDK.Abstractions;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using Microsoft.Extensions.Logging;
@@ -111,7 +112,7 @@ internal sealed class CodexReviewRunner
         StringBuilder capture,
         CancellationToken cancellationToken)
     {
-        var buffer = new char[4096];
+        var buffer = new char[DiagnosticLimits.ReadBufferChars];
         while (true)
         {
             var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);

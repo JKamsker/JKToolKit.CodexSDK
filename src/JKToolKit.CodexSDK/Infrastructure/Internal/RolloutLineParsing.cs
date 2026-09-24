@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.Infrastructure.Internal;
 
@@ -9,17 +10,17 @@ internal static class RolloutLineParsing
         payload = default;
 
         return root.ValueKind == JsonValueKind.Object &&
-               root.TryGetProperty("type", out var typeElement) &&
+               root.TryGetProperty(JsonFieldNames.Type, out var typeElement) &&
                typeElement.ValueKind == JsonValueKind.String &&
                string.Equals(typeElement.GetString(), eventType, StringComparison.Ordinal) &&
-               root.TryGetProperty("payload", out payload) &&
+               root.TryGetProperty(JsonFieldNames.Payload, out payload) &&
                payload.ValueKind == JsonValueKind.Object;
     }
 
     public static DateTimeOffset? GetTopLevelTimestampOrNull(JsonElement root)
     {
         if (root.ValueKind != JsonValueKind.Object ||
-            !root.TryGetProperty("timestamp", out var timestampElement) ||
+            !root.TryGetProperty(JsonFieldNames.Timestamp, out var timestampElement) ||
             timestampElement.ValueKind != JsonValueKind.String)
         {
             return null;
@@ -31,7 +32,7 @@ internal static class RolloutLineParsing
     public static DateTimeOffset? GetPayloadTimestampOrNull(JsonElement payload)
     {
         if (payload.ValueKind != JsonValueKind.Object ||
-            !payload.TryGetProperty("timestamp", out var timestampElement) ||
+            !payload.TryGetProperty(JsonFieldNames.Timestamp, out var timestampElement) ||
             timestampElement.ValueKind != JsonValueKind.String)
         {
             return null;

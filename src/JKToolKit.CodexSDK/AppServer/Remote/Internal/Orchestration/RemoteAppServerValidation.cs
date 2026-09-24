@@ -15,7 +15,7 @@ internal static class RemoteAppServerValidation
             ArgumentException.ThrowIfNullOrWhiteSpace(options.SshpassExecutable);
         }
 
-        if (options.Port is < 1 or > 65535)
+        if (options.Port is < 1 or > System.Net.IPEndPoint.MaxPort)
         {
             throw new ArgumentOutOfRangeException(nameof(options), "SSH port must be between 1 and 65535.");
         }
@@ -47,7 +47,7 @@ internal static class RemoteAppServerValidation
 
     private static void ValidatePort(int port, string message)
     {
-        if (port is < 1 or > 65535)
+        if (port is < 1 or > System.Net.IPEndPoint.MaxPort)
         {
             throw new ArgumentOutOfRangeException(nameof(port), message);
         }

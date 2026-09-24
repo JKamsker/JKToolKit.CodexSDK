@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,7 +11,7 @@ public sealed record class ThreadResumeInitialTurnsPageParams
     /// <summary>
     /// Gets the optional page size.
     /// </summary>
-    [JsonPropertyName("limit")]
+    [JsonPropertyName(JsonFieldNames.Limit)]
     public int? Limit { get; init; }
 
     /// <summary>

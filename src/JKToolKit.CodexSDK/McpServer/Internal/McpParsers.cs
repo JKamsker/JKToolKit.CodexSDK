@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.McpServer.Internal;
 
@@ -21,16 +22,16 @@ internal static class McpToolsListParser
             return false;
         }
 
-        if (result.TryGetProperty("nextCursor", out var cursorProp) && cursorProp.ValueKind == JsonValueKind.String)
+        if (result.TryGetProperty(JsonFieldNames.NextCursor, out var cursorProp) && cursorProp.ValueKind == JsonValueKind.String)
         {
             nextCursor = cursorProp.GetString();
         }
-        else if (result.TryGetProperty("next_cursor", out cursorProp) && cursorProp.ValueKind == JsonValueKind.String)
+        else if (result.TryGetProperty(JsonFieldNames.SnakeCase.NextCursor, out cursorProp) && cursorProp.ValueKind == JsonValueKind.String)
         {
             nextCursor = cursorProp.GetString();
         }
 
-        if (!result.TryGetProperty("tools", out var toolsProp) || toolsProp.ValueKind != JsonValueKind.Array)
+        if (!result.TryGetProperty(JsonFieldNames.Tools, out var toolsProp) || toolsProp.ValueKind != JsonValueKind.Array)
         {
             return false;
         }
@@ -40,17 +41,17 @@ internal static class McpToolsListParser
         {
             if (tool.ValueKind != JsonValueKind.Object) continue;
 
-            var name = tool.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String
+            var name = tool.TryGetProperty(JsonFieldNames.Name, out var nameProp) && nameProp.ValueKind == JsonValueKind.String
                 ? nameProp.GetString()
                 : null;
             if (string.IsNullOrWhiteSpace(name)) continue;
 
-            var description = tool.TryGetProperty("description", out var descProp) && descProp.ValueKind == JsonValueKind.String
+            var description = tool.TryGetProperty(JsonFieldNames.Description, out var descProp) && descProp.ValueKind == JsonValueKind.String
                 ? descProp.GetString()
                 : null;
 
             JsonElement? schema = null;
-            if (tool.TryGetProperty("inputSchema", out var schemaProp))
+            if (tool.TryGetProperty(JsonFieldNames.InputSchema, out var schemaProp))
             {
                 schema = schemaProp.Clone();
             }
@@ -67,26 +68,26 @@ internal static class CodexMcpResultParser
 {
     public static (string ThreadId, string? Text, JsonElement StructuredContent, JsonElement Raw) Parse(JsonElement raw)
     {
-        var structured = TryGetObject(raw, "structuredContent") ?? TryGetObject(raw, "structured_content");
+        var structured = TryGetObject(raw, JsonFieldNames.StructuredContent) ?? TryGetObject(raw, JsonFieldNames.SnakeCase.StructuredContent);
 
         var threadId = string.Empty;
         if (structured is { } s)
         {
             threadId =
-                (TryGetString(s, "threadId") is { Length: > 0 } sid) ? sid :
-                (TryGetString(s, "thread_id") is { Length: > 0 } sid2) ? sid2 :
-                (TryGetString(s, "conversationId") is { Length: > 0 } cid) ? cid :
-                (TryGetString(s, "conversation_id") is { Length: > 0 } cid2) ? cid2 :
+                (TryGetString(s, JsonFieldNames.ThreadId) is { Length: > 0 } sid) ? sid :
+                (TryGetString(s, JsonFieldNames.SnakeCase.ThreadId) is { Length: > 0 } sid2) ? sid2 :
+                (TryGetString(s, JsonFieldNames.ConversationId) is { Length: > 0 } cid) ? cid :
+                (TryGetString(s, JsonFieldNames.SnakeCase.ConversationId) is { Length: > 0 } cid2) ? cid2 :
                 string.Empty;
         }
 
         if (string.IsNullOrWhiteSpace(threadId))
         {
             threadId =
-                (TryGetString(raw, "threadId") is { Length: > 0 } sid) ? sid :
-                (TryGetString(raw, "thread_id") is { Length: > 0 } sid2) ? sid2 :
-                (TryGetString(raw, "conversationId") is { Length: > 0 } cid) ? cid :
-                (TryGetString(raw, "conversation_id") is { Length: > 0 } cid2) ? cid2 :
+                (TryGetString(raw, JsonFieldNames.ThreadId) is { Length: > 0 } sid) ? sid :
+                (TryGetString(raw, JsonFieldNames.SnakeCase.ThreadId) is { Length: > 0 } sid2) ? sid2 :
+                (TryGetString(raw, JsonFieldNames.ConversationId) is { Length: > 0 } cid) ? cid :
+                (TryGetString(raw, JsonFieldNames.SnakeCase.ConversationId) is { Length: > 0 } cid2) ? cid2 :
                 string.Empty;
         }
 
@@ -113,7 +114,7 @@ internal static class CodexMcpResultParser
             return null;
         }
 
-        if (raw.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+        if (raw.TryGetProperty(JsonFieldNames.Content, out var content) && content.ValueKind == JsonValueKind.Array)
         {
             string? combined = null;
             foreach (var item in content.EnumerateArray())
@@ -123,7 +124,7 @@ internal static class CodexMcpResultParser
                     continue;
                 }
 
-                if (item.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
+                if (item.TryGetProperty(JsonFieldNames.Text, out var textProp) && textProp.ValueKind == JsonValueKind.String)
                 {
                     var t = textProp.GetString();
                     if (string.IsNullOrEmpty(t))
@@ -141,14 +142,14 @@ internal static class CodexMcpResultParser
             }
         }
 
-        if (raw.TryGetProperty("structuredContent", out var structured) && structured.ValueKind == JsonValueKind.Object &&
-            structured.TryGetProperty("content", out var structuredText) && structuredText.ValueKind == JsonValueKind.String)
+        if (raw.TryGetProperty(JsonFieldNames.StructuredContent, out var structured) && structured.ValueKind == JsonValueKind.Object &&
+            structured.TryGetProperty(JsonFieldNames.Content, out var structuredText) && structuredText.ValueKind == JsonValueKind.String)
         {
             return structuredText.GetString();
         }
 
-        if (raw.TryGetProperty("structured_content", out structured) && structured.ValueKind == JsonValueKind.Object &&
-            structured.TryGetProperty("content", out structuredText) && structuredText.ValueKind == JsonValueKind.String)
+        if (raw.TryGetProperty(JsonFieldNames.SnakeCase.StructuredContent, out structured) && structured.ValueKind == JsonValueKind.Object &&
+            structured.TryGetProperty(JsonFieldNames.Content, out structuredText) && structuredText.ValueKind == JsonValueKind.String)
         {
             return structuredText.GetString();
         }

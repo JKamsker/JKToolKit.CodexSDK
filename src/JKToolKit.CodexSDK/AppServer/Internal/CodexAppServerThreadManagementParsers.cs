@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Internal;
 
@@ -9,11 +10,11 @@ internal static class CodexAppServerThreadManagementParsers
     public static PermissionProfileListPage ParsePermissionProfiles(JsonElement result)
     {
         var profiles = new List<PermissionProfileSummary>();
-        if (TryGetArray(result, "data") is { } data)
+        if (TryGetArray(result, JsonFieldNames.Data) is { } data)
         {
             foreach (var item in data.EnumerateArray())
             {
-                var id = GetStringOrNull(item, "id");
+                var id = GetStringOrNull(item, JsonFieldNames.Id);
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     continue;
@@ -22,7 +23,7 @@ internal static class CodexAppServerThreadManagementParsers
                 profiles.Add(new PermissionProfileSummary
                 {
                     Id = id,
-                    Description = GetStringOrNull(item, "description"),
+                    Description = GetStringOrNull(item, JsonFieldNames.Description),
                     Raw = item.Clone()
                 });
             }
@@ -31,7 +32,7 @@ internal static class CodexAppServerThreadManagementParsers
         return new PermissionProfileListPage
         {
             Profiles = profiles,
-            NextCursor = GetStringOrNull(result, "nextCursor"),
+            NextCursor = GetStringOrNull(result, JsonFieldNames.NextCursor),
             Raw = result
         };
     }
@@ -39,7 +40,7 @@ internal static class CodexAppServerThreadManagementParsers
     public static ThreadSearchPage ParseThreadSearch(JsonElement result)
     {
         var results = new List<ThreadSearchResult>();
-        if (TryGetArray(result, "data") is { } data)
+        if (TryGetArray(result, JsonFieldNames.Data) is { } data)
         {
             foreach (var item in data.EnumerateArray())
             {
@@ -61,15 +62,15 @@ internal static class CodexAppServerThreadManagementParsers
         return new ThreadSearchPage
         {
             Results = results,
-            NextCursor = GetStringOrNull(result, "nextCursor"),
-            BackwardsCursor = GetStringOrNull(result, "backwardsCursor"),
+            NextCursor = GetStringOrNull(result, JsonFieldNames.NextCursor),
+            BackwardsCursor = GetStringOrNull(result, JsonFieldNames.BackwardsCursor),
             Raw = result
         };
     }
 
     public static ThreadGoalResult ParseThreadGoalResult(JsonElement result)
     {
-        var goal = TryGetObject(result, "goal") is { } raw ? ParseThreadGoal(raw) : null;
+        var goal = TryGetObject(result, JsonFieldNames.Goal) is { } raw ? ParseThreadGoal(raw) : null;
         return new ThreadGoalResult { Goal = goal, Raw = result };
     }
 
@@ -80,9 +81,9 @@ internal static class CodexAppServerThreadManagementParsers
             return null;
         }
 
-        var threadId = GetStringOrNull(goal, "threadId");
+        var threadId = GetStringOrNull(goal, JsonFieldNames.ThreadId);
         var objective = GetStringOrNull(goal, "objective");
-        var statusValue = GetStringOrNull(goal, "status");
+        var statusValue = GetStringOrNull(goal, JsonFieldNames.Status);
         if (string.IsNullOrWhiteSpace(threadId) ||
             objective is null ||
             string.IsNullOrWhiteSpace(statusValue))
@@ -99,8 +100,8 @@ internal static class CodexAppServerThreadManagementParsers
             TokenBudget = GetInt64OrNull(goal, "tokenBudget"),
             TokensUsed = GetInt64OrNull(goal, "tokensUsed") ?? 0,
             TimeUsedSeconds = GetInt64OrNull(goal, "timeUsedSeconds") ?? 0,
-            CreatedAt = GetInt64OrNull(goal, "createdAt") ?? 0,
-            UpdatedAt = GetInt64OrNull(goal, "updatedAt") ?? 0,
+            CreatedAt = GetInt64OrNull(goal, JsonFieldNames.CreatedAt) ?? 0,
+            UpdatedAt = GetInt64OrNull(goal, JsonFieldNames.UpdatedAt) ?? 0,
             Raw = goal.Clone()
         };
     }

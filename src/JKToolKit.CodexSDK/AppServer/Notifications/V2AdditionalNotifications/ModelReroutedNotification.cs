@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -36,7 +37,7 @@ public sealed record class ModelReroutedNotification : AppServerNotification
     /// Initializes a new instance of <see cref="ModelReroutedNotification"/>.
     /// </summary>
     public ModelReroutedNotification(string ThreadId, string TurnId, string FromModel, string ToModel, string Reason, JsonElement Params)
-        : base("model/rerouted", Params)
+        : base(AppServerMethods.ModelRerouted, Params)
     {
         this.ThreadId = ThreadId;
         this.TurnId = TurnId;

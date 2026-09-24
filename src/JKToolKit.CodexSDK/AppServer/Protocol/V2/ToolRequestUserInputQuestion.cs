@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,7 +11,7 @@ public sealed record class ToolRequestUserInputQuestion
     /// <summary>
     /// Gets the question id (used as a key in the response).
     /// </summary>
-    [JsonPropertyName("id")]
+    [JsonPropertyName(JsonFieldNames.Id)]
     public required string Id { get; init; }
 
     /// <summary>

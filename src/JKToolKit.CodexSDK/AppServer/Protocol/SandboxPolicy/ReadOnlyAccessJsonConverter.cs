@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 
@@ -30,7 +31,7 @@ public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
             throw new JsonException("ReadOnlyAccess must be a JSON object.");
         }
 
-        if (!root.TryGetProperty("type", out var typeProp) || typeProp.ValueKind != JsonValueKind.String)
+        if (!root.TryGetProperty(JsonFieldNames.Type, out var typeProp) || typeProp.ValueKind != JsonValueKind.String)
         {
             throw new JsonException("ReadOnlyAccess must include a string 'type' discriminator.");
         }
@@ -41,10 +42,10 @@ public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
             "fullAccess" => new ReadOnlyAccess.FullAccess(),
             "restricted" => new ReadOnlyAccess.Restricted
             {
-                IncludePlatformDefaults = root.TryGetProperty("includePlatformDefaults", out var include) && include.ValueKind is JsonValueKind.True or JsonValueKind.False
+                IncludePlatformDefaults = root.TryGetProperty(JsonFieldNames.IncludePlatformDefaults, out var include) && include.ValueKind is JsonValueKind.True or JsonValueKind.False
                     ? include.GetBoolean()
                     : true,
-                ReadableRoots = root.TryGetProperty("readableRoots", out var roots) && roots.ValueKind == JsonValueKind.Array
+                ReadableRoots = root.TryGetProperty(JsonFieldNames.ReadableRoots, out var roots) && roots.ValueKind == JsonValueKind.Array
                     ? ParseReadableRoots(roots)
                     : Array.Empty<string>()
             },
@@ -59,7 +60,7 @@ public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
         ArgumentNullException.ThrowIfNull(value);
 
         writer.WriteStartObject();
-        writer.WriteString("type", value.Type);
+        writer.WriteString(JsonFieldNames.Type, value.Type);
 
         switch (value)
         {
@@ -67,8 +68,8 @@ public sealed class ReadOnlyAccessJsonConverter : JsonConverter<ReadOnlyAccess>
                 break;
 
             case ReadOnlyAccess.Restricted r:
-                writer.WriteBoolean("includePlatformDefaults", r.IncludePlatformDefaults);
-                writer.WritePropertyName("readableRoots");
+                writer.WriteBoolean(JsonFieldNames.IncludePlatformDefaults, r.IncludePlatformDefaults);
+                writer.WritePropertyName(JsonFieldNames.ReadableRoots);
                 JsonSerializer.Serialize(writer, r.ReadableRoots ?? Array.Empty<string>(), options);
                 break;
 

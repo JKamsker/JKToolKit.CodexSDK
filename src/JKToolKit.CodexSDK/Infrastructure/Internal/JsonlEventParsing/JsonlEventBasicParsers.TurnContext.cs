@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.Exec.Notifications;
 using JKToolKit.CodexSDK.Models;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ internal static partial class JsonlEventBasicParsers
         JsonElement rawPayload,
         in JsonlEventParserContext ctx)
     {
-        if (!root.TryGetProperty("payload", out var payload) || payload.ValueKind != JsonValueKind.Object)
+        if (!root.TryGetProperty(JsonFieldNames.Payload, out var payload) || payload.ValueKind != JsonValueKind.Object)
         {
             ctx.Logger.LogWarning("turn_context event missing object 'payload' field");
             return null;
@@ -59,7 +60,7 @@ internal static partial class JsonlEventBasicParsers
             {
                 sandboxPolicyJson = sandboxPolicy.Clone();
 
-                if (sandboxPolicy.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
+                if (sandboxPolicy.TryGetProperty(JsonFieldNames.Type, out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
                 {
                     sandboxPolicyType = typeEl.GetString();
                 }
@@ -67,19 +68,19 @@ internal static partial class JsonlEventBasicParsers
                 ParseNetworkAccess(sandboxPolicy, ref networkAccess, ref networkAccessMode);
             }
 
-            turnId = TryGetString(payload, "turn_id");
+            turnId = TryGetString(payload, JsonFieldNames.SnakeCase.TurnId);
             traceId = TryGetString(payload, "trace_id");
-            cwd = TryGetString(payload, "cwd");
+            cwd = TryGetString(payload, JsonFieldNames.Cwd);
             currentDate = TryGetString(payload, "current_date");
             timezone = TryGetString(payload, "timezone");
 
-            if (TryGetString(payload, "model") is { } modelString &&
+            if (TryGetString(payload, JsonFieldNames.Model) is { } modelString &&
                 CodexModel.TryParse(modelString, out var parsedModel))
             {
                 model = parsedModel;
             }
 
-            personality = TryGetString(payload, "personality");
+            personality = TryGetString(payload, JsonFieldNames.Personality);
 
             if (payload.TryGetProperty("collaboration_mode", out var collaborationEl) &&
                 collaborationEl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
@@ -98,13 +99,13 @@ internal static partial class JsonlEventBasicParsers
                 };
             }
 
-            if (TryGetString(payload, "effort") is { } effortString &&
+            if (TryGetString(payload, JsonFieldNames.Effort) is { } effortString &&
                 CodexReasoningEffort.TryParse(effortString, out var parsedEffort))
             {
                 reasoningEffort = parsedEffort;
             }
 
-            if (payload.TryGetProperty("summary", out var summaryEl) &&
+            if (payload.TryGetProperty(JsonFieldNames.Summary, out var summaryEl) &&
                 summaryEl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
             {
                 reasoningSummary = summaryEl.Clone();
@@ -125,7 +126,7 @@ internal static partial class JsonlEventBasicParsers
                 truncationPolicy = truncationEl.Clone();
             }
 
-            if (payload.TryGetProperty("network", out var networkEl) &&
+            if (payload.TryGetProperty(JsonFieldNames.Network, out var networkEl) &&
                 networkEl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
             {
                 network = ParseTurnContextNetwork(networkEl);
@@ -180,10 +181,10 @@ internal static partial class JsonlEventBasicParsers
 
         var allowedDomains =
             TryGetStringArray(networkEl, "allowed_domains") ??
-            TryGetStringArray(networkEl, "allowedDomains");
+            TryGetStringArray(networkEl, JsonFieldNames.AllowedDomains);
         var deniedDomains =
             TryGetStringArray(networkEl, "denied_domains") ??
-            TryGetStringArray(networkEl, "deniedDomains");
+            TryGetStringArray(networkEl, JsonFieldNames.DeniedDomains);
 
         return new TurnContextNetwork(allowedDomains, deniedDomains);
     }

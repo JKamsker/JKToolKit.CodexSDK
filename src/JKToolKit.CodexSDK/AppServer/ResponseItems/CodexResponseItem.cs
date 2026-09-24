@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 using JKToolKit.CodexSDK.AppServer.Internal;
 
 namespace JKToolKit.CodexSDK.AppServer.ResponseItems;
@@ -177,7 +178,7 @@ internal static class CodexResponseItemParser
             return new CodexResponseItemUnknown(string.Empty, element.Clone());
         }
 
-        var type = CodexAppServerClientJson.GetStringOrNull(element, "type") ?? string.Empty;
+        var type = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Type) ?? string.Empty;
         var raw = element.Clone();
 
         return type switch
@@ -197,49 +198,49 @@ internal static class CodexResponseItemParser
 
     private static CodexResponseItemMessage ParseMessage(string type, JsonElement element, JsonElement raw)
     {
-        var role = CodexAppServerClientJson.GetStringOrNull(element, "role") ?? string.Empty;
+        var role = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Role) ?? string.Empty;
         var content = ParseContentItems(element);
-        var endTurn = element.TryGetProperty("end_turn", out var endTurnValue)
+        var endTurn = element.TryGetProperty(JsonFieldNames.SnakeCase.EndTurn, out var endTurnValue)
             ? endTurnValue.ValueKind == JsonValueKind.True
                 ? true
                 : endTurnValue.ValueKind == JsonValueKind.False
                     ? false
                     : (bool?)null
             : null;
-        var phase = CodexAppServerClientJson.GetStringOrNull(element, "phase");
+        var phase = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Phase);
         return new CodexResponseItemMessage(type, role, content, endTurn, phase, raw);
     }
 
     private static CodexResponseItemReasoning ParseReasoning(string type, JsonElement element, JsonElement raw)
     {
         var summary = ParseReasoningSummary(element);
-        var content = ParseStringList(element, "content");
-        var encrypted = CodexAppServerClientJson.GetStringOrNull(element, "encrypted_content");
+        var content = ParseStringList(element, JsonFieldNames.Content);
+        var encrypted = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.SnakeCase.EncryptedContent);
         return new CodexResponseItemReasoning(type, summary, content.Count > 0 ? content : null, encrypted, raw);
     }
 
     private static CodexResponseItemFunctionCall ParseFunctionCall(string type, JsonElement element, JsonElement raw)
     {
-        var name = CodexAppServerClientJson.GetStringOrNull(element, "name") ?? string.Empty;
-        var ns = CodexAppServerClientJson.GetStringOrNull(element, "namespace");
-        var arguments = CodexAppServerClientJson.GetStringOrNull(element, "arguments") ?? string.Empty;
-        var callId = CodexAppServerClientJson.GetStringOrNull(element, "call_id") ?? string.Empty;
+        var name = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Name) ?? string.Empty;
+        var ns = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Namespace);
+        var arguments = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Arguments) ?? string.Empty;
+        var callId = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.SnakeCase.CallId) ?? string.Empty;
         return new CodexResponseItemFunctionCall(type, name, ns, arguments, callId, raw);
     }
 
     private static CodexResponseItemFunctionCallOutput ParseFunctionCallOutput(string type, JsonElement element, JsonElement raw)
     {
-        var callId = CodexAppServerClientJson.GetStringOrNull(element, "call_id") ?? string.Empty;
-        var output = element.TryGetProperty("output", out var value) ? value.Clone() : default;
+        var callId = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.SnakeCase.CallId) ?? string.Empty;
+        var output = element.TryGetProperty(JsonFieldNames.Output, out var value) ? value.Clone() : default;
         return new CodexResponseItemFunctionCallOutput(type, callId, output, raw);
     }
 
     private static CodexResponseItemToolSearchOutput ParseToolSearchOutput(string type, JsonElement element, JsonElement raw)
     {
-        var callId = CodexAppServerClientJson.GetStringOrNull(element, "call_id");
-        var status = CodexAppServerClientJson.GetStringOrNull(element, "status") ?? string.Empty;
-        var execution = CodexAppServerClientJson.GetStringOrNull(element, "execution") ?? string.Empty;
-        var tools = element.TryGetProperty("tools", out var list) && list.ValueKind == JsonValueKind.Array
+        var callId = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.SnakeCase.CallId);
+        var status = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Status) ?? string.Empty;
+        var execution = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Execution) ?? string.Empty;
+        var tools = element.TryGetProperty(JsonFieldNames.Tools, out var list) && list.ValueKind == JsonValueKind.Array
             ? list.EnumerateArray().Select(i => i.Clone()).ToList()
             : new List<JsonElement>();
         return new CodexResponseItemToolSearchOutput(type, callId, status, execution, tools, raw);
@@ -247,8 +248,8 @@ internal static class CodexResponseItemParser
 
     private static CodexResponseItemWebSearchCall ParseWebSearchCall(string type, JsonElement element, JsonElement raw)
     {
-        var status = CodexAppServerClientJson.GetStringOrNull(element, "status");
-        var action = element.TryGetProperty("action", out var actionElement) && actionElement.ValueKind == JsonValueKind.Object
+        var status = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Status);
+        var action = element.TryGetProperty(JsonFieldNames.Action, out var actionElement) && actionElement.ValueKind == JsonValueKind.Object
             ? ParseWebSearchAction(actionElement)
             : null;
         return new CodexResponseItemWebSearchCall(type, status, action, raw);
@@ -256,28 +257,28 @@ internal static class CodexResponseItemParser
 
     private static CodexResponseItemImageGenerationCall ParseImageGenerationCall(string type, JsonElement element, JsonElement raw)
     {
-        var id = CodexAppServerClientJson.GetStringOrNull(element, "id") ?? string.Empty;
-        var status = CodexAppServerClientJson.GetStringOrNull(element, "status") ?? string.Empty;
-        var result = CodexAppServerClientJson.GetStringOrNull(element, "result") ?? string.Empty;
-        var revised = CodexAppServerClientJson.GetStringOrNull(element, "revised_prompt");
+        var id = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Id) ?? string.Empty;
+        var status = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Status) ?? string.Empty;
+        var result = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Result) ?? string.Empty;
+        var revised = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.SnakeCase.RevisedPrompt);
         return new CodexResponseItemImageGenerationCall(type, id, status, result, revised, raw);
     }
 
     private static CodexResponseItemGhostSnapshot ParseGhostSnapshot(string type, JsonElement element, JsonElement raw)
     {
-        var ghost = element.TryGetProperty("ghost_commit", out var commit) ? commit.Clone() : default;
+        var ghost = element.TryGetProperty(JsonFieldNames.SnakeCase.GhostCommit, out var commit) ? commit.Clone() : default;
         return new CodexResponseItemGhostSnapshot(type, ghost, raw);
     }
 
     private static CodexResponseItemCompaction ParseCompaction(string type, JsonElement element, JsonElement raw)
     {
-        var encrypted = CodexAppServerClientJson.GetStringOrNull(element, "encrypted_content") ?? string.Empty;
+        var encrypted = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.SnakeCase.EncryptedContent) ?? string.Empty;
         return new CodexResponseItemCompaction(type, encrypted, raw);
     }
 
     private static IReadOnlyList<CodexContentItem> ParseContentItems(JsonElement element)
     {
-        if (!element.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+        if (!element.TryGetProperty(JsonFieldNames.Content, out var content) || content.ValueKind != JsonValueKind.Array)
         {
             return Array.Empty<CodexContentItem>();
         }
@@ -290,17 +291,17 @@ internal static class CodexResponseItemParser
                 continue;
             }
 
-            var kind = CodexAppServerClientJson.GetStringOrNull(item, "type") ?? string.Empty;
+            var kind = CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Type) ?? string.Empty;
             switch (kind)
             {
                 case "input_text":
-                    list.Add(new CodexContentInputText(CodexAppServerClientJson.GetStringOrNull(item, "text") ?? string.Empty, item.Clone()));
+                    list.Add(new CodexContentInputText(CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Text) ?? string.Empty, item.Clone()));
                     break;
                 case "input_image":
-                    list.Add(new CodexContentInputImage(CodexAppServerClientJson.GetStringOrNull(item, "image_url") ?? string.Empty, item.Clone()));
+                    list.Add(new CodexContentInputImage(CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.SnakeCase.ImageUrl) ?? string.Empty, item.Clone()));
                     break;
                 case "output_text":
-                    list.Add(new CodexContentOutputText(CodexAppServerClientJson.GetStringOrNull(item, "text") ?? string.Empty, item.Clone()));
+                    list.Add(new CodexContentOutputText(CodexAppServerClientJson.GetStringOrNull(item, JsonFieldNames.Text) ?? string.Empty, item.Clone()));
                     break;
             }
         }
@@ -310,7 +311,7 @@ internal static class CodexResponseItemParser
 
     private static IReadOnlyList<CodexReasoningSummaryPart> ParseReasoningSummary(JsonElement element)
     {
-        if (!element.TryGetProperty("summary", out var summary) || summary.ValueKind != JsonValueKind.Array)
+        if (!element.TryGetProperty(JsonFieldNames.Summary, out var summary) || summary.ValueKind != JsonValueKind.Array)
         {
             return Array.Empty<CodexReasoningSummaryPart>();
         }
@@ -324,8 +325,8 @@ internal static class CodexResponseItemParser
             }
 
             list.Add(new CodexReasoningSummaryPart(
-                CodexAppServerClientJson.GetStringOrNull(entry, "type") ?? string.Empty,
-                CodexAppServerClientJson.GetStringOrNull(entry, "text") ?? string.Empty));
+                CodexAppServerClientJson.GetStringOrNull(entry, JsonFieldNames.Type) ?? string.Empty,
+                CodexAppServerClientJson.GetStringOrNull(entry, JsonFieldNames.Text) ?? string.Empty));
         }
 
         return list;
@@ -352,11 +353,11 @@ internal static class CodexResponseItemParser
 
     private static CodexWebSearchAction ParseWebSearchAction(JsonElement element)
     {
-        var type = CodexAppServerClientJson.GetStringOrNull(element, "type") ?? string.Empty;
-        var query = CodexAppServerClientJson.GetStringOrNull(element, "query");
-        var url = CodexAppServerClientJson.GetStringOrNull(element, "url");
-        var pattern = CodexAppServerClientJson.GetStringOrNull(element, "pattern");
-        var queries = ParseStringList(element, "queries");
+        var type = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Type) ?? string.Empty;
+        var query = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Query);
+        var url = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Url);
+        var pattern = CodexAppServerClientJson.GetStringOrNull(element, JsonFieldNames.Pattern);
+        var queries = ParseStringList(element, JsonFieldNames.Queries);
         return new CodexWebSearchAction(type, query, queries.Count > 0 ? queries : null, url, pattern);
     }
 }

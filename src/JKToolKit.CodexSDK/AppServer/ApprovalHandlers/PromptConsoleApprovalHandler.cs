@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 using JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
 namespace JKToolKit.CodexSDK.AppServer.ApprovalHandlers;
@@ -14,22 +15,22 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
     /// <inheritdoc />
     public ValueTask<JsonElement> HandleAsync(string method, JsonElement? @params, CancellationToken ct)
     {
-        if (method == "item/commandExecution/requestApproval")
+        if (method == AppServerMethods.ItemCommandExecutionRequestApproval)
         {
             return ValueTask.FromResult(HandleCommandExecutionRequestApproval(@params));
         }
 
-        if (method == "item/fileChange/requestApproval")
+        if (method == AppServerMethods.ItemFileChangeRequestApproval)
         {
             return ValueTask.FromResult(HandleFileChangeRequestApproval(@params));
         }
 
-        if (method == "mcpServer/elicitation/request")
+        if (method == AppServerMethods.McpServerElicitationRequest)
         {
             return ValueTask.FromResult(HandleMcpServerElicitationRequest(@params));
         }
 
-        if (method == "item/permissions/requestApproval")
+        if (method == AppServerMethods.ItemPermissionsRequestApproval)
         {
             return ValueTask.FromResult(HandlePermissionsRequestApproval(@params));
         }

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -16,7 +17,7 @@ public sealed record class ChatgptAuthTokensRefreshResponse
     /// <summary>
     /// Gets the ChatGPT account/workspace identifier.
     /// </summary>
-    [JsonPropertyName("chatgptAccountId")]
+    [JsonPropertyName(JsonFieldNames.ChatgptAccountId)]
     public required string ChatgptAccountId { get; init; }
 
     /// <summary>

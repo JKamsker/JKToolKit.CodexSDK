@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JKToolKit.CodexSDK.Infrastructure.Json;
 
 namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 
@@ -10,31 +11,31 @@ public sealed record class ThreadRealtimeAudioChunk
     /// <summary>
     /// Gets the optional realtime item identifier associated with this chunk.
     /// </summary>
-    [JsonPropertyName("itemId")]
+    [JsonPropertyName(JsonFieldNames.ItemId)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ItemId { get; init; }
 
     /// <summary>
     /// Gets the audio data chunk (typically base64-encoded).
     /// </summary>
-    [JsonPropertyName("data")]
+    [JsonPropertyName(JsonFieldNames.Data)]
     public required string Data { get; init; }
 
     /// <summary>
     /// Gets the number of channels.
     /// </summary>
-    [JsonPropertyName("numChannels")]
+    [JsonPropertyName(JsonFieldNames.NumChannels)]
     public required int NumChannels { get; init; }
 
     /// <summary>
     /// Gets the sample rate.
     /// </summary>
-    [JsonPropertyName("sampleRate")]
+    [JsonPropertyName(JsonFieldNames.SampleRate)]
     public required int SampleRate { get; init; }
 
     /// <summary>
     /// Gets the samples per channel, if provided.
     /// </summary>
-    [JsonPropertyName("samplesPerChannel")]
+    [JsonPropertyName(JsonFieldNames.SamplesPerChannel)]
     public int? SamplesPerChannel { get; init; }
 }

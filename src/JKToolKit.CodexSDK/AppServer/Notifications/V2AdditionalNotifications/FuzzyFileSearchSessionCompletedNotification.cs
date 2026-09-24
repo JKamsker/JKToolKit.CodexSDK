@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JKToolKit.CodexSDK.AppServer.Protocol;
 
 namespace JKToolKit.CodexSDK.AppServer.Notifications.V2AdditionalNotifications;
 
@@ -16,7 +17,7 @@ public sealed record class FuzzyFileSearchSessionCompletedNotification : AppServ
     /// Initializes a new instance of <see cref="FuzzyFileSearchSessionCompletedNotification"/>.
     /// </summary>
     public FuzzyFileSearchSessionCompletedNotification(string sessionId, JsonElement @params)
-        : base("fuzzyFileSearch/sessionCompleted", @params)
+        : base(AppServerMethods.FuzzyFileSearchSessionCompleted, @params)
     {
         SessionId = sessionId;
     }
