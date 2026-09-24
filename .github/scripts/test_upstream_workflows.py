@@ -34,6 +34,27 @@ def step_script(workflow: str, name: str, key: str = "run") -> str:
 
 
 class WorkflowShellTests(unittest.TestCase):
+    def test_parity_runtime_survives_normal_multi_turn_research(self) -> None:
+        source = (WORKFLOWS / "codex-sdk-parity-pass.md").read_text().split("\n---\n", 1)[0]
+        compiled = (WORKFLOWS / "codex-sdk-parity-pass.lock.yml").read_text()
+        for text in (source, compiled):
+            self.assertIn('\nenv:\n  GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER: "false"', text)
+        self.assertIn("max-ai-credits: 2000", source)
+        execution = compiled.split("      - name: Execute Codex CLI\n", 1)[1].split("      - name:", 1)[0]
+        self.assertIn("timeout-minutes: 40", execution)
+        self.assertNotIn("GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER:", execution)
+        self.assertIn("--env-all", execution)
+        self.assertIn('"maxAiCredits":2000', execution)
+        self.assertLess(compiled.index("- name: Setup .NET for parity agent"),
+                        compiled.index("- name: Execute Codex CLI"))
+
+    def test_scheduled_parity_obeys_persistent_repair_state(self) -> None:
+        workflow = (WORKFLOWS / "upstream-sync.yml").read_text()
+        parity = workflow.split("\n  parity:\n", 1)[1].split("\n  gate:\n", 1)[0]
+        self.assertIn("needs: [sync, resume]", parity)
+        self.assertIn("needs.resume.outputs.proceed == 'true'", parity)
+        self.assertIn("upstream_sync_gate.py can-resume", workflow)
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

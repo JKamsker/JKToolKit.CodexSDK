@@ -155,6 +155,19 @@ safe-outputs:
 engine: codex
 model: gpt-5.6-sol
 max-ai-credits: 2000
+timeout-minutes: 40
+
+# The harness's context-rebuild ratio counts normal multi-turn parity research
+# and repeatedly killed useful sessions at a factor of 25. Bound work by credits and
+# elapsed time instead; keep all sandbox and safe-output protections enabled.
+env:
+  GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER: "false"
+
+steps:
+  - name: Setup .NET for parity agent
+    uses: actions/setup-dotnet@v6
+    with:
+      dotnet-version: 10.0.x
 
 post-steps:
   - name: Check whether parity validation is required

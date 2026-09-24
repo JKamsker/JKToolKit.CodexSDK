@@ -1,4 +1,5 @@
 name: Upstream Sync Repair
+run-name: "Upstream Sync Repair PR #${{ inputs.upstream_pr }} attempt ${{ inputs.repair_attempt }}"
 
 on:
   workflow_dispatch:

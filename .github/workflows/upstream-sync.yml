@@ -208,10 +208,38 @@ jobs:
             The dynamic parity pass runs on this branch next. The final branch SHA is merged automatically only after its exact CI run succeeds, and the post-merge NuGet release is monitored. If upstream removed or changed a handwritten SDK surface, the bounded repair workflow fixes this branch or creates an issue.
           delete-branch: true
 
-  parity:
-    name: Run dynamic Codex SDK parity pass
+  resume:
+    name: Check persistent repair state
     needs: sync
     if: needs.sync.outputs.upstream_pr != ''
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.resume.outputs.proceed }}
+    steps:
+      - name: Checkout automation scripts
+        uses: actions/checkout@v4
+
+      - name: Check for exhausted or active repairs
+        id: resume
+        env:
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN || github.token }}
+          UPSTREAM_PR: ${{ needs.sync.outputs.upstream_pr }}
+          UPSTREAM_BRANCH: ${{ needs.sync.outputs.upstream_branch }}
+          UPSTREAM_VERSION: ${{ needs.sync.outputs.upstream_version }}
+        run: >-
+          python .github/scripts/upstream_sync_gate.py can-resume
+          --repo "$GITHUB_REPOSITORY"
+          --pr "$UPSTREAM_PR"
+          --branch "$UPSTREAM_BRANCH"
+          --version "$UPSTREAM_VERSION"
+          --attempt 0
+          --actor "$GITHUB_ACTOR"
+          --source-run "$GITHUB_RUN_ID"
+
+  parity:
+    name: Run dynamic Codex SDK parity pass
+    needs: [sync, resume]
+    if: needs.resume.outputs.proceed == 'true'
     uses: ./.github/workflows/codex-sdk-parity-pass.lock.yml
     with:
       upstream_sync_pr: true

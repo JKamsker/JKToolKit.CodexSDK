@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 
@@ -160,6 +162,49 @@ def create_issue(github: GitHub, context: GateContext, title: str, body: str) ->
     github.run(["issue", "create", "--repo", context.repo, "--title", title, "--body", body])
 
 
+def repair_pause_title(context: GateContext, head_sha: str) -> str:
+    """Key the stop condition to both the PR code and the automation running it."""
+    digest = hashlib.sha256(f"{context.repo}:{context.pr}:{head_sha}".encode())
+    automation = Path(__file__).resolve().parents[1]
+    paths = [
+        *sorted((automation / "scripts").glob("*.py")),
+        *(automation / "workflows" / name for name in (
+            "ci.yml", "upstream-sync.yml", "upstream-sync-repair.yml",
+            "codex-sdk-parity-pass.md", "codex-sdk-parity-pass.lock.yml",
+        )),
+    ]
+    for path in paths:
+        digest.update(str(path.relative_to(automation)).encode())
+        digest.update(path.read_bytes())
+    return f"Upstream sync {context.version} paused [{digest.hexdigest()[:16]}]"
+
+
+def can_resume(github: GitHub, context: GateContext) -> bool:
+    pull = load_pr(github, context)
+    title = repair_pause_title(context, str(pull["headRefOid"]))
+    issues = github.json([
+        "issue", "list", "--repo", context.repo, "--state", "open",
+        "--search", f'"{title}" in:title', "--limit", "100", "--json", "title,url",
+    ])
+    paused = next((issue for issue in issues or [] if issue.get("title") == title), None)
+    if paused:
+        print(f"::notice::Automatic repairs are paused for this code and automation: {paused.get('url')}")
+        return False
+
+    runs = github.json([
+        "run", "list", "--repo", context.repo, "--workflow", REPAIR_WORKFLOW,
+        "--branch", DEFAULT_BRANCH, "--limit", "100", "--json", "displayTitle,status,url",
+    ])
+    prefix = f"Upstream Sync Repair PR #{context.pr} attempt "
+    active = next((run for run in runs or []
+                   if str(run.get("displayTitle", "")).startswith(prefix)
+                   and run.get("status") != "completed"), None)
+    if active:
+        print(f"::notice::An upstream repair is already active: {active.get('url')}")
+        return False
+    return True
+
+
 def schedule_repair(
     github: GitHub,
     context: GateContext,
@@ -168,14 +213,19 @@ def schedule_repair(
 ) -> bool:
     next_attempt = context.attempt + 1
     if next_attempt > MAX_REPAIR_ATTEMPTS:
-        title = f"Upstream sync {context.version} failed after automatic repairs"
+        pull = load_pr(github, context)
+        head_sha = str(pull["headRefOid"])
+        title = repair_pause_title(context, head_sha)
         create_issue(
             github,
             context,
             title,
             f"PR #{context.pr} could not be validated after {MAX_REPAIR_ATTEMPTS} repair attempts.\n\n"
             f"Last source run: https://github.com/{context.repo}/actions/runs/{source_run}\n"
-            f"Branch: `{context.branch}`",
+            f"Branch: `{context.branch}`\nHead: `{head_sha}`\n\n"
+            "Scheduled syncs will not restart this exhausted repair chain. "
+            "Push a fix to the PR, update the automation, or close this issue after "
+            "resolving an external blocker to allow a new attempt.",
         )
         return False
 
@@ -335,7 +385,7 @@ def run_gate(github: GitHub, context: GateContext) -> int:
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser()
     subparsers = result.add_subparsers(dest="command", required=True)
-    for name in ("gate", "schedule-repair"):
+    for name in ("gate", "schedule-repair", "can-resume"):
         command = subparsers.add_parser(name)
         command.add_argument("--repo", required=True)
         command.add_argument("--pr", required=True, type=int)
@@ -357,6 +407,11 @@ def main() -> int:
     )
     github = GitHub()
     try:
+        if args.command == "can-resume":
+            allowed = can_resume(github, context)
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+                output.write(f"proceed={str(allowed).lower()}\n")
+            return 0
         if args.command == "gate":
             return run_gate(github, context)
         return 0 if schedule_repair(github, context, args.source_run, args.source_job) else 1

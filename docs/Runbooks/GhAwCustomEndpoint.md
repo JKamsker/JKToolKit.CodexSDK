@@ -29,6 +29,27 @@ different model. They also use a 2,000 AI-credit ceiling and GitHub `gh-proxy`
 mode so full runs are not cut off by the former 1,000-credit default or direct
 GitHub API firewall blocks.
 
+The parity workflow also explicitly disables
+`GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER`. In the pinned v0.88.7 harness,
+this heuristic aborted useful parity sessions at a rebuild factor of 25,
+including runs 35984664354 and 35988724323 on 2026-09-24. Those runs reported
+`infrastructure_error` before completing the audit; restarting the same task
+hit the same cutoff. The parity agent instead has a 40-minute execution limit
+and the existing 2,000-credit ceiling. Sandbox, endpoint redaction, safe-output
+validation, and the exact-commit CI/merge gate remain enabled. .NET 10 is
+installed before the agent starts as well as before host-side validation.
+
+Upstream sync checks persistent repair state before starting parity. After
+three failed repair attempts, it opens an `Upstream sync <version> paused
+[fingerprint]` issue keyed to the PR head and automation files. An open matching
+issue prevents scheduled syncs from resetting the retry counter. A new PR head
+or an automation change permits another chain; after fixing an external service
+problem, close the matching pause issue to retry unchanged code. The next
+scheduled or manual Upstream Sync run will resume. Active repair runs for the
+same PR also defer new sync sessions. A deferred sync is successful, but does
+not run the merge gate or publish a package; the pause issue and original failed
+runs retain the failure evidence.
+
 The endpoint host is considered secret. Do not write it in workflow YAML, lockfiles, docs, commit messages, logs, or comments. The secret name `CODEX_LB_BASE_URL` is safe to mention.
 
 ## Editing gh-aw Workflows

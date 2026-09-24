@@ -83,7 +83,7 @@ class RepairTests(unittest.TestCase):
         self.assertTrue(any('"item_number":"42"' in value for value in command))
 
     def test_creates_issue_after_final_attempt(self) -> None:
-        github = FakeGitHub([[]])
+        github = FakeGitHub([open_pull(), []])
 
         result = gate.schedule_repair(
             github,
@@ -95,6 +95,48 @@ class RepairTests(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(any(command[:2] == ["issue", "create"] for command in github.commands))
         self.assertFalse(any(command[:2] == ["workflow", "run"] for command in github.commands))
+
+
+class PersistentRepairTests(unittest.TestCase):
+    def test_exhausted_chain_stays_paused_on_next_scheduled_run(self) -> None:
+        title = gate.repair_pause_title(context(), "abc123")
+        github = FakeGitHub([open_pull(), [{"title": title, "url": "issue-url"}]])
+
+        self.assertFalse(gate.can_resume(github, context(attempt=0)))
+        self.assertFalse(any(command[:2] == ["workflow", "run"] for command in github.commands))
+
+    def test_unrelated_search_match_does_not_pause(self) -> None:
+        github = FakeGitHub([open_pull(), [{"title": "unrelated"}], []])
+        self.assertTrue(gate.can_resume(github, context()))
+
+    def test_closed_issue_allows_retry(self) -> None:
+        github = FakeGitHub([open_pull(), [], []])
+        self.assertTrue(gate.can_resume(github, context()))
+        issue_query = github.commands[1]
+        self.assertEqual("open", issue_query[issue_query.index("--state") + 1])
+
+    def test_new_code_or_automation_has_a_new_retry_budget(self) -> None:
+        title = gate.repair_pause_title(context(), "abc123")
+        self.assertEqual(title, gate.repair_pause_title(context(attempt=3), "abc123"))
+        self.assertNotEqual(title, gate.repair_pause_title(context(), "fixed-head"))
+        with patch.object(gate.Path, "read_bytes", return_value=b"updated automation"):
+            self.assertNotEqual(title, gate.repair_pause_title(context(), "abc123"))
+
+    def test_active_repair_prevents_a_second_chain_for_same_pr(self) -> None:
+        for status in ("queued", "in_progress", "waiting"):
+            with self.subTest(status=status):
+                github = FakeGitHub([open_pull(), [], [{
+                    "displayTitle": "Upstream Sync Repair PR #42 attempt 2",
+                    "status": status, "url": "run-url",
+                }]])
+                self.assertFalse(gate.can_resume(github, context()))
+
+    def test_completed_and_other_pr_repairs_do_not_block(self) -> None:
+        github = FakeGitHub([open_pull(), [], [
+            {"displayTitle": "Upstream Sync Repair PR #42 attempt 3", "status": "completed"},
+            {"displayTitle": "Upstream Sync Repair PR #420 attempt 1", "status": "in_progress"},
+        ]])
+        self.assertTrue(gate.can_resume(github, context()))
 
 
 class MergeTests(unittest.TestCase):
