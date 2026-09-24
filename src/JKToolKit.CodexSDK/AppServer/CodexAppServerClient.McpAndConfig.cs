@@ -219,8 +219,31 @@ public sealed record class AccountReadResult
     public bool RequiresOpenaiAuth { get; init; }
 
     /// <summary>
+    /// Gets selected workspace-routing metadata when experimental account routing is enabled.
+    /// </summary>
+    public AccountWorkspaceRouting? WorkspaceRouting { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the response.
     /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Workspace routing selected for the current account.
+/// </summary>
+public sealed record class AccountWorkspaceRouting
+{
+    /// <summary>Gets the ChatGPT account identifier used for routing.</summary>
+    public required string ChatGptAccountId { get; init; }
+
+    /// <summary>Gets the selected backend origin.</summary>
+    public required string BackendOrigin { get; init; }
+
+    /// <summary>Gets the backend routing-policy wire value.</summary>
+    public required string AccountRoutingOverride { get; init; }
+
+    /// <summary>Gets the raw workspace-routing payload.</summary>
     public required JsonElement Raw { get; init; }
 }
 

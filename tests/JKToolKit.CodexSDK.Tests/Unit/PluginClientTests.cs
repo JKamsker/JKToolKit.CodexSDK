@@ -332,6 +332,12 @@ public sealed class PluginClientTests
                       }}
                   }}
                 ],
+                ""onboardingSkill"": {{
+                  ""name"": ""skill-a"",
+                  ""path"": ""{skillPath}"",
+                  ""enabled"": true,
+                  ""description"": ""desc""
+                }},
                 ""summary"": {{
                   ""id"": ""plug-1"",
                   ""name"": ""Plugin One"",
@@ -381,6 +387,8 @@ public sealed class PluginClientTests
         result.Plugin.Skills[0].Interface!.DefaultPrompt.Should().Be("Explain the failing build");
         result.Plugin.Skills[0].Interface!.IconLargeUrl.Should().Be("https://cdn.example.test/skill-large.png");
         result.Plugin.Skills[0].Interface!.IconSmallUrl.Should().Be("https://cdn.example.test/skill-small.png");
+        result.Plugin.OnboardingSkill.Should().NotBeNull();
+        result.Plugin.OnboardingSkill!.Name.Should().Be("skill-a");
         result.Plugin.Apps.Should().BeEmpty();
         result.Plugin.Hooks.Should().ContainSingle();
         result.Plugin.Hooks[0].Key.Should().Be("pre-tool");

@@ -45,6 +45,7 @@ internal static class CodexAppServerClientMcpParsers
                         ? (McpServerStartupFailureReason?)failureReason
                         : null,
                     ServerInfo = ParseServerInfo(item),
+                    ServerCapabilities = TryGetObject(item, "serverCapabilities")?.Clone(),
                     Tools = tools,
                     ToolsError = GetStringOrNull(item, "toolsError") ?? GetStringOrNull(item, "tools_error"),
                     Resources = resources,

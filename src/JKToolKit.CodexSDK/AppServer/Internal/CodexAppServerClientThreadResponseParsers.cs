@@ -31,6 +31,8 @@ internal static class CodexAppServerClientThreadResponseParsers
         var reasoningEffort = CodexReasoningEffort.TryParse(GetStringOrNull(result, "reasoningEffort"), out var parsedReasoningEffort)
             ? parsedReasoningEffort
             : (CodexReasoningEffort?)null;
+        var disabledPluginIds = GetOptionalStringArray(result, "disabledPluginIds") ?? Array.Empty<string>();
+        var collaborationMode = TryGetObject(result, "collaborationMode")?.Clone();
         var runtimeWorkspaceRoots = GetOptionalStringArray(result, "runtimeWorkspaceRoots") ?? Array.Empty<string>();
         var instructionSources = GetOptionalStringArray(result, "instructionSources") ?? Array.Empty<string>();
         var activePermissionProfile = ParseActivePermissionProfile(result);
@@ -49,6 +51,8 @@ internal static class CodexAppServerClientThreadResponseParsers
             sandboxRaw,
             serviceTier,
             reasoningEffort,
+            disabledPluginIds,
+            collaborationMode,
             runtimeWorkspaceRoots,
             instructionSources,
             activePermissionProfile,

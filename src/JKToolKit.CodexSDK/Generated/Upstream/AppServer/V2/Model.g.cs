@@ -22,6 +22,12 @@ internal partial class Model
     [System.Text.Json.Serialization.JsonPropertyName("availabilityNux")]
     public AvailabilityNux? AvailabilityNux { get; set; } = default!;
 
+    /// <summary>
+    /// Null when the catalog does not provide access-program metadata.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("availableAccessPrograms")]
+    public AvailableAccessPrograms? AvailableAccessPrograms { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("defaultReasoningEffort")]
     public string DefaultReasoningEffort { get; set; } = default!;
 
@@ -67,6 +73,9 @@ internal partial class Model
     [System.Text.Json.Serialization.JsonPropertyName("supportedReasoningEfforts")]
     public System.Collections.Generic.ICollection<ReasoningEffortOption> SupportedReasoningEfforts { get; set; } = new System.Collections.ObjectModel.Collection<ReasoningEffortOption>();
 
+    /// <summary>
+    /// @deprecated Always false; models no longer support personality selection.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("supportsPersonality")]
     public bool? SupportsPersonality { get; set; } = false;
 

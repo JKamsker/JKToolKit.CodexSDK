@@ -21,8 +21,20 @@ internal partial class ThreadResumeResponse
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ApprovalsReviewer>))]
     public ApprovalsReviewer ApprovalsReviewer { get; set; } = default!;
 
+    /// <summary>
+    /// Effective collaboration mode. Absent when resuming from an older server.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("collaborationMode")]
+    public CollaborationMode2? CollaborationMode { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("cwd")]
     public string Cwd { get; set; } = default!;
+
+    /// <summary>
+    /// Saved list of disabled plugin IDs. Does not yet filter plugin capabilities.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("disabledPluginIds")]
+    public System.Collections.Generic.ICollection<string>? DisabledPluginIds { get; set; } = default!;
 
     /// <summary>
     /// Environment-native paths to instruction source files currently loaded for this thread.

@@ -9,23 +9,19 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-/// <summary>
-/// DEPRECATED: `thread/rollback` will be removed soon.
-/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadRollbackParams
+internal partial class WorkspaceRouting
 {
 
-    /// <summary>
-    /// The number of turns to drop from the end of the thread. Must be &gt;= 1.
-    /// <br/>
-    /// <br/>This only modifies the thread's history and does not revert local file changes that have been made by the agent. Clients are responsible for reverting these changes.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("numTurns")]
-    public int NumTurns { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("accountRoutingOverride")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AccountRoutingOverride>))]
+    public AccountRoutingOverride AccountRoutingOverride { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("backendOrigin")]
+    public string BackendOrigin { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("chatgptAccountId")]
+    public string ChatgptAccountId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

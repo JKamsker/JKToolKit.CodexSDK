@@ -33,6 +33,11 @@ public sealed record class ThreadSettingsUpdatedNotification : AppServerNotifica
     public string? ServiceTier { get; }
 
     /// <summary>
+    /// Gets the updated disabled plugin identifiers.
+    /// </summary>
+    public IReadOnlyList<string> DisabledPluginIds { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="ThreadSettingsUpdatedNotification"/>.
     /// </summary>
     public ThreadSettingsUpdatedNotification(
@@ -41,6 +46,7 @@ public sealed record class ThreadSettingsUpdatedNotification : AppServerNotifica
         string? cwd,
         string? model,
         string? serviceTier,
+        IReadOnlyList<string>? disabledPluginIds,
         JsonElement @params)
         : base("thread/settings/updated", @params)
     {
@@ -49,5 +55,6 @@ public sealed record class ThreadSettingsUpdatedNotification : AppServerNotifica
         Cwd = cwd;
         Model = model;
         ServiceTier = serviceTier;
+        DisabledPluginIds = disabledPluginIds ?? Array.Empty<string>();
     }
 }

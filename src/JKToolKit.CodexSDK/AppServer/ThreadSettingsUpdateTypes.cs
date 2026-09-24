@@ -15,6 +15,11 @@ public sealed class ThreadSettingsUpdateOptions
     public required string ThreadId { get; set; }
 
     /// <summary>
+    /// Gets or sets replacement disabled plugin identifiers. Omit to preserve the current list; use an empty list to clear it.
+    /// </summary>
+    public IReadOnlyList<string>? DisabledPluginIds { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional working directory override.
     /// </summary>
     public string? Cwd { get; set; }

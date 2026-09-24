@@ -9,6 +9,21 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed record class ConfigRequirements
 {
     /// <summary>
+    /// Gets the exact model provider required by managed policy, when present.
+    /// </summary>
+    public string? ModelProvider { get; init; }
+
+    /// <summary>
+    /// Gets required model-provider definitions keyed by provider id, when present.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? ModelProviders { get; init; }
+
+    /// <summary>
+    /// Gets the effective allowed login methods. An empty list means login is disallowed.
+    /// </summary>
+    public IReadOnlyList<string>? AllowedLoginMethods { get; init; }
+
+    /// <summary>
     /// Gets the allow-list of approval policies, when present.
     /// </summary>
     public IReadOnlyList<CodexApprovalPolicy>? AllowedApprovalPolicies { get; init; }

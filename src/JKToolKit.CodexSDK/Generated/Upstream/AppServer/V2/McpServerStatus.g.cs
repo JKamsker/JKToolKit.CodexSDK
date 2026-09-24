@@ -35,6 +35,12 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonPropertyName("runtimeStatus")]
     public RuntimeStatus? RuntimeStatus { get; set; } = default!;
 
+    /// <summary>
+    /// Capabilities advertised by the initialized MCP server; null when unavailable.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("serverCapabilities")]
+    public object? ServerCapabilities { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("serverInfo")]
     public ServerInfo? ServerInfo { get; set; } = default!;
 

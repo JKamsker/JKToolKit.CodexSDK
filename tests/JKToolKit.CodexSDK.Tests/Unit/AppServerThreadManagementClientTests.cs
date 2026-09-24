@@ -188,6 +188,7 @@ public sealed class AppServerThreadManagementClientTests
         await client.UpdateThreadSettingsAsync(new ThreadSettingsUpdateOptions
         {
             ThreadId = "thr_1",
+            DisabledPluginIds = ["plugin-a"],
             Model = "gpt-5",
             PermissionProfileId = "managed",
             Effort = CodexReasoningEffort.High
@@ -196,6 +197,7 @@ public sealed class AppServerThreadManagementClientTests
         rpc.LastMethod.Should().Be("thread/settings/update");
         var json = JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
         json.Should().Contain("\"threadId\":\"thr_1\"")
+            .And.Contain("\"disabledPluginIds\":[\"plugin-a\"]")
             .And.Contain("\"model\":\"gpt-5\"")
             .And.Contain("\"permissions\":\"managed\"")
             .And.Contain("\"effort\":\"high\"");

@@ -58,6 +58,9 @@ internal partial class ThreadResumeParams
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string? ModelProvider { get; set; } = default!;
 
+    /// <summary>
+    /// @deprecated `friendly` and `pragmatic` no longer select a style. Changing this does not rewrite the thread's existing instructions.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
     public Personality2? Personality { get; set; } = default!;
 

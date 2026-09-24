@@ -162,6 +162,13 @@ internal sealed partial class CodexAppServerConfigClient
                 InputModalities = CodexAppServerClientJson.GetOptionalStringArray(item, "inputModalities") ?? ["text", "image"],
                 SupportedReasoningEfforts = ParseReasoningEfforts(item),
                 UpgradeInfo = ParseUpgradeInfo(item),
+                AvailableAccessPrograms = CodexAppServerClientJson.TryGetObject(item, "availableAccessPrograms") is { } accessPrograms
+                    ? new ModelAccessPrograms
+                    {
+                        Cyber = CodexAppServerClientJson.GetOptionalStringArray(accessPrograms, "cyber") ?? Array.Empty<string>(),
+                        Raw = accessPrograms.Clone()
+                    }
+                    : null,
                 Raw = item.Clone()
             });
         }

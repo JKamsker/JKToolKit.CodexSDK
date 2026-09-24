@@ -38,6 +38,11 @@ public sealed record class PluginDetailDescriptor
     public required IReadOnlyList<PluginSkillDescriptor> Skills { get; init; }
 
     /// <summary>
+    /// Gets the declared onboarding skill when the plugin and skill are enabled.
+    /// </summary>
+    public PluginSkillDescriptor? OnboardingSkill { get; init; }
+
+    /// <summary>
     /// Gets the apps exposed by the plugin.
     /// </summary>
     public required IReadOnlyList<PluginAppDescriptor> Apps { get; init; }

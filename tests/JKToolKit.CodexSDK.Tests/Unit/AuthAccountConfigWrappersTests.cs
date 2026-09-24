@@ -147,7 +147,13 @@ public sealed class AuthAccountConfigWrappersTests
                 email = "person@example.test",
                 planType = "plus"
             },
-            requiresOpenaiAuth = false
+            requiresOpenaiAuth = false,
+            workspaceRouting = new
+            {
+                chatgptAccountId = "acct_123",
+                backendOrigin = "managed",
+                accountRoutingOverride = "US"
+            }
         });
 
         var rpc = new FakeRpc
@@ -174,6 +180,8 @@ public sealed class AuthAccountConfigWrappersTests
         var account = result.AccountInfo.Should().BeOfType<CodexChatGptAccountInfo>().Subject;
         account.Email.Should().Be("person@example.test");
         account.PlanType.Should().Be(CodexPlanType.Plus);
+        result.WorkspaceRouting!.ChatGptAccountId.Should().Be("acct_123");
+        result.WorkspaceRouting.AccountRoutingOverride.Should().Be("US");
     }
 
     [Fact]
@@ -348,7 +356,8 @@ public sealed class AuthAccountConfigWrappersTests
                         modelLink = "https://example.test/model",
                         migrationMarkdown = "Use the newer model.",
                         retirementAt = 1800000000L
-                    }
+                    },
+                    availableAccessPrograms = new { cyber = new[] { "standard", "daybreakBlue" } }
                 }
             },
             nextCursor = "cursor-2"
@@ -384,6 +393,7 @@ public sealed class AuthAccountConfigWrappersTests
         result.Data[0].SupportedReasoningEfforts.Should().HaveCount(2);
         result.Data[0].UpgradeInfo!.Model.Should().Be("gpt-5.2-codex");
         result.Data[0].UpgradeInfo!.RetirementAt.Should().Be(DateTimeOffset.FromUnixTimeSeconds(1800000000L));
+        result.Data[0].AvailableAccessPrograms!.Cyber.Should().Equal("standard", "daybreakBlue");
     }
 
     [Fact]

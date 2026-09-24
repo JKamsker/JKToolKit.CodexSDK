@@ -11,6 +11,11 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class TurnStartOptions
 {
     /// <summary>
+    /// Gets or sets the thread's disabled plugin identifiers. Omit to preserve the current list; use an empty list to clear it.
+    /// </summary>
+    public IReadOnlyList<string>? DisabledPluginIds { get; set; }
+
+    /// <summary>
     /// Gets or sets the input items for the turn.
     /// </summary>
     public IReadOnlyList<TurnInputItem> Input { get; set; } = Array.Empty<TurnInputItem>();
@@ -204,6 +209,7 @@ public sealed class TurnStartOptions
     {
         return new TurnStartOptions
         {
+            DisabledPluginIds = DisabledPluginIds,
             Input = Input,
             ClientUserMessageId = ClientUserMessageId,
             TurnTrigger = TurnTrigger,

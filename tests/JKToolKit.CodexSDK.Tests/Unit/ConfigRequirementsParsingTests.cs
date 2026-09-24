@@ -9,6 +9,26 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class ConfigRequirementsParsingTests
 {
     [Fact]
+    public void ParseConfigRequirementsReadRequirements_ParsesManagedProviderAndLoginRequirements()
+    {
+        using var doc = JsonDocument.Parse("""
+        {
+          "requirements": {
+            "modelProvider": "managed",
+            "modelProviders": { "managed": { "name": "Managed" } },
+            "allowedLoginMethods": ["chatgpt", "apiKey"]
+          }
+        }
+        """);
+
+        var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(doc.RootElement, experimentalApiEnabled: true);
+
+        requirements!.ModelProvider.Should().Be("managed");
+        requirements.ModelProviders!["managed"].GetProperty("name").GetString().Should().Be("Managed");
+        requirements.AllowedLoginMethods.Should().Equal("chatgpt", "apiKey");
+    }
+
+    [Fact]
     public void ParseConfigRequirementsReadRequirements_ExtractsTypedFields_AndPreservesRaw()
     {
         var raw = JsonFixtures.Load("config-requirements-read-response.json");

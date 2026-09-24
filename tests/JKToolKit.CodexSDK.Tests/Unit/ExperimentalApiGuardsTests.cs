@@ -149,6 +149,17 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateThreadStart_Throws_WhenDaybreakSet_AndExperimentalDisabled()
+    {
+        var options = new ThreadStartOptions { DaybreakEnabled = true };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/start.daybreakEnabled");
+    }
+
+    [Fact]
     public void ValidateAll_DoesNotThrow_WhenExperimentalEnabled()
     {
         using var history = JsonDocument.Parse("""{"items":[]}""");

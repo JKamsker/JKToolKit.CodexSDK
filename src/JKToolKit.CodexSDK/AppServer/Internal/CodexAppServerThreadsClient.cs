@@ -44,6 +44,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 ServiceName = options.ServiceName,
                 SessionStartSource = options.SessionStartSource?.Value,
                 ProjectId = options.ProjectId,
+                DaybreakEnabled = options.DaybreakEnabled,
                 ApprovalPolicy = CodexAppServerAskForApprovalWiring.BuildAskForApproval(options.AskForApproval, options.ApprovalPolicy),
                 ApprovalsReviewer = options.ApprovalsReviewer,
                 Sandbox = options.Sandbox?.ToAppServerWireValue(),
@@ -355,7 +356,7 @@ internal sealed partial class CodexAppServerThreadsClient
 
         var result = await _sendRequestAsync(
             "thread/rollback",
-            new UpstreamV2.ThreadRollbackParams
+            new ThreadRollbackParams
             {
                 ThreadId = threadId,
                 NumTurns = numTurns

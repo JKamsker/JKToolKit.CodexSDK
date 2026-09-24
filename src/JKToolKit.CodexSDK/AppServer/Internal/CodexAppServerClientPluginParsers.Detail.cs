@@ -78,6 +78,9 @@ internal static partial class CodexAppServerClientPluginParsers
                 "plugin/read plugin"),
             McpServers = mcpServers,
             Skills = skills,
+            OnboardingSkill = CodexAppServerClientJson.TryGetObject(item, "onboardingSkill") is { } onboardingSkill
+                ? ParsePluginSkill(onboardingSkill)
+                : null,
             Apps = apps,
             AppTemplates = appTemplates,
             Hooks = hooks,

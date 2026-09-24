@@ -43,6 +43,9 @@ internal partial class ThreadStartParams
     [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
     public string? ModelProvider { get; set; } = default!;
 
+    /// <summary>
+    /// @deprecated `friendly` and `pragmatic` no longer select a style.
+    /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
     public Personality4? Personality { get; set; } = default!;
 

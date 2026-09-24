@@ -69,6 +69,7 @@ public sealed class McpServerWrappersTests
                         title = "Lookup Server",
                         version = "1.0.0"
                     },
+                    serverCapabilities = new { tools = new { listChanged = true } },
                     tools = new
                     {
                         search = new { name = "search", description = "Search", inputSchema = new { type = "object" } }
@@ -121,6 +122,7 @@ public sealed class McpServerWrappersTests
         page.Servers[0].FailureReason.Should().Be(McpServerStartupFailureReason.ReauthenticationRequired);
         page.Servers[0].ServerInfo.Should().NotBeNull();
         page.Servers[0].ServerInfo!.Title.Should().Be("Lookup Server");
+        page.Servers[0].ServerCapabilities!.Value.GetProperty("tools").GetProperty("listChanged").GetBoolean().Should().BeTrue();
         page.Servers[0].Tools.Should().ContainSingle(t => t.Name == "search");
     }
 

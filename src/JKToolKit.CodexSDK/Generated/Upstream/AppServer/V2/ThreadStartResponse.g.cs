@@ -25,6 +25,12 @@ internal partial class ThreadStartResponse
     public string Cwd { get; set; } = default!;
 
     /// <summary>
+    /// Saved list of disabled plugin IDs. Does not yet filter plugin capabilities.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("disabledPluginIds")]
+    public System.Collections.Generic.ICollection<string>? DisabledPluginIds { get; set; } = default!;
+
+    /// <summary>
     /// Environment-native paths to instruction source files currently loaded for this thread.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("instructionSources")]

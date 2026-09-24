@@ -97,6 +97,9 @@ internal static class CodexAppServerClientConfigRequirementsParser
 
         return new ConfigRequirements
         {
+            ModelProvider = GetStringOrNull(req, "modelProvider"),
+            ModelProviders = ParseJsonMap(req, "modelProviders"),
+            AllowedLoginMethods = GetOptionalStringArray(req, "allowedLoginMethods"),
             AllowedApprovalPolicies = allowedApprovalPolicyValues?.ToArray(),
             AllowedAskForApproval = allowedAskForApprovalValues?.ToArray(),
             AllowedApprovalsReviewers = allowedApprovalsReviewers,
@@ -154,6 +157,19 @@ internal static class CodexAppServerClientConfigRequirementsParser
                 : null,
             Raw = req.Clone()
         };
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? ParseJsonMap(JsonElement obj, string propertyName)
+    {
+        if (TryGetObject(obj, propertyName) is not { } values)
+        {
+            return null;
+        }
+
+        return values.EnumerateObject().ToDictionary(
+            static property => property.Name,
+            static property => property.Value.Clone(),
+            StringComparer.Ordinal);
     }
 
     private static ComputerUseRequirements ParseComputerUseRequirements(JsonElement computerUse)
