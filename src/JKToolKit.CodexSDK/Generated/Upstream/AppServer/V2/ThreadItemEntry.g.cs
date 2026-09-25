@@ -13,8 +13,20 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class ThreadItemEntry
 {
 
+    /// <summary>
+    /// Unix timestamp (milliseconds) when the item completed, if recorded by the producer.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("completedAtMs")]
+    public long? CompletedAtMs { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("item")]
     public Item Item { get; set; } = default!;
+
+    /// <summary>
+    /// Unix timestamp (milliseconds) when the item started, if recorded by the producer.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("startedAtMs")]
+    public long? StartedAtMs { get; set; } = default!;
 
     /// <summary>
     /// Turn containing this item.

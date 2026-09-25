@@ -36,6 +36,9 @@ internal partial class PluginSummary
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("extensions")]
+    public Extensions? Extensions { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 

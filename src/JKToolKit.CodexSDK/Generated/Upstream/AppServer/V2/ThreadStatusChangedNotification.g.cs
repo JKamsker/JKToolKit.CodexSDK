@@ -14,7 +14,7 @@ internal partial class ThreadStatusChangedNotification
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("status")]
-    public Status Status { get; set; } = default!;
+    public Status2 Status { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

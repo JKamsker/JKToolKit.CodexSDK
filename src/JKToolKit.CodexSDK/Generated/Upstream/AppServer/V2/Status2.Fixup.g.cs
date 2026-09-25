@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("JKToolKit.CodexSDK.UpstreamGen", "0.0.0")]
-internal partial class Status
+internal partial class Status2
 {
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;

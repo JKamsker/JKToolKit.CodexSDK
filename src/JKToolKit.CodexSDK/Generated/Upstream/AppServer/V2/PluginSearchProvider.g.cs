@@ -10,20 +10,23 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadGoalSetParams
+internal partial class PluginSearchProvider
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("objective")]
-    public string? Objective { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("appId")]
+    public string AppId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("status")]
-    public Status3? Status { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("call")]
+    public Call? Call { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("linkId")]
+    public string LinkId { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("tokenBudget")]
-    public long? TokenBudget { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("title")]
+    public string Title { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("toolName")]
+    public string ToolName { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
