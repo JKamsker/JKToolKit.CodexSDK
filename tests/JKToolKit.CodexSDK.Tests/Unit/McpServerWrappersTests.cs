@@ -57,6 +57,7 @@ public sealed class McpServerWrappersTests
                 {
                     name = "docs",
                     pluginId = "plug_docs",
+                    httpOrigin = "https://mcp.example.com",
                     authStatus = "notLoggedIn",
                     runtimeStatus = "authenticationRequired",
                     status = "failed",
@@ -114,6 +115,7 @@ public sealed class McpServerWrappersTests
         page.Servers.Should().HaveCount(1);
         page.Servers[0].Name.Should().Be("docs");
         page.Servers[0].PluginId.Should().Be("plug_docs");
+        page.Servers[0].HttpOrigin.Should().Be("https://mcp.example.com");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
         page.Servers[0].RuntimeStatus.Should().Be(McpServerRuntimeStatus.AuthenticationRequired);
         page.Servers[0].StartupStatus.Should().Be("failed");
@@ -160,6 +162,7 @@ public sealed class McpServerWrappersTests
                     .And.Contain("\"threadId\":\"thr_1\"")
                     .And.Contain("\"originCallId\":\"call_1\"")
                     .And.Contain("\"connectorId\":\"calendar\"")
+                    .And.Contain("\"target\":{\"connectorId\":\"calendar-app\",\"linkId\":\"link_1\"}")
                     .And.Contain("\"uri\":\"resource://docs/readme\"");
             },
             Result = rawResult
@@ -178,6 +181,7 @@ public sealed class McpServerWrappersTests
             ThreadId = "thr_1",
             OriginCallId = "call_1",
             ConnectorId = "calendar",
+            Target = new McpResourceReadTarget { ConnectorId = "calendar-app", LinkId = "link_1" },
             Uri = "resource://docs/readme"
         });
 

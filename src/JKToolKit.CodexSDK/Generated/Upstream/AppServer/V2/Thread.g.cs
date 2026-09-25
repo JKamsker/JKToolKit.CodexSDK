@@ -151,7 +151,7 @@ internal partial class Thread
     public Source2 Source { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("status")]
-    public Status Status { get; set; } = default!;
+    public Status2 Status { get; set; } = default!;
 
     /// <summary>
     /// Optional analytics source classification for this thread.

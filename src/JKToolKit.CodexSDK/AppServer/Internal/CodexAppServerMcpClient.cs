@@ -47,6 +47,8 @@ internal sealed class CodexAppServerMcpClient
         ValidateOptionalWireValue(options.ThreadId, nameof(options.ThreadId), nameof(options));
         ValidateOptionalWireValue(options.OriginCallId, nameof(options.OriginCallId), nameof(options));
         ValidateOptionalWireValue(options.ConnectorId, nameof(options.ConnectorId), nameof(options));
+        if (options.Target is not null)
+            ValidateOptionalWireValue(options.Target.ConnectorId, nameof(options.Target.ConnectorId), nameof(options));
         if (!string.IsNullOrWhiteSpace(options.OriginCallId) && string.IsNullOrWhiteSpace(options.ThreadId))
             throw new ArgumentException("OriginCallId requires ThreadId.", nameof(options));
         if (string.IsNullOrWhiteSpace(options.Uri))
@@ -59,6 +61,13 @@ internal sealed class CodexAppServerMcpClient
                 ConnectorId = options.ConnectorId,
                 OriginCallId = options.OriginCallId,
                 Server = options.Server,
+                Target = options.Target is null
+                    ? null
+                    : new UpstreamV2.McpResourceReadTarget
+                    {
+                        ConnectorId = options.Target.ConnectorId,
+                        LinkId = options.Target.LinkId
+                    },
                 ThreadId = options.ThreadId,
                 Uri = options.Uri
             },

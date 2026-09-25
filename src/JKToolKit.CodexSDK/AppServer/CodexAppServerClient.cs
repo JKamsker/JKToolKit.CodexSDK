@@ -61,6 +61,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
 
         var experimentalApi = options.ExperimentalApi || caps?.ExperimentalApi == true;
         var requestAttestation = options.RequestAttestation || caps?.RequestAttestation == true;
+        var explicitGatewayOAuth = options.ExplicitGatewayOAuth || caps?.ExplicitGatewayOAuth == true;
 
         var optOut = new List<string>();
         if (caps?.OptOutNotificationMethods is { Count: > 0 })
@@ -82,6 +83,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         {
             ExperimentalApi = experimentalApi,
             RequestAttestation = requestAttestation,
+            ExplicitGatewayOAuth = explicitGatewayOAuth,
             OptOutNotificationMethods = optOutNormalized
         });
     }
@@ -95,10 +97,11 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
 
         var experimentalApi = capabilities.ExperimentalApi;
         var requestAttestation = capabilities.RequestAttestation;
+        var explicitGatewayOAuth = capabilities.ExplicitGatewayOAuth;
         var optOut = capabilities.OptOutNotificationMethods;
         var hasOptOut = optOut is { Count: > 0 };
 
-        if (!experimentalApi && !requestAttestation && !hasOptOut)
+        if (!experimentalApi && !requestAttestation && !explicitGatewayOAuth && !hasOptOut)
         {
             return null;
         }
@@ -107,6 +110,7 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
         {
             ExperimentalApi = experimentalApi,
             RequestAttestation = requestAttestation,
+            ExplicitGatewayOAuth = explicitGatewayOAuth,
             OptOutNotificationMethods = hasOptOut ? optOut : null
         };
     }

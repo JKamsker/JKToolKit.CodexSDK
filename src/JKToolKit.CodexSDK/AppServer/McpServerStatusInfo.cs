@@ -18,6 +18,11 @@ public sealed record class McpServerStatusInfo
     public string? PluginId { get; init; }
 
     /// <summary>
+    /// Gets the credential-free HTTP origin of the effective endpoint, or null for non-HTTP transports.
+    /// </summary>
+    public string? HttpOrigin { get; init; }
+
+    /// <summary>
     /// Gets the parsed auth status.
     /// </summary>
     public McpAuthStatus AuthStatus { get; init; }

@@ -17,6 +17,12 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<McpAuthStatus>))]
     public McpAuthStatus AuthStatus { get; set; } = default!;
 
+    /// <summary>
+    /// HTTP origin of the effective configured endpoint, including plugin servers. Excludes credentials, path, query, and fragment; null for non-HTTP transports.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("httpOrigin")]
+    public string? HttpOrigin { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 

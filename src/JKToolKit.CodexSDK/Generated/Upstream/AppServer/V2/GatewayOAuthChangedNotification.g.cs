@@ -10,20 +10,24 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ReviewStartParams
+internal partial class GatewayOAuthChangedNotification
 {
 
     /// <summary>
-    /// Where to run the review: inline (default) on the current thread or detached on a new thread (returned in `reviewThreadId`). Detached delivery is deprecated and emits `deprecationNotice`. Use `thread/start` followed by an inline review for a separate review thread.
+    /// Authorization handoff, sent only to the connection that started login.
     /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("delivery")]
-    public Delivery? Delivery { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("authUrl")]
+    public string? AuthUrl { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("target")]
-    public Target3 Target { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("error")]
+    public string? Error { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("providerId")]
+    public string ProviderId { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("status")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GatewayOAuthStatus>))]
+    public GatewayOAuthStatus Status { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
