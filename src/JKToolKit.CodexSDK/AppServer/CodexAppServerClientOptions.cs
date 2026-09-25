@@ -95,6 +95,11 @@ public sealed class CodexAppServerClientOptions
     public bool RequestAttestation { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether to enable the explicit gateway OAuth flow.
+    /// </summary>
+    public bool ExplicitGatewayOAuth { get; set; }
+
+    /// <summary>
     /// Gets or sets optional notification method names to opt out of during initialization.
     /// </summary>
     /// <remarks>
@@ -146,6 +151,7 @@ public sealed class CodexAppServerClientOptions
         Capabilities = Capabilities,
         ExperimentalApi = ExperimentalApi,
         RequestAttestation = RequestAttestation,
+        ExplicitGatewayOAuth = ExplicitGatewayOAuth,
         OptOutNotificationMethods = OptOutNotificationMethods,
         RequestParamsTransformers = RequestParamsTransformers,
         ResponseTransformers = ResponseTransformers,

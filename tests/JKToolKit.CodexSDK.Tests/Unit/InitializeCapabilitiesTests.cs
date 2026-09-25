@@ -52,6 +52,18 @@ public sealed class InitializeCapabilitiesTests
     }
 
     [Fact]
+    public void BuildCapabilitiesFromOptions_IncludesExplicitGatewayOAuth_WhenEnabled()
+    {
+        var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions
+        {
+            ExplicitGatewayOAuth = true
+        });
+
+        caps.Should().NotBeNull();
+        caps!.ExplicitGatewayOAuth.Should().BeTrue();
+    }
+
+    [Fact]
     public void BuildCapabilitiesFromOptions_MergesCapabilitiesAndConvenienceFields()
     {
         var caps = CodexAppServerClient.BuildCapabilitiesFromOptions(new CodexAppServerClientOptions

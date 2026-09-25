@@ -29,7 +29,7 @@ internal partial class McpResourceReadParams
     /// Explicit hosted app/account. Omit to retain legacy resource discovery.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("target")]
-    public Target? Target { get; set; } = default!;
+    public McpResourceReadTarget? Target { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string? ThreadId { get; set; } = default!;

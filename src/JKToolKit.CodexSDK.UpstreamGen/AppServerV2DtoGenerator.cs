@@ -61,7 +61,7 @@ internal static partial class AppServerV2DtoGenerator
         foreach (var artifact in artifacts)
         {
             var code = BuildArtifactFile(settings.Namespace, artifact.Code);
-            code = ApplyTypeWidening(code);
+            code = ApplyGeneratedTypeFixups(artifact.TypeName, code);
             var fileName = MakeSafeFileName(artifact.TypeName) + ".g.cs";
             var path = Path.Combine(outDir, fileName);
             File.WriteAllText(path, code);
@@ -91,10 +91,18 @@ internal static partial class AppServerV2DtoGenerator
     /// Widen int properties that correspond to upstream usize/u64 fields to long
     /// so they can represent values above Int32.MaxValue.
     /// </summary>
-    private static string ApplyTypeWidening(string code)
+    private static string ApplyGeneratedTypeFixups(string typeName, string code)
     {
         // NJsonSchema maps JSON Schema "integer" to int, but upstream uses usize for byte caps.
         code = code.Replace("public int? OutputBytesCap", "public long? OutputBytesCap");
+
+        // NJsonSchema resolves this optional nullable reference to an empty anonymous
+        // `Target` placeholder instead of the named upstream DTO.
+        if (string.Equals(typeName, "McpResourceReadParams", StringComparison.Ordinal))
+        {
+            code = code.Replace("public Target? Target", "public McpResourceReadTarget? Target", StringComparison.Ordinal);
+        }
+
         return code;
     }
 

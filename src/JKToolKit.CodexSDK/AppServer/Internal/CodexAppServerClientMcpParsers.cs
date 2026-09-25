@@ -38,6 +38,7 @@ internal static class CodexAppServerClientMcpParsers
                 {
                     Name = name,
                     PluginId = GetStringOrNull(item, JsonFieldNames.PluginId) ?? GetStringOrNull(item, "plugin_id"),
+                    HttpOrigin = GetStringOrNull(item, "httpOrigin") ?? GetStringOrNull(item, "http_origin"),
                     AuthStatus = authStatus,
                     RuntimeStatus = ParseRuntimeStatus(GetStringOrNull(item, "runtimeStatus") ?? GetStringOrNull(item, "runtime_status")),
                     StartupStatus = GetStringOrNull(item, JsonFieldNames.Status),

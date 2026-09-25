@@ -22,6 +22,13 @@ public sealed record class InitializeCapabilities
     public bool RequestAttestation { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the client supports the explicit gateway OAuth flow.
+    /// </summary>
+    [JsonPropertyName("explicitGatewayOAuth")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ExplicitGatewayOAuth { get; init; }
+
+    /// <summary>
     /// Gets an optional list of notification method names to opt out of.
     /// </summary>
     [JsonPropertyName("optOutNotificationMethods")]

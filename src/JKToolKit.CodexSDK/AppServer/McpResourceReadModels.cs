@@ -31,9 +31,24 @@ public sealed class McpResourceReadOptions
     public string? ConnectorId { get; set; }
 
     /// <summary>
+    /// Gets or sets the explicit hosted app/account target. Omit to retain legacy resource discovery.
+    /// </summary>
+    public McpResourceReadTarget? Target { get; set; }
+
+    /// <summary>
     /// Gets or sets the resource URI to read.
     /// </summary>
     public required string Uri { get; set; }
+}
+
+/// <summary>Identifies the hosted app/account used to read an MCP resource.</summary>
+public sealed record class McpResourceReadTarget
+{
+    /// <summary>Gets the hosted connector identifier.</summary>
+    public required string ConnectorId { get; init; }
+
+    /// <summary>Gets the account link identifier, or <see langword="null"/> to request no-auth access.</summary>
+    public string? LinkId { get; init; }
 }
 
 /// <summary>
