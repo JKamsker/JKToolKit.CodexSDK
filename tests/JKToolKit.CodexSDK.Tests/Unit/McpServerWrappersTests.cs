@@ -287,6 +287,11 @@ public sealed class McpServerWrappersTests
                 args: ["-y", "@openai/codex-shell-tool-mcp"],
                 enabled: true,
                 required: false)
+            .SetMcpServerStreamableHttp(
+                name: "remote-tool",
+                url: "https://mcp.example.test",
+                oauthClientId: "registered-client",
+                oauthClientSecret: "opaque-credential")
             .SetMcpServerTool(
                 serverName: "shell-tool",
                 toolName: "search",
@@ -308,6 +313,19 @@ public sealed class McpServerWrappersTests
 
         element.TryGetProperty("mcp_servers.shell-tool.tools.search.output_token_limit", out var outputTokenLimit).Should().BeTrue();
         outputTokenLimit.GetInt64().Should().Be(30_000);
+        element.GetProperty("mcp_servers.remote-tool.oauth.client_id").GetString().Should().Be("registered-client");
+        element.GetProperty("mcp_servers.remote-tool.oauth.client_secret").GetString().Should().Be("opaque-credential");
+    }
+
+    [Fact]
+    public void CodexConfigOverridesBuilder_RequiresClientIdForMcpOauthClientSecret()
+    {
+        var act = () => new CodexConfigOverridesBuilder().SetMcpServerStreamableHttp(
+            "remote-tool",
+            "https://mcp.example.test",
+            oauthClientSecret: "opaque-credential");
+
+        act.Should().Throw<ArgumentException>().WithParameterName("oauthClientId");
     }
 
     [Fact]

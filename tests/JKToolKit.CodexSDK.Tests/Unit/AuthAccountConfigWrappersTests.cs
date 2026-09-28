@@ -12,6 +12,13 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AuthAccountConfigWrappersTests
 {
     [Fact]
+    public void CodexPlanType_ExposesProMaxWireValue()
+    {
+        CodexPlanType.ProMax.Value.Should().Be("promax");
+        CodexPlanType.Parse("promax").Should().Be(CodexPlanType.ProMax);
+    }
+
+    [Fact]
     public async Task GetConversationSummaryAsync_CallsExpectedMethod_AndParsesResponse()
     {
         var summaryPath = XPaths.JsonAbs("codex/home/sessions/2026/04/01/rollout.jsonl");

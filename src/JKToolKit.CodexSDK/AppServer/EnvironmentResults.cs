@@ -16,6 +16,14 @@ public sealed class EnvironmentAddOptions
     /// Gets or sets the execution server URL for the environment.
     /// </summary>
     public required string ExecServerUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional bearer token used to authenticate with the execution server.
+    /// </summary>
+    /// <remarks>
+    /// Upstream requires a secure transport or a loopback destination when this value is supplied.
+    /// </remarks>
+    public string? AuthBearerToken { get; set; }
 }
 
 /// <summary>
