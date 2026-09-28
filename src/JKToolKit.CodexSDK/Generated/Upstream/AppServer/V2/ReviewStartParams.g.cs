@@ -20,7 +20,7 @@ internal partial class ReviewStartParams
     public Delivery? Delivery { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("target")]
-    public Target3 Target { get; set; } = default!;
+    public Target2 Target { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

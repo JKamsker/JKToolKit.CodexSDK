@@ -33,52 +33,56 @@ internal enum PlanType
     Prolite = 4,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"promax")]
+    Promax = 5,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"team")]
-    Team = 5,
+    Team = 6,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"self_serve_business_prolite")]
-    Self_serve_business_prolite = 6,
+    Self_serve_business_prolite = 7,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"self_serve_business_usage_based")]
-    Self_serve_business_usage_based = 7,
+    Self_serve_business_usage_based = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"business")]
-    Business = 8,
+    Business = 9,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"ent26")]
-    Ent26 = 9,
+    Ent26 = 10,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise_cbp_automation")]
-    Enterprise_cbp_automation = 10,
+    Enterprise_cbp_automation = 11,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise_cbp_usage_based")]
-    Enterprise_cbp_usage_based = 11,
+    Enterprise_cbp_usage_based = 12,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"enterprise")]
-    Enterprise = 12,
+    Enterprise = 13,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"edu")]
-    Edu = 13,
+    Edu = 14,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"edu_plus")]
-    Edu_plus = 14,
+    Edu_plus = 15,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"edu_pro")]
-    Edu_pro = 15,
+    Edu_pro = 16,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 16,
+    Unknown = 17,
 
 
 }
