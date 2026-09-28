@@ -162,13 +162,15 @@ public sealed class RemoteControlEnvironmentClientTests
         await client.AddEnvironmentAsync(new EnvironmentAddOptions
         {
             EnvironmentId = "env-1",
-            ExecServerUrl = "https://exec.example.test"
+            ExecServerUrl = "https://exec.example.test",
+            AuthBearerToken = "opaque-credential"
         });
 
         rpc.LastMethod.Should().Be("environment/add");
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"environmentId\":\"env-1\"")
-            .And.Contain("\"execServerUrl\":\"https://exec.example.test\"");
+            .And.Contain("\"execServerUrl\":\"https://exec.example.test\"")
+            .And.Contain("\"authBearerToken\":\"opaque-credential\"");
     }
 
     [Fact]

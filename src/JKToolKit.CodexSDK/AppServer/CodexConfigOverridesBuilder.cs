@@ -91,12 +91,20 @@ public sealed class CodexConfigOverridesBuilder
         long? toolTimeoutSeconds = null,
         IEnumerable<string>? enabledTools = null,
         IEnumerable<string>? disabledTools = null,
-        IEnumerable<string>? scopes = null)
+        IEnumerable<string>? scopes = null,
+        string? oauthClientId = null,
+        string? oauthClientSecret = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Server name cannot be empty or whitespace.", nameof(name));
         if (string.IsNullOrWhiteSpace(url))
             throw new ArgumentException("URL cannot be empty or whitespace.", nameof(url));
+        if (oauthClientId is not null && string.IsNullOrWhiteSpace(oauthClientId))
+            throw new ArgumentException("OAuth client ID cannot be empty or whitespace.", nameof(oauthClientId));
+        if (oauthClientSecret is not null && string.IsNullOrWhiteSpace(oauthClientSecret))
+            throw new ArgumentException("OAuth client secret cannot be empty or whitespace.", nameof(oauthClientSecret));
+        if (oauthClientSecret is not null && oauthClientId is null)
+            throw new ArgumentException("An OAuth client ID is required when an OAuth client secret is provided.", nameof(oauthClientId));
 
         var prefix = $"mcp_servers.{name}";
 
@@ -111,6 +119,8 @@ public sealed class CodexConfigOverridesBuilder
         Set($"{prefix}.enabled_tools", enabledTools?.ToArray());
         Set($"{prefix}.disabled_tools", disabledTools?.ToArray());
         Set($"{prefix}.scopes", scopes?.ToArray());
+        Set($"{prefix}.oauth.client_id", oauthClientId);
+        Set($"{prefix}.oauth.client_secret", oauthClientSecret);
 
         return this;
     }

@@ -41,6 +41,11 @@ public readonly record struct CodexPlanType
     public static CodexPlanType Pro => new("pro");
 
     /// <summary>
+    /// Gets the <c>promax</c> plan.
+    /// </summary>
+    public static CodexPlanType ProMax => new("promax");
+
+    /// <summary>
     /// Gets the <c>team</c> plan.
     /// </summary>
     public static CodexPlanType Team => new("team");

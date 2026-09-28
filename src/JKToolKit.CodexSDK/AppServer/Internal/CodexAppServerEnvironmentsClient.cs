@@ -32,7 +32,8 @@ internal sealed class CodexAppServerEnvironmentsClient
             new
             {
                 environmentId = options.EnvironmentId,
-                execServerUrl = options.ExecServerUrl
+                execServerUrl = options.ExecServerUrl,
+                authBearerToken = options.AuthBearerToken
             },
             ct);
 
