@@ -5,7 +5,7 @@ using JKToolKit.CodexSDK.AppServer.Internal;
 namespace JKToolKit.CodexSDK.AppServer.ThreadRead;
 
 /// <summary>
-/// Represents the details of a failed turn when <c>turn/status</c> is <c>failed</c>.
+/// Represents the details of a failed or interrupted turn.
 /// </summary>
 public sealed record class CodexTurnError(string Message, string? AdditionalDetails, JsonElement? CodexErrorInfo, JsonElement Raw)
 {
