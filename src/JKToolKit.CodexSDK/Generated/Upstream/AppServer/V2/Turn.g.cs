@@ -26,7 +26,7 @@ internal partial class Turn
     public long? DurationMs { get; set; } = default!;
 
     /// <summary>
-    /// Only populated when the Turn's status is failed.
+    /// Error associated with a failed or interrupted turn.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("error")]
     public Error? Error { get; set; } = default!;

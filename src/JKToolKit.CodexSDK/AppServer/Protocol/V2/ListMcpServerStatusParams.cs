@@ -31,5 +31,10 @@ public sealed record class ListMcpServerStatusParams
     /// </summary>
     [JsonPropertyName(JsonFieldNames.ThreadId)]
     public string? ThreadId { get; init; }
-}
 
+    /// <summary>
+    /// Gets an optional server name used to limit discovery to one MCP server.
+    /// </summary>
+    [JsonPropertyName(JsonFieldNames.ServerName)]
+    public string? ServerName { get; init; }
+}

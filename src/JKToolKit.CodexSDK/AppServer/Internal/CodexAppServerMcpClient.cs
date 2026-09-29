@@ -32,7 +32,8 @@ internal sealed class CodexAppServerMcpClient
                 Cursor = options.Cursor,
                 Limit = options.Limit,
                 Detail = options.Detail?.Value,
-                ThreadId = options.ThreadId
+                ThreadId = options.ThreadId,
+                ServerName = options.ServerName
             },
             ct);
 

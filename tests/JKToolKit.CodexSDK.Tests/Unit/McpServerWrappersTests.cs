@@ -93,6 +93,7 @@ public sealed class McpServerWrappersTests
                 typed.Limit.Should().Be(10);
                 typed.Detail.Should().Be("toolsAndAuthOnly");
                 typed.ThreadId.Should().Be("thr_1");
+                typed.ServerName.Should().Be("docs");
             },
             Result = rawResult
         };
@@ -109,6 +110,7 @@ public sealed class McpServerWrappersTests
             Cursor = "0",
             Limit = 10,
             ThreadId = "thr_1",
+            ServerName = "docs",
             Detail = McpServerStatusDetail.ToolsAndAuthOnly
         });
 

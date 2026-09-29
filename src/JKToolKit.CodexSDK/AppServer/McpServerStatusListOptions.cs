@@ -24,5 +24,10 @@ public sealed class McpServerStatusListOptions
     /// Gets or sets an optional thread id used to include thread/project-scoped MCP configuration.
     /// </summary>
     public string? ThreadId { get; set; }
-}
 
+    /// <summary>
+    /// Gets or sets an optional server name used to limit discovery to one MCP server.
+    /// When paired with <see cref="ThreadId"/>, the app-server reuses that thread's MCP connection.
+    /// </summary>
+    public string? ServerName { get; set; }
+}

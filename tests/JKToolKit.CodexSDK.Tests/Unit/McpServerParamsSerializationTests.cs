@@ -16,11 +16,12 @@ public sealed class McpServerParamsSerializationTests
         };
 
         var json = JsonSerializer.Serialize(
-            new ListMcpServerStatusParams { Cursor = "10", Limit = 25 },
+            new ListMcpServerStatusParams { Cursor = "10", Limit = 25, ServerName = "docs" },
             options);
 
         json.Should().Contain("\"cursor\":\"10\"");
         json.Should().Contain("\"limit\":25");
+        json.Should().Contain("\"serverName\":\"docs\"");
     }
 
     [Fact]

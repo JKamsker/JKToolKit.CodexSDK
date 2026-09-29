@@ -31,6 +31,12 @@ internal partial class ListMcpServerStatusParams
     [System.Text.Json.Serialization.JsonPropertyName("limit")]
     public int? Limit { get; set; } = default!;
 
+    /// <summary>
+    /// Limit discovery to one server. With a thread ID, reuse that thread's MCP connection.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("serverName")]
+    public string? ServerName { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string? ThreadId { get; set; } = default!;
 

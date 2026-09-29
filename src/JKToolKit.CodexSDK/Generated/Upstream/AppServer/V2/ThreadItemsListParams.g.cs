@@ -14,10 +14,10 @@ internal partial class ThreadItemsListParams
 {
 
     /// <summary>
-    /// Opaque cursor to pass to the next call to continue after the last item.
+    /// Opaque continuation cursor or an exclusive item anchor in the requested visible turn. An item anchor requires a non-empty `turnId`; ascending (the default) returns items after it, and descending returns items before it. Continue with the returned string cursor.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("cursor")]
-    public string? Cursor { get; set; } = default!;
+    public Cursor? Cursor { get; set; } = default!;
 
     /// <summary>
     /// Optional item page size.
