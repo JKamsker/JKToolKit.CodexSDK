@@ -53,7 +53,7 @@ public sealed class CodexThreadSession
             var client = await _owner.GetClientAsync(ct).ConfigureAwait(false);
             var context = new CodexTurnContext(Id, options);
             Func<CancellationToken, Task<CodexTurnHandle>> next = token =>
-                owned.StartAsync(() => client.StartTurnAsync(Id, options, CancellationToken.None), token);
+                owned.StartAsync(() => client.StartOwnedTurnAsync(Id, options, owned.MarkIndeterminateStartup), token);
             foreach (var middleware in _middleware.Reverse())
             {
                 var continuation = next;

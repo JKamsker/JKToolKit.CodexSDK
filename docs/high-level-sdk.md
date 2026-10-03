@@ -66,6 +66,16 @@ The thread remains reserved until the server reports completion or the connectio
 closes, including when interruption fails. Disposing a high-level handle also
 preserves this guard until server completion.
 
+Startup validation failures and explicit protocol/parameter rejection release the
+reservation. A transport failure, server execution error, or unusable successful
+startup response leaves acceptance **indeterminate** and blocks retries across
+all wrappers for that thread. Do not automatically retry. Dispose the affected
+SDK to close its owned local app-server. Before using a new SDK to resume, inspect
+the persisted conversation and workspace and reconcile any work already performed.
+For a remote endpoint, confirm server-side termination through the service/operator;
+closing a client connection does not prove remote work stopped. Creating a new raw
+local client does not expose or interrupt the previous process's active turn.
+
 ## Trust-labelled external input
 
 ```csharp

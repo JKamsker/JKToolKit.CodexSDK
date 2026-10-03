@@ -243,9 +243,9 @@ public sealed class HighLevelTurnTests
         public CodexThreads Threads { get; }
         public int Starts { get; private set; }
         private readonly CodexAppServerClient _client;
-        public Fixture(int capacity = 10, IReadOnlyList<ICodexTurnMiddleware>? middleware = null)
+        public Fixture(int capacity = 10, IReadOnlyList<ICodexTurnMiddleware>? middleware = null, IJsonRpcConnection? connection = null)
         {
-            _client = new(new() { NotificationBufferCapacity = capacity }, new Process(), Rpc, NullLogger.Instance, startExitWatcher: false);
+            _client = new(new() { NotificationBufferCapacity = capacity }, new Process(), connection ?? Rpc, NullLogger.Instance, startExitWatcher: false);
             Threads = new(new CodexAppServerFacade(this), middleware);
         }
         public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default) { Starts++; return Task.FromResult(_client); }
@@ -258,6 +258,8 @@ public sealed class HighLevelTurnTests
         public Func<JsonRpcRequest, ValueTask<JsonRpcResponse>>? OnServerRequest { get; set; }
         public bool EarlyCompletion { get; set; }
         public TaskCompletionSource? StartResponseGate { get; set; }
+        public Exception? StartFailure { get; set; }
+        public bool OmitStartTurnId { get; set; }
         public bool CompleteOnInterrupt { get; set; } = true;
         public bool FailInterrupt { get; set; }
         public int TurnStartCalls { get; private set; }
@@ -286,6 +288,8 @@ public sealed class HighLevelTurnTests
                 if (EarlyCompletion) { await Item("i", "final_answer", "early"); await Complete("completed"); }
                 Started.TrySetResult();
                 if (StartResponseGate is not null) await StartResponseGate.Task.WaitAsync(ct);
+                if (StartFailure is not null) throw StartFailure;
+                if (OmitStartTurnId) return Json("{}");
                 return JsonSerializer.SerializeToElement(new { turn = new { id = turnId, status = "inProgress" } });
             }
             if (method == "turn/interrupt")

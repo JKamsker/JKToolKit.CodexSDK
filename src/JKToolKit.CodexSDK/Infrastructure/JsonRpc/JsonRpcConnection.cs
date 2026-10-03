@@ -68,7 +68,10 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
         _readLoop = Task.Run(ReadLoopAsync);
     }
 
-    public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
+    public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct) =>
+        SendRequestAsync(method, @params, ct, onDispatch: null);
+
+    public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct, Action? onDispatch)
     {
         ThrowIfFaulted();
         if (string.IsNullOrWhiteSpace(method))
@@ -87,7 +90,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
         var requestWritten = false;
         try
         {
-            await WriteAsync(CreateRequestObject(id, method, @params), ct);
+            await WriteAsync(CreateRequestObject(id, method, @params), ct, onDispatch);
             requestWritten = true;
             return await tcs.Task.WaitAsync(ct);
         }

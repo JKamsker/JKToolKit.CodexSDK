@@ -13,7 +13,9 @@ internal sealed class CodexThreadExecutionState
         lock (_sync)
         {
             if (_current is not null && !_current.IsServerFinished)
-                throw new InvalidOperationException("This thread already has an active or starting turn. Await completion or steer the existing turn.");
+                throw new InvalidOperationException(_current.StartupIsIndeterminate
+                    ? "Turn startup is indeterminate. Reconcile the persisted thread, dispose this SDK, and use a new SDK before retrying."
+                    : "This thread already has an active or starting turn. Await completion or steer the existing turn.");
             return _current = new CodexOwnedTurn(this);
         }
     }
@@ -31,6 +33,12 @@ internal sealed class CodexOwnedTurn(CodexThreadExecutionState owner)
     private readonly TaskCompletionSource<CodexTurnHandle> _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _startInvoked;
     private bool _abandoned;
+    private volatile bool _startupIsIndeterminate;
+
+    internal bool StartupIsIndeterminate => _startupIsIndeterminate;
+
+    /// <summary>Retains ownership when a dispatched request cannot establish acceptance or rejection.</summary>
+    internal void MarkIndeterminateStartup() => _startupIsIndeterminate = true;
 
     internal async Task<CodexTurnHandle> StartAsync(Func<Task<CodexTurnHandle>> start, CancellationToken ct)
     {
@@ -66,9 +74,11 @@ internal sealed class CodexOwnedTurn(CodexThreadExecutionState owner)
         }
         catch (Exception ex)
         {
-            _started.TrySetException(ex);
+            _started.TrySetException(_startupIsIndeterminate
+                ? new InvalidOperationException("Turn startup is indeterminate. Reconcile the persisted thread, dispose this SDK, and use a new SDK before retrying.", ex)
+                : ex);
             _ = _started.Task.Exception; // The pipeline also propagates this failure to its caller.
-            owner.Release(this);
+            if (!_startupIsIndeterminate) owner.Release(this);
         }
     }
 

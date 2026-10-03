@@ -11,6 +11,12 @@ internal interface IJsonRpcConnection : IAsyncDisposable
 
     Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct);
 
+    // Custom connections without dispatch tracking are conservatively treated as possibly sent.
+    Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct, Action? onDispatch)
+    {
+        onDispatch?.Invoke();
+        return SendRequestAsync(method, @params, ct);
+    }
+
     Task SendNotificationAsync(string method, object? @params, CancellationToken ct);
 }
-

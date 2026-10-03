@@ -14,6 +14,7 @@ internal sealed class CodexAppServerTurnsClient
 {
     private readonly CodexAppServerClientOptions _options;
     private readonly Func<string, object?, CancellationToken, Task<JsonElement>> _sendRequestAsync;
+    private readonly Func<string, object?, CancellationToken, Action?, Task<JsonElement>> _sendTrackedRequestAsync;
     private readonly Func<AppServerInitializeResult?> _initializeResult;
     private readonly Action<string, CodexTurnHandle> _registerTurnHandle;
     private readonly Action<string> _removeTurnHandle;
@@ -29,7 +30,8 @@ internal sealed class CodexAppServerTurnsClient
         Action<string> removeTurnHandle,
         CodexAppServerReadOnlyAccessOverridesSupport readOnlyAccessOverridesSupport,
         Func<bool> experimentalApiEnabled,
-        Func<string, IDisposable> trackTurnStart)
+        Func<string, IDisposable> trackTurnStart,
+        Func<string, object?, CancellationToken, Action?, Task<JsonElement>> sendTrackedRequestAsync)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
@@ -39,16 +41,17 @@ internal sealed class CodexAppServerTurnsClient
         _readOnlyAccessOverridesSupport = readOnlyAccessOverridesSupport ?? throw new ArgumentNullException(nameof(readOnlyAccessOverridesSupport));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
         _trackTurnStart = trackTurnStart ?? throw new ArgumentNullException(nameof(trackTurnStart));
+        _sendTrackedRequestAsync = sendTrackedRequestAsync ?? throw new ArgumentNullException(nameof(sendTrackedRequestAsync));
     }
 
-    public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
+    public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default, Action? onIndeterminateStart = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         return Diagnostics.CodexTelemetry.StartTurnAsync(new Facade.CodexTurnContext(threadId, options),
-            token => StartTurnCoreAsync(threadId, options, token), ct);
+            token => StartTurnCoreAsync(threadId, options, token, onIndeterminateStart), ct);
     }
 
-    private async Task<CodexTurnHandle> StartTurnCoreAsync(string threadId, TurnStartOptions options, CancellationToken ct)
+    private async Task<CodexTurnHandle> StartTurnCoreAsync(string threadId, TurnStartOptions options, CancellationToken ct, Action? onIndeterminateStart)
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));
@@ -104,10 +107,11 @@ internal sealed class CodexAppServerTurnsClient
         };
 
         using var pendingStart = _trackTurnStart(threadId);
+        var dispatched = false;
         JsonElement result;
         try
         {
-            result = await _sendRequestAsync("turn/start", turnStartParams, ct);
+            result = await _sendTrackedRequestAsync("turn/start", turnStartParams, ct, () => dispatched = true);
         }
         catch (JsonRpcRemoteException ex) when (ex.Error.Code == JsonRpcErrorCodes.InvalidParams && ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
         {
@@ -135,20 +139,42 @@ internal sealed class CodexAppServerTurnsClient
                 $"turn/start rejected sandboxPolicy parameters. userAgent='{ua}'. sandboxPolicy={sandboxJson}. Error: {ex.Error.Code}: {ex.Error.Message}.{data}",
                 ex);
         }
+        catch (Exception ex) when (IsDefiniteRejection(ex))
+        {
+            // Explicit protocol/parameter rejection establishes that this request did not start a turn.
+            throw;
+        }
+        catch
+        {
+            // Transport, response transformation, and server execution errors can follow acceptance.
+            if (dispatched) onIndeterminateStart?.Invoke();
+            throw;
+        }
 
         if (ContainsReadOnlyAccessOverrides(options.SandboxPolicy))
         {
             Interlocked.Exchange(ref _readOnlyAccessOverridesSupport.Value, 1);
         }
 
-        var turnId = CodexAppServerClientJson.ExtractTurnId(result);
-        if (string.IsNullOrWhiteSpace(turnId))
+        try
         {
-            throw new InvalidOperationException(
-                $"turn/start returned no turn id. Raw result: {result}");
+            var turnId = CodexAppServerClientJson.ExtractTurnId(result);
+            if (string.IsNullOrWhiteSpace(turnId))
+                throw new InvalidOperationException($"turn/start returned no turn id. Raw result: {result}");
+            return CreateTurnHandle(threadId, turnId, rawStartResponse: result);
         }
+        catch
+        {
+            onIndeterminateStart?.Invoke();
+            throw;
+        }
+    }
 
-        return CreateTurnHandle(threadId, turnId, rawStartResponse: result);
+    private static bool IsDefiniteRejection(Exception error)
+    {
+        var remote = error as JsonRpcRemoteException ??
+            (error is CodexExperimentalApiRequiredException ? error.InnerException as JsonRpcRemoteException : null);
+        return remote?.Error.Code is -32700 or -32600 or -32601 or -32602;
     }
 
     public async Task<string> SteerTurnAsync(TurnSteerOptions options, CancellationToken ct = default)
