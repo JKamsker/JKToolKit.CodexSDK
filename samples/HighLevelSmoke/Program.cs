@@ -2,7 +2,6 @@ using System.Diagnostics;
 using JKToolKit.CodexSDK;
 using JKToolKit.CodexSDK.Diagnostics;
 using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Models;
 
 // Preflight by default. --live opts in to authenticated model calls with a read-only sandbox.
@@ -60,8 +59,7 @@ try
 {
     await interrupted.InterruptAsync(timeout.Token);
 }
-catch (JsonRpcRemoteException ex) when (ex.Error.Code == -32600 &&
-    ex.Error.Message.Contains("no active turn", StringComparison.OrdinalIgnoreCase))
+catch (Exception ex) when (ex.Message == "-32600: no active turn to interrupt")
 {
     // The server may finish between startup and interrupt. Validate its terminal outcome below.
 }
