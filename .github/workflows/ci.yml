@@ -233,7 +233,7 @@ jobs:
           name: runtime-${{ matrix.rid }}
           path: nuget-packages
       - name: Restore runtime consumer
-        run: dotnet restore samples/HighLevelSmoke -p:UsePinnedRuntime=true -p:RuntimePackageRid=${{ matrix.rid }} --source ./nuget-packages --source https://api.nuget.org/v3/index.json
+        run: dotnet restore samples/HighLevelSmoke -p:UsePinnedRuntime=true -p:RuntimePackageRid=${{ matrix.rid }} --configfile runtime/Smoke.NuGet.Config
       - name: Test bundled resolution and executable permissions
         run: dotnet run --project samples/HighLevelSmoke -c Release --no-restore -p:UsePinnedRuntime=true -p:RuntimePackageRid=${{ matrix.rid }} -- --require-match
       - name: Publish runtime consumer

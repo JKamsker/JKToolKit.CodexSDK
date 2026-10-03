@@ -18,7 +18,9 @@ internal sealed class CodexTurnCollector
         switch (notification)
         {
             case ItemCompletedNotification item: Add(item.Item); break;
-            case ThreadTokenUsageUpdatedNotification usage: _usage = usage.TokenUsage.Clone(); break;
+            case ThreadTokenUsageUpdatedNotification usage:
+                _usage = usage.TokenUsage.ValueKind == JsonValueKind.Undefined ? null : usage.TokenUsage.Clone();
+                break;
             case TurnDiffUpdatedNotification diff: _diff = diff.Diff; break;
         }
     }
@@ -49,7 +51,7 @@ internal sealed class CodexTurnCollector
         return new CodexTurnResult
         {
             ThreadId = threadId, TurnId = turnId, Status = completed.Status,
-            Error = completed.Error?.Clone(), TerminalTurn = completed.Turn.Clone(),
+            Error = completed.Error?.Clone(), TerminalTurn = completed.Turn.ValueKind == JsonValueKind.Undefined ? default : completed.Turn.Clone(),
             FinalResponse = String(final, "text") ?? string.Empty,
             Items = Array.AsReadOnly(_items.Select(CodexThreadItemParser.Parse).ToArray()),
             Usage = _usage is { } usage ? CodexTurnUsage.Parse(usage) : null, Diff = _diff, IsPartial = IsPartial

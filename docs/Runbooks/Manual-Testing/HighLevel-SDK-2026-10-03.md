@@ -10,7 +10,7 @@ a read-only sandbox, and no tool execution.
 ```sh
 python3 scripts/pack-codex-runtime.py --rid linux-x64
 dotnet restore samples/HighLevelSmoke -p:UsePinnedRuntime=true \
-  --source ./nuget-packages --source https://api.nuget.org/v3/index.json
+  --configfile runtime/Smoke.NuGet.Config
 dotnet run --project samples/HighLevelSmoke -c Release \
   -p:UsePinnedRuntime=true --no-restore -- --require-match --live
 dotnet publish samples/HighLevelSmoke -c Release \

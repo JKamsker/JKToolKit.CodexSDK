@@ -194,6 +194,30 @@ public sealed class HighLevelTurnTests
         await Assert.ThrowsAsync<IOException>(() => Read(late));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MalformedOptionalPayloads_DoNotPreventTerminalCompletion(bool undefined)
+    {
+        await using var fixture = new Fixture();
+        var thread = await fixture.Threads.StartAsync();
+        await using var turn = await thread.RunStreamedAsync("hello");
+        if (undefined)
+        {
+            turn.Observe(new AppServer.Notifications.V2AdditionalNotifications.ThreadTokenUsageUpdatedNotification("t", "u", default, default));
+            turn.Complete(new AppServer.Notifications.TurnCompletedNotification("t", default, default));
+        }
+        else
+        {
+            await fixture.Rpc.Emit("thread/tokenUsage/updated", """{"threadId":"t","turnId":"u"}""");
+            await fixture.Rpc.Emit("turn/completed", """{"threadId":"t","turnId":"u"}""");
+        }
+        var result = await turn.RunAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        result.Status.Should().BeNull();
+        result.Usage?.Last.Should().BeNull();
+        result.TerminalTurn.ValueKind.Should().Be(undefined ? JsonValueKind.Undefined : JsonValueKind.Object);
+    }
+
     private static async Task<List<string>> Read(CodexTurnSubscription subscription)
     {
         var result = new List<string>();
