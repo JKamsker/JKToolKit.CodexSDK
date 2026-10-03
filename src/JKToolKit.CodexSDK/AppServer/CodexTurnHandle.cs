@@ -14,6 +14,99 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     private readonly Func<IReadOnlyList<TurnInputItem>, CancellationToken, Task<TurnSteerResult>>? _steerRaw;
     private readonly Action _onDispose;
     private int _disposed;
+    private readonly object _observersLock = new();
+    private readonly Internal.CodexTurnCollector _collector = new();
+    private readonly List<CodexTurnSubscription> _observers = [];
+    private readonly TaskCompletionSource<CodexTurnResult> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool _observersCompleted;
+    private Exception? _observerError;
+    private readonly TaskCompletionSource _serverFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    internal Task ServerCompletion => _serverFinished.Task;
+    internal bool KeepRegisteredUntilTerminal { get; set; }
+
+    /// <summary>Collects the terminal result without consuming events. Cancellation only stops waiting.</summary>
+    public Task<CodexTurnResult> RunAsync(CancellationToken ct = default) => _result.Task.WaitAsync(ct);
+
+    /// <summary>Subscribes immediately to future events with an independent drop-oldest queue; no replay.</summary>
+    public CodexTurnSubscription Subscribe(int capacity = 1024)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+        lock (_observersLock)
+        {
+            var subscription = new CodexTurnSubscription(capacity, RemoveObserver);
+            if (_observersCompleted) subscription.Complete(_observerError);
+            else _observers.Add(subscription);
+            return subscription;
+        }
+    }
+
+    private void RemoveObserver(CodexTurnSubscription observer)
+    {
+        lock (_observersLock) _observers.Remove(observer);
+    }
+
+    internal void Observe(AppServerNotification notification)
+    {
+        lock (_observersLock)
+        {
+            if (_observersCompleted) return;
+            _collector.Observe(notification);
+            foreach (var observer in _observers) observer.Publish(notification);
+        }
+    }
+
+    internal void MarkPartial()
+    {
+        lock (_observersLock) _collector.IsPartial = true;
+    }
+
+    internal void Complete(TurnCompletedNotification completed)
+    {
+        _serverFinished.TrySetResult();
+        lock (_observersLock)
+        {
+            if (_observersCompleted) return;
+            _result.TrySetResult(_collector.Complete(ThreadId, TurnId, completed));
+            CompletionTcs.TrySetResult(completed);
+            CompleteObservers(null);
+        }
+        EventsChannel.Writer.TryComplete();
+        RawEventsChannel.Writer.TryComplete();
+    }
+
+    internal void Terminate(Exception? error = null)
+    {
+        _serverFinished.TrySetResult();
+        TerminateObservation(error);
+    }
+
+    private void TerminateObservation(Exception? error = null)
+    {
+        lock (_observersLock)
+        {
+            if (error is null)
+            {
+                _result.TrySetCanceled();
+                CompletionTcs.TrySetCanceled();
+            }
+            else
+            {
+                _result.TrySetException(error);
+                CompletionTcs.TrySetException(error);
+            }
+            CompleteObservers(error);
+        }
+        EventsChannel.Writer.TryComplete(error);
+        RawEventsChannel.Writer.TryComplete(error);
+    }
+
+    private void CompleteObservers(Exception? error)
+    {
+        _observersCompleted = true;
+        _observerError = error;
+        foreach (var observer in _observers) observer.Complete(error);
+        _observers.Clear();
+    }
 
     internal Channel<AppServerNotification> EventsChannel { get; }
     internal Channel<AppServerRpcNotification> RawEventsChannel { get; }
@@ -144,10 +237,12 @@ public sealed class CodexTurnHandle : IAsyncDisposable
             return ValueTask.CompletedTask;
         }
 
-        _onDispose();
-        EventsChannel.Writer.TryComplete();
-        RawEventsChannel.Writer.TryComplete();
-        CompletionTcs.TrySetCanceled();
+        if (!KeepRegisteredUntilTerminal || ServerCompletion.IsCompleted)
+        {
+            _onDispose();
+            _serverFinished.TrySetResult();
+        }
+        TerminateObservation();
 
         return ValueTask.CompletedTask;
     }

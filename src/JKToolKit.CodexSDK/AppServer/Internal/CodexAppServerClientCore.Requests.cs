@@ -6,7 +6,10 @@ namespace JKToolKit.CodexSDK.AppServer.Internal;
 
 internal sealed partial class CodexAppServerClientCore
 {
-    public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
+    public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct) =>
+        SendRequestAsync(method, @params, ct, onDispatch: null);
+
+    internal async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct, Action? onDispatch)
     {
         try
         {
@@ -61,7 +64,7 @@ internal sealed partial class CodexAppServerClientCore
                 }
             }
 
-            var result = await _rpc.SendRequestAsync(method, paramsToSend, ct);
+            var result = await _rpc.SendRequestAsync(method, paramsToSend, ct, onDispatch);
 
             var responseTransformers = _options.ResponseTransformers;
             if (responseTransformers is { Count: > 0 })

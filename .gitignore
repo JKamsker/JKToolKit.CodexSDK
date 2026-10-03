@@ -343,3 +343,6 @@ healthchecksdb
 
 src/FourSer.Consumer/Generated/
 *.received.txt
+# Locally staged Codex runtime packages
+artifacts/
+nuget-packages/

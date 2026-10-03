@@ -7,7 +7,7 @@ namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 internal sealed partial class JsonRpcConnection
 {
-    private async Task WriteAsync(object payload, CancellationToken ct)
+    private async Task WriteAsync(object payload, CancellationToken ct, Action? onDispatch = null)
     {
         ThrowIfFaulted();
         ct.ThrowIfCancellationRequested();
@@ -20,6 +20,7 @@ internal sealed partial class JsonRpcConnection
             ThrowIfFaulted();
 
             // Don't cancel mid-write. Callers can cancel waiting for responses, but the wire must remain well-formed.
+            onDispatch?.Invoke();
             await _transport.SendAsync(json, CancellationToken.None).ConfigureAwait(false);
         }
         finally

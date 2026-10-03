@@ -125,6 +125,14 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
     {
         lock (_turnsLock)
         {
+            // A response may finish dispatching after shutdown has already cleared its snapshot.
+            if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _disconnectSignaled) != 0)
+            {
+                handle.Terminate(Volatile.Read(ref _disposed) != 0
+                    ? new ObjectDisposedException(nameof(CodexAppServerClient))
+                    : BuildDisconnectException());
+                return;
+            }
             _turnsById[turnId] = handle;
             PruneStaleTurnBuffers(DateTimeOffset.UtcNow);
 
@@ -310,45 +318,48 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         var turnId = TryGetTurnId(mapped) ?? TryGetTurnIdFromParams(@params);
         if (!string.IsNullOrWhiteSpace(turnId))
         {
-            if (TryGetTurnHandle(turnId, out var handle) && handle is not null)
+            // Route atomically with registration and its early-notification flush.
+            lock (_turnsLock)
             {
-                TryWriteDroppingOldest(handle.EventsChannel, mapped, ref _droppedTurnNotifications);
-                TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
-
-                var completed = mapped as TurnCompletedNotification;
-                if (completed is null && method == AppServerMethods.TurnCompleted)
+                if (TryGetTurnHandle(turnId, out var handle) && handle is not null)
                 {
-                    if (usedCustomMapper)
+                    handle.Observe(mapped);
+                    TryWriteDroppingOldest(handle.EventsChannel, mapped, ref _droppedTurnNotifications);
+                    TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
+
+                    var completed = mapped as TurnCompletedNotification;
+                    if (completed is null && method == AppServerMethods.TurnCompleted)
                     {
-                        _logger.LogWarning(
-                            "Custom mapper returned {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
-                            mapped.GetType().FullName,
-                            method,
-                            typeof(TurnCompletedNotification).FullName);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "Mapped {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
-                            mapped.GetType().FullName,
-                            method,
-                            typeof(TurnCompletedNotification).FullName);
+                        if (usedCustomMapper)
+                        {
+                            _logger.LogWarning(
+                                "Custom mapper returned {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
+                                mapped.GetType().FullName,
+                                method,
+                                typeof(TurnCompletedNotification).FullName);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Mapped {MappedType} for method '{Method}'; expected {ExpectedType}. Falling back to SafeMap for turn completion.",
+                                mapped.GetType().FullName,
+                                method,
+                                typeof(TurnCompletedNotification).FullName);
+                        }
+
+                        completed = SafeMap(method, @params) as TurnCompletedNotification;
                     }
 
-                    completed = SafeMap(method, @params) as TurnCompletedNotification;
+                    if (completed is not null)
+                    {
+                        handle.Complete(completed);
+                        RemoveTurnHandle(turnId);
+                    }
                 }
-
-                if (completed is not null)
+                else
                 {
-                    handle.CompletionTcs.TrySetResult(completed);
-                    handle.EventsChannel.Writer.TryComplete();
-                    handle.RawEventsChannel.Writer.TryComplete();
-                    RemoveTurnHandle(turnId);
+                    BufferTurnNotification(turnId, mapped, raw);
                 }
-            }
-            else
-            {
-                BufferTurnNotification(turnId, mapped, raw);
             }
         }
 
@@ -448,9 +459,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
 
         foreach (var handle in handles)
         {
-            handle.EventsChannel.Writer.TryComplete();
-            handle.RawEventsChannel.Writer.TryComplete();
-            handle.CompletionTcs.TrySetCanceled();
+            handle.Terminate();
         }
 
         await _rpc.DisposeAsync();
@@ -460,4 +469,3 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         try { _disposeCts.Dispose(); } catch { /* ignore */ }
     }
 }
-

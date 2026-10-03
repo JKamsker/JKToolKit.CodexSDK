@@ -70,3 +70,16 @@ See more demo commands in the [full docs](docs/README.md#demos).
 ## License & Contributing
 
 Contributions welcome — open issues or pull requests for bugs, features, or docs.
+
+## High-level thread API
+
+```csharp
+await using var sdk = await CodexSdk.StartAsync();
+var thread = await sdk.Threads.StartAsync(new() { Cwd = repo });
+var result = await thread.RunAsync("Fix the failing tests");
+Console.WriteLine(result.FinalResponse);
+```
+
+Collected results, streaming subscriptions, trust-labelled external messages,
+optional pinned runtimes, preflight, middleware, and OpenTelemetry instrumentation
+are described in the [high-level SDK guide](https://github.com/JKamsker/JKToolKit.CodexSDK/blob/master/docs/high-level-sdk.md).

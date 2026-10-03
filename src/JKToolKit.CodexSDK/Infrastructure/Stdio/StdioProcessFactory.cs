@@ -9,6 +9,8 @@ internal sealed class StdioProcessFactory
     private readonly ICodexPathProvider _pathProvider;
     private readonly ILogger<StdioProcessFactory> _logger;
 
+    internal ICodexPathProvider PathProvider => _pathProvider;
+
     public StdioProcessFactory(
         ICodexPathProvider pathProvider,
         ILogger<StdioProcessFactory> logger)
@@ -48,4 +50,3 @@ internal sealed class StdioProcessFactory
         return StdioProcess.StartAsync(options, _logger, ct);
     }
 }
-

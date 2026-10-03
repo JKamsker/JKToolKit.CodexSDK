@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using JKToolKit.CodexSDK.AppServer.Internal;
 using JKToolKit.CodexSDK.Infrastructure.Stdio;
+using JKToolKit.CodexSDK.Abstractions;
 
 namespace JKToolKit.CodexSDK.AppServer;
 
@@ -20,6 +21,10 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
         _stdioFactory = stdioFactory;
         _loggerFactory = loggerFactory;
     }
+
+    internal CodexAppServerClientOptions OptionsSnapshot => _options.Value.Clone();
+
+    internal ICodexPathProvider PathProvider => _stdioFactory.PathProvider;
 
     public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default)
     {

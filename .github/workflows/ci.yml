@@ -93,7 +93,7 @@ jobs:
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "$base" "$head" -- src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml)"
+          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml)"
           if [[ -n "$changed_files" ]]; then
             echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Changed package or upstream files:"
@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         framework: [net10.0]
         dotnet: ["10.0.x"]
     env:
@@ -132,6 +132,7 @@ jobs:
 
       - name: Compute Version
         id: set-version
+        shell: bash
         run: |
           VERSION="0.0.${{ github.run_number }}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -188,15 +189,74 @@ jobs:
           name: nuget-package
           path: nuget-packages/*.nupkg
 
+  runtime-packages:
+    needs: changes
+    if: needs.changes.outputs.package_changed == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [linux-x64, linux-arm64, win-x64, win-arm64, osx-x64, osx-arm64]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.checkout_ref }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Pack verified pinned runtime
+        run: python3 scripts/pack-codex-runtime.py --rid ${{ matrix.rid }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-${{ matrix.rid }}
+          path: nuget-packages/*.nupkg
+
+  runtime-smoke:
+    needs: [changes, runtime-packages]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: windows-latest, rid: win-x64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.checkout_ref }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: runtime-${{ matrix.rid }}
+          path: nuget-packages
+      - name: Restore runtime consumer
+        run: dotnet restore samples/HighLevelSmoke -p:UsePinnedRuntime=true -p:RuntimePackageRid=${{ matrix.rid }} --configfile runtime/Smoke.NuGet.Config
+      - name: Test bundled resolution and executable permissions
+        run: dotnet run --project samples/HighLevelSmoke -c Release --no-restore -p:UsePinnedRuntime=true -p:RuntimePackageRid=${{ matrix.rid }} -- --require-match
+      - name: Publish runtime consumer
+        run: dotnet publish samples/HighLevelSmoke -c Release --no-restore -p:UsePinnedRuntime=true -p:RuntimePackageRid=${{ matrix.rid }} -o artifacts/smoke-publish
+      - name: Test published runtime
+        run: dotnet artifacts/smoke-publish/HighLevelSmoke.dll --require-match
+
   NugetUpload:
-    needs: [automation-tests, changes, build-and-test]
-    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success'
+    needs: [automation-tests, changes, build-and-test, runtime-packages, runtime-smoke]
+    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success' && needs.runtime-packages.result == 'success' && needs.runtime-smoke.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - name: Download NuGet Packages
       uses: actions/download-artifact@v4
       with:
         name: nuget-package
+        path: nuget-packages
+
+    - name: Download Runtime Packages
+      uses: actions/download-artifact@v4
+      with:
+        pattern: runtime-*
+        merge-multiple: true
         path: nuget-packages
 
     - name: Get Secrets
