@@ -47,6 +47,9 @@ public sealed class DefaultCodexPathProvider : ICodexPathProvider
             return overridePath;
         }
 
+        var bundled = GetBundledExecutablePath(AppContext.BaseDirectory);
+        if (bundled is not null) return bundled;
+
         // Auto-detect based on platform
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -56,6 +59,16 @@ public sealed class DefaultCodexPathProvider : ICodexPathProvider
         {
             return ResolveUnixExecutablePath();
         }
+    }
+
+    internal string? GetBundledExecutablePath(string baseDirectory)
+    {
+        var os = OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : OperatingSystem.IsLinux() ? "linux" : null;
+        var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        if (os is null || arch is not ("x64" or "arm64")) return null;
+        var path = Path.Combine(baseDirectory, "codex-runtime", Facade.CodexRuntime.ExpectedVersion,
+            $"{os}-{arch}", "bin", OperatingSystem.IsWindows() ? "codex.exe" : "codex");
+        return _fileSystem.FileExists(path) ? path : null;
     }
 
     /// <inheritdoc />

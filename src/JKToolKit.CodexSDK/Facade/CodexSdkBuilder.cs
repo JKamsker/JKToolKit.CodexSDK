@@ -17,6 +17,16 @@ namespace JKToolKit.CodexSDK.Facade;
 /// </remarks>
 public sealed class CodexSdkBuilder
 {
+    private readonly List<ICodexTurnMiddleware> _middleware = [];
+
+    /// <summary>Adds middleware in outermost-first order for all high-level turn starts.</summary>
+    public CodexSdkBuilder Use(ICodexTurnMiddleware middleware)
+    {
+        ArgumentNullException.ThrowIfNull(middleware);
+        _middleware.Add(middleware);
+        return this;
+    }
+
     private readonly CodexClientOptions _execOptions = new();
     private readonly CodexAppServerClientOptions _appServerOptions = new();
     private readonly CodexMcpServerClientOptions _mcpServerOptions = new();
@@ -90,7 +100,7 @@ public sealed class CodexSdkBuilder
         var appServerFactory = new CodexAppServerClientFactory(Options.Create(appServerOptions), stdioFactory, loggerFactory);
         var mcpServerFactory = new CodexMcpServerClientFactory(Options.Create(mcpServerOptions), stdioFactory, loggerFactory);
 
-        return CodexSdk.CreateOwned(exec, appServerFactory, mcpServerFactory);
+        return CodexSdk.CreateOwned(exec, appServerFactory, mcpServerFactory, appServerOptions, _middleware.ToArray());
     }
 
     internal (CodexClientOptions Exec, CodexAppServerClientOptions AppServer, CodexMcpServerClientOptions McpServer)

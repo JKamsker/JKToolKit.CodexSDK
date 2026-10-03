@@ -21,6 +21,8 @@ internal sealed class CodexAppServerClientFactory : ICodexAppServerClientFactory
         _loggerFactory = loggerFactory;
     }
 
+    internal CodexAppServerClientOptions OptionsSnapshot => _options.Value.Clone();
+
     public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default)
     {
         return StartAsync(_options.Value, ct);

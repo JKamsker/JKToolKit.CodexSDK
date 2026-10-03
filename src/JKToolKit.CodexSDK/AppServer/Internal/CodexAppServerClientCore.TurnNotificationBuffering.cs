@@ -61,16 +61,19 @@ internal sealed partial class CodexAppServerClientCore
 
     private void FlushBufferedTurnNotifications(string turnId, CodexTurnHandle handle, TurnNotificationBuffer buffered)
     {
+        if (buffered.Dropped) handle.MarkPartial();
         foreach (var (mapped, raw) in buffered.Items)
         {
+            handle.Observe(mapped);
             TryWriteDroppingOldest(handle.EventsChannel, mapped, ref _droppedTurnNotifications);
             TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
 
-            if (mapped is TurnCompletedNotification completed)
+            var completed = mapped as TurnCompletedNotification;
+            if (completed is null && raw.Method == "turn/completed")
+                completed = SafeMap(raw.Method, raw.Params) as TurnCompletedNotification;
+            if (completed is not null)
             {
-                handle.CompletionTcs.TrySetResult(completed);
-                handle.EventsChannel.Writer.TryComplete();
-                handle.RawEventsChannel.Writer.TryComplete();
+                handle.Complete(completed);
                 RemoveTurnHandleLocked(turnId);
                 break;
             }
@@ -84,6 +87,8 @@ internal sealed partial class CodexAppServerClientCore
             LastUpdatedUtc = createdUtc;
         }
 
+        public bool Dropped { get; private set; }
+
         public DateTimeOffset LastUpdatedUtc { get; set; }
 
         public List<(AppServerNotification Mapped, AppServerRpcNotification Raw)> Items { get; } = new();
@@ -93,6 +98,7 @@ internal sealed partial class CodexAppServerClientCore
             var dropped = 0;
             if (Items.Count >= capacity)
             {
+                Dropped = true;
                 Items.RemoveAt(0);
                 dropped++;
             }

@@ -90,9 +90,7 @@ internal sealed partial class CodexAppServerClientCore
 
             foreach (var handle in handles)
             {
-                handle.EventsChannel.Writer.TryComplete(ex);
-                handle.RawEventsChannel.Writer.TryComplete(ex);
-                handle.CompletionTcs.TrySetException(ex);
+                handle.Terminate(ex);
             }
         }
         catch

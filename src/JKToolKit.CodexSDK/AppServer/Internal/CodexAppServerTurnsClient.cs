@@ -38,7 +38,14 @@ internal sealed class CodexAppServerTurnsClient
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
     }
 
-    public async Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
+    public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return Diagnostics.CodexTelemetry.StartTurnAsync(new Facade.CodexTurnContext(threadId, options),
+            token => StartTurnCoreAsync(threadId, options, token), ct);
+    }
+
+    private async Task<CodexTurnHandle> StartTurnCoreAsync(string threadId, TurnStartOptions options, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(threadId));

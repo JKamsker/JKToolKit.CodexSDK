@@ -195,3 +195,16 @@ To add support for new `response_item` payloads, extend the normalization logic 
 - **Process launch fails**: validate `codex --version` works and `CodexClientOptions.CodexExecutablePath` if overridden.
 - **No events streaming**: confirm Codex is producing JSONL session logs for your command; check the resolved log file path.
 
+
+## High-level thread API
+
+```csharp
+await using var sdk = await CodexSdk.StartAsync();
+var thread = await sdk.Threads.StartAsync(new() { Cwd = repo });
+var result = await thread.RunAsync("Fix the failing tests");
+Console.WriteLine(result.FinalResponse);
+```
+
+Collected results, streaming subscriptions, trust-labelled external messages,
+optional pinned runtimes, preflight, middleware, and OpenTelemetry instrumentation
+are described in the [high-level SDK guide](https://github.com/JKamsker/JKToolKit.CodexSDK/blob/master/docs/high-level-sdk.md).
