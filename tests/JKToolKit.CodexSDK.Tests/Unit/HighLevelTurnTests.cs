@@ -270,6 +270,12 @@ public sealed class HighLevelTurnTests
         public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
         {
             if (method is "thread/start" or "thread/resume") return Json("""{"thread":{"id":"t"}}""");
+            if (method == "review/start")
+            {
+                Started.TrySetResult();
+                if (StartResponseGate is not null) await StartResponseGate.Task.WaitAsync(ct);
+                return Json("""{"reviewThreadId":"review-t","turn":{"id":"review-u","status":"inProgress"}}""");
+            }
             if (method == "turn/start")
             {
                 TurnStartCalls++;

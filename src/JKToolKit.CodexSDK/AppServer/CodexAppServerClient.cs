@@ -168,7 +168,8 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
             registerTurnHandle: _core.RegisterTurnHandle,
             removeTurnHandle: _core.RemoveTurnHandle,
             readOnlyAccessOverridesSupport: _readOnlyAccessOverridesSupport,
-            experimentalApiEnabled: experimentalApiEnabled);
+            experimentalApiEnabled: experimentalApiEnabled,
+            trackTurnStart: _core.TrackTurnStart);
     }
 
     internal CodexAppServerClient(

@@ -19,6 +19,7 @@ internal sealed class CodexAppServerTurnsClient
     private readonly Action<string> _removeTurnHandle;
     private readonly CodexAppServerReadOnlyAccessOverridesSupport _readOnlyAccessOverridesSupport;
     private readonly Func<bool> _experimentalApiEnabled;
+    private readonly Func<string, IDisposable> _trackTurnStart;
 
     public CodexAppServerTurnsClient(
         CodexAppServerClientOptions options,
@@ -27,7 +28,8 @@ internal sealed class CodexAppServerTurnsClient
         Action<string, CodexTurnHandle> registerTurnHandle,
         Action<string> removeTurnHandle,
         CodexAppServerReadOnlyAccessOverridesSupport readOnlyAccessOverridesSupport,
-        Func<bool> experimentalApiEnabled)
+        Func<bool> experimentalApiEnabled,
+        Func<string, IDisposable> trackTurnStart)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _sendRequestAsync = sendRequestAsync ?? throw new ArgumentNullException(nameof(sendRequestAsync));
@@ -36,6 +38,7 @@ internal sealed class CodexAppServerTurnsClient
         _removeTurnHandle = removeTurnHandle ?? throw new ArgumentNullException(nameof(removeTurnHandle));
         _readOnlyAccessOverridesSupport = readOnlyAccessOverridesSupport ?? throw new ArgumentNullException(nameof(readOnlyAccessOverridesSupport));
         _experimentalApiEnabled = experimentalApiEnabled ?? throw new ArgumentNullException(nameof(experimentalApiEnabled));
+        _trackTurnStart = trackTurnStart ?? throw new ArgumentNullException(nameof(trackTurnStart));
     }
 
     public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default)
@@ -100,6 +103,7 @@ internal sealed class CodexAppServerTurnsClient
             CollaborationMode = options.CollaborationMode
         };
 
+        using var pendingStart = _trackTurnStart(threadId);
         JsonElement result;
         try
         {
@@ -203,6 +207,8 @@ internal sealed class CodexAppServerTurnsClient
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", nameof(options.ThreadId));
         ArgumentNullException.ThrowIfNull(options.Target);
 
+        // Detached reviews receive a server-chosen thread ID in the startup response.
+        using var pendingStart = _trackTurnStart(string.Empty);
         JsonElement result;
         try
         {
