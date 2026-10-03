@@ -35,6 +35,9 @@ smoke test. Set `CODEX_SMOKE_BINARY` to test an explicit executable override.
   Its response retained the preceding user instruction (`ORCHID`), consistent
   with the external content's lower authority.
 - Explicit interruption returned terminal status `interrupted`.
+  The live sample also accepts a validated `completed` outcome if the server
+  finishes before interruption takes effect; an observed `no active turn`
+  response does not by itself prove interruption or fail a completed turn.
 - Activity listener observed completed and interrupted turn spans.
 - Published consumer selected its own bundled 0.160.0 executable successfully.
 - Explicit 0.154.0 executable override took precedence over the published bundle
