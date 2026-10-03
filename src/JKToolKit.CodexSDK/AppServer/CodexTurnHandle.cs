@@ -55,6 +55,20 @@ public sealed class CodexTurnHandle : IAsyncDisposable
         }
     }
 
+    internal void Observe(AppServerNotification notification, AppServerRpcNotification raw,
+        ref long droppedTyped, ref long droppedRaw)
+    {
+        lock (_observersLock)
+        {
+            if (_observersCompleted) return;
+            Observe(notification);
+            // Publish atomically with observation termination. A closed bounded queue must not
+            // be treated as a full queue: draining it would erase events already promised to readers.
+            Internal.CodexAppServerClientCore.TryWriteDroppingOldest(EventsChannel, notification, ref droppedTyped);
+            Internal.CodexAppServerClientCore.TryWriteDroppingOldest(RawEventsChannel, raw, ref droppedRaw);
+        }
+    }
+
     internal void MarkPartial()
     {
         lock (_observersLock) _collector.IsPartial = true;
@@ -84,6 +98,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     {
         lock (_observersLock)
         {
+            if (_observersCompleted) return;
             if (error is null)
             {
                 _result.TrySetCanceled();

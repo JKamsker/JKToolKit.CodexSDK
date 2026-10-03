@@ -76,7 +76,8 @@ internal sealed partial class JsonRpcConnection
             return new JsonRpcError(JsonRpcErrorCodes.ServerError, JsonRpcProtocolConstants.RemoteErrorMessage, Data: errorProp.Clone());
         }
 
-        var code = errorProp.TryGetProperty("code", out var codeProp) && codeProp.TryGetInt32(out var c)
+        var code = errorProp.TryGetProperty("code", out var codeProp) &&
+            codeProp.ValueKind == JsonValueKind.Number && codeProp.TryGetInt32(out var c)
             ? c
             : JsonRpcErrorCodes.ServerError;
 

@@ -83,10 +83,13 @@ internal sealed partial class CodexAppServerClientCore
 
         try
         {
-            _globalNotifications.Writer.TryComplete(ex);
-            _globalRawNotifications.Writer.TryComplete(ex);
-
-            var handles = SnapshotAndClearTurns();
+            CodexTurnHandle[] handles;
+            lock (_turnsLock)
+            {
+                _globalNotifications.Writer.TryComplete(ex);
+                _globalRawNotifications.Writer.TryComplete(ex);
+                handles = SnapshotAndClearTurns();
+            }
 
             foreach (var handle in handles)
             {

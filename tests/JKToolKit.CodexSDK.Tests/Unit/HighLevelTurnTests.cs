@@ -243,9 +243,12 @@ public sealed class HighLevelTurnTests
         public CodexThreads Threads { get; }
         public int Starts { get; private set; }
         private readonly CodexAppServerClient _client;
-        public Fixture(int capacity = 10, IReadOnlyList<ICodexTurnMiddleware>? middleware = null, IJsonRpcConnection? connection = null)
+        public Fixture(int capacity = 10, IReadOnlyList<ICodexTurnMiddleware>? middleware = null, IJsonRpcConnection? connection = null,
+            Action<CodexAppServerClientOptions>? configure = null)
         {
-            _client = new(new() { NotificationBufferCapacity = capacity }, new Process(), connection ?? Rpc, NullLogger.Instance, startExitWatcher: false);
+            var options = new CodexAppServerClientOptions { NotificationBufferCapacity = capacity };
+            configure?.Invoke(options);
+            _client = new(options, new Process(), connection ?? Rpc, NullLogger.Instance, startExitWatcher: false);
             Threads = new(new CodexAppServerFacade(this), middleware);
         }
         public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default) { Starts++; return Task.FromResult(_client); }

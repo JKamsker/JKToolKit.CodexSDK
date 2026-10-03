@@ -275,7 +275,6 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         }
 
         var raw = new AppServerRpcNotification(method, @params);
-        TryWriteDroppingOldest(_globalRawNotifications, raw, ref _droppedGlobalRawNotifications);
 
         AppServerNotification mapped;
         var usedCustomMapper = false;
@@ -312,20 +311,22 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
             mapped = SafeMap(method, @params);
         }
 
-        TryWriteDroppingOldest(_globalNotifications, mapped, ref _droppedGlobalNotifications);
         LogIfBogus(mapped);
 
         var turnId = TryGetTurnId(mapped) ?? TryGetTurnIdFromParams(@params);
-        if (!string.IsNullOrWhiteSpace(turnId))
+        lock (_turnsLock)
         {
-            // Route atomically with registration and its early-notification flush.
-            lock (_turnsLock)
+            // Publication and shutdown share the same boundary: in-flight mapping must not
+            // drain closed queues or recreate orphan buffers after the client has terminated.
+            if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _disconnectSignaled) != 0)
+                return ValueTask.CompletedTask;
+            TryWriteDroppingOldest(_globalRawNotifications, raw, ref _droppedGlobalRawNotifications);
+            TryWriteDroppingOldest(_globalNotifications, mapped, ref _droppedGlobalNotifications);
+            if (!string.IsNullOrWhiteSpace(turnId))
             {
                 if (TryGetTurnHandle(turnId, out var handle) && handle is not null)
                 {
-                    handle.Observe(mapped);
-                    TryWriteDroppingOldest(handle.EventsChannel, mapped, ref _droppedTurnNotifications);
-                    TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
+                    handle.Observe(mapped, raw, ref _droppedTurnNotifications, ref _droppedTurnRawNotifications);
 
                     var completed = mapped as TurnCompletedNotification;
                     if (completed is null && method == AppServerMethods.TurnCompleted)
@@ -366,7 +367,7 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 
-    private static void TryWriteDroppingOldest<T>(Channel<T> channel, T item, ref long droppedCounter)
+    internal static void TryWriteDroppingOldest<T>(Channel<T> channel, T item, ref long droppedCounter)
     {
         while (!channel.Writer.TryWrite(item))
         {
@@ -452,10 +453,13 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         }
 
         _disposeCts.Cancel();
-        _globalNotifications.Writer.TryComplete();
-        _globalRawNotifications.Writer.TryComplete();
-
-        var handles = SnapshotAndClearTurns();
+        CodexTurnHandle[] handles;
+        lock (_turnsLock)
+        {
+            _globalNotifications.Writer.TryComplete();
+            _globalRawNotifications.Writer.TryComplete();
+            handles = SnapshotAndClearTurns();
+        }
 
         foreach (var handle in handles)
         {

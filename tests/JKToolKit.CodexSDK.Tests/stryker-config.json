@@ -1,0 +1,28 @@
+{
+  "stryker-config": {
+    "project": "JKToolKit.CodexSDK.csproj",
+    "configuration": "Release",
+    "mutate": [
+      "**/Facade/Internal/CodexThreadExecutionState.cs",
+      "**/Facade/CodexThreadSession.cs",
+      "**/AppServer/CodexTurnHandle.cs",
+      "**/AppServer/CodexTurnSubscription.cs",
+      "**/AppServer/Internal/CodexTurnCollector.cs",
+      "**/AppServer/CodexTurnUsage.cs",
+      "**/AppServer/Internal/CodexAppServerClientCore.TurnNotificationBuffering.cs",
+      "**/AppServer/Internal/CodexAppServerClientCore.cs",
+      "**/AppServer/Internal/CodexAppServerClientCore.Disconnect.cs",
+      "**/AppServer/Internal/CodexAppServerClientCore.Requests.cs",
+      "**/AppServer/Internal/CodexAppServerTurnsClient.cs",
+      "**/Infrastructure/JsonRpc/IJsonRpcConnection.cs",
+      "**/Infrastructure/JsonRpc/JsonRpcConnection.cs",
+      "**/Infrastructure/JsonRpc/JsonRpcConnection.Wire.cs"
+    ],
+    "test-case-filter": "FullyQualifiedName~.Unit.",
+    "concurrency": 6,
+    "coverage-analysis": "perTest",
+    "additional-timeout": 3000,
+    "reporters": ["html", "json", "cleartext"],
+    "thresholds": { "high": 85, "low": 70, "break": 0 }
+  }
+}

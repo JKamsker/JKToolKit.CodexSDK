@@ -272,6 +272,16 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
             return;
         }
 
+        try { CompleteResponse(root, tcs); }
+        catch (Exception ex)
+        {
+            // Once removed from _pending, even a malformed response must settle its caller.
+            tcs.TrySetException(new JsonRpcProtocolException("Malformed JSON-RPC response.", ex));
+        }
+    }
+
+    private static void CompleteResponse(JsonElement root, TaskCompletionSource<JsonElement> tcs)
+    {
         if (root.TryGetProperty(JsonFieldNames.Error, out var errorProp) && errorProp.ValueKind == JsonValueKind.Object)
         {
             var error = ParseError(errorProp);

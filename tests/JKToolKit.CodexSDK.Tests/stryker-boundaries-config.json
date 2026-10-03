@@ -1,0 +1,24 @@
+{
+  "stryker-config": {
+    "project": "JKToolKit.CodexSDK.csproj",
+    "configuration": "Release",
+    "mutate": [
+      "**/Infrastructure/JsonRpc/JsonRpcConnection*.cs",
+      "**/AppServer/Internal/CodexAppServerClientCore.Disconnect.cs"
+    ],
+    "test-case-filter": "FullyQualifiedName~.Unit.",
+    "concurrency": 6,
+    "coverage-analysis": "perTest",
+    "additional-timeout": 3000,
+    "reporters": [
+      "html",
+      "json",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 85,
+      "low": 70,
+      "break": 0
+    }
+  }
+}

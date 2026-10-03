@@ -99,9 +99,7 @@ internal sealed partial class CodexAppServerClientCore
         if (buffered.Dropped) handle.MarkPartial();
         foreach (var (mapped, raw) in buffered.Items)
         {
-            handle.Observe(mapped);
-            TryWriteDroppingOldest(handle.EventsChannel, mapped, ref _droppedTurnNotifications);
-            TryWriteDroppingOldest(handle.RawEventsChannel, raw, ref _droppedTurnRawNotifications);
+            handle.Observe(mapped, raw, ref _droppedTurnNotifications, ref _droppedTurnRawNotifications);
 
             var completed = mapped as TurnCompletedNotification;
             if (completed is null && raw.Method == "turn/completed")
