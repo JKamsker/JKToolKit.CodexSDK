@@ -257,6 +257,13 @@ public sealed class HighLevelTurnTests
         public event Func<JsonRpcNotification, ValueTask>? OnNotification;
         public Func<JsonRpcRequest, ValueTask<JsonRpcResponse>>? OnServerRequest { get; set; }
         public bool EarlyCompletion { get; set; }
+        public TaskCompletionSource? StartResponseGate { get; set; }
+        public bool CompleteOnInterrupt { get; set; } = true;
+        public bool FailInterrupt { get; set; }
+        public int TurnStartCalls { get; private set; }
+        public CancellationToken LastStartToken { get; private set; }
+        public TaskCompletionSource InterruptRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private string _currentTurnId = "u";
         public JsonElement LastTurn { get; private set; }
         public int Interrupts { get; private set; }
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -265,19 +272,30 @@ public sealed class HighLevelTurnTests
             if (method is "thread/start" or "thread/resume") return Json("""{"thread":{"id":"t"}}""");
             if (method == "turn/start")
             {
+                TurnStartCalls++;
+                _currentTurnId = TurnStartCalls == 1 ? "u" : $"u{TurnStartCalls}";
+                var turnId = _currentTurnId;
+                LastStartToken = ct;
                 LastTurn = JsonSerializer.SerializeToElement(@params, CodexAppServerClient.CreateDefaultSerializerOptions());
                 if (EarlyCompletion) { await Item("i", "final_answer", "early"); await Complete("completed"); }
                 Started.TrySetResult();
-                return Json("""{"turn":{"id":"u","status":"inProgress"}}""");
+                if (StartResponseGate is not null) await StartResponseGate.Task.WaitAsync(ct);
+                return JsonSerializer.SerializeToElement(new { turn = new { id = turnId, status = "inProgress" } });
             }
-            if (method == "turn/interrupt") { Interrupts++; await Complete("interrupted"); }
+            if (method == "turn/interrupt")
+            {
+                Interrupts++;
+                InterruptRequested.TrySetResult();
+                if (FailInterrupt) throw new IOException("interruption failed");
+                if (CompleteOnInterrupt) await Complete("interrupted");
+            }
             return Json("{}");
         }
         public Task SendNotificationAsync(string method, object? @params, CancellationToken ct) => Task.CompletedTask;
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         public ValueTask Emit(string method, string json) => OnNotification?.Invoke(new(method, Json(json))) ?? ValueTask.CompletedTask;
-        public ValueTask Item(string id, string phase, string text) => Emit("item/completed", JsonSerializer.Serialize(new { threadId = "t", turnId = "u", item = new { id, type = "agentMessage", phase, text } }));
-        public ValueTask Complete(string status, string error = "null") => Emit("turn/completed", JsonSerializer.Serialize(new { threadId = "t", turn = new { id = "u", status, error = Json(error), items = Array.Empty<object>() } }));
+        public ValueTask Item(string id, string phase, string text) => Emit("item/completed", JsonSerializer.Serialize(new { threadId = "t", turnId = _currentTurnId, item = new { id, type = "agentMessage", phase, text } }));
+        public ValueTask Complete(string status, string error = "null") => Emit("turn/completed", JsonSerializer.Serialize(new { threadId = "t", turn = new { id = _currentTurnId, status, error = Json(error), items = Array.Empty<object>() } }));
         private static JsonElement Json(string text) { using var doc = JsonDocument.Parse(text); return doc.RootElement.Clone(); }
     }
 

@@ -20,6 +20,9 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     private readonly TaskCompletionSource<CodexTurnResult> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _observersCompleted;
     private Exception? _observerError;
+    private readonly TaskCompletionSource _serverFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    internal Task ServerCompletion => _serverFinished.Task;
+    internal bool KeepRegisteredUntilTerminal { get; set; }
 
     /// <summary>Collects the terminal result without consuming events. Cancellation only stops waiting.</summary>
     public Task<CodexTurnResult> RunAsync(CancellationToken ct = default) => _result.Task.WaitAsync(ct);
@@ -59,6 +62,7 @@ public sealed class CodexTurnHandle : IAsyncDisposable
 
     internal void Complete(TurnCompletedNotification completed)
     {
+        _serverFinished.TrySetResult();
         lock (_observersLock)
         {
             if (_observersCompleted) return;
@@ -71,6 +75,12 @@ public sealed class CodexTurnHandle : IAsyncDisposable
     }
 
     internal void Terminate(Exception? error = null)
+    {
+        _serverFinished.TrySetResult();
+        TerminateObservation(error);
+    }
+
+    private void TerminateObservation(Exception? error = null)
     {
         lock (_observersLock)
         {
@@ -227,8 +237,12 @@ public sealed class CodexTurnHandle : IAsyncDisposable
             return ValueTask.CompletedTask;
         }
 
-        _onDispose();
-        Terminate();
+        if (!KeepRegisteredUntilTerminal || ServerCompletion.IsCompleted)
+        {
+            _onDispose();
+            _serverFinished.TrySetResult();
+        }
+        TerminateObservation();
 
         return ValueTask.CompletedTask;
     }

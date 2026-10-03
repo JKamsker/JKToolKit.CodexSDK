@@ -1,8 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.Infrastructure;
-using Microsoft.Extensions.Logging.Abstractions;
+using JKToolKit.CodexSDK.Abstractions;
 
 namespace JKToolKit.CodexSDK.Facade;
 
@@ -11,8 +10,9 @@ public sealed class CodexRuntime
 {
     private readonly CodexThreads _threads;
     private readonly CodexAppServerClientOptions? _options;
-    internal CodexRuntime(CodexThreads threads, CodexAppServerClientOptions? options)
-    { _threads = threads; _options = options?.Clone(); }
+    private readonly ICodexPathProvider? _pathProvider;
+    internal CodexRuntime(CodexThreads threads, CodexAppServerClientOptions? options, ICodexPathProvider? pathProvider)
+    { _threads = threads; _options = options?.Clone(); _pathProvider = pathProvider; }
 
     /// <summary>Gets the protocol version embedded from UPSTREAM_CODEX_VERSION.json at build time.</summary>
     public static string ExpectedVersion { get; } = ReadExpectedVersion();
@@ -33,12 +33,11 @@ public sealed class CodexRuntime
         string? path = null, version = null;
         AppServerInitializeResult? initialize = null;
         AccountReadResult? account = null;
-        if (_options is not null && _options.Endpoint is null && _options.Launch.FileName is null)
+        if (_options is not null && _pathProvider is not null && _options.Endpoint is null && string.IsNullOrWhiteSpace(_options.Launch.FileName))
         {
             try
             {
-                path = new DefaultCodexPathProvider(new RealFileSystem(), NullLogger<DefaultCodexPathProvider>.Instance)
-                    .GetCodexExecutablePath(_options.CodexExecutablePath);
+                path = _pathProvider.GetCodexExecutablePath(_options.CodexExecutablePath);
                 version = await ReadVersionAsync(path, ct).ConfigureAwait(false);
                 if (version != ExpectedVersion)
                     diagnostics.Add($"SDK generated for {ExpectedVersion}, found CLI {version}.");

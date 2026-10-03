@@ -125,6 +125,14 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
     {
         lock (_turnsLock)
         {
+            // A response may finish dispatching after shutdown has already cleared its snapshot.
+            if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _disconnectSignaled) != 0)
+            {
+                handle.Terminate(Volatile.Read(ref _disposed) != 0
+                    ? new ObjectDisposedException(nameof(CodexAppServerClient))
+                    : BuildDisconnectException());
+                return;
+            }
             _turnsById[turnId] = handle;
             PruneStaleTurnBuffers(DateTimeOffset.UtcNow);
 
@@ -461,4 +469,3 @@ internal sealed partial class CodexAppServerClientCore : IAsyncDisposable
         try { _disposeCts.Dispose(); } catch { /* ignore */ }
     }
 }
-

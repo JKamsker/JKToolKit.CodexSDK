@@ -60,6 +60,12 @@ has no effect on the running turn; call `InterruptAsync` explicitly. Disposing
 a raw turn handle does not interrupt the server. Await server completion before
 starting another turn on a thread whose handle you disposed.
 
+If cancellation arrives while startup is in flight, the caller returns promptly
+and the SDK retains the startup response so it can interrupt the accepted turn.
+The thread remains reserved until the server reports completion or the connection
+closes, including when interruption fails. Disposing a high-level handle also
+preserves this guard until server completion.
+
 ## Trust-labelled external input
 
 ```csharp
@@ -122,7 +128,9 @@ Register `ICodexTurnMiddleware` through `builder.Use(middleware)`. Middleware
 wraps both collected and streaming high-level startup in registration order
 (first registered is outermost). Call `next` once, inspect/configure
 `CodexTurnContext.Options`, or attach observers to the returned handle. Exceptions
-propagate. Observers attached after startup do not replay early notifications.
+propagate; if middleware fails after starting a turn, the SDK requests interruption
+and retains ownership until server completion. Return the handle obtained from
+`next`. Observers attached after startup do not replay early notifications.
 These hooks do not replace the raw clients' response/notification transformers.
 
 Register `JKToolKit.CodexSDK` with OpenTelemetry's `AddSource` and `AddMeter`.

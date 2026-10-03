@@ -72,7 +72,8 @@ public sealed class CodexSdk : IAsyncDisposable
         AppServer = new CodexAppServerFacade(appServer);
         McpServer = new CodexMcpServerFacade(mcpServer);
         Threads = new CodexThreads(AppServer, middleware);
-        Runtime = new CodexRuntime(Threads, runtimeOptions ?? (appServer as CodexAppServerClientFactory)?.OptionsSnapshot);
+        var runtimeFactory = appServer as CodexAppServerClientFactory;
+        Runtime = new CodexRuntime(Threads, runtimeOptions ?? runtimeFactory?.OptionsSnapshot, runtimeFactory?.PathProvider);
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using JKToolKit.CodexSDK.Facade.Internal;
 using JKToolKit.CodexSDK.AppServer;
 
 namespace JKToolKit.CodexSDK.Facade;
@@ -11,13 +12,8 @@ public sealed class CodexThreads
     private readonly IReadOnlyList<ICodexTurnMiddleware> _middleware;
     private CodexAppServerClient? _client;
     private bool _disposed;
-    private readonly ConcurrentDictionary<string, ExecutionState> _states = new(StringComparer.Ordinal);
-    internal ExecutionState GetState(string threadId) => _states.GetOrAdd(threadId, _ => new());
-    internal sealed class ExecutionState
-    {
-        internal readonly SemaphoreSlim Gate = new(1, 1);
-        internal CodexTurnHandle? Active;
-    }
+    private readonly ConcurrentDictionary<string, CodexThreadExecutionState> _states = new(StringComparer.Ordinal);
+    internal CodexThreadExecutionState GetState(string threadId) => _states.GetOrAdd(threadId, _ => new());
 
     internal CodexThreads(CodexAppServerFacade factory, IReadOnlyList<ICodexTurnMiddleware>? middleware = null)
     {
@@ -59,7 +55,8 @@ public sealed class CodexThreads
         {
             if (_disposed) return;
             _disposed = true;
-            if (_client is not null) await _client.DisposeAsync().ConfigureAwait(false);
+            try { if (_client is not null) await _client.DisposeAsync().ConfigureAwait(false); }
+            finally { _states.Clear(); }
         }
         finally { _gate.Release(); }
     }

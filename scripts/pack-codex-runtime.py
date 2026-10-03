@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tarfile
 import urllib.request
+from xml.sax.saxutils import quoteattr
 
 ROOT = Path(__file__).resolve().parents[1]
 RIDS = {'linux-x64': 'linux-x64', 'linux-arm64': 'linux-arm64',
@@ -39,19 +40,21 @@ def main():
         pack_runtime(rid, version, lock['packages'][rid], args.output.resolve())
 
 def pack_runtime(rid, version, entry, output):
-    work = ROOT / 'artifacts' / 'runtime' / rid
+    work = ROOT / 'artifacts' / 'runtime' / version / rid
     work.mkdir(parents=True, exist_ok=True)
     archive = work / 'runtime.tgz'
     if not archive.exists():
         with urllib.request.urlopen(entry['tarball'], timeout=120) as response, archive.open('wb') as dest:
             shutil.copyfileobj(response, dest)
-    digest = base64.b64encode(hashlib.file_digest(archive.open('rb'), 'sha512').digest()).decode()
+    with archive.open('rb') as source:
+        digest = base64.b64encode(hashlib.file_digest(source, 'sha512').digest()).decode()
     if entry['integrity'] != 'sha512-' + digest:
         archive.unlink()
         raise SystemExit(f'Integrity check failed for {rid}')
     content = work / 'content'
     if content.exists(): shutil.rmtree(content)
     content.mkdir()
+    executables = []
     with tarfile.open(archive) as tar:
         for member in tar.getmembers():
             parts = PurePosixPath(member.name).parts
@@ -69,12 +72,22 @@ def pack_runtime(rid, version, entry, output):
             with tar.extractfile(member) as source, dest.open('wb') as target:
                 shutil.copyfileobj(source, target)
             dest.chmod(member.mode & 0o777)
+            if member.mode & 0o111:
+                executables.append(relative.as_posix())
     binary = content / 'bin' / ('codex.exe' if rid.startswith('win-') else 'codex')
     if not binary.exists(): raise SystemExit(f'Missing expected executable: {binary}')
     # NuGet extraction does not promise Unix executable modes. Restore them after copy and publish.
     package_id = f'JKToolKit.CodexSDK.Runtime.{rid}'
     prefix = f'codex-runtime/{version}/{rid}'
     targets = work / f'{package_id}.targets'
+    executable_items = []
+    for relative in executables:
+        for directory in ('$(TargetDir)', '$(PublishDir)'):
+            path = f'{directory}{prefix}/{relative}'
+            condition = f"Exists('{path}')"
+            executable_items.append(
+                f'      <_CodexExecutable_{rid.replace("-", "_")} Include={quoteattr(path)} Condition={quoteattr(condition)} />')
+    executable_items = '\n'.join(executable_items)
     targets.write_text(f'''<Project>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)../content/**/*">
@@ -86,9 +99,9 @@ def pack_runtime(rid, version, entry, output):
   </ItemGroup>
   <Target Name="CodexRuntimePermissions_{rid.replace('-', '_')}" AfterTargets="CopyFilesToOutputDirectory;Publish" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
     <ItemGroup>
-      <_CodexExecutable_{rid.replace('-', '_')} Include="$(TargetDir){prefix}/**/*;$(PublishDir){prefix}/**/*" />
+{executable_items}
     </ItemGroup>
-    <Exec Command="chmod u+x &quot;%(_CodexExecutable_{rid.replace('-', '_')}.Identity)&quot;" Condition="'@(_CodexExecutable_{rid.replace('-', '_')})' != ''" />
+    <Exec Command="chmod a+rx &quot;%(_CodexExecutable_{rid.replace('-', '_')}.Identity)&quot;" Condition="'@(_CodexExecutable_{rid.replace('-', '_')})' != ''" />
   </Target>
 </Project>
 ''')

@@ -49,7 +49,15 @@ early completion, queue overflow and partial-result reporting, duplicate items,
 64-bit usage counters, cancellation, disposal, transport failure, independent
 observers, randomized parser input, and fragmented Unicode frames. The full local
 suite passed; opt-in legacy integration tests remain separately gated. Upstream
-schema generation check and all 38 automation tests passed.
+schema generation check and all 41 automation tests passed.
+
+After the parallel review fixes, the live sample passed again: `READY`, resumed
+`ORCHID`, independent observers (10 events each in this run), preserved external
+tool output, and terminal interruption. The full .NET suite passed 890 tests
+(15 separately gated integration tests skipped). Added regressions cover canceled
+startup, middleware failure cleanup, shutdown during startup, turn payload
+collection, custom DI executable resolution, version-scoped runtime caches, and
+build/publish executable permissions for other users.
 
 Windows/macOS execution and all six RID packages are validated by PR CI. This
 local record does not claim local execution of non-Linux binaries.

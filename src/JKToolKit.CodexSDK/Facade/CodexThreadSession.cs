@@ -1,4 +1,5 @@
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.Facade.Internal;
 
 namespace JKToolKit.CodexSDK.Facade;
 
@@ -7,7 +8,7 @@ public sealed class CodexThreadSession
 {
     private readonly CodexThreads _owner;
     private readonly IReadOnlyList<ICodexTurnMiddleware> _middleware;
-    private readonly CodexThreads.ExecutionState _state;
+    private readonly CodexThreadExecutionState _state;
 
     internal CodexThreadSession(CodexThreads owner, CodexThread thread, IReadOnlyList<ICodexTurnMiddleware> middleware)
     { _owner = owner; Thread = thread; _middleware = middleware; _state = owner.GetState(thread.Id); }
@@ -45,22 +46,32 @@ public sealed class CodexThreadSession
     public async Task<CodexTurnHandle> RunStreamedAsync(TurnStartOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        await _state.Gate.WaitAsync(ct).ConfigureAwait(false);
+        ct.ThrowIfCancellationRequested();
+        var owned = _state.Reserve();
         try
         {
-            if (_state.Active is { Completion.IsCompleted: false })
-                throw new InvalidOperationException("This thread already has an active turn. Await completion or steer the existing turn.");
             var client = await _owner.GetClientAsync(ct).ConfigureAwait(false);
             var context = new CodexTurnContext(Id, options);
-            Func<CancellationToken, Task<CodexTurnHandle>> next = token => client.StartTurnAsync(Id, options, token);
+            Func<CancellationToken, Task<CodexTurnHandle>> next = token =>
+                owned.StartAsync(() => client.StartTurnAsync(Id, options, CancellationToken.None), token);
             foreach (var middleware in _middleware.Reverse())
             {
                 var continuation = next;
                 next = token => middleware.StartAsync(context, continuation, token);
             }
-            _state.Active = await next(ct).ConfigureAwait(false);
-            return _state.Active;
+            var pipeline = next(ct);
+            // Observe late middleware failures even if the caller has already canceled its wait.
+            _ = pipeline.ContinueWith(static task => { _ = task.Exception; }, CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            var handle = await pipeline.WaitAsync(ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            owned.ValidateReturnedHandle(handle);
+            return handle;
         }
-        finally { _state.Gate.Release(); }
+        catch
+        {
+            owned.Abandon();
+            throw;
+        }
     }
 }
