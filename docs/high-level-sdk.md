@@ -134,8 +134,8 @@ and retains ownership until server completion. Return the handle obtained from
 These hooks do not replace the raw clients' response/notification transformers.
 
 Register `JKToolKit.CodexSDK` with OpenTelemetry's `AddSource` and `AddMeter`.
-`CodexTelemetry.ActivitySource` creates `codex.turn` client spans through terminal
-completion, including raw app-server calls made by AgentFramework and
+`CodexTelemetry.ActivitySource` creates `codex.turn` client spans that end on
+terminal completion, transport failure, or handle disposal, including raw app-server calls made by AgentFramework and
 SemanticKernel adapters. Spans inherit the current activity and contain model,
 thread/turn IDs, status, and exception type. Prompts, responses, paths, account
 details, and error messages are excluded. `codex.turn.duration` (seconds) and
