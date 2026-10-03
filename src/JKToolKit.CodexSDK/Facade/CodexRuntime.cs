@@ -17,6 +17,7 @@ public sealed class CodexRuntime
     /// <summary>Gets the protocol version embedded from UPSTREAM_CODEX_VERSION.json at build time.</summary>
     public static string ExpectedVersion { get; } = ReadExpectedVersion();
 
+    /// <summary>Reads the protocol pin embedded into this SDK build.</summary>
     private static string ReadExpectedVersion()
     {
         using var stream = typeof(CodexRuntime).Assembly.GetManifestResourceStream("CodexUpstreamVersion")!;
@@ -70,12 +71,36 @@ public sealed class CodexRuntime
         };
     }
 
+    /// <summary>Builds an executable or Windows batch-shim version probe with redirected output.</summary>
+    internal static ProcessStartInfo CreateVersionStartInfo(string path, bool isWindows)
+    {
+        var info = new ProcessStartInfo(path)
+        {
+            UseShellExecute = false, RedirectStandardOutput = true,
+            RedirectStandardError = true, CreateNoWindow = true
+        };
+        var extension = Path.GetExtension(path);
+        if (isWindows && (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".bat", StringComparison.OrdinalIgnoreCase)))
+        {
+            if (path.IndexOfAny(['"', '\r', '\n', '\0']) >= 0)
+                throw new ArgumentException("Invalid Windows batch executable path.", nameof(path));
+            info.FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe");
+            // Expand the path once inside quotes, keeping literal percent signs intact. Disable
+            // AutoRun and delayed expansion so a shim path containing !, &, or spaces stays literal.
+            info.Environment["CODEX_SDK_PREFLIGHT_BINARY"] = path;
+            info.Arguments = "/d /v:off /s /c \"\"%CODEX_SDK_PREFLIGHT_BINARY%\" --version\"";
+        }
+        else info.ArgumentList.Add("--version");
+        return info;
+    }
+
+    /// <summary>Collects a bounded version probe, terminating its process tree on timeout or cancellation.</summary>
     private static async Task<string> ReadVersionAsync(string path, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        var info = new ProcessStartInfo(path) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
-        info.ArgumentList.Add("--version");
+        var info = CreateVersionStartInfo(path, OperatingSystem.IsWindows());
         using var process = Process.Start(info) ?? throw new InvalidOperationException("Could not start Codex.");
         try
         {

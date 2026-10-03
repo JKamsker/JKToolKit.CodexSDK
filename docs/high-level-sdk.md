@@ -122,6 +122,10 @@ probing an unrelated PATH binary. Initialize metadata is preserved;
 it supports none. Account information may contain personal data; avoid logging
 it indiscriminately.
 
+Executable preflight supports Windows `.cmd` and `.bat` shims through the system
+command interpreter, with AutoRun and delayed expansion disabled. Native binaries
+are launched directly. The probe retains the selected shim path in `ExecutablePath`.
+
 ## Middleware and telemetry
 
 Register `ICodexTurnMiddleware` through `builder.Use(middleware)`. Middleware

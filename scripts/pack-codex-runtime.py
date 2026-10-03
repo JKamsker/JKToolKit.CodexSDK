@@ -15,8 +15,18 @@ ROOT = Path(__file__).resolve().parents[1]
 RIDS = {'linux-x64': 'linux-x64', 'linux-arm64': 'linux-arm64',
         'win-x64': 'win32-x64', 'win-arm64': 'win32-arm64',
         'osx-x64': 'darwin-x64', 'osx-arm64': 'darwin-arm64'}
+TARGETS = {'linux-x64': 'x86_64-unknown-linux-musl', 'linux-arm64': 'aarch64-unknown-linux-musl',
+           'win-x64': 'x86_64-pc-windows-msvc', 'win-arm64': 'aarch64-pc-windows-msvc',
+           'osx-x64': 'x86_64-apple-darwin', 'osx-arm64': 'aarch64-apple-darwin'}
+
+def validate_source(rid, version, entry):
+    """Require the pinned official npm archive for the requested platform before downloading."""
+    expected = f'https://registry.npmjs.org/@openai/codex/-/codex-{version}-{RIDS[rid]}.tgz'
+    if entry['tarball'] != expected:
+        raise SystemExit(f'Unexpected runtime source for {rid}: expected {expected}')
 
 def main():
+    """Refresh the reviewed integrity lock or build selected runtime packages from it."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--rid', choices=RIDS, action='append')
     parser.add_argument('--update-lock', action='store_true')
@@ -30,6 +40,7 @@ def main():
             with urllib.request.urlopen(f'https://registry.npmjs.org/@openai/codex/{version}-{platform}', timeout=60) as response:
                 dist = json.load(response)['dist']
             lock['packages'][rid] = {k: dist[k] for k in ('tarball', 'integrity')}
+            validate_source(rid, version, lock['packages'][rid])
         lock_path.write_text(json.dumps(lock, indent=2) + '\n')
         return
     lock = json.loads(lock_path.read_text())
@@ -40,6 +51,8 @@ def main():
         pack_runtime(rid, version, lock['packages'][rid], args.output.resolve())
 
 def pack_runtime(rid, version, entry, output):
+    """Verify the source, digest, and archive platform before creating a native runtime package."""
+    validate_source(rid, version, entry)
     work = ROOT / 'artifacts' / 'runtime' / version / rid
     work.mkdir(parents=True, exist_ok=True)
     archive = work / 'runtime.tgz'
@@ -63,6 +76,8 @@ def pack_runtime(rid, version, entry, output):
             if not member.isfile(): continue
             # Preserve the official vendor layout, including rg, sandbox helpers, and notices.
             if len(parts) > 3 and parts[:2] == ('package', 'vendor'):
+                if parts[2] != TARGETS[rid]:
+                    raise SystemExit(f'Unexpected archive platform for {rid}: {parts[2]}')
                 relative = Path(*parts[3:])
             elif parts[-1].lower().startswith(('license', 'notice')):
                 relative = Path(parts[-1])

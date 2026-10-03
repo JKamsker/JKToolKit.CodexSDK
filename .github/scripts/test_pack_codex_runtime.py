@@ -32,24 +32,40 @@ class RuntimePackagingTests(unittest.TestCase):
         self.addCleanup(self.root_patch.stop)
 
     @staticmethod
-    def archive(version):
+    def archive(version, target='x86_64-unknown-linux-musl'):
         output = io.BytesIO()
         with tarfile.open(fileobj=output, mode='w:gz') as archive:
             for name, mode in [('bin/codex', 0o755), ('codex-path/helper tool', 0o750), ('NOTICE', 0o644)]:
                 data = version.encode()
-                member = tarfile.TarInfo('package/vendor/test-target/' + name)
+                member = tarfile.TarInfo('package/vendor/' + target + '/' + name)
                 member.mode = mode
                 member.size = len(data)
                 archive.addfile(member, io.BytesIO(data))
         return output.getvalue()
 
     def pack(self, version, data):
-        entry = {'tarball': 'https://example.invalid/' + version,
+        entry = {'tarball': f'https://registry.npmjs.org/@openai/codex/-/codex-{version}-linux-x64.tgz',
                  'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(data).digest()).decode()}
         with patch.object(PACKER.urllib.request, 'urlopen', return_value=io.BytesIO(data)) as download, \
                 patch.object(PACKER.subprocess, 'run'):
             PACKER.pack_runtime('linux-x64', version, entry, self.root / 'packages')
         return download.call_count
+
+    def test_source_validation_requires_official_host_version_and_platform(self):
+        for url in [
+            'https://example.invalid/codex-1.0.0-linux-x64.tgz',
+            'https://registry.npmjs.org/@openai/codex/-/codex-1.0.0-win32-x64.tgz',
+            'https://registry.npmjs.org/@openai/codex/-/codex-2.0.0-linux-x64.tgz',
+            'http://registry.npmjs.org/@openai/codex/-/codex-1.0.0-linux-x64.tgz',
+        ]:
+            with self.subTest(url=url), patch.object(PACKER.urllib.request, 'urlopen') as download:
+                with self.assertRaisesRegex(SystemExit, 'Unexpected runtime source'):
+                    PACKER.pack_runtime('linux-x64', '1.0.0', {'tarball': url}, self.root / 'packages')
+                download.assert_not_called()
+
+    def test_archive_platform_must_match_requested_rid_even_with_valid_digest(self):
+        with self.assertRaisesRegex(SystemExit, 'Unexpected archive platform'):
+            self.pack('1.0.0', self.archive('1.0.0', target='aarch64-unknown-linux-musl'))
 
     def test_upstream_update_downloads_new_archive_and_keeps_existing_version_cache(self):
         old = self.archive('1.0.0')

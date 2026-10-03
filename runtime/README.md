@@ -13,7 +13,9 @@ python3 scripts/pack-codex-runtime.py --rid linux-x64
 Omit `--rid` to build all six packages. Use `--update-lock` after an intentional
 upstream pin change, inspect the URLs and hashes, and refresh the upstream
 license/notice if needed. The script refuses a stale lock and rejects archive
-links or traversal paths. Downloaded archives and staging output are ignored
+links or traversal paths. It requires the exact official npm archive URL for the
+selected version and RID, checks SHA-512 integrity, and rejects vendor content
+whose target platform differs from the requested RID. Downloaded archives and staging output are ignored
 under `artifacts/runtime`; packages go to `nuget-packages`.
 
 Packages contain the complete official vendor layout, including helper tools
