@@ -85,6 +85,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();
+        Assert.Equal(1, rpc.Disposals);
         await routed.DisposeAsync();
         Assert.Equal(1, rpc.Disposals);
         rpc.AssertDrained();
@@ -132,6 +133,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.ReviewThreadId.Should().Be("thr_review");
 
         await routed.DisposeAsync();
+        Assert.Equal(1, rpc.Disposals);
         await routed.DisposeAsync();
         Assert.Equal(1, rpc.Disposals);
         rpc.AssertDrained();
@@ -174,6 +176,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();
+        Assert.Equal(1, rpc.Disposals);
         await routed.DisposeAsync();
         Assert.Equal(1, rpc.Disposals);
         rpc.AssertDrained();

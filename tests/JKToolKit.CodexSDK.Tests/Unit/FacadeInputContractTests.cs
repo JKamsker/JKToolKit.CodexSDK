@@ -20,6 +20,13 @@ public sealed class FacadeInputContractTests
         Assert.False(fixture.Rpc.LastTurn.TryGetProperty("toolOutput", out _));
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ExternalMessage_RequiresItsSourceSoContentCannotBecomeUserInput(string? source) =>
+        Assert.ThrowsAny<ArgumentException>(() => CodexInput.ExternalMessage(source!, "external content"));
+
     [Fact]
     public async Task ConfiguredThreadStart_PreservesCallerOptionsOnSharedConnection()
     {
