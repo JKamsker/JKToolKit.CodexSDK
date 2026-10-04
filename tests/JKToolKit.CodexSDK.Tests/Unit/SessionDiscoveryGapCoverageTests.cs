@@ -30,8 +30,8 @@ public sealed class SessionDiscoveryGapCoverageTests
     [Fact]
     public async Task DiscoveryUsesMetadataTimestampAndSortsEarliestFirst()
     {
-        var late = FilePath("rollout-late.jsonl");
-        var early = FilePath("rollout-early.jsonl");
+        var late = FilePath("rollout-a-late.jsonl");
+        var early = FilePath("rollout-z-early.jsonl");
         var old = FilePath("rollout-old.jsonl");
         var unknown = FilePath("rollout-unknown.jsonl");
         var fs = new Files
@@ -93,6 +93,30 @@ public sealed class SessionDiscoveryGapCoverageTests
     [InlineData("other.jsonl")]
     public void InvalidFilenameTimestampIsRejected(string path) =>
         CodexUncorrelatedSessionDiscoveryHelpers.TryParseRolloutTimestampUtc(path, out _).Should().BeFalse();
+
+    [Theory]
+    [InlineData("rollout-2026-04-05T06-07-08-session.jsonl")]
+    [InlineData("ROLLOUT-2026-04-05T06-07-08-session.jsonl")]
+    public void FilenameTimestampUsesUtcComponents(string name)
+    {
+        CodexUncorrelatedSessionDiscoveryHelpers.TryParseRolloutTimestampUtc(FilePath(name), out var timestamp).Should().BeTrue();
+        timestamp.Should().Be(new DateTimeOffset(2026, 4, 5, 6, 7, 8, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public async Task DiscoveryPrefersTopLevelMetadataTimestampAndIgnoresUnrelatedEvents()
+    {
+        var top = FilePath("rollout-z-top.jsonl");
+        var other = FilePath("rollout-a-other.jsonl");
+        var fs = new Files
+        {
+            Enumerate = _ => [other, top],
+            Read = path => Text(path == top
+                ? "\n{\"type\":\"other\",\"timestamp\":\"2025-01-01T00:00:00Z\"}\n{\"type\":\"session_meta\",\"timestamp\":\"2026-01-01T00:00:01Z\",\"payload\":{\"timestamp\":\"2026-01-01T00:00:03Z\"}}"
+                : "{\"type\":\"session_meta\",\"timestamp\":\"2026-01-01T00:00:02Z\",\"payload\":{}}")
+        };
+        (await FindAsync(fs, [])).Should().Be(top);
+    }
 
     private static Task<string?> FindAsync(Files fs, HashSet<string> baseline, CancellationToken ct = default) =>
         CodexUncorrelatedSessionDiscoveryHelpers.FindNewSessionFileAsync(fs, NullLogger.Instance, [Root], Start, baseline, CodexSessionFilePattern.Create(), ct);

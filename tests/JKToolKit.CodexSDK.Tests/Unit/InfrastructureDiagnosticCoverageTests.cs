@@ -30,6 +30,7 @@ public sealed class InfrastructureDiagnosticCoverageTests
         CodexDiagnosticsSanitizer.Sanitize("prefix[" + new string('x', 65) + "]tail", 10).Should().Be("prefix");
         CodexDiagnosticsSanitizer.Sanitize("[" + new string('x', 64) + "]tail", 10).Should().BeEmpty();
         CodexDiagnosticsSanitizer.Sanitize("[" + new string('x', 63) + "]tail", 10).Should().Be("[" + new string('x', 63) + "]");
+        CodexDiagnosticsSanitizer.Sanitize("prefix-prefix[" + new string('x', 63) + "]tail", 20).Should().Be("prefix-prefix[" + new string('x', 63) + "]");
     }
 
     [Fact]

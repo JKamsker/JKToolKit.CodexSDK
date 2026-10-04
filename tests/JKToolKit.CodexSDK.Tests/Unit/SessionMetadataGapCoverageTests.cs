@@ -44,6 +44,7 @@ public sealed class SessionMetadataGapCoverageTests
     [Theory]
     [InlineData("abc.def", "abc.def", true)]
     [InlineData("abcZdef", "abc.def", false)]
+    [InlineData("abc.def-tail", "abc.def", false)]
     [InlineData("[abc]", "[abc]", true)]
     [InlineData("abc", "[abc]", false)]
     [InlineData("SESSION-abc", "session-?b*", true)]
@@ -92,6 +93,66 @@ public sealed class SessionMetadataGapCoverageTests
     {
         var files = new MetadataFiles { Failure = kind switch { 0 => new FileNotFoundException(), 1 => new UnauthorizedAccessException(), _ => new IOException() } };
         CodexSessionLocatorHelpers.TryGetCreationTimeUtc(files, NullLogger.Instance, "file").Should().BeNull();
+    }
+
+    [Fact]
+    public async Task MetadataUpdatesPreserveCreationAndFirstLabelWhileTrackingNewestContext()
+    {
+        var fs = new InMemoryFileSystem();
+        fs.AddFile("rollout-session.jsonl", """
+            {"type":"session_meta","timestamp":"2026-01-02T00:00:00Z","payload":{"id":"session","timestamp":"2026-01-05T00:00:00Z","cwd":"/initial","model_provider":"first","thread_name":"first label","name":"name fallback","label":"label fallback"}}
+            {"type":"session_meta","timestamp":"2026-01-03T00:00:00Z","payload":{"timestamp":"2026-01-06T00:00:00Z","model_provider":"second","thread_name":"later label"}}
+            {"type":"session_meta","payload":{"cwd":123,"name":123,"model_provider":123}}
+            {"type":"turn_context","timestamp":"2026-01-04T00:00:00Z","payload":{"timestamp":"2026-01-07T00:00:00Z","cwd":"/latest","model":"gpt-5.1-codex-mini"}}
+            {"type":"turn_context","payload":{"cwd":123,"model":123}}
+            """);
+        var info = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(fs, NullLogger.Instance, "rollout-session.jsonl", null, default);
+        info!.CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero));
+        info.UpdatedAt.Should().Be(new DateTimeOffset(2026, 1, 7, 0, 0, 0, TimeSpan.Zero));
+        info.HumanLabel.Should().Be("first label");
+        info.ModelProvider.Should().Be("second");
+        info.WorkingDirectory.Should().Be("/latest");
+        info.Model.Should().Be(CodexModel.Gpt51CodexMini);
+    }
+
+    [Theory]
+    [InlineData("{\"name\":\"name\",\"label\":\"label\"}", "name")]
+    [InlineData("{\"label\":\"label\"}", "label")]
+    [InlineData("{\"thread_name\":123,\"name\":123,\"label\":123}", null)]
+    public async Task MetadataUsesLabelFallbackAndSessionCwd(string fields, string? label)
+    {
+        var fs = new InMemoryFileSystem();
+        fs.AddFile("rollout-session.jsonl", "{\"type\":\"session_meta\",\"payload\":{\"cwd\":\"/session-cwd\"," + fields[1..] + "}");
+        var info = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(fs, NullLogger.Instance, "rollout-session.jsonl", Created.UtcDateTime, default);
+        info!.WorkingDirectory.Should().Be("/session-cwd");
+        info.HumanLabel.Should().Be(label);
+        info.CreatedAt.Should().Be(Created);
+        info.UpdatedAt.Should().Be(Created);
+    }
+
+    [Fact]
+    public async Task MetadataPayloadTimestampContributesToUpdatedAt()
+    {
+        var fs = new InMemoryFileSystem();
+        fs.AddFile("rollout-session.jsonl", """
+            {"type":"session_meta","timestamp":"2026-01-01T00:00:00Z","payload":{"timestamp":"2026-02-01T00:00:00Z"}}
+            """);
+        var info = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(fs, NullLogger.Instance, "rollout-session.jsonl", null, default);
+        info!.CreatedAt.Should().Be(Created);
+        info.UpdatedAt.Should().Be(Created.AddMonths(1));
+    }
+
+    [Fact]
+    public void EnumerationUsesFilenameTimestampBeforeCreationAndPreservesCreationValue()
+    {
+        var fs = new InMemoryFileSystem();
+        fs.AddFile("/sessions/rollout-2026-02-01T00-00-00-a.jsonl", "", Created.UtcDateTime);
+        fs.AddFile("/sessions/rollout-2026-01-01T00-00-00-b.jsonl", "", Created.AddYears(1).UtcDateTime);
+        fs.AddFile("/sessions/rollout-fallback.jsonl", "", Created.AddYears(-1).UtcDateTime);
+        var files = CodexSessionLocatorHelpers.EnumerateSessionFiles(fs, NullLogger.Instance, "/sessions", CodexSessionFilePattern.Create()).ToArray();
+        files.Select(x => Path.GetFileName(x.FilePath)).Should().Equal("rollout-2026-02-01T00-00-00-a.jsonl", "rollout-2026-01-01T00-00-00-b.jsonl", "rollout-fallback.jsonl");
+        files[0].CreatedAtUtc.Should().Be(Created.UtcDateTime);
+        CodexSessionLocatorHelpers.TryExtractSessionIdFromFilePath(NullLogger.Instance, "ROLLOUT-2026-02-01T00-00-00-selected.jsonl")!.Value.Value.Should().Be("selected");
     }
 
     private sealed class MetadataFiles : IFileSystem
