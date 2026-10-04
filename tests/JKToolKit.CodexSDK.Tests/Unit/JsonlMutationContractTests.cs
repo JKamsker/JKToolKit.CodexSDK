@@ -136,7 +136,8 @@ public class JsonlMutationContractTests
     {
         var entered = Parse("event_msg", """{"type":"entered_review_mode","target":{"type":"branch"}}""").Should().BeOfType<EnteredReviewModeEvent>().Subject;
         entered.Target!.Type.Should().Be("branch");
-        var review = Parse("event_msg", """{"type":"exited_review_mode","review_output":{"overall_explanation":"explanation","findings":[{"title":"title","body":"body","code_location":{"absolute_file_path":"/file"}},{"code_location":{"line_range":{"start":1}}}]}}""").Should().BeOfType<ExitedReviewModeEvent>().Which.ReviewOutput!;
+        var review = Parse("event_msg", """{"type":"exited_review_mode","review_output":{"overall_explanation":"explanation","findings":[{"title":"title","body":"body","confidence_score":0.9,"code_location":{"absolute_file_path":"/file"}},{"code_location":{"line_range":{"start":1}}}]}}""").Should().BeOfType<ExitedReviewModeEvent>().Which.ReviewOutput!;
+        review.Findings[0].ConfidenceScore.Should().Be(0.9);
         review.OverallExplanation.Should().Be("explanation"); review.Findings[0].Title.Should().Be("title"); review.Findings[0].Body.Should().Be("body");
         review.Findings[0].CodeLocation.Should().Be(new ReviewCodeLocation("/file", null));
         review.Findings[1].CodeLocation.Should().Be(new ReviewCodeLocation(null, new ReviewLineRange(1, null)));
@@ -173,4 +174,45 @@ public class JsonlMutationContractTests
         var output = Parse("response_item", """{"type":"function_call_output","output":[{"type":"input_text","text":"tool text"}]}""").Should().BeOfType<ResponseItemEvent>().Which.Payload.Should().BeOfType<FunctionCallOutputResponseItemPayload>().Subject;
         output.OutputContent![0].Should().BeOfType<FunctionToolOutputInputTextPart>().Which.Text.Should().Be("tool text");
     }
+    [Theory]
+    [InlineData("{\"content\":[]}", null)]
+    [InlineData("{\"text\":\"\",\"content\":[{},false]}", "")]
+    [InlineData("""{"text":" ","content":[{"text":"fallback"}]}""", "fallback")]
+    [InlineData("{\"text\":\"direct\",\"content\":[{\"text\":\"ignored\"}]}", "direct")]
+    public void CompletedItem_UsesFirstNonBlankContentOnlyWhenTextIsBlank(string item, string? expected)
+    {
+        Parse("event_msg", "{\"type\":\"item_completed\",\"item\":" + item + "}").Should().BeOfType<TurnItemCompletedEvent>().Which.Text.Should().Be(expected);
+    }
+
+    [Fact]
+    public void NullRequiredContextSummary_IsRejected()
+    {
+        var parser = new JsonlEventParser(new RecordingLogger());
+        parser.TryParseLine("""{"timestamp":"2026-01-02T03:04:05Z","type":"turn_context","payload":{"approval_policy":"never","sandbox_policy_type":"read-only","cwd":"/repo","model":"gpt-5","summary":null}}""", out var evt, out _).Should().BeFalse();
+        evt.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("user_message")]
+    [InlineData("agent_message")]
+    [InlineData("agent_reasoning")]
+    public void NullText_IsNotAnEmptyMessage(string type)
+    {
+        var parser = new JsonlEventParser(new RecordingLogger());
+        parser.TryParseLine("{\"timestamp\":\"2026-01-02T03:04:05Z\",\"type\":\"" + type + "\",\"payload\":{\"text\":null}}", out var evt, out _).Should().BeFalse();
+        evt.Should().BeNull();
+    }
+
+    [Fact]
+    public void NullHooks_AreIgnoredWithoutSpuriousFailureDiagnostics()
+    {
+        var logger = new RecordingLogger();
+        var parser = new JsonlEventParser(logger, Options.Create(new CodexClientOptions
+        {
+            EventTransformers = new IExecEventTransformer[] { null! }, EventMappers = new IExecEventMapper[] { null! }
+        }));
+        parser.TryParseLine("""{"timestamp":"2026-01-02T03:04:05Z","type":"agent_message","message":"hello"}""", out _, out _).Should().BeTrue();
+        logger.Messages.Should().BeEmpty();
+    }
+
 }
