@@ -42,12 +42,25 @@ public sealed class McpServerE2ETests
     public async Task LegacyMcpServer_Starts_AndListsCodexTools()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await using var sdk = CodexSdk.Create(builder => builder.ConfigureMcpServer(options =>
-            options.CodexExecutablePath = Environment.GetEnvironmentVariable("CODEX_E2E_MCP_EXECUTABLE")));
-        await using var client = await sdk.McpServer.StartAsync(cts.Token);
+        // Tools/list needs no credentials. A current config can contain values a legacy CLI cannot parse.
+        var codexHome = Path.Combine(Path.GetTempPath(), $"codex-sdk-legacy-mcp-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(codexHome);
+        try
+        {
+            await using var sdk = CodexSdk.Create(builder => builder.ConfigureMcpServer(options =>
+            {
+                options.CodexExecutablePath = Environment.GetEnvironmentVariable("CODEX_E2E_MCP_EXECUTABLE");
+                options.CodexHomeDirectory = codexHome;
+            }));
+            await using var client = await sdk.McpServer.StartAsync(cts.Token);
 
-        var tools = await client.ListToolsAsync(cts.Token);
-        tools.Should().Contain(tool => tool.Name == "codex");
-        tools.Should().Contain(tool => tool.Name == "codex-reply");
+            var tools = await client.ListToolsAsync(cts.Token);
+            tools.Should().Contain(tool => tool.Name == "codex");
+            tools.Should().Contain(tool => tool.Name == "codex-reply");
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
     }
 }
