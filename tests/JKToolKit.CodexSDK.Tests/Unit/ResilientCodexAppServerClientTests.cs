@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
-public sealed class ResilientCodexAppServerClientTests
+public sealed partial class ResilientCodexAppServerClientTests
 {
     private static readonly string[] StableParityMethodNames =
     [

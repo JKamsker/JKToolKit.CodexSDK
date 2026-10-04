@@ -6,6 +6,7 @@ using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Overrides;
 using JKToolKit.CodexSDK.AppServer.Resiliency;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -88,6 +89,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
     {
         using var document = JsonDocument.Parse("""{"value":7}""");
         var extension = new FaultyExtensions();
+        var logger = new RecordingLogger();
         var observer = new Observer();
         var rpc = new RecordingRpc("""{"answer":42}""");
         await using var client = new CodexAppServerClient(new()
@@ -97,7 +99,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
             NotificationTransformers = [null!, extension],
             NotificationMappers = [null!, extension],
             MessageObservers = [null!, extension, observer]
-        }, new Process(), rpc, NullLogger.Instance, startExitWatcher: false);
+        }, new Process(), rpc, logger, startExitWatcher: false);
         object? parameters = inputKind switch
         {
             "object" => new { Value = 7 },
@@ -122,6 +124,8 @@ public sealed partial class AppServerResilientTransportCoverageTests
         extension.ResponseCalls.Should().Be(1);
         extension.NotificationCalls.Should().Be(1);
         extension.MappingCalls.Should().Be(1);
+        logger.Messages.Should().HaveCount(7, "null extensions are skipped, while each throwing extension is diagnosed once");
+        logger.Messages.Should().OnlyContain(message => message.Contains("custom/read") || message.Contains("custom/event"));
     }
 
     [Theory]
@@ -172,6 +176,14 @@ public sealed partial class AppServerResilientTransportCoverageTests
         public void OnRequest(string method, JsonElement parameters) => throw new InvalidOperationException();
         public void OnResponse(string method, JsonElement result) => throw new InvalidOperationException();
         public void OnNotification(string method, JsonElement parameters) => throw new InvalidOperationException();
+    }
+
+    private sealed class RecordingLogger : ILogger
+    {
+        public List<string> Messages { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) => Messages.Add(formatter(state, exception));
     }
 
     private sealed class Observer : IAppServerMessageObserver

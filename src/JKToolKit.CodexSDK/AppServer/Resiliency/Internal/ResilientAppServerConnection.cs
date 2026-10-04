@@ -173,6 +173,9 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
 
             var previous = _inner;
             _inner = null;
+            // Retire the old exit watcher before disposal. If startup is canceled, its
+            // completion must not start a second, uncanceled restart for the retired client.
+            Interlocked.Increment(ref _innerVersion);
 
             if (previous is not null)
             {

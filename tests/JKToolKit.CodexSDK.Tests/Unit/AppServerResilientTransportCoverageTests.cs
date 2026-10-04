@@ -100,6 +100,35 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Case("threadSection/delete", c => c.DeleteThreadSectionAsync(new() { SectionId = "section-1" }), """{"sectionId":"section-1"}""");
         yield return Case("thread/section/move", c => c.MoveThreadToSectionAsync(new() { ThreadId = "thread-1", SectionId = "section-1", BeforeThreadId = "thread-2" }), """{"threadId":"thread-1","sectionId":"section-1","beforeThreadId":"thread-2"}""");
 
+        yield return Case("config/read", c => c.ReadConfigAsync(new() { IncludeLayers = true, Cwd = "/workspace" }), """{"includeLayers":true,"cwd":"/workspace"}""", """{"config":{}}""");
+        yield return Case("config/value/write", c => c.WriteConfigValueAsync(new() { KeyPath = "model", Value = JsonSerializer.SerializeToElement("example"), MergeStrategy = ConfigMergeStrategy.Replace }), """{"keyPath":"model","value":"example","mergeStrategy":"replace"}""", """{"status":"ok","version":"v1","filePath":"/config.toml"}""");
+        yield return Case("config/batchWrite", c => c.WriteConfigBatchAsync(new() { Edits = [new() { KeyPath = "model", Value = JsonSerializer.SerializeToElement("example"), MergeStrategy = ConfigMergeStrategy.Upsert }], ReloadUserConfig = true }), """{"edits":[{"keyPath":"model","value":"example","mergeStrategy":"upsert"}],"reloadUserConfig":true}""", """{"status":"okOverridden","version":"v2","filePath":"/config.toml"}""");
+        yield return Case("feedback/upload", c => c.UploadFeedbackAsync(new() { Classification = "bug", ThreadId = "thread-1", IncludeLogs = true }), """{"classification":"bug","threadId":"thread-1","includeLogs":true}""", """{"threadId":"thread-1","promptHash":"hash"}""");
+        yield return Case("remoteControl/enable", c => c.EnableRemoteControlAsync(), "{}", """{"status":"connected","serverName":"server","installationId":"install-1"}""");
+        yield return Case("remoteControl/disable", c => c.DisableRemoteControlAsync(), "{}", """{"status":"disabled","serverName":"server","installationId":"install-1"}""");
+        yield return Case("remoteControl/status/read", c => c.ReadRemoteControlStatusAsync(), "{}", """{"status":"connecting","serverName":"server","installationId":"install-1"}""");
+        yield return Case("remoteControl/pairing/start", c => c.StartRemoteControlPairingAsync(new() { ManualCode = true }), """{"manualCode":true}""", """{"pairingCode":"pair","environmentId":"env-1","expiresAt":123}""");
+        yield return Case("remoteControl/pairing/status", c => c.ReadRemoteControlPairingStatusAsync(new() { PairingCode = "pair" }), """{"pairingCode":"pair"}""", """{"claimed":true}""");
+        yield return Case("remoteControl/client/list", c => c.ListRemoteControlClientsAsync(new() { EnvironmentId = "env-1", Limit = 2 }), """{"environmentId":"env-1","limit":2}""", """{"data":[]}""");
+        yield return Case("remoteControl/client/revoke", c => c.RevokeRemoteControlClientAsync(new() { EnvironmentId = "env-1", ClientId = "client-1" }), """{"environmentId":"env-1","clientId":"client-1"}""");
+        yield return Case("thread/attachment/list", c => c.ListThreadAttachmentsAsync(new() { ThreadId = "thread-1", Limit = 2 }), """{"threadId":"thread-1","limit":2}""", """{"data":[]}""");
+        yield return Case("thread/attachment/remove", c => c.RemoveThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = "review-1" }), """{"threadId":"thread-1","attachmentType":"review","identityKey":"review-1"}""");
+        yield return Case("thread/settings/update", c => c.UpdateThreadSettingsAsync(new() { ThreadId = "thread-1", DisabledPluginIds = ["plugin-1"] }), """{"threadId":"thread-1","disabledPluginIds":["plugin-1"]}""");
+        yield return Case("permissionProfile/list", c => c.ListPermissionProfilesAsync(new()), "{}", """{"data":[]}""");
+
+        yield return Case("plugin/share/save", c => c.SavePluginShareAsync(new() { PluginPath = "/plugins/example", Discoverability = PluginShareDiscoverability.Unlisted }), """{"pluginPath":"/plugins/example","discoverability":"UNLISTED"}""", """{"remotePluginId":"remote-1","shareUrl":"https://example.test/share"}""");
+        yield return Case("plugin/share/updateTargets", c => c.UpdatePluginShareTargetsAsync(new() { RemotePluginId = "remote-1", Discoverability = PluginShareUpdateDiscoverability.Private, ShareTargets = [] }), """{"remotePluginId":"remote-1","discoverability":"PRIVATE","shareTargets":[]}""", """{"principals":[],"discoverability":"PRIVATE"}""");
+        yield return Case("plugin/share/list", c => c.ListPluginSharesAsync(), "{}", """{"data":[]}""");
+        yield return Case("plugin/share/checkout", c => c.CheckoutPluginShareAsync(new() { RemotePluginId = "remote-1" }), """{"remotePluginId":"remote-1"}""", """{"remotePluginId":"remote-1","pluginId":"plugin-1","pluginName":"Example","pluginPath":"/plugins/example","marketplaceName":"catalog","marketplacePath":"/marketplace"}""");
+        yield return Case("plugin/share/delete", c => c.DeletePluginShareAsync(new() { RemotePluginId = "remote-1" }), """{"remotePluginId":"remote-1"}""");
+        yield return Case("threadSection/create", c => c.CreateThreadSectionAsync(new() { Name = "Planning" }), """{"name":"Planning"}""", """{"section":{"id":"section-1","name":"Planning"}}""");
+        yield return Case("threadSection/update", c => c.UpdateThreadSectionAsync(new() { SectionId = "section-1", Name = "Planned", Appearance = new() { Color = "blue" } }), """{"sectionId":"section-1","name":"Planned","appearance":{"color":"blue","icon":null}}""", """{"section":{"id":"section-1","name":"Planned"}}""");
+        yield return Case("thread/search", c => c.SearchThreadsAsync(new() { SearchTerm = "planning", Limit = 2 }), """{"searchTerm":"planning","limit":2}""", """{"data":[]}""");
+        yield return Case("thread/attachment/add", c => c.AddThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = "review-1", Payload = JsonSerializer.SerializeToElement(new { status = "open" }) }), """{"threadId":"thread-1","attachmentType":"review","identityKey":"review-1","payload":{"status":"open"}}""", """{"outcome":"created","attachment":{"id":"att-1","attachmentType":"review","identityKey":"review-1","payload":{"status":"open"},"createdAt":1}}""");
+        yield return Case("thread/shellCommand", c => c.ThreadShellCommandAsync(new() { ThreadId = "thread-1", Command = "echo hello", TimeoutMs = 100 }), """{"threadId":"thread-1","command":"echo hello","timeoutMs":100}""");
+        yield return Case("thread/metadata/update", c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", ClearProjectId = true }), """{"threadId":"thread-1","projectId":""}""", """{"thread":{"id":"thread-1"}}""");
+        yield return Case("experimentalFeature/enablement/set", c => c.SetExperimentalFeatureEnablementAsync(new() { Enablement = new Dictionary<string, bool> { ["test"] = true } }), """{"enablement":{"test":true}}""", """{"enablement":{"test":true}}""");
+
     }
 
     [Theory]
