@@ -31,13 +31,14 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
             var thread = await client.StartThreadAsync(new ThreadStartOptions
             {
                 Cwd = tmpDir,
-                Model = CodexModel.Gpt52Codex
+                Model = CodexLiveTestSettings.Model
             }, cts.Token);
 
             try
             {
                 await using var turn = await client.StartTurnAsync(thread.Id, new TurnStartOptions
                 {
+                    Effort = CodexReasoningEffort.Low,
                     SandboxPolicy = CodexSandboxPolicyBuilder.ReadOnlyRestricted([tmpDir], includePlatformDefaults: true),
                     Input =
                     [
@@ -46,7 +47,7 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
                 }, cts.Token);
 
                 var completed = await turn.Completion.WaitAsync(cts.Token);
-                completed.Status.Should().NotBeNullOrWhiteSpace();
+                CodexLiveTestSettings.AssertCompleted(completed);
             }
             catch (InvalidOperationException ex)
                 when (ex.Message.Contains("rejected sandboxPolicy parameters", StringComparison.Ordinal) &&

@@ -1,6 +1,5 @@
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
@@ -21,33 +20,26 @@ public sealed class AppServerSteerAndReviewE2ETests
         var thread = await client.StartThreadAsync(new ThreadStartOptions
         {
             Cwd = Directory.GetCurrentDirectory(),
-            Model = CodexModel.Gpt52Codex
+            Model = CodexLiveTestSettings.Model
         }, cts.Token);
 
         await using var turn = await client.StartTurnAsync(thread.Id, new TurnStartOptions
         {
+            Effort = CodexReasoningEffort.Low,
             Input =
             [
-                TurnInputItem.Text("Write a very long answer (at least 8000 characters). Do not stop early.")
+                TurnInputItem.Text("Write three sentences about testing. Do not use tools or edit files.")
             ]
         }, cts.Token);
 
-        await foreach (var ev in turn.Events(cts.Token))
-        {
-            if (ev is AgentMessageDeltaNotification)
-            {
-                break;
-            }
-        }
-
         var steerTurnId = await turn.SteerAsync([TurnInputItem.Text("Stop now and reply only with: ok")], cts.Token);
-        steerTurnId.Should().NotBeNullOrWhiteSpace();
+        steerTurnId.Should().Be(turn.TurnId);
 
-        _ = await turn.Completion.WaitAsync(cts.Token);
+        CodexLiveTestSettings.AssertCompleted(await turn.Completion.WaitAsync(cts.Token));
     }
 
     [CodexE2EFact]
-    public async Task AppServer_ReviewStart_Inline_And_Detached_Succeeds()
+    public async Task AppServer_ReviewStart_Inline_Completes()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(240));
 
@@ -59,27 +51,44 @@ public sealed class AppServerSteerAndReviewE2ETests
         var thread = await client.StartThreadAsync(new ThreadStartOptions
         {
             Cwd = Directory.GetCurrentDirectory(),
-            Model = CodexModel.Gpt52Codex
+            Model = CodexLiveTestSettings.Model,
+            Config = System.Text.Json.JsonSerializer.SerializeToElement(new { model_reasoning_effort = "low" })
         }, cts.Token);
 
         var inline = await client.StartReviewAsync(new ReviewStartOptions
         {
             ThreadId = thread.Id,
             Delivery = ReviewDelivery.Inline,
-            Target = new ReviewTarget.UncommittedChanges()
+            Target = new ReviewTarget.Custom("Review this self-contained change: a comment typo was corrected from teh to the. Do not use tools or edit files. Report no findings if correct.")
         }, cts.Token);
 
-        _ = await inline.Turn.Completion.WaitAsync(cts.Token);
+        await using var inlineTurn = inline.Turn;
+        CodexLiveTestSettings.AssertCompleted(await inlineTurn.Completion.WaitAsync(cts.Token));
+    }
 
-        var detached = await client.StartReviewAsync(new ReviewStartOptions
+    [CodexE2EFact]
+    public async Task AppServer_DetachedReview_OnPaginatedThread_ReportsUnsupportedCapability()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions(), cts.Token);
+        var thread = await client.StartThreadAsync(new ThreadStartOptions
         {
-            ThreadId = thread.Id,
-            Delivery = ReviewDelivery.Detached,
-            Target = new ReviewTarget.UncommittedChanges()
+            Cwd = Directory.GetCurrentDirectory(),
+            Model = CodexLiveTestSettings.Model,
+            Ephemeral = false
         }, cts.Token);
 
-        detached.ReviewThreadId.Should().NotBeNullOrWhiteSpace();
-        _ = await detached.Turn.Completion.WaitAsync(cts.Token);
+        var error = await Assert.ThrowsAsync<CodexAppServerRequestFailedException>(() =>
+            client.StartReviewAsync(new ReviewStartOptions
+            {
+                ThreadId = thread.Id,
+                Delivery = ReviewDelivery.Detached,
+                Target = new ReviewTarget.Custom("Review a comment typo correction. Do not use tools or edit files.")
+            }, cts.Token));
+
+        error.Method.Should().Be("review/start");
+        error.ErrorCode.Should().Be(-32600);
+        error.ErrorMessage.Should().Be("paginated threads do not support detached review");
     }
 }
 

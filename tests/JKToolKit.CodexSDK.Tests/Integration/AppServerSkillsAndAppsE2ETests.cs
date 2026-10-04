@@ -1,7 +1,6 @@
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
-using JKToolKit.CodexSDK.Models;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;
@@ -24,7 +23,7 @@ public sealed class AppServerSkillsAndAppsE2ETests
             thread = await client.StartThreadAsync(new ThreadStartOptions
             {
                 Cwd = Directory.GetCurrentDirectory(),
-                Model = CodexModel.Gpt52Codex,
+                Model = CodexLiveTestSettings.Model,
                 Ephemeral = true
             }, cts.Token);
 

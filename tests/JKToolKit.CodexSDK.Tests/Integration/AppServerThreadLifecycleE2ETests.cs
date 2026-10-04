@@ -22,7 +22,7 @@ public sealed class AppServerThreadLifecycleE2ETests
             var thread = await initialClient.StartThreadAsync(new ThreadStartOptions
             {
                 Cwd = cwd,
-                Model = CodexModel.Gpt52Codex,
+                Model = CodexLiveTestSettings.Model,
                 Ephemeral = false
             }, cts.Token);
 
@@ -30,13 +30,14 @@ public sealed class AppServerThreadLifecycleE2ETests
 
             await using (var turn = await initialClient.StartTurnAsync(threadId, new TurnStartOptions
             {
+                Effort = CodexReasoningEffort.Low,
                 Input =
                 [
                     TurnInputItem.Text("Reply only with: ok")
                 ]
             }, cts.Token))
             {
-                _ = await turn.Completion.WaitAsync(cts.Token);
+                CodexLiveTestSettings.AssertCompleted(await turn.Completion.WaitAsync(cts.Token));
             }
 
             var loadedList = await WaitForLoadedThreadAsync(initialClient, threadId, cts.Token);

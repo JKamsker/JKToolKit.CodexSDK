@@ -1,6 +1,7 @@
 using System.Text;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
+using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;
@@ -63,10 +64,13 @@ public sealed class AppServerCommandAndFilesystemE2ETests
 
             var exec = await client.CommandExecAsync(new CommandExecOptions
             {
-                Command = command
+                Command = command,
+                Cwd = tempRoot,
+                // This deterministic read runs in the test host, which may prohibit nested bubblewrap.
+                SandboxPolicy = new SandboxPolicy.ExternalSandbox()
             }, cts.Token);
 
-            exec.ExitCode.Should().Be(0);
+            exec.ExitCode.Should().Be(0, "command stderr: {0}", exec.Stderr);
             exec.Stdout.Should().Contain("hello from fs");
 
             await client.FsRemoveAsync(new FsRemoveOptions
