@@ -91,7 +91,14 @@ public sealed class RealFileSystemCoverageTests
         Assert.Throws<IOException>(() => fs.OpenRead("\0")).InnerException.Should().BeOfType<ArgumentException>();
         Assert.Throws<IOException>(() => fs.GetFileSize("\0")).InnerException.Should().BeOfType<ArgumentException>();
         Assert.Throws<IOException>(() => fs.GetFileCreationTimeUtc("\0")).InnerException.Should().BeOfType<ArgumentException>();
-        Assert.Throws<UnauthorizedAccessException>(() => fs.OpenRead(Path.GetTempPath())).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+        var directory = Directory.CreateTempSubdirectory("codex-open-directory-");
+        try
+        {
+            // A trailing separator changes Windows File.Open's error to path-not-found.
+            var directoryPath = Path.TrimEndingDirectorySeparator(directory.FullName);
+            Assert.Throws<UnauthorizedAccessException>(() => fs.OpenRead(directoryPath)).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+        }
+        finally { directory.Delete(); }
     }
 }
 

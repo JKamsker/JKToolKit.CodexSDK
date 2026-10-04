@@ -4,6 +4,9 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        // Match the SDK's redirected UTF-8 streams on every host code page.
+        Console.InputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        Console.OutputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         var mode = Environment.GetEnvironmentVariable("CODEX_TEST_MODE")
             ?? args.FirstOrDefault(arg => arg.StartsWith("--fixture-", StringComparison.Ordinal))?[10..]
             ?? args.FirstOrDefault() ?? "echo";

@@ -146,10 +146,11 @@ public sealed class SessionMetadataGapCoverageTests
     public void EnumerationUsesFilenameTimestampBeforeCreationAndPreservesCreationValue()
     {
         var fs = new InMemoryFileSystem();
-        fs.AddFile("/sessions/rollout-2026-02-01T00-00-00-a.jsonl", "", Created.UtcDateTime);
-        fs.AddFile("/sessions/rollout-2026-01-01T00-00-00-b.jsonl", "", Created.AddYears(1).UtcDateTime);
-        fs.AddFile("/sessions/rollout-fallback.jsonl", "", Created.AddYears(-1).UtcDateTime);
-        var files = CodexSessionLocatorHelpers.EnumerateSessionFiles(fs, NullLogger.Instance, "/sessions", CodexSessionFilePattern.Create()).ToArray();
+        var sessionsRoot = Path.Combine(Path.GetTempPath(), "codex-session-metadata");
+        fs.AddFile(Path.Combine(sessionsRoot, "rollout-2026-02-01T00-00-00-a.jsonl"), "", Created.UtcDateTime);
+        fs.AddFile(Path.Combine(sessionsRoot, "rollout-2026-01-01T00-00-00-b.jsonl"), "", Created.AddYears(1).UtcDateTime);
+        fs.AddFile(Path.Combine(sessionsRoot, "rollout-fallback.jsonl"), "", Created.AddYears(-1).UtcDateTime);
+        var files = CodexSessionLocatorHelpers.EnumerateSessionFiles(fs, NullLogger.Instance, sessionsRoot, CodexSessionFilePattern.Create()).ToArray();
         files.Select(x => Path.GetFileName(x.FilePath)).Should().Equal("rollout-2026-02-01T00-00-00-a.jsonl", "rollout-2026-01-01T00-00-00-b.jsonl", "rollout-fallback.jsonl");
         files[0].CreatedAtUtc.Should().Be(Created.UtcDateTime);
         CodexSessionLocatorHelpers.TryExtractSessionIdFromFilePath(NullLogger.Instance, "ROLLOUT-2026-02-01T00-00-00-selected.jsonl")!.Value.Value.Should().Be("selected");
