@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
@@ -38,10 +39,12 @@ public sealed class SandboxPolicyWireContractTests
     [MemberData(nameof(Policies))]
     public void BaseTypedPolicy_RoundTripsVariantFieldsAndRuntimeType(SandboxPolicy policy, string wire)
     {
-        var options = CodexAppServerClient.CreateDefaultSerializerOptions();
-        var restored = JsonSerializer.Deserialize<SandboxPolicy>(wire, options);
-        restored.Should().BeOfType(policy.GetType());
-        JsonElement.DeepEquals(JsonSerializer.SerializeToElement(restored, options), JsonSerializer.Deserialize<JsonElement>(wire)).Should().BeTrue();
+        foreach (var options in new[] { new JsonSerializerOptions(), CodexAppServerClient.CreateDefaultSerializerOptions() })
+        {
+            var restored = JsonSerializer.Deserialize<SandboxPolicy>(wire, options);
+            restored.Should().BeOfType(policy.GetType());
+            JsonElement.DeepEquals(JsonSerializer.SerializeToElement(restored, options), JsonSerializer.Deserialize<JsonElement>(wire)).Should().BeTrue();
+        }
     }
 
     [Theory]
@@ -70,11 +73,22 @@ public sealed class SandboxPolicyWireContractTests
     }
 
     [Fact]
-    public void Writer_RejectsUnrecognizedSubclass()
+    public void Writer_PreservesCustomPoliciesAndSerializerOptions()
     {
-        Assert.Throws<JsonException>(() => JsonSerializer.Serialize<SandboxPolicy>(new FutureSandboxPolicy()))
-            .Message.Should().Contain("FutureSandboxPolicy");
+        SandboxPolicy policy = new FutureSandboxPolicy { AuditWrites = true };
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        var wire = JsonSerializer.SerializeToElement(policy, options);
+        JsonElement.DeepEquals(wire, JsonSerializer.Deserialize<JsonElement>("""{"type":"future","audit_writes":true}""")).Should().BeTrue();
     }
 
-    private sealed record FutureSandboxPolicy : SandboxPolicy { public override string Type => "future"; }
+    private sealed record FutureSandboxPolicy : SandboxPolicy
+    {
+        public override string Type => "future";
+        public bool AuditWrites { get; init; }
+        public string? OptionalLabel { get; init; }
+    }
 }

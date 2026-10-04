@@ -11,6 +11,7 @@ public abstract partial record class SandboxPolicy
     public sealed record class ReadOnly : SandboxPolicy
     {
         /// <inheritdoc />
+        [JsonPropertyName(JsonFieldNames.Type)]
         public override string Type => "readOnly";
 
         /// <summary>

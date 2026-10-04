@@ -32,12 +32,6 @@ internal sealed class SandboxPolicyJsonConverter : JsonConverter<SandboxPolicy>
 
     public override void Write(Utf8JsonWriter writer, SandboxPolicy value, JsonSerializerOptions options)
     {
-        if (value is not (SandboxPolicy.DangerFullAccess or SandboxPolicy.ExternalSandbox or
-            SandboxPolicy.ReadOnly or SandboxPolicy.WorkspaceWrite))
-        {
-            throw new JsonException($"Unknown SandboxPolicy variant: {value.GetType().Name}");
-        }
-
         // The runtime contract carries the variant fields; the base contract only carries Type.
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
