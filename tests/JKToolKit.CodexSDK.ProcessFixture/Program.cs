@@ -8,9 +8,17 @@ public static class Program
             ?? args.FirstOrDefault(arg => arg.StartsWith("--fixture-", StringComparison.Ordinal))?[10..]
             ?? args.FirstOrDefault() ?? "echo";
         var marker = Environment.GetEnvironmentVariable("CODEX_TEST_MARKER");
-        if (marker is not null) await File.WriteAllTextAsync(marker, Environment.ProcessId.ToString());
+        if (marker is not null)
+        {
+            await File.WriteAllTextAsync(marker + ".tmp", Environment.ProcessId.ToString());
+            File.Move(marker + ".tmp", marker, overwrite: true);
+        }
         switch (mode)
         {
+            case "ready-echo":
+                Console.Out.WriteLine("ready");
+                Console.Out.Write(await Console.In.ReadToEndAsync());
+                return 0;
             case "wait":
                 await Task.Delay(TimeSpan.FromSeconds(30));
                 return 0;

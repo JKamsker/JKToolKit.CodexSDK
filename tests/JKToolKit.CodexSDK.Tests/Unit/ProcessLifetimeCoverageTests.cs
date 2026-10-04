@@ -26,11 +26,23 @@ public sealed class ProcessLifetimeCoverageTests
     [Fact]
     public async Task RemoteRun_CapturesExitCodeUnicodeEnvironmentAndWorkingDirectory()
     {
-        var launch = Fixture("output").WithEnvironment("CODEX_TEST_VALUE", "hello world").WithWorkingDirectory(Path.GetTempPath());
-        var result = await new RemoteProcessRunner(NullLogger.Instance).RunAsync(launch, Timeout.InfiniteTimeSpan, default);
-        result.ExitCode.Should().Be(7);
-        result.StandardOutput.Should().Be($"hello world|{Path.TrimEndingDirectorySeparator(Path.GetTempPath())}|α");
-        result.StandardError.Should().Be("stderr-β");
+        var directory = Directory.CreateTempSubdirectory("codex-working-directory-");
+        var sentinel = Guid.NewGuid().ToString();
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(directory.FullName, sentinel), "working directory verified");
+            var launch = Fixture("output").WithEnvironment("CODEX_TEST_VALUE", "hello world").WithWorkingDirectory(directory.FullName);
+            var result = await new RemoteProcessRunner(NullLogger.Instance).RunAsync(launch, Timeout.InfiniteTimeSpan, default);
+            result.ExitCode.Should().Be(7);
+            var fields = result.StandardOutput.Split('|');
+            fields.Should().HaveCount(3);
+            fields[0].Should().Be("hello world");
+            fields[2].Should().Be("α");
+            // The child may report a canonical path (for example /private/var on macOS).
+            File.ReadAllText(Path.Combine(fields[1], sentinel)).Should().Be("working directory verified");
+            result.StandardError.Should().Be("stderr-β");
+        }
+        finally { directory.Delete(recursive: true); }
     }
 
     [Theory]

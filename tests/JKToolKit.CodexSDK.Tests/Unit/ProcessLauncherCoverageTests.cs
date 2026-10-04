@@ -75,12 +75,14 @@ public sealed class ProcessLauncherCoverageTests
     [InlineData("wait")]
     public async Task Terminate_ClosesStdinThenKillsIfNeeded(string mode)
     {
-        var launch = ProcessLifetimeCoverageTests.Fixture(mode);
+        var launch = ProcessLifetimeCoverageTests.Fixture(mode == "echo" ? "ready-echo" : mode);
         var info = new ProcessStartInfo(launch.FileName!) { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var arg in launch.Arguments) info.ArgumentList.Add(arg);
         using var process = Process.Start(info)!;
         try
         {
+            if (mode == "echo")
+                (await process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10))).Should().Be("ready");
             var code = await Launcher().TerminateProcessAsync(process, TimeSpan.FromMilliseconds(250), default);
             process.HasExited.Should().BeTrue();
             code.Should().Be(process.ExitCode);
