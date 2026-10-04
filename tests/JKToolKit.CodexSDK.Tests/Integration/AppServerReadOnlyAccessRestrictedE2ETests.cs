@@ -1,16 +1,19 @@
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Models;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using Xunit.Abstractions;
 using JKToolKit.CodexSDK.Tests.TestHelpers;
 
 namespace JKToolKit.CodexSDK.Tests.Integration;
 
-public sealed class AppServerReadOnlyAccessRestrictedE2ETests
+public sealed class AppServerReadOnlyAccessRestrictedE2ETests(ITestOutputHelper output)
 {
-    private static readonly Version ReadOnlyAccessMinSupportedVersion = new(0, 118, 0);
+    // Verified against this pin; this does not claim the field was removed in this release.
+    private static readonly Version ReadOnlyAccessKnownRemovedVersion = new(0, 160, 0);
 
     [CodexE2EFact]
-    public async Task AppServer_ReadOnlyAccessRestricted_StartTurn_Succeeds_WhenSupported()
+    public async Task AppServer_ReadOnlyAccessRestricted_ValidatesSupportOrExactRemovalDiagnostic()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
 
@@ -34,28 +37,33 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
                 Model = CodexLiveTestSettings.Model
             }, cts.Token);
 
+            var options = new TurnStartOptions
+            {
+                Effort = CodexReasoningEffort.Low,
+                SandboxPolicy = CodexSandboxPolicyBuilder.ReadOnlyRestricted([tmpDir], includePlatformDefaults: true),
+                Input = [TurnInputItem.Text("Reply only with: ok.")]
+            };
+
+            codexBuildVersion.Should().NotBeNull("capability assertions require the CLI version");
+            if (codexBuildVersion >= ReadOnlyAccessKnownRemovedVersion)
+            {
+                // Requiring rejection also detects accidental omission of the restriction on the wire.
+                var error = await Assert.ThrowsAsync<JsonRpcRemoteException>(() =>
+                    client.StartTurnAsync(thread.Id, options, cts.Token));
+                AssertRemovalDiagnostic(error, codexBuildVersion);
+                return;
+            }
+
             try
             {
-                await using var turn = await client.StartTurnAsync(thread.Id, new TurnStartOptions
-                {
-                    Effort = CodexReasoningEffort.Low,
-                    SandboxPolicy = CodexSandboxPolicyBuilder.ReadOnlyRestricted([tmpDir], includePlatformDefaults: true),
-                    Input =
-                    [
-                        TurnInputItem.Text("Reply only with: ok.")
-                    ]
-                }, cts.Token);
-
-                var completed = await turn.Completion.WaitAsync(cts.Token);
-                CodexLiveTestSettings.AssertCompleted(completed);
+                await using var turn = await client.StartTurnAsync(thread.Id, options, cts.Token);
+                CodexLiveTestSettings.AssertCompleted(await turn.Completion.WaitAsync(cts.Token));
+                output.WriteLine($"CLI {codexBuildVersion}: restricted readOnly.access turn completed successfully.");
             }
-            catch (InvalidOperationException ex)
-                when (ex.Message.Contains("rejected sandboxPolicy parameters", StringComparison.Ordinal) &&
-                      codexBuildVersion is not null &&
-                      codexBuildVersion < ReadOnlyAccessMinSupportedVersion)
+            catch (JsonRpcRemoteException error)
             {
-                // Older Codex app-server builds may reject ReadOnlyAccess overrides.
-                return;
+                // Earlier CLIs can also reject the legacy field; accept only the precise removal diagnostic.
+                AssertRemovalDiagnostic(error, codexBuildVersion);
             }
         }
         finally
@@ -66,4 +74,13 @@ public sealed class AppServerReadOnlyAccessRestrictedE2ETests
             }
         }
     }
+
+    private void AssertRemovalDiagnostic(JsonRpcRemoteException error, Version? version)
+    {
+        error.Error.Code.Should().Be(-32600);
+        error.Error.Message.Should().Be(
+            "Invalid request: readOnly.access is no longer supported; use permissionProfile for restricted reads");
+        output.WriteLine($"CLI {version}: {error.Error.Message}");
+    }
+
 }

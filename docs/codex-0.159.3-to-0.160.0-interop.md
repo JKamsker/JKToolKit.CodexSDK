@@ -42,3 +42,32 @@
 ## Remaining Drift
 
 No remaining actionable drift was identified for existing SDK surfaces in the `0.159.3 -> 0.160.0` window.
+
+
+## Follow-up live validation: legacy restricted-read policies
+
+The later coverage review found preexisting SDK serialization drift: serializing a `SandboxPolicy`
+through its base type omitted variant fields, including restricted-read access. The SDK converter now
+preserves those fields. This correction exposed an inaccurate live-test assumption that had previously
+passed because the restriction was absent from the request.
+
+Against the pinned `0.160.0` CLI, upstream rejects restricted `readOnly.access` with JSON-RPC code
+`-32600` and the exact diagnostic `Invalid request: readOnly.access is no longer supported; use
+permissionProfile for restricted reads`. The upstream custom deserializer also rejects restricted
+`workspaceWrite.readOnlyAccess`; see
+`external/codex/codex-rs/app-server-protocol/src/protocol/v2/permissions.rs`. This finding establishes
+behavior at the current pin; it does not establish that either removal occurred in the
+`0.159.3 -> 0.160.0` release window.
+
+The live restricted-read test now requires the precise rejection at the verified current version,
+prints the CLI version and diagnostic, and checks successful terminal completion when an earlier CLI
+accepts the policy. It never removes restrictions or retries with broader permissions. Unrelated
+errors fail the test. The SDK forwards the upstream diagnostic; no further production change was
+needed for this rejection. The existing `PermissionProfileId` selector does not itself define a
+custom restricted-read profile, so this test does not claim to validate that migration path.
+
+Focused validation: `CODEX_E2E=1 dotnet test tests/JKToolKit.CodexSDK.Tests --configuration Release
+--filter FullyQualifiedName~AppServerReadOnlyAccessRestrictedE2ETests`, using the pinned `0.160.0`
+executable on `PATH`: one passed, with the exact rejection printed for CLI `0.160.0`.
+An additional run against installed CLI `0.154.0` produced the same rejection, confirming this
+compatibility change predates the current release window.
