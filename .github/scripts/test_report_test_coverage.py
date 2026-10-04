@@ -52,6 +52,22 @@ class CoverageReportTests(unittest.TestCase):
         self.assertEqual(100, result["handwritten"]["lines_percent"])
         self.assertEqual(0, result["generated"]["lines_percent"])
         self.assertEqual(2, result["generated"]["lines_total"])
+        self.assertEqual(1, result["generated_protocol"]["lines_total"])
+        self.assertEqual(1, result["generated_build"]["lines_total"])
+
+    def test_platform_generated_method_variants_do_not_inflate_protocol_totals(self):
+        first = self.write("linux.json", {
+            "/repo/src/JKToolKit.CodexSDK/Generated/Dto.g.cs": self.method(1),
+            "/repo/src/JKToolKit.CodexSDK/obj/Regex.g.cs": self.method(1),
+        })
+        variant = {"PlatformSpecificGeneratedName": self.method(1)["Example"]}
+        second = self.write("windows.json", {
+            "/repo/src/JKToolKit.CodexSDK/Generated/Dto.g.cs": self.method(1),
+            "/repo/src/JKToolKit.CodexSDK/obj/Regex.g.cs": variant,
+        })
+        result = reporter.summarize([first, second])
+        self.assertEqual(2, result["generated_protocol"]["branches_total"])
+        self.assertEqual(4, result["generated_build"]["branches_total"])
 
     def test_multiple_conditions_on_one_line_remain_distinct(self):
         methods = self.method(1)

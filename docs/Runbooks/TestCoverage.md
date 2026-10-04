@@ -3,7 +3,11 @@
 Coverage includes the SDK, Agent Framework adapter, and Semantic Kernel adapter.
 Handwritten protocol DTOs and converters count toward the same denominator.
 Generated protocol DTOs remain instrumented and are reported separately; they are
-not silently discarded. Demo applications and test fixtures are outside this scope.
+not silently discarded. Build-generated code (such as generated regular expressions)
+has its own category so it cannot inflate protocol DTO coverage. Different generated
+method identities across platform builds remain distinct in that build category;
+inspect platform reports when comparing those compiler artifacts. Demo applications
+and test fixtures are outside this scope.
 
 Run the offline unit and local integration suite from the repository root:
 

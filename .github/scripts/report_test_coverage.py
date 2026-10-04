@@ -64,6 +64,8 @@ def summarize(reports, require_all_modules=False):
         raise ValueError(f"Coverage is missing SDK assemblies with handwritten lines: {', '.join(sorted(missing))}")
     return {"reports": [str(Path(p)) for p in reports], "handwritten": totals(r for r in rows if not r["generated"]),
             "generated": totals(r for r in rows if r["generated"]),
+            "generated_protocol": totals(r for r in rows if "/Generated/" in r["file"]),
+            "generated_build": totals(r for r in rows if r["generated"] and "/Generated/" not in r["file"]),
             "modules": {module: totals(r for r in rows if r["module"] == module and not r["generated"])
                         for module in sorted({r["module"] for r in rows})}, "files": rows}
 
@@ -91,7 +93,7 @@ def main():
     result = summarize(args.reports, require_all_modules=True)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    for name in ("handwritten", "generated"):
+    for name in ("handwritten", "generated_protocol", "generated_build"):
         row = result[name]
         line = row["lines_percent"]
         branch = row["branches_percent"]
