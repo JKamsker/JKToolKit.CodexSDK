@@ -4,6 +4,8 @@ using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.AppServer.Resiliency;
 using JKToolKit.CodexSDK.AppServer.Resiliency.Internal;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
+using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
@@ -200,6 +202,32 @@ public sealed partial class ResilientCodexAppServerClientTests
         client.LastRestart.PreviousStderrTail.Should().Equal("stderr: test");
         client.LastRestart.Reason.Should().Be("manual-restart");
         factory.StartCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task RequestFailureRacingDisposal_DoesNotInvokeRetryPolicyAfterShutdown()
+    {
+        ResilientCodexAppServerClient client = null!;
+        var policyCalls = 0;
+        var adapter = new FakeAdapter
+        {
+            CallAsyncImpl = async (_, _, _) =>
+            {
+                await client.DisposeAsync();
+                throw new JsonRpcRemoteException(new JsonRpcError(-32001, "server overloaded", null));
+            }
+        };
+        client = await StartAsync(new SequenceFactory(adapter), new()
+        {
+            RetryPolicy = _ => { policyCalls++; return ValueTask.FromResult(CodexAppServerRetryDecision.NoRetry); }
+        });
+        await using (client)
+        {
+            var action = () => client.CallAsync("custom/read", null);
+            await action.Should().ThrowAsync<ObjectDisposedException>();
+            policyCalls.Should().Be(0);
+            client.State.Should().Be(CodexAppServerConnectionState.Disposed);
+        }
     }
 
     private static async IAsyncEnumerable<AppServerNotification> ThrowNotifications(Exception failure, [EnumeratorCancellation] CancellationToken token)
