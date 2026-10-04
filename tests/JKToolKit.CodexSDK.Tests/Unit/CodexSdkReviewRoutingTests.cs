@@ -86,6 +86,7 @@ public sealed class CodexSdkReviewRoutingTests
 
         await routed.DisposeAsync();
         await routed.DisposeAsync();
+        Assert.Equal(1, rpc.Disposals);
         rpc.AssertDrained();
     }
 
@@ -132,6 +133,7 @@ public sealed class CodexSdkReviewRoutingTests
 
         await routed.DisposeAsync();
         await routed.DisposeAsync();
+        Assert.Equal(1, rpc.Disposals);
         rpc.AssertDrained();
     }
 
@@ -173,6 +175,7 @@ public sealed class CodexSdkReviewRoutingTests
 
         await routed.DisposeAsync();
         await routed.DisposeAsync();
+        Assert.Equal(1, rpc.Disposals);
         rpc.AssertDrained();
     }
 
@@ -255,7 +258,28 @@ public sealed class CodexSdkReviewRoutingTests
         rpc.AssertDrained();
     }
 
-    private sealed class FakeExecClient : ICodexClient
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SdkDisposal_RespectsInjectedExecOwnershipAndPrefersAsyncCleanup(bool owned)
+    {
+        var exec = new AsyncExecClient();
+        var sdk = owned
+            ? CodexSdk.CreateOwned(exec, new FakeAppServerFactory(true), new FakeMcpFactory())
+            : new CodexSdk(exec, new FakeAppServerFactory(true), new FakeMcpFactory());
+        await sdk.DisposeAsync();
+        await sdk.DisposeAsync();
+        Assert.Equal(owned ? 1 : 0, exec.AsyncDisposals);
+        Assert.Equal(0, exec.Disposals);
+    }
+
+    private sealed class AsyncExecClient : FakeExecClient, IAsyncDisposable
+    {
+        public int AsyncDisposals { get; private set; }
+        public ValueTask DisposeAsync() { AsyncDisposals++; return ValueTask.CompletedTask; }
+    }
+
+    private class FakeExecClient : ICodexClient
     {
         public int ReviewCalls { get; private set; }
         public CodexReviewResult Result { get; init; } = new(0, string.Empty, string.Empty);

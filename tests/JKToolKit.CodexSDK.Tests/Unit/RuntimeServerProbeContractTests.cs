@@ -53,6 +53,21 @@ public sealed class RuntimeServerProbeContractTests
     }
 
     [Fact]
+    public async Task PrecanceledMetadataOnlyProbe_PreservesCancellationWithoutAcquiringConnection()
+    {
+        var rpc = new ProbeRpc(true);
+        await using var fixture = new Fixture(connection: rpc);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var runtime = new CodexRuntime(fixture.Threads, null, null);
+        var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            runtime.GetInfoAsync(includeServer: false, ct: cancellation.Token));
+        Assert.Equal(cancellation.Token, error.CancellationToken);
+        Assert.Equal(0, fixture.Starts);
+        Assert.Empty(rpc.Methods);
+    }
+
+    [Fact]
     public async Task AccountFailure_PreservesAvailableMetadataAndReportsDiagnostic()
     {
         var rpc = new ProbeRpc(true) { AccountFailure = new IOException("account unavailable") };

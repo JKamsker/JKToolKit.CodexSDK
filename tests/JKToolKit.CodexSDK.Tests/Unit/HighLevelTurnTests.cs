@@ -270,11 +270,16 @@ public sealed class HighLevelTurnTests
         public TaskCompletionSource InterruptRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private string _currentTurnId = "u";
         public JsonElement LastTurn { get; private set; }
+        public JsonElement LastThread { get; private set; }
         public int Interrupts { get; private set; }
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
         {
-            if (method is "thread/start" or "thread/resume") return Json("""{"thread":{"id":"t"}}""");
+            if (method is "thread/start" or "thread/resume")
+            {
+                LastThread = JsonSerializer.SerializeToElement(@params, CodexAppServerClient.CreateDefaultSerializerOptions());
+                return Json("""{"thread":{"id":"t"}}""");
+            }
             if (method == "review/start")
             {
                 Started.TrySetResult();

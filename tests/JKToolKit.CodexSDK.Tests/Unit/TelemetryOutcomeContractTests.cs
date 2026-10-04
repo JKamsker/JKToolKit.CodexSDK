@@ -57,6 +57,7 @@ public sealed class TelemetryOutcomeContractTests
         Assert.Equal(failed ? "turn_failed" : null, activity.GetTagItem("error.type"));
         Assert.Equal(failed ? ActivityStatusCode.Error : ActivityStatusCode.Unset, activity.Status);
         Assert.Equal(ActivityKind.Client, activity.Kind);
+        Assert.Equal("codex.turn", activity.OperationName);
         var recorded = string.Join(" ", activity.TagObjects);
         Assert.DoesNotContain("private prompt", recorded);
         Assert.DoesNotContain("private response", recorded);
@@ -94,28 +95,33 @@ public sealed class TelemetryOutcomeContractTests
         capture.AssertSingleOutcome(canceled ? "canceled" : "error");
     }
 
-    [Fact]
-    public async Task TransportFailureAfterStartup_RecordsFailureOnceAndPreservesResultException()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ObservationFailureAfterStartup_RecordsFailureOnceAndPreservesResultException(bool canceled)
     {
         using var capture = new Capture();
         await using var fixture = new Fixture();
         var thread = await fixture.Threads.StartAsync();
         await using var turn = await thread.RunStreamedAsync("private prompt");
         var failure = new IOException("private transport detail");
-        turn.Terminate(failure);
-        Assert.Same(failure, await Record.ExceptionAsync(() => turn.RunAsync().WaitAsync(TimeSpan.FromSeconds(5))));
+        if (canceled) await turn.DisposeAsync(); else turn.Terminate(failure);
+        var observed = await Record.ExceptionAsync(() => turn.RunAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+        if (canceled) Assert.IsAssignableFrom<OperationCanceledException>(observed);
+        else Assert.Same(failure, observed);
         var activity = await capture.WaitAsync();
-        Assert.Equal("error", activity.GetTagItem("codex.turn.status"));
-        Assert.Equal(nameof(IOException), activity.GetTagItem("error.type"));
+        Assert.Equal(canceled ? "canceled" : "error", activity.GetTagItem("codex.turn.status"));
+        Assert.Equal(observed!.GetType().Name, activity.GetTagItem("error.type"));
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
         turn.Terminate(new IOException("later failure"));
         await turn.DisposeAsync();
-        capture.AssertSingleOutcome("error");
+        capture.AssertSingleOutcome(canceled ? "canceled" : "error");
     }
 
     private sealed class Capture : IDisposable
     {
         private readonly MeterListener _metrics = new();
+        private string? _durationUnit;
         private readonly ActivityListener _activities;
         private readonly TaskCompletionSource _measured = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public ConcurrentQueue<(long Value, KeyValuePair<string, object?>[] Tags)> Counts { get; } = new();
@@ -133,7 +139,9 @@ public sealed class TelemetryOutcomeContractTests
             ActivitySource.AddActivityListener(_activities);
             _metrics.InstrumentPublished = (instrument, listener) =>
             {
-                if (instrument.Meter.Name == CodexTelemetry.Name) listener.EnableMeasurementEvents(instrument);
+                if (instrument.Meter.Name != CodexTelemetry.Name) return;
+                if (instrument.Name == "codex.turn.duration") _durationUnit = instrument.Unit;
+                listener.EnableMeasurementEvents(instrument);
             };
             _metrics.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
             {
@@ -162,6 +170,7 @@ public sealed class TelemetryOutcomeContractTests
             var count = Assert.Single(Counts);
             Assert.Equal(1, count.Value);
             var duration = Assert.Single(Durations);
+            Assert.Equal("s", _durationUnit);
             Assert.True(double.IsFinite(duration.Value) && duration.Value >= 0);
             Assert.Equal(new KeyValuePair<string, object?>("codex.turn.status", status), Assert.Single(count.Tags));
             Assert.Equal(count.Tags, duration.Tags);
