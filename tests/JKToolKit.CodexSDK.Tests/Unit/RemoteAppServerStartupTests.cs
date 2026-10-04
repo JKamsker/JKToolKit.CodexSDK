@@ -8,6 +8,41 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed partial class RemoteAppServerManagerTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StartDocker_RemembersTokenAndRequiresReadinessBeforeRegistration(bool exec)
+    {
+        var runner = new RecordingProcessRunner();
+        runner.EnqueueRun(exec ? "" : "container-id");
+        runner.EnqueueRun(exec ? RemoteMetadata("docker", "1", "ws://localhost:4500", "/state") : "127.0.0.1:4567");
+        var registry = new InMemoryCodexRemoteAppServerRegistry();
+        var health = new RecordingHealthProbe { IsReady = true };
+        CodexAppServerWebSocketOptions? received = null;
+        var manager = new CodexRemoteAppServerManager(new() { Registry = registry }, runner, health, (options, _) => { received = options; return Task.FromResult(CreateClient()); });
+        var entry = exec
+            ? await manager.StartDockerExecWebSocketAsync(new() { Id = "docker", Container = "container", PublicUri = new Uri("ws://localhost:4500"), BearerToken = "remembered" })
+            : await manager.StartDockerContainerWebSocketAsync(new() { Id = "docker", Image = "image", BearerToken = "remembered" });
+        health.ProbedUris.Should().ContainSingle().Which.Should().Be(entry.WebSocketUri);
+        await registry.UpsertAsync(entry with { BearerToken = null });
+        await using var attachment = await manager.AttachAsync(entry.Id);
+        received!.BearerToken.Should().Be("remembered");
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(10, 5)]
+    public async Task DockerExec_MetadataCallTimeoutRespectsRemainingBudgetAndFiveSecondCap(int startSeconds, int maximumCallSeconds)
+    {
+        var runner = new RecordingProcessRunner();
+        runner.EnqueueRun("");
+        runner.EnqueueRun(RemoteMetadata("exec", "1", "ws://localhost:4500", "/state"));
+        var manager = new CodexRemoteAppServerManager(new() { StartTimeout = TimeSpan.FromSeconds(startSeconds) }, runner, new RecordingHealthProbe { IsReady = true }, (_, _) => Task.FromResult(CreateClient()));
+        await manager.StartDockerExecWebSocketAsync(new() { Id = "exec", Container = "container", PublicUri = new Uri("ws://localhost") });
+        runner.RunTimeouts[1].Should().BeLessThanOrEqualTo(TimeSpan.FromSeconds(maximumCallSeconds));
+        runner.RunTimeouts[1].Should().BeGreaterThan(TimeSpan.FromSeconds(maximumCallSeconds - 0.5));
+    }
+
     [Fact]
     public async Task StartContainer_CancellationStillCleansUpOwnedContainer()
     {

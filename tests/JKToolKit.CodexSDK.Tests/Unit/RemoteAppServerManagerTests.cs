@@ -39,6 +39,9 @@ public sealed partial class RemoteAppServerManagerTests
         script.Should().Contain("ws://127.0.0.1:0");
         script.Should().Contain("cd '/workspace/project'\"'\"'s repo'");
         script.Should().Contain("state_dir='/state dir'");
+        script.Should().Contain("log_file=\"$state_dir/\"$id\".log\"");
+        script.Should().Contain("pid_file=\"$state_dir/\"$id\".pid\"");
+        script.Should().Contain(@"ws://127\.0\.0\.1:[0-9][0-9]*");
         launch.Arguments.Should().NotContain("ssh-secret");
     }
 
@@ -203,6 +206,8 @@ public sealed partial class RemoteAppServerManagerTests
 
         public List<CancellationToken> RunTokens { get; } = [];
 
+        public List<TimeSpan> RunTimeouts { get; } = [];
+
         public List<CodexLaunch> RunLaunches { get; } = [];
 
         public List<CodexLaunch> StartLaunches { get; } = [];
@@ -216,6 +221,7 @@ public sealed partial class RemoteAppServerManagerTests
         {
             RunLaunches.Add(launch);
             RunTokens.Add(ct);
+            RunTimeouts.Add(timeout);
             ct.ThrowIfCancellationRequested();
             if (_runResults.Count == 0 && DefaultRunResult is { } fallback)
             {

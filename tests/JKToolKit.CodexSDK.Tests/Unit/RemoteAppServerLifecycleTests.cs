@@ -97,7 +97,7 @@ public sealed partial class RemoteAppServerManagerTests
         var runner = new RecordingProcessRunner();
         var manager = CreateManager(runner, new RecordingHealthProbe(), registry);
 
-        await Assert.ThrowsAsync<TimeoutException>(() => manager.AttachAsync("ssh"));
+        (await Assert.ThrowsAsync<TimeoutException>(() => manager.AttachAsync("ssh"))).Message.Should().Contain("ssh").And.Contain("did not become ready");
 
         runner.StartedProcesses.Should().HaveCount(5).And.OnlyContain(x => x.DisposeCount == 1);
     }
@@ -148,7 +148,7 @@ public sealed partial class RemoteAppServerManagerTests
         await registry.UpsertAsync(new() { Id = "broken", Kind = kind });
         var runner = new RecordingProcessRunner();
         var manager = CreateManager(runner, new RecordingHealthProbe(), registry);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => manager.AttachAsync("broken"));
+        (await Assert.ThrowsAsync<InvalidOperationException>(() => manager.AttachAsync("broken"))).Message.Should().Contain("broken");
         runner.StartLaunches.Should().BeEmpty();
     }
 
