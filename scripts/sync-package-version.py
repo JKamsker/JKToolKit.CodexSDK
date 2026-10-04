@@ -10,12 +10,14 @@ import xml.etree.ElementTree as ET
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
+    """Parse a stable SemVer release without accepting leading zeroes or suffixes."""
     if not re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", value):
         raise ValueError(f"Expected a stable major.minor.patch version, got {value!r}")
     return tuple(map(int, value.split(".")))
 
 
 def update_version(root: Path, *, check: bool = False, bump_patch: bool = False) -> str:
+    """Validate or synchronize the shared SDK version, preserving SDK-only patches."""
     upstream = json.loads((root / "UPSTREAM_CODEX_VERSION.json").read_text(encoding="utf-8"))["api"]
     target = parse_version(upstream)
     path = root / "Directory.Build.props"
@@ -23,6 +25,7 @@ def update_version(root: Path, *, check: bool = False, bump_patch: bool = False)
     props = ET.fromstring(text)
 
     def property_value(name: str) -> str:
+        """Read exactly one live version property from the parsed project XML."""
         elements = props.findall(f"./PropertyGroup/{name}")
         if len(elements) != 1 or not elements[0].text:
             raise ValueError(f"Directory.Build.props must contain exactly one {name}")
@@ -51,14 +54,19 @@ def update_version(root: Path, *, check: bool = False, bump_patch: bool = False)
 
     version = ".".join(map(str, desired))
     for name, value in (("CodexCliVersion", upstream), ("VersionPrefix", version)):
-        text, count = re.subn(rf"<{name}>[^<]*</{name}>", f"<{name}>{value}</{name}>", text)
-        if count != 1:
+        # Mask comments without moving offsets, then edit only the live property.
+        live_xml = re.sub(r"<!--.*?-->", lambda match: " " * len(match[0]), text, flags=re.DOTALL)
+        matches = list(re.finditer(rf"<{re.escape(name)}>[^<]*</{re.escape(name)}>", live_xml))
+        if len(matches) != 1:
             raise ValueError(f"Cannot update {name} in Directory.Build.props")
+        match = matches[0]
+        text = text[:match.start()] + f"<{name}>{value}</{name}>" + text[match.end():]
     path.write_text(text, encoding="utf-8")
     return version
 
 
 def main() -> int:
+    """Expose synchronization, read-only validation, and SDK patch bumps to CI."""
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="Validate without changing files; print the package version")

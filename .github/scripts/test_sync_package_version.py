@@ -20,12 +20,14 @@ SPEC.loader.exec_module(VERSIONING)
 
 class PackageVersionTests(unittest.TestCase):
     def setUp(self):
+        """Create an isolated checkout fixture for each test."""
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.props = self.root / "Directory.Build.props"
 
     def setup_versions(self, upstream, baseline, package):
+        """Write independent CLI, parity, and package version markers."""
         (self.root / "UPSTREAM_CODEX_VERSION.json").write_text(json.dumps({"api": upstream, "integration": "0.159.0"}))
         self.props.write_text(
             f"<Project><PropertyGroup><CodexCliVersion>{baseline}</CodexCliVersion>"
@@ -33,6 +35,7 @@ class PackageVersionTests(unittest.TestCase):
         )
 
     def test_sync_transitions_are_idempotent(self):
+        """Exercise CLI upgrades, SDK patches, collisions, and repeated syncs."""
         for upstream, baseline, package, expected in [
             ("0.160.0", "0.159.3", "0.159.3", "0.160.0"),
             ("0.160.0", "0.160.0", "0.160.2", "0.160.2"),
@@ -52,6 +55,7 @@ class PackageVersionTests(unittest.TestCase):
                 self.assertIn(f"<CodexCliVersion>{upstream}</CodexCliVersion>", self.props.read_text())
 
     def test_sdk_patch_does_not_change_cli_pin(self):
+        """Keep the CLI pin stable across successive SDK-only releases."""
         self.setup_versions("0.160.0", "0.160.0", "0.160.0")
         marker = (self.root / "UPSTREAM_CODEX_VERSION.json").read_bytes()
         self.assertEqual("0.160.1", VERSIONING.update_version(self.root, bump_patch=True))
@@ -60,6 +64,7 @@ class PackageVersionTests(unittest.TestCase):
         self.assertEqual(marker, (self.root / "UPSTREAM_CODEX_VERSION.json").read_bytes())
 
     def test_check_and_bump_reject_stale_baseline_without_mutation(self):
+        """Reject stale version state before any files are written."""
         self.setup_versions("0.161.0", "0.160.0", "0.160.2")
         before = self.props.read_bytes()
         for options in ({"check": True}, {"bump_patch": True}):
@@ -68,6 +73,7 @@ class PackageVersionTests(unittest.TestCase):
             self.assertEqual(before, self.props.read_bytes())
 
     def test_invalid_versions_fail_without_mutation(self):
+        """Reject malformed versions while retaining the original project file."""
         for invalid in ("0.160.0-preview", "0.160", "01.160.0", "", "0.160.0\n"):
             with self.subTest(invalid=invalid):
                 self.setup_versions(invalid, "0.160.0", "0.160.0")
@@ -76,15 +82,44 @@ class PackageVersionTests(unittest.TestCase):
                     VERSIONING.update_version(self.root)
                 self.assertEqual(before, self.props.read_bytes())
 
+    def test_comments_are_preserved_during_sync_and_patch_bumps(self):
+        """Ignore commented properties before and after their live counterparts."""
+        self.setup_versions("0.161.0", "0.160.0", "0.160.2")
+        comment = "<!--\n<VersionPrefix>0.1.0</VersionPrefix>\n<CodexCliVersion>0.1.0</CodexCliVersion>\n-->"
+        original = self.props.read_text().replace("<PropertyGroup>", f"<PropertyGroup>{comment}")
+        original = original.replace("</PropertyGroup>", f"{comment}</PropertyGroup>")
+        self.props.write_text(original)
+        self.assertEqual("0.161.0", VERSIONING.update_version(self.root))
+        self.assertEqual(2, self.props.read_text().count(comment))
+        self.assertEqual("0.161.1", VERSIONING.update_version(self.root, bump_patch=True))
+        self.assertEqual(2, self.props.read_text().count(comment))
+        self.assertEqual("0.161.1", VERSIONING.update_version(self.root, check=True))
+
+    def test_missing_and_duplicate_live_properties_still_fail(self):
+        """Comments never substitute for a missing or duplicated live property."""
+        for name in ("CodexCliVersion", "VersionPrefix"):
+            for duplicate in (False, True):
+                with self.subTest(name=name, duplicate=duplicate):
+                    self.setup_versions("0.161.0", "0.160.0", "0.160.0")
+                    prop = f"<{name}>0.160.0</{name}>"
+                    replacement = f"<!-- {prop} -->" + (prop * 2 if duplicate else "")
+                    self.props.write_text(self.props.read_text().replace(prop, replacement))
+                    before = self.props.read_bytes()
+                    with self.assertRaisesRegex(ValueError, f"exactly one {name}"):
+                        VERSIONING.update_version(self.root)
+                    self.assertEqual(before, self.props.read_bytes())
+
 
 class CiVersionTests(unittest.TestCase):
     def setUp(self):
+        """Create an isolated checkout fixture for each test."""
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.output = self.root / "output"
 
     def run_script(self, script, **env):
+        """Execute a real CI shell step with isolated output files."""
         self.output.write_text("")
         return subprocess.run(
             ["bash", "-c", script], cwd=self.root,
@@ -93,6 +128,7 @@ class CiVersionTests(unittest.TestCase):
         )
 
     def test_ci_uses_committed_version_and_rejects_drift(self):
+        """Export the committed version and stop CI when its CLI baseline drifts."""
         # Run the actual CI shell step against a standalone checkout fixture.
         (self.root / "scripts").mkdir()
         shutil.copy(ROOT / "scripts/sync-package-version.py", self.root / "scripts")

@@ -23,6 +23,12 @@ python scripts/sync-package-version.py --bump-patch
 Commit that change with the SDK release (`0.160.1`, then `0.160.2`, etc.).
 The CLI pin stays unchanged. Multiple changes in one SDK release need only one
 patch bump. CI publishes the committed version; reruns reuse that version.
+Before publishing, CI checks all three SDK package identities against NuGet.org.
+It skips an existing package only when every archive entry matches (excluding
+NuGet.org's repository signature and ZIP timestamps). Conflicting contents fail
+the release with a request to commit a patch bump, before any package is pushed.
+Identical retries and partially completed uploads can resume; unchanged runtime
+packages continue to use duplicate skipping.
 
 Upstream sync and the gh-aw parity workflow run
 `python scripts/sync-package-version.py` to align the package version with the
