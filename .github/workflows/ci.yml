@@ -93,7 +93,7 @@ jobs:
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml)"
+          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml .github/scripts/report_test_coverage.py)"
           if [[ -n "$changed_files" ]]; then
             echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Changed package or upstream files:"
@@ -148,7 +148,19 @@ jobs:
         run: dotnet build JKToolKit.CodexSDK.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release --no-build --framework ${{ matrix.framework }} --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test JKToolKit.CodexSDK.sln --configuration Release --no-build --framework ${{ matrix.framework }} --settings tests/coverage.runsettings --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/ci --logger "trx;LogFileName=test-results.trx"
+
+      - name: Report platform coverage
+        shell: bash
+        run: python .github/scripts/report_test_coverage.py artifacts/coverage/ci/*/coverage.json --output artifacts/coverage/platform-summary.json --minimum-line 0 --minimum-branch 0
+
+      - name: Upload coverage and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: artifacts/coverage/
+          if-no-files-found: error
 
       - name: Prepare NuGet README
         if: matrix.os == 'ubuntu-latest'
@@ -188,6 +200,26 @@ jobs:
         with:
           name: nuget-package
           path: nuget-packages/*.nupkg
+
+  coverage:
+    needs: [changes, build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.checkout_ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: artifacts/coverage/all
+      - name: Gate handwritten SDK and adapters across supported platforms
+        shell: bash
+        run: python .github/scripts/report_test_coverage.py artifacts/coverage/all/*/ci/*/coverage.json --output artifacts/coverage/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-summary
+          path: artifacts/coverage/summary.json
 
   runtime-packages:
     needs: changes
@@ -242,8 +274,8 @@ jobs:
         run: dotnet artifacts/smoke-publish/HighLevelSmoke.dll --require-match
 
   NugetUpload:
-    needs: [automation-tests, changes, build-and-test, runtime-packages, runtime-smoke]
-    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success' && needs.runtime-packages.result == 'success' && needs.runtime-smoke.result == 'success'
+    needs: [automation-tests, changes, build-and-test, coverage, runtime-packages, runtime-smoke]
+    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success' && needs.coverage.result == 'success' && needs.runtime-packages.result == 'success' && needs.runtime-smoke.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - name: Download NuGet Packages

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Remote;
@@ -16,9 +18,13 @@ public sealed class RemoteAppServerDockerE2ETests
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(12));
         var repoRoot = GetRepoRoot();
-        var codexHome = await CreateCodexHomeCopyAsync(cts.Token);
+        var codexHome = await CreateCodexHomeAsync(cts.Token);
+        var bearerToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(bearerToken))).ToLowerInvariant();
+        string[] authenticationArguments = ["--ws-auth", "capability-token", "--ws-token-sha256", tokenHash];
         var registryPath = Path.Combine(Path.GetTempPath(), $"codexsdk-registry-{Guid.NewGuid():N}.json");
         var baseContainer = $"codexsdk-base-{Guid.NewGuid():N}";
+        var managedContainer = $"codexsdk-managed-{Guid.NewGuid():N}";
         var execContainer = $"codexsdk-exec-{Guid.NewGuid():N}";
 
         try
@@ -26,7 +32,7 @@ public sealed class RemoteAppServerDockerE2ETests
             await EnsureImageAsync(cts.Token);
             await RunDockerAsync([
                 "run", "-d", "--name", baseContainer,
-                "-v", $"{repoRoot}:/workspace",
+                "-v", $"{repoRoot}:/workspace:ro",
                 "-v", $"{codexHome}:/home/codex/.codex",
                 "-w", "/workspace",
                 "-e", "CODEX_HOME=/home/codex/.codex",
@@ -46,11 +52,14 @@ public sealed class RemoteAppServerDockerE2ETests
             var managed = await manager.StartDockerContainerWebSocketAsync(new CodexDockerContainerWebSocketAppServerOptions
             {
                 Image = ImageName,
+                ContainerName = managedContainer,
+                BearerToken = bearerToken,
+                AdditionalAppServerArguments = authenticationArguments,
                 WorkingDirectory = "/workspace",
                 CodexHome = "/home/codex/.codex",
                 AdditionalDockerRunArguments =
                 [
-                    "-v", $"{repoRoot}:/workspace",
+                    "-v", $"{repoRoot}:/workspace:ro",
                     "-v", $"{codexHome}:/home/codex/.codex"
                 ]
             }, cts.Token);
@@ -60,7 +69,7 @@ public sealed class RemoteAppServerDockerE2ETests
             }
 
             var manager2 = new CodexRemoteAppServerManager(new JsonFileCodexRemoteAppServerRegistry(registryPath));
-            await using (var reattached = await manager2.AttachAsync(managed.Id, ct: cts.Token))
+            await using (var reattached = await manager2.AttachAsync(managed.Id, new CodexRemoteAttachOptions { BearerToken = bearerToken }, cts.Token))
             {
                 await AssertRemotePwdAsync(reattached.Client, cts.Token);
             }
@@ -69,7 +78,7 @@ public sealed class RemoteAppServerDockerE2ETests
             await RunDockerAsync([
                 "run", "-d", "--name", execContainer,
                 "-p", "127.0.0.1::4500",
-                "-v", $"{repoRoot}:/workspace",
+                "-v", $"{repoRoot}:/workspace:ro",
                 "-v", $"{codexHome}:/home/codex/.codex",
                 "-w", "/workspace",
                 "-e", "CODEX_HOME=/home/codex/.codex",
@@ -80,6 +89,8 @@ public sealed class RemoteAppServerDockerE2ETests
             var execEntry = await manager.StartDockerExecWebSocketAsync(new CodexDockerExecWebSocketAppServerOptions
             {
                 Container = execContainer,
+                BearerToken = bearerToken,
+                AdditionalAppServerArguments = authenticationArguments,
                 PublicUri = publicUri,
                 WorkingDirectory = "/workspace",
                 CodexHome = "/home/codex/.codex"
@@ -93,6 +104,7 @@ public sealed class RemoteAppServerDockerE2ETests
         finally
         {
             await TryDockerAsync(["rm", "-f", baseContainer], CancellationToken.None);
+            await TryDockerAsync(["rm", "-f", managedContainer], CancellationToken.None);
             await TryDockerAsync(["rm", "-f", execContainer], CancellationToken.None);
             try { Directory.Delete(codexHome, recursive: true); } catch { }
             try { File.Delete(registryPath); } catch { }
@@ -104,7 +116,8 @@ public sealed class RemoteAppServerDockerE2ETests
         var result = await client.CommandExecAsync(new CommandExecOptions
         {
             Command = ["/bin/sh", "-lc", "pwd"],
-            Cwd = "/workspace"
+            Cwd = "/workspace",
+            SandboxPolicy = CodexSandboxPolicyBuilder.ExternalSandbox()
         }, ct);
 
         result.ExitCode.Should().Be(0);
@@ -113,47 +126,36 @@ public sealed class RemoteAppServerDockerE2ETests
 
     private static async Task EnsureImageAsync(CancellationToken ct)
     {
-        var dockerfile = Path.Combine(Path.GetTempPath(), $"codexsdk-dockerfile-{Guid.NewGuid():N}");
+        var buildContext = Path.Combine(Path.GetTempPath(), $"codexsdk-build-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(buildContext);
+        var dockerfile = Path.Combine(buildContext, "Dockerfile");
         await File.WriteAllTextAsync(
             dockerfile,
             """
             FROM node:22-bookworm-slim
             RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates ripgrep bash && rm -rf /var/lib/apt/lists/*
-            RUN npm install -g @openai/codex@0.128.0
+            RUN npm install -g @openai/codex@0.160.0
             WORKDIR /workspace
             """,
             ct);
         try
         {
-            await RunDockerAsync(["build", "-t", ImageName, "-f", dockerfile, Path.GetDirectoryName(dockerfile)!], ct);
+            await RunDockerAsync(["build", "-t", ImageName, "-f", dockerfile, buildContext], ct);
         }
         finally
         {
-            try { File.Delete(dockerfile); } catch { }
+            try { Directory.Delete(buildContext, recursive: true); } catch { }
         }
     }
 
-    private static async Task<string> CreateCodexHomeCopyAsync(CancellationToken ct)
+    private static Task<string> CreateCodexHomeAsync(CancellationToken ct)
     {
-        var source = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
-        var authPath = Path.Combine(source, "auth.json");
-        var configPath = Path.Combine(source, "config.toml");
-        var missing = new[] { authPath, configPath }
-            .Where(path => !File.Exists(path))
-            .ToArray();
-        if (missing.Length > 0)
-        {
-            throw new InvalidOperationException(
-                $"CreateCodexHomeCopyAsync requires local Codex auth files. Missing: {string.Join(", ", missing)}");
-        }
-
+        // Command/exec and transport handshakes need no model account. Keep the fixture
+        // independent of the developer's authentication and version-specific config.
+        ct.ThrowIfCancellationRequested();
         var target = Path.Combine(Path.GetTempPath(), $"codexsdk-home-{Guid.NewGuid():N}");
         Directory.CreateDirectory(target);
-        File.Copy(authPath, Path.Combine(target, "auth.json"));
-        File.Copy(configPath, Path.Combine(target, "config.toml"));
-        await Task.Yield();
-        ct.ThrowIfCancellationRequested();
-        return target;
+        return Task.FromResult(target);
     }
 
     private static async Task<int> GetPublishedPortAsync(string container, CancellationToken ct)
