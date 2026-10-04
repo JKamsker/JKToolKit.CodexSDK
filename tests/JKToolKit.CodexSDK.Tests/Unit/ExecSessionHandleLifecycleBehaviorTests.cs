@@ -123,7 +123,10 @@ public sealed class ExecSessionHandleLifecycleBehaviorTests
         var launcher = new MockCodexProcessLauncher { SimulateTerminateFailure = fails };
         var temp = Path.GetTempFileName();
         var handle = Create(new(), child.Process, launcher, [temp]);
+        var callback = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var subscription = handle.OnExit(code => callback.TrySetResult(code));
         await handle.DisposeAsync();
+        if (!fails) Assert.Equal(-1, await callback.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.Single(launcher.CapturedTerminations);
         Assert.False(handle.IsLive);
         Assert.False(File.Exists(temp));
@@ -232,6 +235,22 @@ public sealed class ExecSessionHandleLifecycleBehaviorTests
             dependency == "process" ? null! : process, dependency == "logPath" ? null! : "log", 0,
             TimeSpan.FromSeconds(1), dependency == "logger" ? null! : NullLogger.Instance, default));
         Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Fact]
+    public async Task DisposingOneSubscriptionTwice_DoesNotRemoveAnotherRegistrationOfTheSameCallback()
+    {
+        using var child = new Child();
+        var launcher = new MockCodexProcessLauncher { TerminateExitCode = 23 };
+        await using var handle = Create(new(), child.Process, launcher);
+        var delivered = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action<int> callback = code => delivered.TrySetResult(code);
+        using var first = handle.OnExit(callback);
+        using var second = handle.OnExit(callback);
+        first.Dispose();
+        first.Dispose();
+        await handle.ExitAsync(default);
+        Assert.Equal(23, await delivered.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
     private sealed class CountingLauncher : ICodexProcessLauncher
