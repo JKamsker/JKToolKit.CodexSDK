@@ -19,6 +19,10 @@ public sealed partial class AppServerResilientTransportCoverageTests
     [InlineData("messages", "{\"featureEnabled\":true,\"messages\":[42]}")]
     [InlineData("environment", "[]")]
     [InlineData("watch", "{\"path\":\"relative\"}")]
+    [InlineData("directory", "{}") ]
+    [InlineData("directory", "[]") ]
+    [InlineData("directory", "{\"entries\":null}") ]
+    [InlineData("model", "{\"data\":[{\"id\":\"m\",\"model\":\"m\",\"displayName\":\"Model\",\"description\":\"description\",\"defaultReasoningEffort\":\"low\"}]}") ]
     [InlineData("directory", "{\"entries\":[42]}")]
     [InlineData("sandbox", "{}")]
     public async Task OperationResponses_RejectInvalidShapes(string operation, string response)

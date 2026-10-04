@@ -49,6 +49,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.FsWatchAsync(new() { Path = PathForPlatform("/workspace"), WatchId = " " }));
         yield return Invalid(c => c.FsUnwatchAsync(new() { WatchId = " " }));
         yield return Invalid(c => c.ReadAppsAsync(new() { AppIds = [] }));
+        yield return Invalid(c => c.ReadAppsAsync(new() { AppIds = Enumerable.Repeat("app", 501).ToArray() }));
         yield return Invalid(c => c.AddEnvironmentAsync(new() { EnvironmentId = " ", ExecServerUrl = "https://example.test" }));
         yield return Invalid(c => c.AddEnvironmentAsync(new() { EnvironmentId = "env", ExecServerUrl = " " }));
         yield return Invalid(c => c.SearchPluginsAsync(new() { SearchTerm = " " }));
@@ -95,6 +96,19 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.StartThreadAsync(new() { Environments = [new() { EnvironmentId = " ", Cwd = PathForPlatform("/workspace") }] }));
         yield return Invalid(c => c.StartTurnAsync("thread-1", new() { AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry> { ["context"] = null! } }));
         yield return Invalid(c => c.ResumeThreadAsync(new ThreadResumeOptions { ThreadId = "thread-1", InitialTurnsPage = new() { Limit = -1 } }));
+        yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = " ", Uri = "resource://item" }));
+        yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = "server", Uri = "resource://item", ThreadId = " " }));
+        yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = "server", Uri = "resource://item", OriginCallId = "call-1" }));
+        yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = "server", Uri = "resource://item", ConnectorId = " " }));
+        yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = "server", Uri = "resource://item", Target = new() { ConnectorId = " " } }));
+        yield return Invalid(c => c.UploadFeedbackAsync(new() { Classification = " " }));
+        yield return Invalid(c => c.ListThreadsAsync(new() { SectionId = " " }));
+        yield return Invalid(c => c.ListThreadsAsync(new() { ProjectId = "project-1", UnassignedProjectOnly = true }));
+        yield return Invalid(c => c.ReadPluginAsync(new() { RemoteMarketplaceName = " ", PluginName = "plugin" }));
+        yield return Invalid(c => c.InstallPluginAsync(new() { RemoteMarketplaceName = " ", PluginName = "plugin" }));
+        yield return Invalid(c => c.CommandExecAsync(new() { Command = ["echo"], DisableTimeout = true, TimeoutMs = 1 }));
+        yield return Invalid(c => c.UpdateThreadSettingsAsync(new() { ThreadId = "thread-1", PermissionProfileId = "profile-1", SandboxPolicy = new JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy.SandboxPolicy.ReadOnly() }));
+
 
     }
 
@@ -118,6 +132,8 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.StopThreadRealtimeAsync("thread-1"));
         yield return Invalid(c => c.CleanThreadBackgroundTerminalsAsync("thread-1"));
         yield return Invalid(c => c.ListCollaborationModesAsync());
+        yield return Invalid(c => c.ListThreadsAsync(new() { ProjectId = "project-1" }));
+        yield return Invalid(c => c.ListThreadsAsync(new() { UnassignedProjectOnly = true }));
         yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", UpdateProjectId = true, ProjectId = "project-1" }));
         yield return Invalid(c => c.AddEnvironmentAsync(new() { EnvironmentId = "env", ExecServerUrl = "https://example.test" }));
     }
