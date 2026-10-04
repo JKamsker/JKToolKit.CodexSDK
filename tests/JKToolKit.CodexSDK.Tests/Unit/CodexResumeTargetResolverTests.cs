@@ -139,6 +139,17 @@ public sealed class CodexResumeTargetResolverTests
         locator.LastFilter?.ModelProvider.Should().Be("openai");
     }
 
+    [Fact]
+    public async Task Selector_UsesNewestMatchingLabel_AndDoesNotFilterByProvider()
+    {
+        var older = CreateSession("older", "shared", "/work", DateTimeOffset.UnixEpoch, modelProvider: "different");
+        var newer = CreateSession("newer", "shared", "/work", DateTimeOffset.UnixEpoch.AddHours(1), modelProvider: "different");
+        var locator = new RecordingSessionLocator(older, newer);
+        var result = await CodexResumeTargetResolver.TryResolveAsync(locator, "root", CodexResumeTarget.BySelector("shared"), "/work", "configured", default);
+        Assert.Same(newer, result);
+        Assert.Null(locator.LastFilter?.ModelProvider);
+    }
+
     private static CodexSessionInfo CreateSession(
         string id,
         string label,

@@ -92,9 +92,30 @@ public sealed class ExecEventPipelineBehaviorTests
         using var userCts = new CancellationTokenSource();
         await using var enumerator = Create().ApplyIdleTimeout(WaitAfterEvent(() => { }), TimeSpan.FromSeconds(5), pipelineCts, userCts.Token).GetAsyncEnumerator();
         Assert.True(await enumerator.MoveNextAsync());
+        await Task.Delay(200); // Allow the monitor to enter its delay after the first event.
         userCts.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await enumerator.MoveNextAsync());
         Assert.False(pipelineCts.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task IdleTimeout_DoesNotStartUntilFirstEventArrives()
+    {
+        using var pipelineCts = new CancellationTokenSource();
+        using var userCts = new CancellationTokenSource();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var disposed = false;
+        var reading = Collect(Create().ApplyIdleTimeout(WaitWithoutEvent(started, () => disposed = true), TimeSpan.FromMilliseconds(25), pipelineCts, userCts.Token));
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        try
+        {
+            await Task.Delay(200);
+            Assert.False(reading.IsCompleted);
+            Assert.False(pipelineCts.IsCancellationRequested);
+        }
+        finally { userCts.Cancel(); }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reading);
+        Assert.True(disposed);
     }
 
     private static CodexSessionHandleEventPipeline Create() => new(Info, null, null, TimeSpan.Zero, NullLogger.Instance, (_, _) => { }, () => true);

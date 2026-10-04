@@ -151,15 +151,15 @@ internal sealed partial class CodexSessionRunner
         }
 
         var (effectiveOptions, tempFiles) = CodexSessionRunnerLogHelpers.MaterializeOutputSchemaIfNeeded(options);
-        var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
-
-        var startTime = DateTimeOffset.UtcNow;
-        _logger.LogDebug("Starting Codex session at {StartTime} using sessions root {SessionsRoot}", startTime, sessionsRoot);
-
         Process? process = null;
-        Task<string>? newSessionFileTask = null;
         try
         {
+            var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
+
+            var startTime = DateTimeOffset.UtcNow;
+            _logger.LogDebug("Starting Codex session at {StartTime} using sessions root {SessionsRoot}", startTime, sessionsRoot);
+
+            Task<string>? newSessionFileTask = null;
             if (_clientOptions.EnableUncorrelatedNewSessionFileDiscovery)
             {
                 try
@@ -351,33 +351,32 @@ internal sealed partial class CodexSessionRunner
         }
 
         var (effectiveOptions, tempFiles) = CodexSessionRunnerLogHelpers.MaterializeOutputSchemaIfNeeded(options);
-        effectiveOptions.ResumeTargetOverride = target;
-
-        var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
-        var modelProvider = CodexModelProviderConfigResolver.ResolveActiveModelProvider(_clientOptions, sessionsRoot);
-        var selectedSession = await CodexResumeTargetResolver.TryResolveAsync(
-            _sessionLocator,
-            sessionsRoot,
-            target,
-            options.WorkingDirectory,
-            modelProvider,
-            cancellationToken).ConfigureAwait(false);
-        var resumeStartTime = DateTimeOffset.UtcNow;
-        var newSessionFileTask = CodexSessionRunnerLogHelpers.StartResumeFallbackDiscoveryIfNeeded(
-            _sessionLocator,
-            selectedSession,
-            sessionsRoot,
-            resumeStartTime,
-            _clientOptions,
-            _logger,
-            cancellationToken);
-        var selectedLogBaselineLength = selectedSession is null
-            ? 0L
-            : CodexResumeBootstrapMonitor.TryGetFileLength(selectedSession.LogPath);
-
         Process? process = null;
         try
         {
+            effectiveOptions.ResumeTargetOverride = target;
+
+            var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
+            var modelProvider = CodexModelProviderConfigResolver.ResolveActiveModelProvider(_clientOptions, sessionsRoot);
+            var selectedSession = await CodexResumeTargetResolver.TryResolveAsync(
+                _sessionLocator,
+                sessionsRoot,
+                target,
+                options.WorkingDirectory,
+                modelProvider,
+                cancellationToken).ConfigureAwait(false);
+            var resumeStartTime = DateTimeOffset.UtcNow;
+            var newSessionFileTask = CodexSessionRunnerLogHelpers.StartResumeFallbackDiscoveryIfNeeded(
+                _sessionLocator,
+                selectedSession,
+                sessionsRoot,
+                resumeStartTime,
+                _clientOptions,
+                _logger,
+                cancellationToken);
+            var selectedLogBaselineLength = selectedSession is null
+                ? 0L
+                : CodexResumeBootstrapMonitor.TryGetFileLength(selectedSession.LogPath);
             var launcherSessionId = selectedSession?.Id ?? SessionId.Parse(target.Selector ?? "resume-last");
             process = await _processLauncher
                 .ResumeSessionAsync(launcherSessionId, effectiveOptions, _clientOptions, cancellationToken)

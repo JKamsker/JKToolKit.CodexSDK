@@ -144,6 +144,7 @@ public sealed class ExecSessionHandleLifecycleBehaviorTests
             await File.AppendAllTextAsync(temp, "more");
             await waiting;
             await Assert.ThrowsAsync<TimeoutException>(() => CodexResumeBootstrapMonitor.WaitForLogAdvanceAsync(child.Process, temp, 9, TimeSpan.FromMilliseconds(40), NullLogger.Instance, default));
+            await Assert.ThrowsAsync<TimeoutException>(() => CodexResumeBootstrapMonitor.WaitForLogAdvanceAsync(child.Process, temp, 99, TimeSpan.FromMilliseconds(40), NullLogger.Instance, default));
             using var canceled = new CancellationTokenSource();
             canceled.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CodexResumeBootstrapMonitor.WaitForLogAdvanceAsync(child.Process, temp, 9, TimeSpan.FromSeconds(5), NullLogger.Instance, canceled.Token));
@@ -186,6 +187,65 @@ public sealed class ExecSessionHandleLifecycleBehaviorTests
         await child.ExitAsync(0);
         Assert.Equal(0, await handle.WaitForExitAsync(default));
         Assert.Equal(SessionExitReason.Success, handle.ExitReason);
+    }
+
+    [Fact]
+    public async Task ConcurrentIdleReaders_TerminateTheSharedProcessOnlyOnce()
+    {
+        using var child = new Child();
+        var launcher = new CountingLauncher();
+        var stream = new StreamStub { FollowIndefinitely = true };
+        await using var handle = new CodexSessionHandle(ExecEventPipelineBehaviorTests.Info, stream, stream, child.Process, launcher,
+            TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(120), NullLogger<CodexSessionHandle>.Instance);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var readers = await Task.WhenAll(
+            ExecEventPipelineBehaviorTests.Collect(handle.GetEventsAsync(null, deadline.Token)),
+            ExecEventPipelineBehaviorTests.Collect(handle.GetEventsAsync(null, deadline.Token)));
+        Assert.All(readers, events => Assert.Single(events));
+        Assert.Equal(1, launcher.TerminationCount);
+        Assert.Equal(SessionExitReason.Timeout, handle.ExitReason);
+    }
+
+    [Theory]
+    [InlineData("info")]
+    [InlineData("tailer")]
+    [InlineData("parser")]
+    [InlineData("logger")]
+    public void Handle_RejectsMissingDependencies(string dependency)
+    {
+        var stream = new StreamStub();
+        var failure = Assert.Throws<ArgumentNullException>(() => new CodexSessionHandle(
+            dependency == "info" ? null! : ExecEventPipelineBehaviorTests.Info,
+            dependency == "tailer" ? null! : stream, dependency == "parser" ? null! : stream,
+            null, null, TimeSpan.FromSeconds(1), null, dependency == "logger" ? null! : NullLogger<CodexSessionHandle>.Instance));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("process")]
+    [InlineData("logPath")]
+    [InlineData("logger")]
+    public async Task Bootstrap_RejectsMissingDependencies(string dependency)
+    {
+        using var process = new Process();
+        var failure = await Assert.ThrowsAsync<ArgumentNullException>(() => CodexResumeBootstrapMonitor.WaitForLogAdvanceAsync(
+            dependency == "process" ? null! : process, dependency == "logPath" ? null! : "log", 0,
+            TimeSpan.FromSeconds(1), dependency == "logger" ? null! : NullLogger.Instance, default));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    private sealed class CountingLauncher : ICodexProcessLauncher
+    {
+        private int _terminationCount;
+        public int TerminationCount => Volatile.Read(ref _terminationCount);
+        public Task<Process> StartSessionAsync(CodexSessionOptions options, CodexClientOptions client, CancellationToken ct) => throw new NotSupportedException();
+        public Task<Process> ResumeSessionAsync(JKToolKit.CodexSDK.Exec.Protocol.SessionId id, CodexSessionOptions options, CodexClientOptions client, CancellationToken ct) => throw new NotSupportedException();
+        public Task<Process> StartReviewAsync(CodexReviewOptions options, CodexClientOptions client, CancellationToken ct) => throw new NotSupportedException();
+        public Task<int> TerminateProcessAsync(Process process, TimeSpan timeout, CancellationToken ct)
+        {
+            Interlocked.Increment(ref _terminationCount);
+            return Task.FromResult(0);
+        }
     }
 
     private sealed class RealTerminatingLauncher : ICodexProcessLauncher

@@ -161,6 +161,147 @@ public sealed class ExecRunnerLogHelpersBehaviorTests
         Assert.Empty(launcher.CapturedStarts);
     }
 
+    [Theory]
+    [InlineData("tailer")]
+    [InlineData("parser")]
+    [InlineData("processLauncher")]
+    [InlineData("loggerFactory")]
+    [InlineData("logger")]
+    public async Task CreateHandle_RejectsMissingDependencyBeforeReadingLog(string dependency)
+    {
+        var fixture = new Fixture { IncludeMetadata = true };
+        var failure = await Assert.ThrowsAsync<ArgumentNullException>(() => CodexSessionRunnerLogHelpers.CreateHandleFromLogAsync("log", default,
+            dependency == "tailer" ? null! : fixture, dependency == "parser" ? null! : fixture,
+            dependency == "processLauncher" ? null! : new MockCodexProcessLauncher(), TimeSpan.FromSeconds(1),
+            dependency == "loggerFactory" ? null! : NullLoggerFactory.Instance, dependency == "logger" ? null! : NullLogger.Instance));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("sessionLocator")]
+    [InlineData("target")]
+    [InlineData("logger")]
+    public async Task ResumeResolution_RejectsMissingDependencyEvenWhenFallbackIsAvailable(string dependency)
+    {
+        var failure = await Assert.ThrowsAsync<ArgumentNullException>(() => CodexSessionRunnerLogHelpers.ResolveResumeLogPathAsync(
+            dependency == "sessionLocator" ? null! : new Fixture(), null, null, "root", Task.FromResult("fallback"), TimeSpan.FromSeconds(1),
+            dependency == "target" ? null! : CodexResumeTarget.MostRecent(), dependency == "logger" ? null! : NullLogger.Instance, default));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("sessionLocator")]
+    [InlineData("clientOptions")]
+    [InlineData("logger")]
+    public void DisabledDiscovery_StillValidatesItsDependencies(string dependency)
+    {
+        var failure = Assert.Throws<ArgumentNullException>(() => { _ = CodexSessionRunnerLogHelpers.StartResumeFallbackDiscoveryIfNeeded(
+            dependency == "sessionLocator" ? null! : new Fixture(), null, "root", DateTimeOffset.UtcNow,
+            dependency == "clientOptions" ? null! : new CodexClientOptions(), dependency == "logger" ? null! : NullLogger.Instance, default); });
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("attach")]
+    [InlineData("resume-id")]
+    [InlineData("resume-target")]
+    [InlineData("resume-live")]
+    public async Task CanceledOperations_DoNotResolvePathsOrReadSessions(string operation)
+    {
+        var fixture = new Fixture { IncludeMetadata = true };
+        var launcher = new MockCodexProcessLauncher();
+        var runner = CreateRunner(fixture, launcher);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation switch
+        {
+            "attach" => runner.AttachToLogAsync("log", cancellation.Token),
+            "resume-id" => runner.ResumeSessionAsync(SessionId.Parse("session"), cancellation.Token),
+            "resume-target" => runner.ResumeSessionAsync(CodexResumeTarget.MostRecent(), (string?)null, cancellation.Token),
+            _ => runner.ResumeSessionAsync(CodexResumeTarget.BySelector("session"), new CodexSessionOptions(Path.GetTempPath(), "prompt"), cancellation.Token)
+        });
+        Assert.Equal(0, fixture.PathCalls);
+        Assert.Equal(0, fixture.ValidateCalls);
+        Assert.Empty(launcher.CapturedStarts);
+    }
+
+    [Fact]
+    public async Task ResumeOverloads_RejectMissingTargetAndOptions()
+    {
+        var runner = CreateRunner(new Fixture(), new MockCodexProcessLauncher());
+        Assert.Equal("target", (await Assert.ThrowsAsync<ArgumentNullException>(() => runner.ResumeSessionAsync(null!, (string?)null, default))).ParamName);
+        Assert.Equal("target", (await Assert.ThrowsAsync<ArgumentNullException>(() => runner.ResumeSessionAsync((CodexResumeTarget)null!, new CodexSessionOptions(Path.GetTempPath(), "prompt"), default))).ParamName);
+        Assert.Equal("options", (await Assert.ThrowsAsync<ArgumentNullException>(() => runner.ResumeSessionAsync(CodexResumeTarget.MostRecent(), (CodexSessionOptions)null!, default))).ParamName);
+        Assert.Equal("options", Assert.Throws<ArgumentNullException>(() => CodexSessionRunnerLogHelpers.MaterializeOutputSchemaIfNeeded(null!)).ParamName);
+    }
+
+    [Theory]
+    [InlineData("clientOptions")]
+    [InlineData("processLauncher")]
+    [InlineData("sessionLocator")]
+    [InlineData("tailer")]
+    [InlineData("parser")]
+    [InlineData("pathProvider")]
+    [InlineData("loggerFactory")]
+    [InlineData("logger")]
+    public void Runner_RejectsMissingDependencies(string dependency)
+    {
+        var fixture = new Fixture();
+        var failure = Assert.Throws<ArgumentNullException>(() => new CodexSessionRunner(
+            dependency == "clientOptions" ? null! : new(), dependency == "processLauncher" ? null! : new MockCodexProcessLauncher(),
+            dependency == "sessionLocator" ? null! : fixture, dependency == "tailer" ? null! : fixture,
+            dependency == "parser" ? null! : fixture, dependency == "pathProvider" ? null! : fixture,
+            dependency == "loggerFactory" ? null! : NullLoggerFactory.Instance, dependency == "logger" ? null! : NullLogger<CodexClient>.Instance));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("clientOptions")]
+    [InlineData("sessionLocator")]
+    [InlineData("tailer")]
+    [InlineData("parser")]
+    [InlineData("pathProvider")]
+    [InlineData("logger")]
+    public void RateLimitsReader_RejectsMissingDependencies(string dependency)
+    {
+        var fixture = new Fixture();
+        var failure = Assert.Throws<ArgumentNullException>(() => new CodexRateLimitsReader(
+            dependency == "clientOptions" ? null! : new(), dependency == "sessionLocator" ? null! : fixture,
+            dependency == "tailer" ? null! : fixture, dependency == "parser" ? null! : fixture,
+            dependency == "pathProvider" ? null! : fixture, dependency == "logger" ? null! : NullLogger<CodexClient>.Instance));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("clientOptions")]
+    [InlineData("processLauncher")]
+    [InlineData("sessionLocator")]
+    [InlineData("pathProvider")]
+    [InlineData("logger")]
+    public void ReviewRunner_RejectsMissingDependencies(string dependency)
+    {
+        var fixture = new Fixture();
+        var failure = Assert.Throws<ArgumentNullException>(() => new CodexReviewRunner(
+            dependency == "clientOptions" ? null! : new(), dependency == "processLauncher" ? null! : new MockCodexProcessLauncher(),
+            dependency == "sessionLocator" ? null! : fixture, dependency == "pathProvider" ? null! : fixture,
+            dependency == "logger" ? null! : NullLogger<CodexClient>.Instance));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData("info")]
+    [InlineData("logger")]
+    [InlineData("notifyExit")]
+    [InlineData("tryStartIdleTermination")]
+    public void EventPipeline_RejectsMissingDependencies(string dependency)
+    {
+        var failure = Assert.Throws<ArgumentNullException>(() => new CodexSessionHandleEventPipeline(
+            dependency == "info" ? null! : ExecEventPipelineBehaviorTests.Info, null, null, TimeSpan.FromSeconds(1),
+            dependency == "logger" ? null! : NullLogger.Instance, dependency == "notifyExit" ? null! : (_, _) => { },
+            dependency == "tryStartIdleTermination" ? null! : () => true));
+        Assert.Equal(dependency, failure.ParamName);
+    }
+
     private static CodexSessionRunner CreateRunner(Fixture fixture, MockCodexProcessLauncher launcher) =>
         new(new CodexClientOptions { CodexHomeDirectory = Path.Combine(Path.GetTempPath(), "codex-runner-test-" + Guid.NewGuid().ToString("N")) },
             launcher, fixture, fixture, fixture, fixture, NullLoggerFactory.Instance, NullLogger<CodexClient>.Instance);
@@ -172,6 +313,7 @@ public sealed class ExecRunnerLogHelpersBehaviorTests
         public Exception? DiscoveryFailure;
         public int LookupCalls;
         public int ValidateCalls;
+        public int PathCalls;
         public bool IncludeMetadata;
         public Action? OnEnumerationComplete;
         public Task<string> WaitForSessionLogByIdAsync(SessionId id, string root, TimeSpan timeout, CancellationToken ct)
@@ -183,7 +325,7 @@ public sealed class ExecRunnerLogHelpersBehaviorTests
             DiscoveryFailure is null ? Task.FromResult("discovered") : throw DiscoveryFailure;
         public Task<string> ValidateLogFileAsync(string path, CancellationToken ct) { ValidateCalls++; return Task.FromResult("validated:" + path); }
         public Task<string> FindSessionLogAsync(SessionId id, string root, CancellationToken ct) => Task.FromResult("resolved-log");
-        public string GetSessionsRootDirectory(string? directory) => Path.GetTempPath();
+        public string GetSessionsRootDirectory(string? directory) { PathCalls++; return Path.GetTempPath(); }
         public string GetCodexExecutablePath(string? path) => throw new NotSupportedException();
         public string ResolveSessionLogPath(SessionId id, string? root) => throw new NotSupportedException();
         public async IAsyncEnumerable<CodexSessionInfo> ListSessionsAsync(string root, SessionFilter? filter, [EnumeratorCancellation] CancellationToken ct)

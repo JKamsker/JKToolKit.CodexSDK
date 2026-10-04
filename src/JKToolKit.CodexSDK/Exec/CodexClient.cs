@@ -65,6 +65,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     /// <returns>A read-only session handle for the resolved session log.</returns>
     public async Task<ICodexSessionHandle> ResumeSessionAsync(CodexResumeTarget target, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(target);
         var workingDirectory = target.IncludeAllSessions
             ? null
             : Directory.GetCurrentDirectory();

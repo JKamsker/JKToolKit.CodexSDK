@@ -20,7 +20,7 @@ public sealed class ExecRateLimitsReaderBehaviorTests
         fixture.Events["newer"] = [Token(first), ExecEventPipelineBehaviorTests.Event(), Token(last), Token(null)];
         fixture.Events["older"] = [Token(Limits(99))];
         fixture.Failures["broken"] = new IOException("file rotated");
-        var reader = fixture.Reader();
+        using var reader = new CodexClient(new CodexClientOptions(), sessionLocator: fixture, tailer: fixture, parser: fixture, pathProvider: fixture);
         Assert.Same(last, await reader.GetRateLimitsAsync(false, default));
         Assert.Equal(["broken", "newer"], fixture.ReadPaths);
         fixture.Events["newer"] = [Token(first)];

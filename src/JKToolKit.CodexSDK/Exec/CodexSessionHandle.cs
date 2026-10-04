@@ -219,11 +219,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
             throw new InvalidOperationException("Process launcher is not available to terminate the process.");
         }
 
-        var code = await TerminateWithCustomExitReasonAsync(cancellationToken).ConfigureAwait(false);
-
-        // Ensure exit callbacks are fired (guarded for idempotency)
-        NotifyExitSafe(code, SessionExitReason.Custom);
-        return code;
+        return await TerminateAndNotifyCustomExitAsync(cancellationToken, useProcessExitCode: false).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -244,9 +240,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
                 {
                     try
                     {
-                        await TerminateWithCustomExitReasonAsync(CancellationToken.None).ConfigureAwait(false);
-                        // Make sure callbacks run even if Exited didn't fire for any reason
-                        NotifyExitSafe(_process.HasExited ? _process.ExitCode : -1, SessionExitReason.Custom);
+                        await TerminateAndNotifyCustomExitAsync(CancellationToken.None, useProcessExitCode: true).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -274,12 +268,15 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
         await Task.CompletedTask;
     }
 
-    private async Task<int> TerminateWithCustomExitReasonAsync(CancellationToken cancellationToken)
+    private async Task<int> TerminateAndNotifyCustomExitAsync(CancellationToken cancellationToken, bool useProcessExitCode)
     {
         Interlocked.Increment(ref _customTerminationsInProgress);
         try
         {
-            return await _processLauncher!.TerminateProcessAsync(_process!, _processExitTimeout, cancellationToken).ConfigureAwait(false);
+            var code = await _processLauncher!.TerminateProcessAsync(_process!, _processExitTimeout, cancellationToken).ConfigureAwait(false);
+            // Publish the final reason before clearing intent, including when Exited is still queued.
+            NotifyExitSafe(useProcessExitCode ? (_process!.HasExited ? _process.ExitCode : -1) : code, SessionExitReason.Custom);
+            return code;
         }
         finally
         {

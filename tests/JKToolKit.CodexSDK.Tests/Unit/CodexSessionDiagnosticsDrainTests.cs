@@ -50,8 +50,8 @@ public sealed class CodexSessionDiagnosticsDrainTests
             throw;
         }
         (await sessionIdTask.WaitAsync(TimeSpan.FromSeconds(5))).Should().BeNull();
-        stdout().Should().NotBeEmpty();
-        stderr().Should().NotBeEmpty();
+        stdout().Length.Should().Be(8192);
+        stderr().Length.Should().Be(8192);
         process.ExitCode.Should().Be(0); // If draining stopped, the child can hang on full stdout/stderr pipes or fail with broken-pipe; exit code 0 verifies the drain kept consuming output.
     }
 

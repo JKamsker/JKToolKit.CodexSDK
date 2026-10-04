@@ -63,4 +63,44 @@ public sealed class ExecDiagnosticsBehaviorTests
         Assert.Empty(drain.GetStdoutDiag());
         Assert.Empty(drain.GetStderrDiag());
     }
+    [Fact]
+    public async Task Drain_ClosedOutputStream_IsLoggedAndDoesNotPreventDrainCompletion()
+    {
+        var start = new ProcessStartInfo
+        {
+            FileName = OperatingSystem.IsWindows() ? "powershell.exe" : "/bin/sh",
+            UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        start.ArgumentList.Add(OperatingSystem.IsWindows() ? "-Command" : "-c");
+        start.ArgumentList.Add(OperatingSystem.IsWindows() ? "[Console]::ReadLine() | Out-Null" : "read ignored");
+        using var process = Process.Start(start)!;
+        try
+        {
+            process.StandardOutput.Dispose();
+            var logger = new DrainLogger();
+            var drain = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, logger);
+            process.StandardInput.Dispose();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Null(await drain.SessionIdTask.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Contains(logger.Exceptions, exception => exception is ObjectDisposedException);
+            Assert.Empty(drain.GetStdoutDiag());
+        }
+        finally
+        {
+            if (!process.HasExited) { process.Kill(true); process.WaitForExit(5000); }
+        }
+    }
+
+    private sealed class DrainLogger : Microsoft.Extensions.Logging.ILogger
+    {
+        public System.Collections.Concurrent.ConcurrentQueue<Exception> Exceptions { get; } = new();
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel level) => true;
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel level, Microsoft.Extensions.Logging.EventId eventId,
+            TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (exception is not null) Exceptions.Enqueue(exception);
+        }
+    }
+
 }

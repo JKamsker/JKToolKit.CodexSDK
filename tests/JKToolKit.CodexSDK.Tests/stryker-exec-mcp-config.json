@@ -1,0 +1,28 @@
+{
+  "stryker-config": {
+    "project": "JKToolKit.CodexSDK.csproj",
+    "configuration": "Release",
+    "mutate": [
+      "**/Exec/CodexSessionHandle.cs",
+      "**/Exec/CodexClient.cs",
+      "**/Exec/CodexEventTextExtensions.cs",
+      "**/Exec/CodexSessionInfo.cs",
+      "**/Exec/Internal/*.cs",
+      "**/McpServer/**/*.cs"
+    ],
+    "test-case-filter": "FullyQualifiedName!~E2E",
+    "concurrency": 4,
+    "coverage-analysis": "perTest",
+    "additional-timeout": 1000,
+    "reporters": [
+      "html",
+      "json",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 99,
+      "low": 90,
+      "break": 0
+    }
+  }
+}

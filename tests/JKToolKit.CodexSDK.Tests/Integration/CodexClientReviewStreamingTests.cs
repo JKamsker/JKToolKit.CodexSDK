@@ -130,7 +130,7 @@ public sealed class CodexClientReviewStreamingTests
     [Fact]
     public async Task ReviewCancellation_KillsChildAndPropagatesCancellation()
     {
-        using var process = CreateEchoThenSleepProcess();
+        using var process = CreateEchoThenSleepProcess(longRunning: true);
         using var observer = Process.GetProcessById(process.Id);
         using var client = new CodexClient(Options.Create(new CodexClientOptions()), new ReviewProcessLauncher(process), loggerFactory: NullLoggerFactory.Instance);
         using var cancellation = new CancellationTokenSource();
@@ -138,9 +138,16 @@ public sealed class CodexClientReviewStreamingTests
         var review = client.ReviewAsync(new CodexReviewOptions(Path.GetTempPath()) { Prompt = "review" }, stdout, null, cancellation.Token);
         await stdout.FirstWrite.WaitAsync(TimeSpan.FromSeconds(10));
         cancellation.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => review);
-        await observer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(observer.HasExited);
+        try
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => review.WaitAsync(TimeSpan.FromSeconds(5)));
+            await observer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(observer.HasExited);
+        }
+        finally
+        {
+            if (!observer.HasExited) { observer.Kill(entireProcessTree: true); await observer.WaitForExitAsync(); }
+        }
     }
 
     [Fact]
@@ -158,7 +165,7 @@ public sealed class CodexClientReviewStreamingTests
         Assert.Contains("ERR", result.StandardError);
     }
 
-    private static Process CreateEchoThenSleepProcess()
+    private static Process CreateEchoThenSleepProcess(bool longRunning = false)
     {
         ProcessStartInfo startInfo;
 
@@ -167,7 +174,7 @@ public sealed class CodexClientReviewStreamingTests
             startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = "/c echo OUT & echo ERR 1>&2 & ping -n 3 127.0.0.1 >NUL",
+                Arguments = $"/c echo OUT & echo ERR 1>&2 & ping -n {(longRunning ? 31 : 3)} 127.0.0.1 >NUL",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -180,7 +187,7 @@ public sealed class CodexClientReviewStreamingTests
             startInfo = new ProcessStartInfo
             {
                 FileName = "/bin/bash",
-                Arguments = "-c \"echo OUT; echo ERR 1>&2; sleep 2\"",
+                Arguments = $"-c \"echo OUT; echo ERR 1>&2; sleep {(longRunning ? 30 : 2)}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -283,6 +290,7 @@ public sealed class CodexClientReviewStreamingTests
         private readonly TaskCompletionSource _firstWriteTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public StringBuilder Buffer { get; } = new();
+        private readonly StringBuilder _pending = new();
         public Task FirstWrite => _firstWriteTcs.Task;
 
         public override Encoding Encoding => Encoding.UTF8;
@@ -294,10 +302,15 @@ public sealed class CodexClientReviewStreamingTests
                 _firstWriteTcs.TrySetResult();
             }
 
-            Buffer.Append(buffer.Span);
+            _pending.Append(buffer.Span);
             return Task.CompletedTask;
         }
 
-        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            Buffer.Append(_pending);
+            _pending.Clear();
+            return Task.CompletedTask;
+        }
     }
 }

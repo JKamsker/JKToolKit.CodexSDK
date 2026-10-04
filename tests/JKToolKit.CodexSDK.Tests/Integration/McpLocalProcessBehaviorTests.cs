@@ -19,6 +19,7 @@ public sealed class McpLocalProcessBehaviorTests
                 while ($null -ne ($line = [Console]::ReadLine())) {
                   $request = $line | ConvertFrom-Json
                   if ($null -ne $request.id) {
+                    if ($request.jsonrpc -ne '2.0') { throw 'Missing JSON-RPC version' }
                     @{ jsonrpc = '2.0'; id = $request.id; result = @{ home = $env:CODEX_HOME } } | ConvertTo-Json -Compress -Depth 5 | ForEach-Object { [Console]::WriteLine($_) }
                   }
                 }
@@ -27,6 +28,7 @@ public sealed class McpLocalProcessBehaviorTests
                 while IFS= read -r line; do
                   case "$line" in
                     *'"id":'*)
+                      case "$line" in *'"jsonrpc":"2.0"'*) ;; *) exit 42 ;; esac
                       id=$(printf '%s' "$line" | sed -n 's/.*"id":\([0-9][0-9]*\).*/\1/p')
                       printf '{"jsonrpc":"2.0","id":%s,"result":{"home":"%s"}}\n' "$id" "$CODEX_HOME"
                       ;;

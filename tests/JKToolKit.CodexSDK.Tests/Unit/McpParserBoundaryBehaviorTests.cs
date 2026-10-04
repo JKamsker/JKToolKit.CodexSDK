@@ -66,4 +66,17 @@ public sealed class McpParserBoundaryBehaviorTests
         });
         Assert.Equal("root-id", CodexMcpResultParser.Parse(fallback).ThreadId);
     }
+    [Fact]
+    public void StructuredAliases_UseCamelCaseFirst_AndFallBackToSnakeCase()
+    {
+        var both = JsonSerializer.Deserialize<JsonElement>("""{"structuredContent":{"threadId":"camel"},"structured_content":{"threadId":"snake"}}""");
+        Assert.Equal("camel", CodexMcpResultParser.Parse(both).ThreadId);
+        var snake = JsonSerializer.Deserialize<JsonElement>("""{"structured_content":{"threadId":"snake"}}""");
+        Assert.Equal("snake", CodexMcpResultParser.Parse(snake).ThreadId);
+        Assert.Equal("", CodexMcpResultParser.Parse(JsonSerializer.Deserialize<JsonElement>("{}")).ThreadId);
+        Assert.True(McpToolsListParser.TryParse(JsonSerializer.Deserialize<JsonElement>("""{"tools":[],"next_cursor":42}"""), out var tools, out var cursor));
+        Assert.Empty(tools);
+        Assert.Null(cursor);
+    }
+
 }

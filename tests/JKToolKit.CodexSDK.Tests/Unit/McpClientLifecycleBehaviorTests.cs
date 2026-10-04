@@ -109,6 +109,7 @@ public sealed class McpClientLifecycleBehaviorTests
         await using var client = await CodexMcpServerClient.CreateInitializedAsync(new(), process, rpc, NullLogger<CodexMcpServerClient>.Instance, default);
         Assert.Equal("initialize", rpc.Calls.Single().Method);
         Assert.Equal("2025-11-25", rpc.Calls[0].Args!.Value.GetProperty("protocolVersion").GetString());
+        Assert.Empty(rpc.Calls[0].Args!.Value.GetProperty("capabilities").EnumerateObject());
         Assert.Equal(["notifications/initialized"], rpc.Notifications);
         var result = await client.CallAsync("custom", new { value = 3 });
         Assert.Equal("{}", result.GetRawText());
@@ -182,6 +183,78 @@ public sealed class McpClientLifecycleBehaviorTests
         Assert.Null(response.Result);
         Assert.Equal(-32601, response.Error!.Code);
         Assert.Contains("unknown/method", response.Error.Message);
+    }
+
+    [Fact]
+    public async Task FailedSchemaLoad_ReleasesGate_AndCanBeRetriedWithoutCachingFailure()
+    {
+        var schemaRequests = 0;
+        var rpc = new RpcStub
+        {
+            Request = (method, _) => method == "tools/list" && ++schemaRequests == 1
+                ? JsonSerializer.SerializeToElement(new { malformed = true })
+                : JsonSerializer.SerializeToElement(new { tools = new[] { new { name = "tool", inputSchema = new { additionalProperties = false, properties = new { keep = new { } } } } } })
+        };
+        await using var client = Create(rpc, options: new() { StrictParsing = true });
+        await Assert.ThrowsAsync<JsonException>(() => client.CallToolAsync("tool", new Dictionary<string, object?> { ["drop"] = 1 }));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        await client.CallToolAsync("tool", new Dictionary<string, object?> { ["keep"] = 2, ["drop"] = 1 }, deadline.Token);
+        var arguments = rpc.Calls.Last().Args!.Value.GetProperty("arguments");
+        Assert.Single(arguments.EnumerateObject());
+        Assert.Equal(2, arguments.GetProperty("keep").GetInt32());
+        Assert.Equal(2, schemaRequests);
+    }
+
+    [Fact]
+    public async Task Reply_SendsThreadAndPromptToTheReplyTool()
+    {
+        var rpc = new RpcStub { Request = (method, _) => JsonSerializer.SerializeToElement(method == "tools/list"
+            ? (object)new { tools = Array.Empty<object>() } : new { threadId = "thread", content = new[] { new { text = "answer" } } }) };
+        await using var client = Create(rpc);
+        var result = await client.ReplyAsync("thread", "followup prompt");
+        var call = rpc.Calls.Last();
+        Assert.Equal("tools/call", call.Method);
+        Assert.Equal("codex-reply", call.Args!.Value.GetProperty("name").GetString());
+        var arguments = call.Args.Value.GetProperty("arguments");
+        Assert.Equal("thread", arguments.GetProperty("threadId").GetString());
+        Assert.Equal("followup prompt", arguments.GetProperty("prompt").GetString());
+        Assert.Equal("answer", result.Text);
+    }
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData("null")]
+    [InlineData("{}")]
+    [InlineData("1")]
+    [InlineData("\"custom\"")]
+    public async Task SchemasWithoutExplicitFalseAdditionalProperties_PreserveArguments(string additionalProperties)
+    {
+        var schema = JsonSerializer.Deserialize<JsonElement>("{\"additionalProperties\":" + additionalProperties + ",\"properties\":{}}");
+        var rpc = new RpcStub { Request = (_, _) => JsonSerializer.SerializeToElement(new { tools = new[] { new { name = "tool", inputSchema = schema } } }) };
+        await using var client = Create(rpc);
+        await client.CallToolAsync("tool", new Dictionary<string, object?> { ["custom"] = 42 });
+        Assert.Equal(42, rpc.Calls.Last().Args!.Value.GetProperty("arguments").GetProperty("custom").GetInt32());
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("true")]
+    public async Task ClosedSchemaWithNonObjectProperties_AllowsNoArguments(string properties)
+    {
+        var schema = JsonSerializer.Deserialize<JsonElement>("{\"additionalProperties\":false,\"properties\":" + properties + "}");
+        var rpc = new RpcStub { Request = (_, _) => JsonSerializer.SerializeToElement(new { tools = new[] { new { name = "tool", inputSchema = schema } } }) };
+        await using var client = Create(rpc);
+        await client.CallToolAsync("tool", new Dictionary<string, object?> { ["custom"] = 42 });
+        Assert.Empty(rpc.Calls.Last().Args!.Value.GetProperty("arguments").EnumerateObject());
+    }
+
+    [Fact]
+    public async Task StaticStart_RejectsNullOptions_AndDefaultLaunchUsesMcpServerCommand()
+    {
+        var failure = await Assert.ThrowsAsync<ArgumentNullException>(() => CodexMcpServerClient.StartAsync(null!));
+        Assert.Equal("options", failure.ParamName);
+        Assert.Equal(["mcp-server"], new CodexMcpServerClientOptions().Launch.Arguments);
     }
 
     private sealed class HandlerStub(bool fails) : IMcpElicitationHandler
