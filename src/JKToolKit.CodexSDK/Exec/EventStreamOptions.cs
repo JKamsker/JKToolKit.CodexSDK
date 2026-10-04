@@ -41,7 +41,7 @@ public sealed record EventStreamOptions(
     /// </summary>
     public DateTimeOffset? AfterTimestamp { get; init; } = AfterTimestamp;
 
-    private readonly long? _fromByteOffset = FromByteOffset;
+    private readonly long? _fromByteOffset = ValidateByteOffset(FromByteOffset);
 
     /// <summary>
     /// Gets the optional byte offset within the log file to start reading from.
@@ -52,16 +52,14 @@ public sealed record EventStreamOptions(
     public long? FromByteOffset
     {
         get => _fromByteOffset;
-        init
-        {
-            if (value.HasValue && value.Value < 0)
-                throw new ArgumentOutOfRangeException(
-                    nameof(FromByteOffset),
-                    value,
-                    "Byte offset must be non-negative.");
+        init => _fromByteOffset = ValidateByteOffset(value);
+    }
 
-            _fromByteOffset = value;
-        }
+    private static long? ValidateByteOffset(long? value)
+    {
+        if (value is < 0)
+            throw new ArgumentOutOfRangeException(nameof(FromByteOffset), value, "Byte offset must be non-negative.");
+        return value;
     }
 
     /// <summary>

@@ -40,9 +40,19 @@ public sealed record SessionFilter(
     /// <summary>
     /// Gets the optional start date for filtering sessions.
     /// </summary>
-    public DateTimeOffset? FromDate { get; init; } = FromDate;
+    public DateTimeOffset? FromDate
+    {
+        get => _fromDate;
+        init
+        {
+            ValidateDateRange(value, _toDate);
+            _fromDate = value;
+        }
+    }
 
-    private readonly DateTimeOffset? _toDate = ToDate;
+    private readonly DateTimeOffset? _fromDate = FromDate;
+
+    private readonly DateTimeOffset? _toDate = ValidateDateRange(FromDate, ToDate);
 
     /// <summary>
     /// Gets the optional end date for filtering sessions.
@@ -55,13 +65,19 @@ public sealed record SessionFilter(
         get => _toDate;
         init
         {
-            if (value.HasValue && FromDate.HasValue && value.Value < FromDate.Value)
-                throw new ArgumentException(
-                    $"ToDate ({value.Value:O}) must be on or after FromDate ({FromDate.Value:O}).",
-                    nameof(ToDate));
+            ValidateDateRange(FromDate, value);
 
             _toDate = value;
         }
+    }
+
+    private static DateTimeOffset? ValidateDateRange(DateTimeOffset? fromDate, DateTimeOffset? toDate)
+    {
+        if (toDate.HasValue && fromDate.HasValue && toDate.Value < fromDate.Value)
+            throw new ArgumentException(
+                $"ToDate ({toDate.Value:O}) must be on or after FromDate ({fromDate.Value:O}).",
+                nameof(ToDate));
+        return toDate;
     }
 
     /// <summary>

@@ -85,6 +85,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();
+        await routed.DisposeAsync();
         rpc.AssertDrained();
     }
 
@@ -130,6 +131,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.ReviewThreadId.Should().Be("thr_review");
 
         await routed.DisposeAsync();
+        await routed.DisposeAsync();
         rpc.AssertDrained();
     }
 
@@ -170,6 +172,7 @@ public sealed class CodexSdkReviewRoutingTests
         routed.AppServer.Review.Turn.TurnId.Should().Be("turn_1");
 
         await routed.DisposeAsync();
+        await routed.DisposeAsync();
         rpc.AssertDrained();
     }
 
@@ -195,6 +198,61 @@ public sealed class CodexSdkReviewRoutingTests
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Exactly one of Thread or ExistingThreadId must be provided.*");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewFailure_DisposesAcquiredClientAndPreservesOriginalFailure(bool factoryFailure)
+    {
+        var rpc = new SequencedRpc { Failure = new IOException("review connection lost") };
+        await using var client = new CodexAppServerClient(new(), new FakeProcess(), rpc, NullLogger.Instance, startExitWatcher: false);
+        await using var sdk = new CodexSdk(new FakeExecClient(), factoryFailure ? new FakeAppServerFactory(true) : new FakeAppServerFactory(client), new FakeMcpFactory());
+        var options = new CodexSdkAppServerReviewOptions { ExistingThreadId = "thread", Target = new AppServerReviewTarget.UncommittedChanges() };
+        if (factoryFailure) await Assert.ThrowsAsync<NotSupportedException>(() => sdk.ReviewAppServerAsync(options));
+        else
+        {
+            var ex = await Assert.ThrowsAsync<IOException>(() => sdk.ReviewAppServerAsync(options));
+            Assert.Same(rpc.Failure, ex);
+            Assert.Equal(1, rpc.Disposals);
+        }
+    }
+
+    [Fact]
+    public async Task ReviewRouting_RejectsUnknownModeAndMissingModeOptions()
+    {
+        await using var sdk = new CodexSdk(new FakeExecClient(), new FakeAppServerFactory(true), new FakeMcpFactory());
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => sdk.ReviewAsync(new() { Mode = (CodexSdkReviewMode)99 }));
+        await Assert.ThrowsAsync<ArgumentException>(() => sdk.ReviewAsync(new() { Mode = CodexSdkReviewMode.Exec }));
+        await Assert.ThrowsAsync<ArgumentException>(() => sdk.ReviewAsync(new() { Mode = CodexSdkReviewMode.AppServer }));
+    }
+
+    [Fact]
+    public async Task OwnedSdk_DisposesSynchronousExecOnlyOnce()
+    {
+        var exec = new FakeExecClient();
+        var sdk = CodexSdk.CreateOwned(exec, new FakeAppServerFactory(true), new FakeMcpFactory());
+        await sdk.DisposeAsync();
+        await sdk.DisposeAsync();
+        Assert.Equal(1, exec.Disposals);
+    }
+
+    [Fact]
+    public async Task Runtime_ServerMetadataRetainsCapabilitiesAndDoesNotRefreshAccount()
+    {
+        var rpc = new SequencedRpc();
+        rpc.EnqueueResult("initialize", JsonSerializer.SerializeToElement(new { userAgent = "codex/0.160.0", capabilities = new { feature = true } }));
+        rpc.EnqueueResult("account/read", JsonSerializer.SerializeToElement(new { account = (object?)null, requiresOpenaiAuth = false }));
+        await using var client = new CodexAppServerClient(new(), new FakeProcess(), rpc, NullLogger.Instance, startExitWatcher: false);
+        await client.InitializeAsync(new("test", "Test", "1"));
+        await using var sdk = new CodexSdk(new FakeExecClient(), new FakeAppServerFactory(client), new FakeMcpFactory());
+        var result = await sdk.Runtime.GetInfoAsync();
+        Assert.Same(client.InitializeResult, result.Initialize);
+        Assert.True(result.Capabilities!.Value.GetProperty("feature").GetBoolean());
+        Assert.NotNull(result.Account);
+        Assert.False(result.Account.RequiresOpenaiAuth);
+        Assert.False(rpc.LastParams.GetProperty("refreshToken").GetBoolean());
+        rpc.AssertDrained();
     }
 
     private sealed class FakeExecClient : ICodexClient
@@ -226,7 +284,8 @@ public sealed class CodexSdkReviewRoutingTests
         public Task<RateLimits?> GetRateLimitsAsync(bool noCache = false, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public void Dispose() { }
+        public int Disposals { get; private set; }
+        public void Dispose() { Disposals++; }
     }
 
     private sealed class FakeAppServerFactory : ICodexAppServerClientFactory
@@ -280,6 +339,9 @@ public sealed class CodexSdkReviewRoutingTests
     private sealed class SequencedRpc : IJsonRpcConnection
     {
         private readonly Queue<(string Method, JsonElement Result)> _results = new();
+        public Exception? Failure { get; init; }
+        public int Disposals { get; private set; }
+        public JsonElement LastParams { get; private set; }
 
 #pragma warning disable CS0067 // Event is part of the IJsonRpcConnection contract; tests don't need to raise it.
         public event Func<JsonRpcNotification, ValueTask>? OnNotification;
@@ -294,6 +356,8 @@ public sealed class CodexSdkReviewRoutingTests
 
         public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
         {
+            if (Failure is not null) throw Failure;
+            LastParams = JsonSerializer.SerializeToElement(@params, CodexAppServerClient.CreateDefaultSerializerOptions());
             _results.Should().NotBeEmpty();
             var (expectedMethod, result) = _results.Dequeue();
             method.Should().Be(expectedMethod);
@@ -303,6 +367,6 @@ public sealed class CodexSdkReviewRoutingTests
         public Task SendNotificationAsync(string method, object? @params, CancellationToken ct) =>
             Task.CompletedTask;
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync() { Disposals++; return ValueTask.CompletedTask; }
     }
 }
