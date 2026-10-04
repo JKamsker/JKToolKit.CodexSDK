@@ -45,6 +45,20 @@ public sealed class CodexSessionLocatorCancellationTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    [Fact]
+    public async Task WaitForNewSessionFileAsync_OwnDeadlineExpiresWithoutCallerCancellation()
+    {
+        var locator = new CodexSessionLocator(new EmptyFileSystem(), NullLogger<CodexSessionLocator>.Instance);
+        using var safetyDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var discover = () => locator.WaitForNewSessionFileAsync(
+            Path.Combine(Path.GetTempPath(), "missing-session"), DateTimeOffset.UtcNow,
+            TimeSpan.FromMilliseconds(25), safetyDeadline.Token);
+
+        var failure = (await discover.Should().ThrowAsync<TimeoutException>()).Which;
+        failure.Message.Should().Contain("No new session file");
+        safetyDeadline.IsCancellationRequested.Should().BeFalse("the discovery deadline belongs to the locator");
+    }
+
     private sealed class EmptyFileSystem : IFileSystem
     {
         public bool FileExists(string path) => false;
