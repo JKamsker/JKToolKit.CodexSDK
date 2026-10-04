@@ -31,8 +31,8 @@ public sealed partial class AppServerResilientTransportCoverageTests
             "usage" => () => client.ReadAccountTokenUsageAsync(),
             "messages" => () => client.ReadWorkspaceMessagesAsync(),
             "environment" => () => client.AddEnvironmentAsync(new() { EnvironmentId = "env", ExecServerUrl = "https://example.test" }),
-            "watch" => () => client.FsWatchAsync(new() { Path = "/workspace" }),
-            "directory" => () => client.FsReadDirectoryAsync(new() { Path = "/workspace" }),
+            "watch" => () => client.FsWatchAsync(new() { Path = PathForPlatform("/workspace") }),
+            "directory" => () => client.FsReadDirectoryAsync(new() { Path = PathForPlatform("/workspace") }),
             _ => () => client.StartWindowsSandboxSetupAsync("elevated")
         };
         await action.Should().ThrowAsync<InvalidOperationException>();
@@ -92,12 +92,12 @@ public sealed partial class AppServerResilientTransportCoverageTests
     {
         var rpc = new RecordingRpc("""{"summary":{"conversationId":"conversation-1","path":"/rollout.jsonl","preview":"hello","modelProvider":"provider","cwd":"/workspace","cliVersion":"1","source":"cli"}}""");
         await using var client = await ResilientCodexAppServerClient.StartAsync(new Factory(rpc));
-        var result = await client.GetConversationSummaryAsync(new() { RolloutPath = "/rollout.jsonl" });
+        var result = await client.GetConversationSummaryAsync(new() { RolloutPath = PathForPlatform("/rollout.jsonl") });
         result.Summary.ConversationId.Should().Be("conversation-1");
         result.Summary.GitInfo.Should().BeNull();
         result.Summary.Preview.Should().Be("hello");
         rpc.Requests.Should().ContainSingle().Which.Method.Should().Be("getConversationSummary");
-        rpc.Requests[0].Parameters.GetProperty("rolloutPath").GetString().Should().Be("/rollout.jsonl");
+        rpc.Requests[0].Parameters.GetProperty("rolloutPath").GetString().Should().Be(PathForPlatform("/rollout.jsonl"));
         rpc.Requests[0].Parameters.TryGetProperty("conversationId", out _).Should().BeFalse();
     }
 

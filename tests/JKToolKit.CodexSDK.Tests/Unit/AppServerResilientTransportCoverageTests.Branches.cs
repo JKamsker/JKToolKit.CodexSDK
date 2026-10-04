@@ -51,7 +51,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         var result = await client.WriteRemoteSkillAsync("hazelnut-1", true);
         result.Id.Should().Be("skill-1");
         result.Name.Should().Be("Example");
-        result.Path.Should().Be("/skills/example");
+        result.Path.Should().Be(PathForPlatform("/skills/example"));
         rpc.Requests.Select(x => x.Method).Should().Equal("skills/remote/export", "skills/remote/write");
         JsonElement.DeepEquals(rpc.Requests[0].Parameters, rpc.Requests[1].Parameters).Should().BeTrue();
         rpc.Requests[1].Parameters.GetProperty("hazelnutId").GetString().Should().Be("hazelnut-1");
@@ -107,11 +107,11 @@ public sealed partial class AppServerResilientTransportCoverageTests
         var rpc = new RecordingRpc("""{"items":[{"description":"config","itemType":"CONFIG","cwd":"/workspace"},{"description":"skills","itemType":"SKILLS","cwd":null},{"description":"instructions","itemType":"AGENTS_MD"}]}""");
         await using var client = await ResilientCodexAppServerClient.StartAsync(new Factory(rpc));
         var result = await client.DetectExternalAgentConfigAsync(new());
-        result.Items.Select(x => x.Cwd).Should().Equal("/workspace", null, null);
+        result.Items.Select(x => x.Cwd).Should().Equal(PathForPlatform("/workspace"), null, null);
         result.Items.Select(x => x.Description).Should().Equal("config", "skills", "instructions");
         await client.ImportExternalAgentConfigAsync(result.Items);
         rpc.Requests[1].Method.Should().Be("externalAgentConfig/import");
-        rpc.Requests[1].Parameters.GetProperty("migrationItems")[0].GetProperty("cwd").GetString().Should().Be("/workspace");
+        rpc.Requests[1].Parameters.GetProperty("migrationItems")[0].GetProperty("cwd").GetString().Should().Be(PathForPlatform("/workspace"));
     }
 
     public static IEnumerable<object[]> OverloadFailures()

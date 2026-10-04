@@ -107,10 +107,10 @@ public sealed partial class AppServerResilientTransportCoverageTests
     {
         var rpc = new RecordingRpc("""{"files":[]}""");
         await using var client = await ResilientCodexAppServerClient.StartAsync(new Factory(rpc));
-        (await client.FuzzyFileSearchAsync("readme", ["/workspace"], useCancellationToken ? "search-1" : " ")).Should().BeEmpty();
+        (await client.FuzzyFileSearchAsync("readme", [PathForPlatform("/workspace")], useCancellationToken ? "search-1" : " ")).Should().BeEmpty();
         rpc.Requests.Should().ContainSingle().Which.Method.Should().Be("fuzzyFileSearch");
         rpc.Requests[0].Parameters.GetProperty("query").GetString().Should().Be("readme");
-        rpc.Requests[0].Parameters.GetProperty("roots")[0].GetString().Should().Be("/workspace");
+        rpc.Requests[0].Parameters.GetProperty("roots")[0].GetString().Should().Be(PathForPlatform("/workspace"));
         rpc.Requests[0].Parameters.TryGetProperty("cancellationToken", out var token).Should().Be(useCancellationToken);
         if (useCancellationToken) token.GetString().Should().Be("search-1");
     }

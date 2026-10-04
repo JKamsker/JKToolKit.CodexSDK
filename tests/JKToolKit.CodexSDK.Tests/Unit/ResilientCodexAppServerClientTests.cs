@@ -410,6 +410,7 @@ public sealed partial class ResilientCodexAppServerClientTests
         result.GetProperty("ok").GetBoolean().Should().BeTrue();
         factory.StartCount.Should().Be(2);
         client.RestartCount.Should().Be(1);
+        client.LastRestart!.Reason.Should().Be("policy-ensure-restarted");
     }
 
     [Fact]

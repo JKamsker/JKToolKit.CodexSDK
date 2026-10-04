@@ -28,7 +28,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.AppendThreadRealtimeAudioAsync(" ", null!));
         yield return Invalid(c => c.AppendThreadRealtimeAudioAsync("thread-1", null!));
         yield return Invalid(c => c.StopThreadRealtimeAsync(" "));
-        yield return Invalid(c => c.StartFuzzyFileSearchSessionAsync(" ", ["/workspace"]));
+        yield return Invalid(c => c.StartFuzzyFileSearchSessionAsync(" ", [PathForPlatform("/workspace")]));
         yield return Invalid(c => c.StartFuzzyFileSearchSessionAsync("session", []));
         yield return Invalid(c => c.StartFuzzyFileSearchSessionAsync("session", [" "]));
         yield return Invalid(c => c.UpdateFuzzyFileSearchSessionAsync(" ", "query"));
@@ -44,9 +44,9 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.CommandExecResizeAsync(new() { ProcessId = " ", Size = new() { Columns = 1, Rows = 1 } }));
         yield return Invalid(c => c.CommandExecResizeAsync(new() { ProcessId = "proc-1", Size = new() { Columns = 1, Rows = 0 } }));
         yield return Invalid(c => c.CommandExecTerminateAsync(new() { ProcessId = " " }));
-        yield return Invalid(c => c.FsWriteFileAsync(new() { Path = "/workspace/file", DataBase64 = null! }));
+        yield return Invalid(c => c.FsWriteFileAsync(new() { Path = PathForPlatform("/workspace/file"), DataBase64 = null! }));
         yield return Invalid(c => c.FsReadFileAsync(new() { Path = " " }));
-        yield return Invalid(c => c.FsWatchAsync(new() { Path = "/workspace", WatchId = " " }));
+        yield return Invalid(c => c.FsWatchAsync(new() { Path = PathForPlatform("/workspace"), WatchId = " " }));
         yield return Invalid(c => c.FsUnwatchAsync(new() { WatchId = " " }));
         yield return Invalid(c => c.ReadAppsAsync(new() { AppIds = [] }));
         yield return Invalid(c => c.AddEnvironmentAsync(new() { EnvironmentId = " ", ExecServerUrl = "https://example.test" }));
@@ -58,7 +58,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.StartMcpServerOauthLoginAsync(new() { Name = " " }));
         yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = "server", Uri = " " }));
         yield return Invalid(c => c.WriteSkillsConfigAsync(new() { Enabled = true }));
-        yield return Invalid(c => c.WriteSkillsConfigAsync(new() { Enabled = true, Name = "named", Path = "/skill" }));
+        yield return Invalid(c => c.WriteSkillsConfigAsync(new() { Enabled = true, Name = "named", Path = PathForPlatform("/skill") }));
     }
 
     [Theory]
@@ -74,7 +74,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
 
     public static IEnumerable<object[]> ExperimentalRequests()
     {
-        yield return Invalid(c => c.StartFuzzyFileSearchSessionAsync("session", ["/workspace"]));
+        yield return Invalid(c => c.StartFuzzyFileSearchSessionAsync("session", [PathForPlatform("/workspace")]));
         yield return Invalid(c => c.UpdateFuzzyFileSearchSessionAsync("session", "query"));
         yield return Invalid(c => c.StopFuzzyFileSearchSessionAsync("session"));
         yield return Invalid(c => c.AppendThreadRealtimeTextAsync("thread-1", "text"));
@@ -131,7 +131,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         {
             "start" => () => client.StartThreadAsync(new()),
             "fork" => () => client.ForkThreadAsync(new() { ThreadId = "original" }),
-            _ => () => client.ResumeThreadAsync(new ThreadResumeOptions { Path = "/rollout.jsonl" })
+            _ => () => client.ResumeThreadAsync(new ThreadResumeOptions { Path = PathForPlatform("/rollout.jsonl") })
         };
         await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*returned no thread id*");
         rpc.Requests.Should().ContainSingle();

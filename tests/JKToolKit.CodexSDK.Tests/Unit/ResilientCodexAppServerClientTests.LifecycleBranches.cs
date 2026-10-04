@@ -186,6 +186,22 @@ public sealed partial class ResilientCodexAppServerClientTests
         dispatched.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task ManualRestart_AfterUnretriedDisconnect_PreservesPreviousProcessDiagnostics()
+    {
+        var failure = Disconnect("previous process failed", exitCode: 42);
+        var first = new FakeAdapter { CallAsyncImpl = (_, _, _) => throw failure };
+        var factory = new SequenceFactory(first, new FakeAdapter());
+        await using var client = await StartAsync(factory, new() { AutoRestart = false });
+        var action = () => client.CallAsync("custom/read", null);
+        (await action.Should().ThrowAsync<CodexAppServerDisconnectedException>()).Which.Should().BeSameAs(failure);
+        await client.RestartAsync();
+        client.LastRestart!.PreviousExitCode.Should().Be(42);
+        client.LastRestart.PreviousStderrTail.Should().Equal("stderr: test");
+        client.LastRestart.Reason.Should().Be("manual-restart");
+        factory.StartCount.Should().Be(2);
+    }
+
     private static async IAsyncEnumerable<AppServerNotification> ThrowNotifications(Exception failure, [EnumeratorCancellation] CancellationToken token)
     {
         await Task.CompletedTask;

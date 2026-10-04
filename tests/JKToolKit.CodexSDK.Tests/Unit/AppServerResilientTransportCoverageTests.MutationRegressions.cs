@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Resiliency;
@@ -68,7 +69,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         await using var client = await ResilientCodexAppServerClient.StartAsync(new Factory(rpc));
         Func<Task> action = operation switch
         {
-            "start" => () => client.StartFuzzyFileSearchSessionAsync(" ", ["/workspace"]),
+            "start" => () => client.StartFuzzyFileSearchSessionAsync(" ", [PathForPlatform("/workspace")]),
             "update" => () => client.UpdateFuzzyFileSearchSessionAsync(" ", "query"),
             _ => () => client.StopFuzzyFileSearchSessionAsync(" ")
         };
@@ -85,6 +86,32 @@ public sealed partial class AppServerResilientTransportCoverageTests
         var action = () => client.StartFuzzyFileSearchSessionAsync("search-1", null!);
         (await action.Should().ThrowAsync<ArgumentNullException>()).Which.ParamName.Should().Be("roots");
         rpc.Requests.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequestPipeline_AlreadyEncodedJsonReachesTransformersWithoutCustomObjectConversion(bool documentInput)
+    {
+        using var document = JsonDocument.Parse("""{"threadId":"thread-1"}""");
+        var serializer = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        serializer.Converters.Add(new RejectReencodingConverter<JsonElement>());
+        serializer.Converters.Add(new RejectReencodingConverter<JsonDocument>());
+        var rpc = new RecordingRpc("{}");
+        await using var client = new CodexAppServerClient(new()
+        {
+            SerializerOptionsOverride = serializer,
+            RequestParamsTransformers = [new IdentityRequestTransformer()]
+        }, new Process(), rpc, NullLogger.Instance, startExitWatcher: false);
+        await client.CallAsync("custom/read", documentInput ? document : document.RootElement);
+        rpc.Requests.Should().ContainSingle();
+        rpc.Requests[0].Parameters.GetProperty("threadId").GetString().Should().Be("thread-1");
+    }
+
+    private sealed class RejectReencodingConverter<T> : JsonConverter<T>
+    {
+        public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) => throw new InvalidOperationException("Raw JSON should reach the request transformer directly.");
     }
 
     private sealed class IdentityRequestTransformer : JKToolKit.CodexSDK.AppServer.Overrides.IAppServerRequestParamsTransformer
