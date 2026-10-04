@@ -1,0 +1,24 @@
+{
+  "stryker-config": {
+    "project": "JKToolKit.CodexSDK.AgentFramework.csproj",
+    "configuration": "Release",
+    "mutate": [
+      "**/*.cs"
+    ],
+    "mutation-level": "Complete",
+    "test-case-filter": "FullyQualifiedName!~SourceFileSizeGuardTests",
+    "concurrency": 4,
+    "coverage-analysis": "perTest",
+    "additional-timeout": 3000,
+    "reporters": [
+      "json",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 95,
+      "low": 80,
+      "break": 0
+    },
+    "break-on-initial-test-failure": true
+  }
+}
