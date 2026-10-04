@@ -135,6 +135,49 @@ public sealed class ProcessLauncherCoverageTests
         options.Launch.Environment["CODEX_HOME"].Should().Be("overridden");
     }
 
+    [Fact]
+    public async Task TerminationRejectsInvalidArgumentsAndPreservesCallerCancellation()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Launcher().TerminateProcessAsync(null!, TimeSpan.FromSeconds(1), default));
+        using var unstarted = new Process();
+        await Assert.ThrowsAsync<ArgumentException>(() => Launcher().TerminateProcessAsync(unstarted, TimeSpan.Zero, default));
+        var launch = ProcessLifetimeCoverageTests.Fixture("wait");
+        var info = new ProcessStartInfo(launch.FileName!) { RedirectStandardInput = true };
+        foreach (var arg in launch.Arguments) info.ArgumentList.Add(arg);
+        using var process = Process.Start(info)!;
+        try
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Launcher().TerminateProcessAsync(process, TimeSpan.FromSeconds(1), cts.Token));
+        }
+        finally
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
+    public async Task TerminationReportsProcessWithoutRedirectedStdin()
+    {
+        var launch = ProcessLifetimeCoverageTests.Fixture("wait");
+        var info = new ProcessStartInfo(launch.FileName!);
+        foreach (var arg in launch.Arguments) info.ArgumentList.Add(arg);
+        using var process = Process.Start(info)!;
+        try
+        {
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => Launcher().TerminateProcessAsync(process, TimeSpan.FromSeconds(1), default));
+            error.Message.Should().Contain(process.Id.ToString()).And.Contain("cannot be terminated");
+            error.InnerException.Should().BeOfType<InvalidOperationException>();
+        }
+        finally
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
     private static Task<Process> LaunchAsync(CodexProcessLauncher launcher, string operation, bool argumentMode, string? flag = null, string prompt = "prompt α", CancellationToken ct = default)
     {
         var options = argumentMode

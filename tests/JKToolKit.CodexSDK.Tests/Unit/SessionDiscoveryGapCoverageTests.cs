@@ -113,7 +113,7 @@ public sealed class SessionDiscoveryGapCoverageTests
             Enumerate = _ => [other, top],
             Read = path => Text(path == top
                 ? "\n{\"type\":\"other\",\"timestamp\":\"2025-01-01T00:00:00Z\"}\n{\"type\":\"session_meta\",\"timestamp\":\"2026-01-01T00:00:01Z\",\"payload\":{\"timestamp\":\"2026-01-01T00:00:03Z\"}}"
-                : "{\"type\":\"session_meta\",\"timestamp\":\"2026-01-01T00:00:02Z\",\"payload\":{}}")
+                : "{\"type\":\"session_meta\",\"timestamp\":\"2026-01-01T00:00:02Z\",\"payload\":{\"timestamp\":\"2026-01-01T00:00:02Z\"}}")
         };
         (await FindAsync(fs, [])).Should().Be(top);
     }
