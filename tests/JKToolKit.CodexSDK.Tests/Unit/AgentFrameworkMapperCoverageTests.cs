@@ -66,7 +66,7 @@ public sealed class AgentFrameworkMapperCoverageTests
     public void Options_RespectDirectThenAttachedThenChatThenAgentPrecedence()
     {
         var defaults = new CodexAIAgentOptions
-        { Model = "default", Cwd = "/default", ApprovalPolicy = CodexApprovalPolicy.Never, Sandbox = CodexSandboxMode.ReadOnly, Effort = CodexReasoningEffort.Low, Summary = "default" };
+        { SafetyOptions = new() { DefaultSandbox = CodexSandboxMode.DangerFullAccess }, Model = "default", Cwd = "/default", ApprovalPolicy = CodexApprovalPolicy.Never, Sandbox = CodexSandboxMode.ReadOnly, Effort = CodexReasoningEffort.Low, Summary = "default" };
         var chat = new ChatOptions { ModelId = "chat", Reasoning = new() { Effort = ReasoningEffort.Medium, Output = ReasoningOutput.Summary } };
         var run = new CodexAgentRunOptions
         { Model = "direct", Cwd = "/direct", ApprovalPolicy = CodexApprovalPolicy.OnRequest, Sandbox = CodexSandboxMode.WorkspaceWrite, Effort = CodexReasoningEffort.High, Summary = "direct" };
@@ -148,7 +148,7 @@ public sealed class AgentFrameworkMapperCoverageTests
         CodexAgentToolMapper.GetAIFunctions([configured], [attached], new CodexAgentRunOptions { Tools = [direct] }, new ChatOptions { Tools = [chatTool] })
             .Should().Equal(configured, attached, direct, chatTool);
         CodexAgentToolMapper.GetAIFunctions(null, null, null, null).Should().BeEmpty();
-        Assert.Throws<NotSupportedException>(() => CodexAgentToolMapper.GetAIFunctions([new NonFunctionTool()], null, null, null).ToArray());
+        Assert.Throws<NotSupportedException>(() => CodexAgentToolMapper.GetAIFunctions([new NonFunctionTool()], null, null, null).ToArray()).Message.Should().Contain("unsupported").And.Contain("NonFunctionTool");
         CodexAgentToolMapper.HasRunTools(null, null).Should().BeFalse();
         CodexAgentToolMapper.HasRunTools(new CodexAgentRunOptions { Tools = [] }, new ChatOptions { Tools = [] }).Should().BeFalse();
         CodexAgentToolMapper.HasRunTools(new CodexAgentRunOptions { Tools = [direct] }, null).Should().BeTrue();
@@ -181,6 +181,7 @@ public sealed class AgentFrameworkMapperCoverageTests
     [Fact]
     public void ChatClientAgentOptions_AreClonedAndModelOverrideIsOptional()
     {
+        Assert.Throws<ArgumentNullException>(() => CodexAgentOptionsMapper.FromChatClientAgentOptions(null!, null)).ParamName.Should().Be("options");
         var options = new ChatClientAgentOptions { Id = "id", Name = "agent", Description = "description", ChatOptions = new() { ModelId = "configured" } };
         var mapped = CodexAgentOptionsMapper.FromChatClientAgentOptions(options, "override");
         mapped.Id.Should().Be("id"); mapped.Name.Should().Be("agent"); mapped.Description.Should().Be("description");

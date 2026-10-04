@@ -22,6 +22,7 @@ public sealed class AdapterToolEdgeCaseTests
         result.GetProperty("success").GetBoolean().Should().BeFalse();
         var error = Error(result);
         error.GetProperty("error_code").GetString().Should().Be("invalid_tool_request");
+        error.GetProperty("error_message").GetString().Should().Be("Dynamic tool call request is invalid.");
         error.GetProperty("is_retryable").GetBoolean().Should().BeFalse();
         error.TryGetProperty("diagnostics", out _).Should().BeFalse();
         error.TryGetProperty("tool_name", out _).Should().BeFalse();
@@ -33,6 +34,8 @@ public sealed class AdapterToolEdgeCaseTests
         var handler = new AgentFrameworkToolCallHandler([]);
         var error = Error(await handler.HandleAsync("item/tool/call", Request("missing", new { }), default));
         error.GetProperty("error_code").GetString().Should().Be("unknown_tool");
+        error.GetProperty("error_message").GetString().Should().Be("Unknown Agent Framework tool 'missing'.");
+        error.GetProperty("is_retryable").GetBoolean().Should().BeFalse();
         error.GetProperty("tool_name").GetString().Should().Be("missing");
         error.GetProperty("call_id").GetString().Should().Be("call-1");
     }
@@ -42,20 +45,20 @@ public sealed class AdapterToolEdgeCaseTests
     {
         using var cancellation = new CancellationTokenSource();
         var fallback = new RecordingFallback();
-        var handler = new AgentFrameworkToolCallHandler([], fallback);
+        var handler = AgentFrameworkCodexToolAdapter.Create([], fallback).ApprovalHandler;
         var parameters = JsonSerializer.SerializeToElement(new { command = "status" });
         (await handler.HandleAsync("approval", parameters, cancellation.Token)).GetString().Should().Be("forwarded");
         fallback.Method.Should().Be("approval");
         fallback.Parameters!.Value.GetProperty("command").GetString().Should().Be("status");
         fallback.Cancellation.Should().Be(cancellation.Token);
-        await Assert.ThrowsAsync<NotSupportedException>(() => new AgentFrameworkToolCallHandler([]).HandleAsync("approval", null, default).AsTask());
+        (await Assert.ThrowsAsync<NotSupportedException>(() => new AgentFrameworkToolCallHandler([]).HandleAsync("approval", null, default).AsTask())).Message.Should().Contain("approval");
     }
 
     [Fact]
     public void Create_RejectsDuplicateNames_AndPreservesExplicitSchema()
     {
         var function = new StubFunction(() => null, JsonSerializer.SerializeToElement(new { type = "object", additionalProperties = false }));
-        Assert.Throws<ArgumentException>(() => AgentFrameworkCodexToolAdapter.Create([function, function]));
+        Assert.Throws<ArgumentException>(() => AgentFrameworkCodexToolAdapter.Create([function, function])).Message.Should().Contain("Duplicate Agent Framework tool name 'stub'");
         var spec = AgentFrameworkCodexToolAdapter.Create([function]).DynamicTools.Single();
         spec.Description.Should().Be("stub");
         spec.InputSchema.GetProperty("additionalProperties").GetBoolean().Should().BeFalse();
@@ -98,6 +101,7 @@ public sealed class AdapterToolEdgeCaseTests
         var error = Error(await set.ApprovalHandler.HandleAsync("item/tool/call", Request("stub", new { approve = true }), cancellation.Token));
         invoked.Should().BeFalse();
         error.GetProperty("error_code").GetString().Should().Be("approval_denied");
+        error.GetProperty("is_retryable").GetBoolean().Should().BeFalse();
         error.GetProperty("error_message").GetString().Should().Be(string.IsNullOrWhiteSpace(reason) ? "Agent Framework tool 'stub' was not approved." : reason);
     }
 
@@ -122,6 +126,11 @@ public sealed class AdapterToolEdgeCaseTests
         var response = await set.ApprovalHandler.HandleAsync("item/tool/call", Request("stub", 123), default);
         response.GetProperty("success").GetBoolean().Should().Be(expected);
         invoked.Should().Be(expected);
+        if (!expected)
+        {
+            Error(response).GetProperty("error_message").GetString().Should().Be("Agent Framework tool 'stub' is denied by policy.");
+            Error(response).GetProperty("is_retryable").GetBoolean().Should().BeFalse();
+        }
     }
 
     [Fact]
@@ -196,6 +205,8 @@ public sealed class AdapterToolEdgeCaseTests
         var response = await set.ApprovalHandler.HandleAsync("item/tool/call", Request("stub", new { }), default);
         response.GetProperty("success").GetBoolean().Should().BeFalse();
         Error(response).GetProperty("error_code").GetString().Should().Be("tool_invocation_failed");
+        Error(response).GetProperty("error_message").GetString().Should().Be("Agent Framework tool 'stub' failed.");
+        Error(response).GetProperty("is_retryable").GetBoolean().Should().BeFalse();
         response.ToString().Should().NotContain("secret");
     }
 
@@ -238,6 +249,41 @@ public sealed class AdapterToolEdgeCaseTests
             Call = FunctionInvokingChatClient.CurrentContext!.CallContent;
             return ValueTask.FromResult<object?>("ok");
         }
+    }
+
+    [Fact]
+    public void PublicEntryPoints_ValidateArguments()
+    {
+        Assert.Throws<ArgumentNullException>(() => AgentFrameworkCodexToolAdapter.Create(null!)).ParamName.Should().Be("functions");
+        Assert.Throws<ArgumentNullException>(() => AgentFrameworkCodexToolAdapter.Create([], (AgentFrameworkCodexToolAdapterOptions)null!)).ParamName.Should().Be("options");
+        Assert.Throws<ArgumentNullException>(() => AgentFrameworkCodexToolAdapter.Create([null!])).ParamName.Should().Be("function");
+        Assert.Throws<ArgumentNullException>(() => new AgentFrameworkToolCallHandler(null!)).ParamName.Should().Be("functions");
+        Assert.Throws<ArgumentNullException>(() => new AgentFrameworkCodexToolSet(null!, new AgentFrameworkToolCallHandler([]))).ParamName.Should().Be("dynamicTools");
+        Assert.Throws<ArgumentNullException>(() => new AgentFrameworkCodexToolSet([], null!)).ParamName.Should().Be("approvalHandler");
+    }
+
+    [Fact]
+    public async Task MissingParamsDiagnostics_IdentifyTheInvalidArgumentWhenOptedIn()
+    {
+        var set = AgentFrameworkCodexToolAdapter.Create([], new AgentFrameworkCodexToolAdapterOptions { SafetyOptions = new() { RedactToolExceptionDetails = false } });
+        JsonElement?[] missingValues = [null, default(JsonElement), JsonSerializer.SerializeToElement<object?>(null)];
+        foreach (var missing in missingValues)
+        {
+            var error = Error(await set.ApprovalHandler.HandleAsync("item/tool/call", missing, default));
+            error.GetProperty("diagnostics").GetProperty("exception_type").GetString().Should().Be("System.ArgumentException");
+            error.GetProperty("diagnostics").GetProperty("exception_message").GetString().Should().Contain("Dynamic tool call request is missing params.");
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ResultExceptionDiagnostics_IdentifyNestedFailure(bool list)
+    {
+        var failed = new FunctionResultContent("call", null) { Exception = new InvalidOperationException("nested failure") };
+        var set = AgentFrameworkCodexToolAdapter.Create([new StubFunction(() => list ? new AIContent[] { failed } : failed)], new AgentFrameworkCodexToolAdapterOptions { SafetyOptions = new() { RedactToolExceptionDetails = false } });
+        var error = Error(await set.ApprovalHandler.HandleAsync("item/tool/call", Request("stub", new { }), default));
+        error.GetProperty("error_message").GetString().Should().Be("Agent Framework function result contains an exception.");
     }
 
     internal static JsonElement Request(string name, object? args) => JsonSerializer.SerializeToElement(new DynamicToolCallParams

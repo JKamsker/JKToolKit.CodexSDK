@@ -64,7 +64,7 @@ public sealed class SemanticKernelAdapterEdgeCaseTests
     public async Task MissingParams_ThrowArgumentException(string? json)
     {
         var handler = new SemanticKernelToolCallHandler(new Kernel(), []);
-        await Assert.ThrowsAsync<ArgumentException>(() => handler.HandleAsync("item/tool/call", json is null ? null : JsonSerializer.Deserialize<JsonElement>(json), default).AsTask());
+        (await Assert.ThrowsAsync<ArgumentException>(() => handler.HandleAsync("item/tool/call", json is null ? null : JsonSerializer.Deserialize<JsonElement>(json), default).AsTask())).Message.Should().Contain("missing params");
         await Assert.ThrowsAsync<ArgumentException>(() => handler.HandleAsync("item/tool/call", default(JsonElement), default).AsTask());
     }
 
@@ -72,7 +72,7 @@ public sealed class SemanticKernelAdapterEdgeCaseTests
     public void DuplicateFunctions_AreRejected()
     {
         var function = KernelFunctionFactory.CreateFromMethod((Func<string>)(() => "ok"), "echo");
-        Assert.Throws<ArgumentException>(() => new SemanticKernelToolCallHandler(new Kernel(), [function, function]));
+        Assert.Throws<ArgumentException>(() => new SemanticKernelToolCallHandler(new Kernel(), [function, function])).Message.Should().Contain("Duplicate Semantic Kernel tool name 'echo'");
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class SemanticKernelAdapterEdgeCaseTests
         fallback.Method.Should().Be("approval");
         fallback.Parameters!.Value.GetInt32().Should().Be(42);
         fallback.Cancellation.Should().Be(cancellation.Token);
-        await Assert.ThrowsAsync<NotSupportedException>(() => new SemanticKernelToolCallHandler(new Kernel(), []).HandleAsync("approval", request, default).AsTask());
+        (await Assert.ThrowsAsync<NotSupportedException>(() => new SemanticKernelToolCallHandler(new Kernel(), []).HandleAsync("approval", request, default).AsTask())).Message.Should().Contain("approval");
     }
 
     [Fact]
@@ -161,6 +161,56 @@ public sealed class SemanticKernelAdapterEdgeCaseTests
         var plugin = KernelPluginFactory.CreateFromFunctions("Utilities", [function]);
         var tool = SemanticKernelCodexToolAdapter.Create(new Kernel(), [plugin]).DynamicTools.Single();
         tool.InputSchema.GetProperty("properties").GetProperty("value").GetProperty("type").GetString().Should().Be("object");
+    }
+
+    [Fact]
+    public void PublicEntryPoints_ValidateNullArgumentsBeforeEnumeratingPlugins()
+    {
+        var kernel = new Kernel();
+        Assert.Throws<ArgumentNullException>(() => SemanticKernelCodexToolAdapter.Create(null!)).ParamName.Should().Be("kernel");
+        var enumerated = false;
+        IEnumerable<KernelPlugin> Plugins()
+        {
+            enumerated = true;
+            yield break;
+        }
+        Assert.Throws<ArgumentNullException>(() => SemanticKernelCodexToolAdapter.Create(null!, Plugins())).ParamName.Should().Be("kernel");
+        enumerated.Should().BeFalse();
+        Assert.Throws<ArgumentNullException>(() => SemanticKernelCodexToolAdapter.Create(kernel, (IEnumerable<KernelPlugin>)null!)).ParamName.Should().Be("plugins");
+        Assert.Throws<ArgumentNullException>(() => new SemanticKernelToolCallHandler(null!, [])).ParamName.Should().Be("kernel");
+        Assert.Throws<ArgumentNullException>(() => new SemanticKernelToolCallHandler(kernel, null!)).ParamName.Should().Be("functions");
+        Assert.Throws<ArgumentNullException>(() => new SemanticKernelToolCallHandler(kernel, [null!])).ParamName.Should().Be("function");
+        Assert.Throws<ArgumentNullException>(() => new SemanticKernelCodexToolSet(null!, new SemanticKernelToolCallHandler(kernel, []))).ParamName.Should().Be("dynamicTools");
+        Assert.Throws<ArgumentNullException>(() => new SemanticKernelCodexToolSet([], null!)).ParamName.Should().Be("approvalHandler");
+    }
+
+    [Fact]
+    public async Task NullObjectArgument_IsNullRatherThanJsonNull()
+    {
+        var function = KernelFunctionFactory.CreateFromMethod((Func<object?, string>)(value => value is null ? "null argument" : "boxed value"), "echo");
+        var result = await new SemanticKernelToolCallHandler(new Kernel(), [function]).HandleAsync("item/tool/call", AdapterToolEdgeCaseTests.Request("echo", new { value = (object?)null }), default);
+        Text(result).Should().Be("null argument");
+    }
+
+    [Fact]
+    public async Task CustomPluginMayExposeUnqualifiedFunctions()
+    {
+        var function = KernelFunctionFactory.CreateFromMethod((Func<string>)(() => "ok"), "echo");
+        var set = SemanticKernelCodexToolAdapter.Create(new Kernel(), [new UnqualifiedPlugin(function)]);
+        set.DynamicTools.Single().Name.Should().Be("echo");
+        set.DynamicTools.Single().Description.Should().Be("echo");
+        Text(await set.ApprovalHandler.HandleAsync("item/tool/call", AdapterToolEdgeCaseTests.Request("echo", new { }), default)).Should().Be("ok");
+    }
+
+    private sealed class UnqualifiedPlugin(KernelFunction function) : KernelPlugin("custom")
+    {
+        public override int FunctionCount => 1;
+        public override IEnumerator<KernelFunction> GetEnumerator() => ((IEnumerable<KernelFunction>)[function]).GetEnumerator();
+        public override bool TryGetFunction(string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out KernelFunction? result)
+        {
+            result = name == function.Name ? function : null;
+            return result is not null;
+        }
     }
 
     private static string OptionalValue(int value = 7) => value.ToString();

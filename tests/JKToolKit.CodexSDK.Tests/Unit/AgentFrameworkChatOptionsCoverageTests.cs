@@ -32,7 +32,9 @@ public sealed class AgentFrameworkChatOptionsCoverageTests
         };
         var merged = await CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(defaults, new ChatClientAgentRunOptions { ChatOptions = overrides }, default);
         merged.Should().BeEquivalentTo(overrides, c => c.Excluding(x => x.Tools).Excluding(x => x.AdditionalProperties));
-        merged!.Tools.Should().Equal(first, second);
+        merged!.ResponseFormat.Should().BeSameAs(ChatResponseFormat.Json);
+        merged.ToolMode.Should().BeSameAs(ChatToolMode.None);
+        merged.Tools.Should().Equal(first, second);
         merged.AdditionalProperties.Should().Contain("retained", 1).And.Contain("added", 3).And.Contain("overridden", "new");
         defaults.ModelId.Should().Be("default");
         defaults.Tools.Should().Equal(first);
@@ -90,7 +92,7 @@ public sealed class AgentFrameworkChatOptionsCoverageTests
     public async Task ChatClientFactory_NullReturn_IsRejected()
     {
         var options = new ChatClientAgentRunOptions { ChatClientFactory = _ => null! };
-        await Assert.ThrowsAsync<InvalidOperationException>(() => CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(null, options, default).AsTask());
+        (await Assert.ThrowsAsync<InvalidOperationException>(() => CodexAgentChatOptionsMapper.GetEffectiveChatOptionsAsync(null, options, default).AsTask())).Message.Should().Be("ChatClientAgentRunOptions.ChatClientFactory returned null.");
     }
 
     [Fact]
