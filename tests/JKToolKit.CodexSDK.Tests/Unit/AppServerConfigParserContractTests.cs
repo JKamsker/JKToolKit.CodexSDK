@@ -104,6 +104,36 @@ public sealed class AppServerConfigParserContractTests
         result.McpServers["http"].Transport.Should().Be("streamableHttp"); result.McpServers["unknown"].Transport.Should().Be("unknown");
     }
 
+    [Fact]
+    public void PreferredConfigSpellingsWinWhenBothAliasesArePresent()
+    {
+        var result = CodexAppServerClientConfigReadParsers.ParseConfigReadResult(Json("""
+            {"layers":[{"name":{"dotCodexFolder":"preferred-folder","dot_codex_folder":"fallback-folder"},"version":"v","disabledReason":"preferred-reason","disabled_reason":"fallback-reason"}],
+             "mcp_servers":{"server":{
+                "env_vars":["preferred-env"],"envVars":["fallback-env"],
+                "bearer_token_env_var":"preferred-token","bearerTokenEnvVar":"fallback-token",
+                "http_headers":{"X":"preferred-header"},"httpHeaders":{"X":"fallback-header"},
+                "env_http_headers":{"X":"preferred-env-header"},"envHttpHeaders":{"X":"fallback-env-header"},
+                "startup_timeout_sec":3,"startupTimeoutSec":30,"tool_timeout_sec":4,"toolTimeoutSec":40,
+                "enabled_tools":["preferred-enabled"],"enabledTools":["fallback-enabled"],
+                "disabled_tools":["preferred-disabled"],"disabledTools":["fallback-disabled"]}}}
+            """));
+        var layer = result.Layers.Should().ContainSingle().Subject;
+        layer.Name.DotCodexFolder.Should().Be("preferred-folder"); layer.DisabledReason.Should().Be("preferred-reason");
+        var server = result.McpServers!["server"];
+        server.EnvVars.Should().Equal("preferred-env"); server.BearerTokenEnvVar.Should().Be("preferred-token");
+        server.HttpHeaders!["X"].Should().Be("preferred-header"); server.EnvHttpHeaders!["X"].Should().Be("preferred-env-header");
+        server.StartupTimeout.Should().Be(TimeSpan.FromSeconds(3)); server.ToolTimeout.Should().Be(TimeSpan.FromSeconds(4));
+        server.EnabledTools.Should().Equal("preferred-enabled"); server.DisabledTools.Should().Equal("preferred-disabled");
+    }
+
+    [Fact]
+    public void InvalidOriginMetadata_IdentifiesTheOriginKey()
+    {
+        Action parse = () => CodexAppServerClientConfigReadParsers.ParseConfigReadResult(Json("""{"origins":{"model":{}}}"""));
+        parse.Should().Throw<InvalidOperationException>().WithMessage("*'name'*config/read origins['model']*");
+    }
+
     [Theory]
     [InlineData("null")]
     [InlineData("[]")]

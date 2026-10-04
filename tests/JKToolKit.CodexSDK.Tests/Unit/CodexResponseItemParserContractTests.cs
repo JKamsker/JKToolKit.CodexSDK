@@ -13,6 +13,19 @@ public sealed class CodexResponseItemParserContractTests
         return CodexResponseItemParser.Parse(document.RootElement);
     }
 
+    private sealed record ExtensionContent(string? Discriminator, JsonElement Payload)
+        : CodexContentItem(Discriminator!, Payload);
+
+    [Fact]
+    public void ExtensibleItemModels_NormalizeNullDiscriminators()
+    {
+        var raw = JsonSerializer.Deserialize<JsonElement>("{\"future\":true}");
+        var response = new CodexResponseItemUnknown(null!, raw);
+        response.Type.Should().BeEmpty(); response.Raw.GetProperty("future").GetBoolean().Should().BeTrue();
+        var content = new ExtensionContent(null, raw);
+        content.Type.Should().BeEmpty(); content.Raw.GetProperty("future").GetBoolean().Should().BeTrue();
+    }
+
     [Theory]
     [InlineData("null", "")]
     [InlineData("[]", "")]

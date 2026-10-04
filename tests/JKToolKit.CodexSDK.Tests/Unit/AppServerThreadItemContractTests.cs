@@ -182,6 +182,32 @@ public sealed class AppServerThreadItemContractTests
     }
 
     [Fact]
+    public void ExplicitNullOptionalFields_HaveTheSameMeaningAsAbsentFields()
+    {
+        var command = (CodexThreadItemCommandExecution)Parse("""{"type":"commandExecution","command":"pwd","cwd":"/repo","status":"completed","processId":null,"pluginId":null,"scriptPath":null,"source":null,"aggregatedOutput":null,"exitCode":null,"durationMs":null,"commandActions":null}""");
+        command.ProcessId.Should().BeNull(); command.PluginId.Should().BeNull(); command.ScriptPath.Should().BeNull();
+        command.AggregatedOutput.Should().BeNull(); command.ExitCode.Should().BeNull(); command.DurationMs.Should().BeNull();
+        command.CommandActions.Should().BeEmpty(); command.Source.Should().Be(CodexCommandExecutionSource.Agent);
+        var reasoning = (CodexThreadItemReasoning)Parse("""{"type":"reasoning","summary":null,"content":null,"encrypted_content":null}""");
+        reasoning.Summary.Should().BeEmpty(); reasoning.Content.Should().BeNull(); reasoning.EncryptedContent.Should().BeNull();
+        var web = (CodexThreadItemWebSearch)Parse("""{"type":"webSearch","query":"q","action":null}""");
+        web.Action.Should().BeNull();
+        var dynamic = (CodexThreadItemDynamicToolCall)Parse("""{"type":"dynamicToolCall","tool":"t","status":"done","arguments":{},"contentItems":null,"durationMs":null,"success":null}""");
+        dynamic.ContentItems.Should().BeNull(); dynamic.DurationMs.Should().BeNull(); dynamic.Success.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("mcpToolCall", "arguments", "\"server\":\"s\",\"tool\":\"t\",\"status\":\"done\"")]
+    [InlineData("dynamicToolCall", "arguments", "\"tool\":\"t\",\"status\":\"done\"")]
+    [InlineData("functionCallOutput", "output", "\"name\":\"t\"")]
+    public void RequiredOpaquePayload_RejectsMissingAndNullValues(string type, string field, string otherFields)
+    {
+        var prefix = "{\"id\":\"i\",\"type\":\"" + type + "\"," + otherFields;
+        AssertUnknown(prefix + "}");
+        AssertUnknown(prefix + ",\"" + field + "\":null}");
+    }
+
+    [Fact]
     public void RichHistoryFixture_ExposesInteractionAndActionDetails()
     {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "thread-read-rich-items-response.json")));
