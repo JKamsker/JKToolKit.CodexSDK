@@ -131,7 +131,47 @@ public sealed class CodexAIAgent : AIAgent
             .ConfigureAwait(false);
         var preparedRunContext = new AgentRunContext(this, codexSession, preparedRun.Messages, options);
         CurrentRunContext = preparedRunContext;
-        chatOptions = preparedRun.ChatOptions;
+        var responseUpdates = new List<AgentResponseUpdate>();
+        await using var updates = RunPreparedStreamingAsync(preparedRun, codexSession, options, cancellationToken)
+            .GetAsyncEnumerator(cancellationToken);
+        while (true)
+        {
+            AgentResponseUpdate update;
+            try
+            {
+                CurrentRunContext = preparedRunContext;
+                if (!await updates.MoveNextAsync().ConfigureAwait(false))
+                {
+                    break;
+                }
+
+                update = updates.Current;
+            }
+            catch (Exception ex)
+            {
+                await _contextPipeline.NotifyFailureAsync(preparedRun, codexSession, ex, cancellationToken)
+                    .ConfigureAwait(false);
+                throw;
+            }
+
+            responseUpdates.Add(update);
+            yield return update;
+        }
+
+        await _contextPipeline.NotifySuccessAsync(
+            preparedRun,
+            codexSession,
+            responseUpdates.ToAgentResponse().Messages,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async IAsyncEnumerable<AgentResponseUpdate> RunPreparedStreamingAsync(
+        CodexAgentPreparedRun preparedRun,
+        CodexAgentSession codexSession,
+        AgentRunOptions? options,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var chatOptions = preparedRun.ChatOptions;
 
         var configuredTools = await CodexAgentChatOptionsMapper.TransformToolsAsync(
             _options.Tools,
@@ -166,38 +206,11 @@ public sealed class CodexAIAgent : AIAgent
         await using var turn = await codex.StartTurnAsync(thread.Id, CreateTurnOptions(preparedRun.Messages, options, chatOptions), cancellationToken)
             .ConfigureAwait(false);
 
-        var responseUpdates = new List<AgentResponseUpdate>();
-        await using var updates = CodexAgentResponseMapper.StreamUpdatesAsync(turn, Id, Name, cancellationToken)
-            .GetAsyncEnumerator(cancellationToken);
-        while (true)
+        await foreach (var update in CodexAgentResponseMapper.StreamUpdatesAsync(turn, Id, Name, cancellationToken)
+            .ConfigureAwait(false))
         {
-            AgentResponseUpdate update;
-            try
-            {
-                CurrentRunContext = preparedRunContext;
-                if (!await updates.MoveNextAsync().ConfigureAwait(false))
-                {
-                    break;
-                }
-
-                update = updates.Current;
-            }
-            catch (Exception ex)
-            {
-                await _contextPipeline.NotifyFailureAsync(preparedRun, codexSession, ex, cancellationToken)
-                    .ConfigureAwait(false);
-                throw;
-            }
-
-            responseUpdates.Add(update);
             yield return update;
         }
-
-        await _contextPipeline.NotifySuccessAsync(
-            preparedRun,
-            codexSession,
-            responseUpdates.ToAgentResponse().Messages,
-            cancellationToken).ConfigureAwait(false);
     }
 
     private static CodexAgentSession GetSession(AgentSession session)

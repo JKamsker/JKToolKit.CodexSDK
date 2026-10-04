@@ -16,8 +16,12 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRemoteAppServerTests
 {
-    [Fact]
-    public async Task StartAppServerAsync_WithRemoteAppServer_AttachesAndConfiguresDynamicToolApproval()
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public async Task StartAppServerAsync_WithRemoteAppServer_AttachesAndConfiguresDynamicToolApproval(bool withApproval, bool withAttachOptions)
     {
         var registry = new InMemoryCodexRemoteAppServerRegistry();
         await registry.UpsertAsync(new CodexRemoteAppServerEntry
@@ -38,17 +42,17 @@ public sealed class AgentFrameworkRemoteAppServerTests
                 captured.Add(options);
                 return Task.FromResult(CreateClient());
             });
-        var approvalHandler = new FakeApprovalHandler();
+        var approvalHandler = withApproval ? new FakeApprovalHandler() : null;
         var agentOptions = new CodexAIAgentOptions
         {
             RemoteAppServer = new CodexAgentRemoteAppServerOptions
             {
                 Manager = manager,
                 EntryId = "remote-1",
-                AttachOptions = new CodexRemoteAttachOptions
+                AttachOptions = withAttachOptions ? new CodexRemoteAttachOptions
                 {
                     ConfigureClientOptions = options => options.NotificationBufferCapacity = 7
-                }
+                } : null
             }
         };
 
@@ -58,8 +62,8 @@ public sealed class AgentFrameworkRemoteAppServerTests
         lease.Client.Should().NotBeNull();
         var webSocketOptions = captured.Should().ContainSingle().Subject;
         webSocketOptions.Uri.Should().Be(new Uri("ws://127.0.0.1:4500"));
-        webSocketOptions.ClientOptions.NotificationBufferCapacity.Should().Be(7);
-        webSocketOptions.ClientOptions.ExperimentalApi.Should().BeTrue();
+        webSocketOptions.ClientOptions.NotificationBufferCapacity.Should().Be(withAttachOptions ? 7 : 5000);
+        webSocketOptions.ClientOptions.ExperimentalApi.Should().Be(withApproval);
         webSocketOptions.ClientOptions.ApprovalHandler.Should().BeSameAs(approvalHandler);
     }
 
