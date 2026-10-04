@@ -138,6 +138,13 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue((self.output / 'sdk.log').exists())
         self.assertFalse((self.output / 'summary.json').exists())
 
+    def test_artifacts_cannot_be_nested_under_rebuilt_test_binaries(self):
+        self.output = self.root / 'tests/JKToolKit.CodexSDK.Tests/bin/new-artifacts'
+        with self.assertRaises(SystemExit):
+            self.execute()
+        self.assertEqual(self.calls, [])
+        self.assertFalse(self.output.exists())
+
     def test_existing_artifacts_cannot_be_overwritten(self):
         self.output.mkdir()
         with self.assertRaises(SystemExit):

@@ -63,6 +63,8 @@ def main():
     root = Path(__file__).resolve().parents[2]
     project = root / 'tests/JKToolKit.CodexSDK.Tests'
     output = args.output.resolve()
+    if output.is_relative_to((project / 'bin').resolve()):
+        parser.error('Output must be outside the test project bin directory to preserve campaign artifacts.')
     if output.exists():
         parser.error('Output already exists; use a new directory to avoid mixing runs.')
     executable = shutil.which(args.dotnet)
