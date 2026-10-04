@@ -4,7 +4,9 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var mode = Environment.GetEnvironmentVariable("CODEX_TEST_MODE") ?? args.FirstOrDefault() ?? "echo";
+        var mode = Environment.GetEnvironmentVariable("CODEX_TEST_MODE")
+            ?? args.FirstOrDefault(arg => arg.StartsWith("--fixture-", StringComparison.Ordinal))?[10..]
+            ?? args.FirstOrDefault() ?? "echo";
         var marker = Environment.GetEnvironmentVariable("CODEX_TEST_MARKER");
         if (marker is not null) await File.WriteAllTextAsync(marker, Environment.ProcessId.ToString());
         switch (mode)
