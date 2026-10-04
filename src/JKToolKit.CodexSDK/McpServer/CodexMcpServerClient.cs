@@ -212,16 +212,6 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
         {
             gatedArguments = await GateArgumentsAsync(toolName, dictArgs, ct).ConfigureAwait(false);
         }
-        else if (arguments is IDictionary<string, object> dictArgsNonNullable)
-        {
-            var converted = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach (var kvp in dictArgsNonNullable)
-            {
-                converted[kvp.Key] = kvp.Value;
-            }
-
-            gatedArguments = await GateArgumentsAsync(toolName, converted, ct).ConfigureAwait(false);
-        }
 
         var result = await _rpc.SendRequestAsync(
             McpMethods.ToolsCall,

@@ -257,6 +257,32 @@ public sealed class McpClientLifecycleBehaviorTests
         Assert.Equal(["mcp-server"], new CodexMcpServerClientOptions().Launch.Arguments);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task DictionaryArguments_NullabilityDoesNotAffectGating_AndNongenericPayloadRemainsIntact(int kind)
+    {
+        var rpc = new RpcStub { Request = (_, _) => JsonSerializer.SerializeToElement(new
+        {
+            tools = new[] { new { name = "tool", inputSchema = new { additionalProperties = false, properties = new { keep = new { } } } } }
+        }) };
+        await using var client = Create(rpc);
+        object arguments = kind switch
+        {
+            0 => new Dictionary<string, object?> { ["keep"] = 42, ["extra"] = null },
+            1 => new Dictionary<string, object> { ["keep"] = 42, ["extra"] = "value" },
+            _ => new System.Collections.Hashtable { ["keep"] = 42, ["extra"] = "value" }
+        };
+        await client.CallToolAsync("tool", arguments);
+        var sent = rpc.Calls.Last().Args!.Value.GetProperty("arguments");
+        Assert.Equal(42, sent.GetProperty("keep").GetInt32());
+        Assert.Equal(kind == 2, sent.TryGetProperty("extra", out _));
+        Assert.Equal(kind == 2 ? 0 : 1, rpc.Calls.Count(call => call.Method == "tools/list"));
+        // Schema gating must leave the caller's dictionary untouched.
+        Assert.Equal(2, ((System.Collections.IDictionary)arguments).Count);
+    }
+
     private sealed class HandlerStub(bool fails) : IMcpElicitationHandler
     {
         public string? Method;
