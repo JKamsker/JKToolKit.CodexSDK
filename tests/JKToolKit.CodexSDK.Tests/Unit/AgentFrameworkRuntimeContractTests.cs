@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AgentFramework.Agents;
@@ -17,6 +18,85 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRuntimeContractTests
 {
+    [Fact]
+    public void ConfigureCodex_InvalidReceiver_DoesNotInvokeConfigurationCallback()
+    {
+        var calls = 0;
+        var configure = () => ((CodexAgentRunOptions)null!).ConfigureCodex(_ => calls++);
+        configure.Should().Throw<ArgumentNullException>().WithParameterName("options");
+        calls.Should().Be(0, "invalid input must be rejected before executing caller code");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NestedFunctionInvocations_PreserveOuterContextAcrossAsyncCompletionAndFailure(bool innerFails)
+    {
+        var callerContext = FunctionInvokingChatClient.CurrentContext;
+        var inner = AIFunctionFactory.Create((Func<Task<string>>)(async () =>
+        {
+            await Task.Yield();
+            FunctionInvokingChatClient.CurrentContext!.CallContent.CallId.Should().Be("inner-call");
+            if (innerFails) throw new InvalidOperationException("inner failed");
+            return "inner-result";
+        }), "inner");
+        var outer = AIFunctionFactory.Create((Func<Task<string>>)(async () =>
+        {
+            var outerContext = FunctionInvokingChatClient.CurrentContext;
+            try
+            {
+                var result = await AgentFrameworkFunctionInvoker.InvokeAsync(inner, new(), new("inner-call", "inner", null), default);
+                result!.ToString().Should().Be("inner-result");
+            }
+            catch (InvalidOperationException ex) when (innerFails && ex.Message == "inner failed") { }
+            FunctionInvokingChatClient.CurrentContext.Should().BeSameAs(outerContext);
+            FunctionInvokingChatClient.CurrentContext!.CallContent.CallId.Should().Be("outer-call");
+            return "outer-result";
+        }), "outer");
+
+        var response = await AgentFrameworkFunctionInvoker.InvokeAsync(outer, new(), new("outer-call", "outer", null), default);
+
+        response!.ToString().Should().Be("outer-result");
+        FunctionInvokingChatClient.CurrentContext.Should().BeSameAs(callerContext);
+    }
+
+    [Fact]
+    public async Task LocallyOwnedSdk_HandshakeFailure_TerminatesStartedProcess()
+    {
+        var pidPath = Path.Combine(Path.GetTempPath(), "codex-agent-pid-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var launch = OperatingSystem.IsWindows()
+                ? CodexLaunch.FromFileName("pwsh").WithArgs("-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
+                    "[IO.File]::WriteAllText($env:AGENT_RUNTIME_PID_PATH, $PID.ToString()); [Console]::In.ReadLine() | Out-Null; [Console]::Out.WriteLine('{\"id\":1,\"error\":{\"code\":-32603,\"message\":\"handshake rejected\"}}'); [Console]::In.ReadToEnd() | Out-Null")
+                : CodexLaunch.FromFileName("/bin/bash").WithArgs("-c",
+                    "printf '%s' \"$$\" > \"$AGENT_RUNTIME_PID_PATH\"; read -r request; printf '%s\\n' '{\"id\":1,\"error\":{\"code\":-32603,\"message\":\"handshake rejected\"}}'; while read -r request; do :; done");
+            launch = launch.WithEnvironment("AGENT_RUNTIME_PID_PATH", pidPath);
+            var client = new CodexAgentClient(builder => builder.ConfigureAppServer(options =>
+            {
+                options.Launch = launch;
+                options.StartupTimeout = TimeSpan.FromSeconds(10);
+                options.ShutdownTimeout = TimeSpan.FromSeconds(2);
+            }));
+
+            var start = async () => await client.StartAppServerAsync(null, new(), default);
+            await start.Should().ThrowAsync<Exception>().WithMessage("*handshake rejected*");
+            var pid = int.Parse(await File.ReadAllTextAsync(pidPath));
+            Process? process;
+            try { process = Process.GetProcessById(pid); }
+            catch (ArgumentException) { process = null; }
+            if (process is not null)
+            {
+                using (process)
+                {
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    process.HasExited.Should().BeTrue("failed initialization must release the local app-server process");
+                }
+            }
+        }
+        finally { File.Delete(pidPath); }
+    }
+
     [Fact]
     public async Task ContextProvider_CanClearMessagesWhileRetainingUnrelatedChatOptions()
     {

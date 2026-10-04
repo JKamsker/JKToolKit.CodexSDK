@@ -20,6 +20,52 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRunIntegrationTests
 {
+    [Fact]
+    public async Task RunAsync_NoChatOptions_LeavesFunctionInvocationOptionsUnspecified()
+    {
+        await using var fixture = new Fixture { InvokeTool = true };
+        var tool = AIFunctionFactory.Create(
+            () => FunctionInvokingChatClient.CurrentContext!.Options is null ? "unspecified" : "configured",
+            "inspect_context");
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions { Tools = [tool] });
+
+        await agent.RunAsync("hello");
+
+        fixture.Rpcs.Single().ToolResponse!.Result!.Value.GetProperty("contentItems")[0].GetProperty("text").GetString()
+            .Should().Be("unspecified");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PersistedToolSchemaHash_RemainsCompatibleAcrossRegistrationOrders(bool reverseOrder)
+    {
+        await using var fixture = new Fixture();
+        AITool[] tools = [new StableSchemaFunction("alpha"), new StableSchemaFunction("zeta")];
+        if (reverseOrder) Array.Reverse(tools);
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions { Tools = tools });
+        // Frozen persisted state: changing canonical ordering must not strand existing sessions.
+        var savedSession = JsonSerializer.Deserialize<JsonElement>("""
+            {"threadId":"persisted-thread","toolSchemaHash":"a9c914a4b0d4cc161f2406f650de8ac731ceeeee211603b7aef73572f5f8dca0","stateBag":{}}
+            """);
+        var session = await agent.DeserializeSessionAsync(savedSession);
+
+        var response = await agent.RunAsync("continue", session);
+
+        response.Text.Should().Be("hello world");
+        fixture.Rpcs.Single().Requests.Select(x => x.Method).Should().Contain("thread/resume").And.NotContain("thread/start");
+    }
+
+    private sealed class StableSchemaFunction(string name) : AIFunction
+    {
+        public override string Name => name;
+        public override string Description => "Reads " + name;
+        public override JsonElement JsonSchema => JsonSerializer.Deserialize<JsonElement>(
+            """{"type":"object","properties":{},"additionalProperties":false}""");
+        protected override ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<object?>(name);
+    }
+
     [Theory]
     [InlineData(null, "base instructions\ncontext instructions")]
     [InlineData("run instructions", "run instructions\ncontext instructions")]
