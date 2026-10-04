@@ -16,7 +16,12 @@ host has capacity, and use `--verbosity debug` to inspect execution costs. The
 runner records overrides in the exact effective configuration stored with each
 profile. Each profile uses Complete mutation level, per-test coverage, the
 Release configuration, and stops if the unmutated initial test run fails. It does
-not exclude any mutator categories. The output directory must be new.
+not exclude any mutator categories. The output directory must be new. Use a dedicated checkout: concurrent mutation
+runs must not share build outputs. Before every profile, the runner rebuilds the
+test project and all references, archives any stale `.stryker-unchanged` backups,
+and removes those backups from the build directory. This ensures that aborted
+older runs cannot contaminate later profiles or restore binaries from an earlier
+revision.
 
 All discovered tests are eligible, including repository layout guards. Unit tests and local process,
 filesystem, and WebSocket integration tests remain enabled. The runner removes

@@ -33,6 +33,20 @@ def reject_bundled_cli(root):
                 raise RuntimeError(f'Bundled Codex executable bypasses offline PATH isolation: {runtime}')
 
 
+def prepare_profile(executable, root, project, environment, output, profile):
+    # A prior failed/aborted run may leave an instrumented reference or stale
+    # .stryker-unchanged backup. Force fresh dependencies, then retire backups so
+    # Stryker snapshots this build instead of restoring an earlier revision.
+    subprocess.run([executable, 'build', str(project / 'JKToolKit.CodexSDK.Tests.csproj'),
+                    '-c', 'Release', '-t:Rebuild'], cwd=root, env=environment, check=True)
+    reject_bundled_cli(root)
+    for backup in (project / 'bin').rglob('*.stryker-unchanged'):
+        archive = output / f'{profile}.previous-backups' / backup.relative_to(project / 'bin')
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(backup, archive)
+        backup.unlink()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--profile', choices=PROFILES, action='append',
@@ -64,11 +78,9 @@ def main():
     isolate_default_cli(environment, output)
     reject_bundled_cli(root)
     subprocess.run([executable, 'tool', 'restore'], cwd=root, env=environment, check=True)
-    subprocess.run([executable, 'build', str(project / 'JKToolKit.CodexSDK.Tests.csproj'),
-                    '-c', 'Release'], cwd=root, env=environment, check=True)
-    reject_bundled_cli(root)
     inputs = []
     for profile in dict.fromkeys(args.profile or PROFILES):
+        prepare_profile(executable, root, project, environment, output, profile)
         settings = json.loads((project / f'stryker-full-{profile}-config.json').read_text())
         if args.concurrency is not None:
             settings['stryker-config']['concurrency'] = args.concurrency

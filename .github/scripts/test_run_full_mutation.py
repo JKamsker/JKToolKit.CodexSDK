@@ -86,6 +86,45 @@ class RunnerTests(unittest.TestCase):
             self.execute(extra_args=('--concurrency', '0'))
         self.assertEqual(self.calls, [])
 
+    def test_each_profile_rebuilds_and_retires_only_stale_backups(self):
+        project = self.root / 'tests/JKToolKit.CodexSDK.Tests'
+        bin_dir = project / 'bin/Release/net10.0'
+        bin_dir.mkdir(parents=True)
+        active = bin_dir / 'SDK.dll'
+        backup = bin_dir / 'SDK.dll.stryker-unchanged'
+        symbols = bin_dir / 'SDK.pdb'
+        active.write_bytes(b'instrumented')
+        backup.write_bytes(b'old revision')
+        symbols.write_bytes(b'current symbols')
+        calls = []
+        def build(command, **kwargs):
+            calls.append(command)
+            active.write_bytes(b'current uninstrumented build')
+        with mock.patch.object(subject.subprocess, 'run', side_effect=build):
+            subject.prepare_profile('/fake/dotnet', self.root, project, {}, self.output, 'sdk')
+            # Simulate the backup left after the first profile normally completes.
+            backup.write_bytes(b'first profile backup')
+            subject.prepare_profile('/fake/dotnet', self.root, project, {}, self.output, 'agentframework')
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all('-t:Rebuild' in call for call in calls))
+        self.assertFalse(backup.exists())
+        self.assertEqual(active.read_bytes(), b'current uninstrumented build')
+        self.assertEqual(symbols.read_bytes(), b'current symbols')
+        sdk_archive = self.output / 'sdk.previous-backups/Release/net10.0/SDK.dll.stryker-unchanged'
+        adapter_archive = self.output / 'agentframework.previous-backups/Release/net10.0/SDK.dll.stryker-unchanged'
+        self.assertEqual(sdk_archive.read_bytes(), b'old revision')
+        self.assertEqual(adapter_archive.read_bytes(), b'first profile backup')
+
+    def test_failed_rebuild_keeps_original_backup_and_prevents_mutation(self):
+        project = self.root / 'tests/JKToolKit.CodexSDK.Tests'
+        backup = project / 'bin/SDK.dll.stryker-unchanged'
+        backup.parent.mkdir(parents=True)
+        backup.write_bytes(b'preserve evidence')
+        with mock.patch.object(subject.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'build')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                subject.prepare_profile('/fake/dotnet', self.root, project, {}, self.output, 'sdk')
+        self.assertEqual(backup.read_bytes(), b'preserve evidence')
+
     def test_changed_input_rejects_summary(self):
         changed = dict(self.provenance, source_tree_sha256='changed')
         with self.assertRaisesRegex(RuntimeError, 'inputs changed'):
