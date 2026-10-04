@@ -16,6 +16,7 @@ public sealed class AppServerPluginDiagnosticContractTests
     {
         var exception = parse.Should().Throw<InvalidOperationException>().Which;
         exception.Message.Should().Contain(property).And.Contain(context);
+        if (property == "path") exception.Message.Should().Contain("'path'");
     }
 
     [Theory]

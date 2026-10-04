@@ -51,6 +51,10 @@ public sealed class AppServerWireValueContractTests
         AssertParseContract(wire, BrowserUseAccessApprovalLifetimeValue.Parse, BrowserUseAccessApprovalLifetimeValue.TryParse, s => (BrowserUseAccessApprovalLifetimeValue)s, v => (string)v);
         AssertParseContract(wire, McpServerOauthClientRegistration.Parse, McpServerOauthClientRegistration.TryParse, s => (McpServerOauthClientRegistration)s, v => (string)v);
         AssertParseContract(wire, ModelMultiAgentVersion.Parse, ModelMultiAgentVersion.TryParse, s => (ModelMultiAgentVersion)s, v => (string)v);
+        AssertParseContract(wire, PluginAppTemplateUnavailableReason.Parse, PluginAppTemplateUnavailableReason.TryParse, s => (PluginAppTemplateUnavailableReason)s, v => (string)v);
+        AssertParseContract(wire, PluginInstallPolicySource.Parse, PluginInstallPolicySource.TryParse, s => (PluginInstallPolicySource)s, v => (string)v);
+        AssertParseContract(wire, McpServerStartupFailureReason.Parse, McpServerStartupFailureReason.TryParse, s => (McpServerStartupFailureReason)s, v => (string)v);
+        AssertParseContract(wire, PluginSearchScope.Parse, PluginSearchScope.TryParse, s => (PluginSearchScope)s, v => (string)v);
         AssertParseContract(wire, RemoteControlConnectionStatus.Parse, RemoteControlConnectionStatus.TryParse, s => (RemoteControlConnectionStatus)s, v => (string)v);
         AssertParseContract(wire, McpServerStatusDetail.Parse, McpServerStatusDetail.TryParse, s => (McpServerStatusDetail)s, v => (string)v);
         RemoteControlClientsListOrder order = wire;
@@ -91,6 +95,11 @@ public sealed class AppServerWireValueContractTests
         new string[] { ModelMultiAgentVersion.Disabled, ModelMultiAgentVersion.V1, ModelMultiAgentVersion.V2 }.Should().Equal("disabled", "v1", "v2");
         default(McpServerOauthClientRegistration).Value.Should().BeEmpty(); default(ModelMultiAgentVersion).Value.Should().BeEmpty();
         PluginAvailability.TryParse("eNaBlEd", out var alias).Should().BeTrue(); alias.Should().Be(PluginAvailability.Available);
+        new string[] { PluginAppTemplateUnavailableReason.NotConfiguredForWorkspace, PluginAppTemplateUnavailableReason.NoActiveWorkspace }.Should().Equal("NOT_CONFIGURED_FOR_WORKSPACE", "NO_ACTIVE_WORKSPACE");
+        new string[] { PluginInstallPolicySource.WorkspaceSetting, PluginInstallPolicySource.ImplicitCanonicalApp }.Should().Equal("WORKSPACE_SETTING", "IMPLICIT_CANONICAL_APP");
+        ((string)McpServerStartupFailureReason.ReauthenticationRequired).Should().Be("reauthenticationRequired");
+        default(McpServerStartupFailureReason).Value.Should().BeEmpty(); default(PluginInstallPolicySource).Value.Should().BeEmpty();
+        new string[] { PluginSearchScope.Global, PluginSearchScope.Workspace, PluginSearchScope.Personal }.Should().Equal("global", "workspace", "personal");
         new string[] { RemoteControlConnectionStatus.Disabled, RemoteControlConnectionStatus.Connecting, RemoteControlConnectionStatus.Connected, RemoteControlConnectionStatus.Errored }.Should().Equal("disabled", "connecting", "connected", "errored");
         new string[] { RemoteControlClientsListOrder.Asc, RemoteControlClientsListOrder.Desc }.Should().Equal("asc", "desc");
         new string[] { McpServerStatusDetail.Full, McpServerStatusDetail.ToolsAndAuthOnly }.Should().Equal("full", "toolsAndAuthOnly");

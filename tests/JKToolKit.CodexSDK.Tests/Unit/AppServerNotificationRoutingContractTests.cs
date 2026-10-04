@@ -124,4 +124,63 @@ public sealed class AppServerNotificationRoutingContractTests
     public void StrictReview_RejectsUnparseableTimestamp(string timestamp) =>
         AppServerNotificationMapper.Map("autoApprovalReview/strictReviewRequired", Json("{\"threadId\":\"t\",\"turnId\":\"u\",\"startedAtMs\":" + timestamp + "}"))
             .Should().BeOfType<UnknownNotification>();
+    [Fact]
+    public void ReviewNotifications_KeepActionAndCorrelationAlongsideTheDecision()
+    {
+        const string payload = """{"threadId":"thread","turnId":"turn","reviewId":"review","targetItemId":"item","decisionSource":"agent","action":{"type":"exec","command":"pwd"},"review":{"status":"approved"}}""";
+        var started = Map<ItemAutoApprovalReviewStartedNotification>("item/autoApprovalReview/started", payload);
+        (started.ThreadId, started.TurnId, started.ReviewId, started.TargetItemId).Should().Be(("thread", "turn", "review", "item"));
+        started.Action.GetProperty("command").GetString().Should().Be("pwd"); started.Review.Status.Should().Be(GuardianApprovalReviewStatus.Approved);
+        var completed = Map<ItemAutoApprovalReviewCompletedNotification>("item/autoApprovalReview/completed", payload);
+        (completed.ThreadId, completed.TurnId, completed.ReviewId, completed.TargetItemId).Should().Be(("thread", "turn", "review", "item"));
+        completed.Action.GetProperty("command").GetString().Should().Be("pwd"); completed.Review.Status.Should().Be(GuardianApprovalReviewStatus.Approved);
+        completed.DecisionSource.Should().Be(AutoReviewDecisionSource.Agent);
+    }
+
+    [Theory]
+    [InlineData("modelProvider/authRecoveryStarted")]
+    [InlineData("modelProvider/authRecoveryCompleted")]
+    public void AuthRecoveryNotifications_KeepProviderAndRouting(string method)
+    {
+        var recovery = Map<ModelProviderAuthRecoveryNotification>(method, """{"threadId":"thread","turnId":"turn","provider":"provider","message":"message"}""");
+        (recovery.MethodName, recovery.ThreadId, recovery.TurnId, recovery.Provider, recovery.Message).Should().Be((method, "thread", "turn", "provider", "message"));
+    }
+
+    [Fact]
+    public void ChangedNotifications_KeepWatchGoalAndRawCatalogPayloads()
+    {
+        var path = JKToolKit.CodexSDK.Tests.TestHelpers.XPaths.Abs("changed");
+        var fs = Map<FsChangedNotification>("fs/changed", JsonSerializer.Serialize(new { watchId = "watch", changedPaths = new[] { path } }));
+        fs.WatchId.Should().Be("watch"); fs.ChangedPaths.Should().Equal(path);
+        var goal = Map<ThreadGoalUpdatedNotification>("thread/goal/updated", """{"threadId":"thread","turnId":"turn","goal":null}""");
+        (goal.ThreadId, goal.TurnId).Should().Be(("thread", "turn")); goal.Goal.Should().BeNull();
+        var catalog = Map<AppListUpdatedNotification>("app/list/updated", """{"data":[{"id":"app","name":"App","isAccessible":true}]}""");
+        catalog.Data.GetArrayLength().Should().Be(1); catalog.Apps.Should().ContainSingle().Which.Id.Should().Be("app");
+        var thread = Map<ThreadStartedNotification>("thread/started", """{"thread":{"id":"thread"}}""");
+        thread.Thread.GetProperty("id").GetString().Should().Be("thread"); thread.ThreadId.Should().Be("thread");
+    }
+
+    [Theory]
+    [InlineData("42", "42")]
+    [InlineData("\"request\"", "request")]
+    public void ResolvedRequests_KeepTypedAndRawRequestIdentifiers(string id, string expected)
+    {
+        var resolved = Map<ServerRequestResolvedNotification>("serverRequest/resolved", "{\"threadId\":\"thread\",\"requestId\":" + id + "}");
+        resolved.ThreadId.Should().Be("thread"); resolved.RequestIdValue.Should().Be(expected); resolved.RequestIdRaw.GetRawText().Should().Be(id);
+    }
+
+    [Fact]
+    public void StrictRequiredFields_RejectMissingTimestampAndBufferingFlag()
+    {
+        AppServerNotificationMapper.Map("autoApprovalReview/strictReviewRequired", Json("""{"threadId":"t","turnId":"u"}""")).Should().BeOfType<UnknownNotification>();
+        AppServerNotificationMapper.Map("model/safetyBuffering/updated", Json("""{"threadId":"thread","turnId":"turn","model":"model"}""")).Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
+    public void AttachmentDeleted_MapsTheDeletionOperation()
+    {
+        var deleted = Map<ThreadAttachmentUpdatedNotification>("thread/attachment/updated", """{"threadId":"thread","attachmentType":"file","identityKey":"key","attachmentId":"attachment","operation":"deleted"}""");
+        deleted.Operation.Should().Be(ThreadAttachmentOperation.Deleted);
+    }
+
 }
