@@ -19,7 +19,7 @@ public sealed class AppServerWireValueContractTests
         foreach (var invalid in new string?[] { null, "", " \t" })
         {
             Action fail = () => parse(invalid!);
-            fail.Should().Throw<ArgumentException>().WithParameterName("value");
+            fail.Should().Throw<ArgumentException>().WithParameterName("value").WithMessage("*cannot be empty or whitespace*");
             tryParse(invalid, out var failed).Should().BeFalse(); failed.Should().Be(default(T));
         }
     }
@@ -51,6 +51,15 @@ public sealed class AppServerWireValueContractTests
         AssertParseContract(wire, BrowserUseAccessApprovalLifetimeValue.Parse, BrowserUseAccessApprovalLifetimeValue.TryParse, s => (BrowserUseAccessApprovalLifetimeValue)s, v => (string)v);
         AssertParseContract(wire, McpServerOauthClientRegistration.Parse, McpServerOauthClientRegistration.TryParse, s => (McpServerOauthClientRegistration)s, v => (string)v);
         AssertParseContract(wire, ModelMultiAgentVersion.Parse, ModelMultiAgentVersion.TryParse, s => (ModelMultiAgentVersion)s, v => (string)v);
+        AssertParseContract(wire, RemoteControlConnectionStatus.Parse, RemoteControlConnectionStatus.TryParse, s => (RemoteControlConnectionStatus)s, v => (string)v);
+        AssertParseContract(wire, McpServerStatusDetail.Parse, McpServerStatusDetail.TryParse, s => (McpServerStatusDetail)s, v => (string)v);
+        RemoteControlClientsListOrder order = wire;
+        RemoteControlClientsListOrder.Parse(wire).Should().Be(order); ((string)order).Should().Be(wire); order.ToString().Should().Be(wire);
+        foreach (var invalid in new string?[] { null, "", " " })
+        {
+            Action parse = () => RemoteControlClientsListOrder.Parse(invalid!);
+            parse.Should().Throw<ArgumentException>().WithParameterName("value").WithMessage("*cannot be empty or whitespace*");
+        }
         AssertParseContract(wire, SandboxNetworkAccess.Parse, SandboxNetworkAccess.TryParse, s => (SandboxNetworkAccess)s, v => (string)v);
     }
 
@@ -82,6 +91,9 @@ public sealed class AppServerWireValueContractTests
         new string[] { ModelMultiAgentVersion.Disabled, ModelMultiAgentVersion.V1, ModelMultiAgentVersion.V2 }.Should().Equal("disabled", "v1", "v2");
         default(McpServerOauthClientRegistration).Value.Should().BeEmpty(); default(ModelMultiAgentVersion).Value.Should().BeEmpty();
         PluginAvailability.TryParse("eNaBlEd", out var alias).Should().BeTrue(); alias.Should().Be(PluginAvailability.Available);
+        new string[] { RemoteControlConnectionStatus.Disabled, RemoteControlConnectionStatus.Connecting, RemoteControlConnectionStatus.Connected, RemoteControlConnectionStatus.Errored }.Should().Equal("disabled", "connecting", "connected", "errored");
+        new string[] { RemoteControlClientsListOrder.Asc, RemoteControlClientsListOrder.Desc }.Should().Equal("asc", "desc");
+        new string[] { McpServerStatusDetail.Full, McpServerStatusDetail.ToolsAndAuthOnly }.Should().Equal("full", "toolsAndAuthOnly");
         new string[] { SandboxNetworkAccess.Restricted, SandboxNetworkAccess.Enabled }.Should().Equal("restricted", "enabled");
     }
 
@@ -108,7 +120,8 @@ public sealed class AppServerWireValueContractTests
     {
         Action read = () => JsonSerializer.Deserialize<SandboxNetworkAccess>(json, NetworkOptions);
         Action write = () => JsonSerializer.Serialize(default(SandboxNetworkAccess), NetworkOptions);
-        read.Should().Throw<JsonException>(); write.Should().Throw<JsonException>();
+        read.Should().Throw<JsonException>().WithMessage(json == "\" \"" ? "*cannot be null or whitespace*" : "*must be a JSON string*");
+        write.Should().Throw<JsonException>().WithMessage("*cannot be empty or whitespace*");
     }
 
     [Theory]
@@ -140,7 +153,14 @@ public sealed class AppServerWireValueContractTests
         Action action = () => JsonSerializer.Deserialize<McpServerElicitationAction>(json);
         Action writeMode = () => JsonSerializer.Serialize((McpServerElicitationMode)42);
         Action writeAction = () => JsonSerializer.Serialize((McpServerElicitationAction)42);
-        mode.Should().Throw<JsonException>(); action.Should().Throw<JsonException>(); writeMode.Should().Throw<JsonException>(); writeAction.Should().Throw<JsonException>();
+        mode.Should().Throw<JsonException>(); action.Should().Throw<JsonException>();
+        if (json != "42")
+        {
+            mode.Should().Throw<JsonException>().WithMessage("*Unknown MCP elicitation mode*");
+            action.Should().Throw<JsonException>().WithMessage("*Unknown MCP elicitation action*");
+        }
+        writeMode.Should().Throw<JsonException>().WithMessage("*Unknown MCP elicitation mode '42'*");
+        writeAction.Should().Throw<JsonException>().WithMessage("*Unknown MCP elicitation action '42'*");
     }
 
     [Fact]

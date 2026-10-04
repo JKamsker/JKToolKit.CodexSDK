@@ -166,5 +166,17 @@ public sealed class AppServerNotificationValueContractTests
     {
         var item = new ThreadStatusChangedNotification("t", Json("""{"type":"active","activeFlags":["waitingOnApproval",42,null,"waitingOnUserInput"]}"""), Json("{}"));
         item.StatusType.Should().Be("active"); item.ActiveFlags.Should().Equal("waitingOnApproval", "waitingOnUserInput");
+    }    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"riskScore\":null}")]
+    public void GuardianReview_AbsentOrNullRiskScoreRemainsUnknown(string fields)
+    {
+        var reviewJson = System.Text.Json.Nodes.JsonNode.Parse(fields)!.AsObject();
+        reviewJson["status"] = "approved";
+        var payload = Json(new System.Text.Json.Nodes.JsonObject { ["review"] = reviewJson }.ToJsonString());
+        AppServerNotificationParsing.TryParseGuardianApprovalReviewInfo(payload, "review", out var review).Should().BeTrue();
+        review.RiskScore.Should().BeNull(); review.Status.Should().Be(GuardianApprovalReviewStatus.Approved);
     }
+
+
 }
