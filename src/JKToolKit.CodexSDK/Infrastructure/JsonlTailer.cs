@@ -81,6 +81,7 @@ public sealed class JsonlTailer : IJsonlTailer
 
         var pollInterval = _options.TailPollInterval;
         var buffer = new StringBuilder();
+        var scanOffset = 0;
         long lastKnownPathLength = 0;
         DateTime lastKnownCreationTimeUtc = default;
 
@@ -111,11 +112,24 @@ public sealed class JsonlTailer : IJsonlTailer
                     _logger.LogTrace(ex, "Failed to read file creation time for {FilePath} (best-effort).", filePath);
                 }
                 buffer.Clear();
+                scanOffset = 0;
 
                 if (applyStartingPosition)
                 {
                     await ApplyStartingPositionAsync(reader, fileStream, options, cancellationToken).ConfigureAwait(false);
                     lastKnownPathLength = fileStream.Position;
+                }
+            }
+
+            void ValidateLineLength(int length)
+            {
+                if (length > MaxLineLength)
+                {
+                    _logger.LogError(
+                        "JSONL line exceeded MaxLineLength={MaxLineLength} for {FilePath}; aborting.",
+                        MaxLineLength,
+                        filePath);
+                    throw new InvalidDataException($"JSONL line exceeded MaxLineLength={MaxLineLength} characters.");
                 }
             }
 
@@ -131,19 +145,15 @@ public sealed class JsonlTailer : IJsonlTailer
                 if (read > 0)
                 {
                     buffer.Append(readChars, 0, read);
-                    if (buffer.Length > MaxLineLength)
+                    while (TryDequeueLine(buffer, ref scanOffset, out var line))
                     {
-                        _logger.LogError(
-                            "JSONL tail buffer exceeded MaxLineLength={MaxLineLength} for {FilePath}; aborting.",
-                            MaxLineLength,
-                            filePath);
-                        throw new InvalidDataException($"JSONL line exceeded MaxLineLength={MaxLineLength} characters.");
-                    }
-
-                    while (TryDequeueLine(buffer, out var line))
-                    {
+                        ValidateLineLength(line.Length);
                         yield return line;
                     }
+
+                    // A read can contain the end of one line and the start of the next.
+                    // Apply the limit to individual lines, not the combined read buffer.
+                    ValidateLineLength(buffer.Length - (buffer.Length > 0 && buffer[^1] == '\r' ? 1 : 0));
 
                     lastKnownPathLength = Math.Max(lastKnownPathLength, fileStream!.Position);
                     continue;
@@ -350,25 +360,24 @@ public sealed class JsonlTailer : IJsonlTailer
         }
     }
 
-    private static bool TryDequeueLine(StringBuilder buffer, out string line)
+    private static bool TryDequeueLine(StringBuilder buffer, ref int scanOffset, out string line)
     {
-        line = string.Empty;
-
-        for (var i = 0; i < buffer.Length; i++)
+        // Only scan newly appended characters. Repeatedly scanning an incomplete
+        // line through StringBuilder's chunk indexer becomes prohibitively slow.
+        var newline = buffer.ToString(scanOffset, buffer.Length - scanOffset).IndexOf('\n');
+        if (newline < 0)
         {
-            if (buffer[i] != '\n')
-            {
-                continue;
-            }
-
-            var raw = buffer.ToString(0, i);
-            buffer.Remove(0, i + 1);
-
-            line = raw.EndsWith('\r') ? raw[..^1] : raw;
-            return true;
+            scanOffset = buffer.Length;
+            line = string.Empty;
+            return false;
         }
 
-        return false;
+        var end = scanOffset + newline;
+        var raw = buffer.ToString(0, end);
+        buffer.Remove(0, end + 1);
+        scanOffset = 0;
+        line = raw.EndsWith('\r') ? raw[..^1] : raw;
+        return true;
     }
 
     // Intentionally no ReadLineAsync-based tailing: StreamReader.ReadLineAsync emits the final unterminated line at EOF,
