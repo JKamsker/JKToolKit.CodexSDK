@@ -13,6 +13,7 @@ Primary test harness: the demo console app (`src/JKToolKit.CodexSDK.Demo`).
 - [Facade routing](Facade.md) (`CodexSdk.ReviewAsync` routing)
 - [DI + override hooks](DI-and-Overrides.md) (service registration + transformers/mappers)
 - [State fuzzing and mutation campaign](State-Fuzzing-2026-10-03.md) (reproduction, findings, and coverage limits)
+- [Whole handwritten SDK validation](Handwritten-SDK-2026-10-04.md) (coverage, complete mutation campaigns, survivor replays, and live integration results)
 - [Troubleshooting](Troubleshooting.md)
 
 ## Prerequisites

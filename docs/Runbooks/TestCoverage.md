@@ -1,5 +1,8 @@
 # Handwritten SDK coverage
 
+Measured results and their source revisions are recorded in the
+[2026-10-04 validation report](Manual-Testing/Handwritten-SDK-2026-10-04.md).
+
 Coverage includes the SDK, Agent Framework adapter, and Semantic Kernel adapter.
 Handwritten protocol DTOs and converters count toward the same denominator.
 Generated protocol DTOs remain instrumented and are reported separately; they are

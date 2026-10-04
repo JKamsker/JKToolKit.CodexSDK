@@ -1,0 +1,167 @@
+{
+  "complete": true,
+  "detected": 9861,
+  "evaluated_denominator": 12544,
+  "evaluated_score_percent": 78.6113,
+  "raw_detected_score_percent": 54.0033,
+  "revision": "ad759158dd863e92f5e89187c1afc87971264a7e",
+  "source_tree_sha256": "165bf9bce5d461e1d35716951d1d5a56f2aa6a49f4feb0c82d0587b5ffae56e3",
+  "statuses": {
+    "CompileError": 3049,
+    "Ignored": 2667,
+    "Killed": 9763,
+    "NoCoverage": 339,
+    "Pending": 0,
+    "RuntimeError": 0,
+    "Survived": 2344,
+    "Timeout": 98
+  },
+  "test_tree_sha256": "fd0ab7ba57455cc89d6f39696c78e3bc3437e90a058f40705650d8ee0396a9c9",
+  "tool_manifest_sha256": "f5942c4bd329e56a913c630c143121ec30a33d35d9abb266adef4b9260f06f55",
+  "total_generated": 18260,
+  "unresolved": 0,
+  "profiles": [
+    {
+      "complete": true,
+      "configuration": {
+        "stryker-config": {
+          "additional-timeout": 3000,
+          "break-on-initial-test-failure": true,
+          "concurrency": 16,
+          "configuration": "Release",
+          "coverage-analysis": "perTest",
+          "mutate": [
+            "**/*.cs",
+            "!**/Generated/**/*.cs"
+          ],
+          "mutation-level": "Complete",
+          "project": "JKToolKit.CodexSDK.csproj",
+          "reporters": [
+            "json",
+            "cleartext",
+            "dots"
+          ],
+          "thresholds": {
+            "break": 0,
+            "high": 95,
+            "low": 80
+          },
+          "verbosity": "debug"
+        }
+      },
+      "configuration_sha256": "478ce3eb9194767dd6ed20335283df6a0a19dd29b4133d4342e7ebd3704c4105",
+      "detected": 9192,
+      "evaluated_denominator": 11796,
+      "evaluated_score_percent": 77.9247,
+      "raw_detected_score_percent": 53.3674,
+      "report_sha256": "da226bbae01f4ff435adf70feeddec4e6ce7fa3aa4143b87f55cc458ea00ca90",
+      "statuses": {
+        "CompileError": 2966,
+        "Ignored": 2462,
+        "Killed": 9094,
+        "NoCoverage": 334,
+        "Pending": 0,
+        "RuntimeError": 0,
+        "Survived": 2270,
+        "Timeout": 98
+      },
+      "total_generated": 17224,
+      "unresolved": 0,
+      "profile": "sdk"
+    },
+    {
+      "complete": true,
+      "configuration": {
+        "stryker-config": {
+          "additional-timeout": 3000,
+          "break-on-initial-test-failure": true,
+          "concurrency": 4,
+          "configuration": "Release",
+          "coverage-analysis": "perTest",
+          "mutate": [
+            "**/*.cs"
+          ],
+          "mutation-level": "Complete",
+          "project": "JKToolKit.CodexSDK.AgentFramework.csproj",
+          "reporters": [
+            "json",
+            "cleartext",
+            "dots"
+          ],
+          "thresholds": {
+            "break": 0,
+            "high": 95,
+            "low": 80
+          },
+          "verbosity": "debug"
+        }
+      },
+      "configuration_sha256": "53dcd7ecbd1f4b13a0c0a910148cb3f99353e8206176431aa4cb277865d4e13a",
+      "detected": 573,
+      "evaluated_denominator": 651,
+      "evaluated_score_percent": 88.0184,
+      "raw_detected_score_percent": 63.4551,
+      "report_sha256": "95db2c51e7653dcc953974eba7b3a570b28c5186d1458e18f60e052b1dd9356c",
+      "statuses": {
+        "CompileError": 76,
+        "Ignored": 176,
+        "Killed": 573,
+        "NoCoverage": 4,
+        "Pending": 0,
+        "RuntimeError": 0,
+        "Survived": 74,
+        "Timeout": 0
+      },
+      "total_generated": 903,
+      "unresolved": 0,
+      "profile": "agentframework"
+    },
+    {
+      "complete": true,
+      "configuration": {
+        "stryker-config": {
+          "additional-timeout": 3000,
+          "break-on-initial-test-failure": true,
+          "concurrency": 4,
+          "configuration": "Release",
+          "coverage-analysis": "perTest",
+          "mutate": [
+            "**/*.cs"
+          ],
+          "mutation-level": "Complete",
+          "project": "JKToolKit.CodexSDK.SemanticKernel.csproj",
+          "reporters": [
+            "json",
+            "cleartext",
+            "dots"
+          ],
+          "thresholds": {
+            "break": 0,
+            "high": 95,
+            "low": 80
+          },
+          "verbosity": "debug"
+        }
+      },
+      "configuration_sha256": "2bb6ea729038f99973efb62a38205af0b47051df2c0345ab19c0229a14f91029",
+      "detected": 96,
+      "evaluated_denominator": 97,
+      "evaluated_score_percent": 98.9691,
+      "raw_detected_score_percent": 72.1805,
+      "report_sha256": "68dfe910a4c0f05d50ebb5789ecb6a30927d8ea43d37def34416804d4a89cde8",
+      "statuses": {
+        "CompileError": 7,
+        "Ignored": 29,
+        "Killed": 96,
+        "NoCoverage": 1,
+        "Pending": 0,
+        "RuntimeError": 0,
+        "Survived": 0,
+        "Timeout": 0
+      },
+      "total_generated": 133,
+      "unresolved": 0,
+      "profile": "semantickernel"
+    }
+  ]
+}

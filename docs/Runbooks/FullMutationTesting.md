@@ -1,5 +1,8 @@
 # Full handwritten SDK mutation campaigns
 
+The [2026-10-04 validation report](Manual-Testing/Handwritten-SDK-2026-10-04.md)
+records the completed whole-codebase campaigns and separate survivor replays.
+
 Run from a clean checkout with Python 3 and the .NET 10 SDK:
 
 ```sh
