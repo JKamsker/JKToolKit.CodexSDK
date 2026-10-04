@@ -37,6 +37,10 @@ public sealed class SemanticKernelAdapterEdgeCaseTests
         yield return [typeof(DayOfWeek), "string"];
         yield return [typeof(bool), "boolean"];
         yield return [typeof(byte), "integer"];
+        yield return [typeof(sbyte), "integer"];
+        yield return [typeof(ushort), "integer"];
+        yield return [typeof(uint), "integer"];
+        yield return [typeof(ulong), "integer"];
         yield return [typeof(short), "integer"];
         yield return [typeof(int), "integer"];
         yield return [typeof(long), "integer"];

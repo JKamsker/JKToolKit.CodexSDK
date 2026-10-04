@@ -124,7 +124,10 @@ public static class SemanticKernelCodexToolAdapter
             return "boolean";
         }
 
-        if (type == typeof(byte) || type == typeof(short) || type == typeof(int) || type == typeof(long))
+        if (type == typeof(byte) || type == typeof(sbyte) ||
+            type == typeof(short) || type == typeof(ushort) ||
+            type == typeof(int) || type == typeof(uint) ||
+            type == typeof(long) || type == typeof(ulong))
         {
             return "integer";
         }
