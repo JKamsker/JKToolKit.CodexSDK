@@ -102,4 +102,11 @@ public sealed class AppServerConfigBuilderContractTests
             update.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("outputTokenLimit").Which.ActualValue.Should().Be(invalid);
         }
     }
+    [Fact]
+    public void HttpOverrides_ExplainWhyAClientSecretRequiresAClientId()
+    {
+        Action create = () => new CodexConfigOverridesBuilder().SetMcpServerStreamableHttp("server", "https://test", oauthClientSecret: "secret");
+        create.Should().Throw<ArgumentException>().WithParameterName("oauthClientId").WithMessage("*OAuth client ID is required*OAuth client secret*");
+    }
+
 }

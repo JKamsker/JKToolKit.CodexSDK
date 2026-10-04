@@ -67,4 +67,11 @@ public sealed class AppServerExperimentalGuardContractTests
         ExperimentalApiGuards.ValidateTurnStart(new() { SandboxPolicy = new SandboxPolicy.ReadOnly(), PermissionProfileId = profile }, false);
         ExperimentalApiGuards.ValidateTurnSteer(new() { ThreadId = "t", ExpectedTurnId = "u", Input = [] }, false);
     }
+    [Fact]
+    public void ThreadFork_ExplainsWhichIdentifiersAreRequired()
+    {
+        Action fork = () => ExperimentalApiGuards.ValidateThreadFork(new() { ThreadId = " ", Path = " " }, true);
+        fork.Should().Throw<ArgumentException>().WithParameterName("options").WithMessage("*Either ThreadId or Path must be specified*");
+    }
+
 }

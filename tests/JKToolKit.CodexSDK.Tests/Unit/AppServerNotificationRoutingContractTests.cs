@@ -183,4 +183,31 @@ public sealed class AppServerNotificationRoutingContractTests
         deleted.Operation.Should().Be(ThreadAttachmentOperation.Deleted);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AutoReviewOptionalAction_AbsentOrNullUsesEmptyObjectAndUnknownDecisionRemainsForwardCompatible(bool explicitNull)
+    {
+        var data = System.Text.Json.Nodes.JsonNode.Parse("""{"threadId":"t","turnId":"u","reviewId":"r","decisionSource":"future","review":{"status":"approved"}}""")!.AsObject();
+        if (explicitNull) data["action"] = null;
+        var started = Map<ItemAutoApprovalReviewStartedNotification>("item/autoApprovalReview/started", data.ToJsonString());
+        started.Action.ValueKind.Should().Be(JsonValueKind.Object); started.Action.EnumerateObject().Should().BeEmpty();
+        var completed = Map<ItemAutoApprovalReviewCompletedNotification>("item/autoApprovalReview/completed", data.ToJsonString());
+        completed.Action.ValueKind.Should().Be(JsonValueKind.Object); completed.Action.EnumerateObject().Should().BeEmpty();
+        completed.DecisionSource.Should().Be(AutoReviewDecisionSource.Unknown);
+        AppServerNotificationParsing.ParseAutoReviewDecisionSource(null).Should().Be(AutoReviewDecisionSource.Unknown);
+    }
+
+    [Fact]
+    public void LenientNotificationFamilies_PreserveMissingOptionalCorrelationAsEmpty()
+    {
+        Map<ThreadSettingsUpdatedNotification>("thread/settings/updated", "{}").ThreadId.Should().BeEmpty();
+        Map<ThreadGoalUpdatedNotification>("thread/goal/updated", "{}").ThreadId.Should().BeEmpty();
+        Map<ThreadGoalClearedNotification>("thread/goal/cleared", "{}").ThreadId.Should().BeEmpty();
+        Map<ThreadRevertedNotification>("thread/reverted", "{}").ThreadId.Should().BeEmpty();
+        Map<ThreadQueueChangedNotification>("thread/queue/changed", "{}").ThreadId.Should().BeEmpty();
+        var moderation = Map<TurnModerationMetadataNotification>("turn/moderationMetadata", "{}"); moderation.ThreadId.Should().BeEmpty(); moderation.TurnId.Should().BeEmpty();
+        Map<WindowsSandboxSetupCompletedNotification>("windowsSandbox/setupCompleted", "{}").Mode.Should().BeEmpty();
+    }
+
 }

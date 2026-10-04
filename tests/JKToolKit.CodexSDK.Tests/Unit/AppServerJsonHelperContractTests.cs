@@ -19,6 +19,7 @@ public sealed class AppServerJsonHelperContractTests
     [InlineData("{\"nested\":{\"wanted\":\"too-deep\"}}", 0, null)]
     [InlineData("{\"wanted\":\"direct\"}", -1, null)]
     [InlineData("42", 2, null)]
+    [InlineData("[{\"wanted\":\"too-deep\"}]", 0, null)]
     public void RecursiveLookup_RespectsDepthFirstPrecedenceAndExactDepthLimit(string json, int depth, string? expected) =>
         CodexAppServerClientJson.FindStringPropertyRecursive(Json(json), "wanted", depth).Should().Be(expected);
 
@@ -30,6 +31,8 @@ public sealed class AppServerJsonHelperContractTests
     [InlineData("{\"events\":[null,{\"threadId\":\"thread\",\"turnId\":\"turn\"}]}", "thread", "turn")]
     [InlineData("{\"thread\":false,\"turn\":[]}", null, null)]
     [InlineData("null", null, null)]
+    [InlineData("{\"threadId\":42,\"turnId\":false,\"id\":\"fallback\"}", "fallback", "fallback")]
+    [InlineData("{\"thread\":{\"id\":\"thread\"},\"turn\":{\"id\":\"turn\"},\"other\":{\"threadId\":\"ignored\",\"turnId\":\"ignored\"}}", "thread", "turn")]
     public void IdentifierExtraction_PrioritizesKnownEnvelopesBeforeRecursiveFallback(string json, string? threadId, string? turnId)
     {
         var payload = Json(json);
@@ -141,4 +144,14 @@ public sealed class AppServerJsonHelperContractTests
         foreach (var data in new JsonElement?[] { null, default(JsonElement), Json("null") })
             CodexAppServerReadOnlyAccessOverridesSupport.ShouldMarkRejected(new JsonRpcRemoteException(new JsonRpcError(1, "unrelated", data))).Should().BeFalse();
     }
+    [Fact]
+    public void RejectionDetection_IgnoresCompatibilityPhrasesOutsideTheBoundedErrorDataExcerpt()
+    {
+        var data = JsonSerializer.SerializeToElement(new { details = new string('x', 2100) + " unknown field readOnlyAccess" });
+        var error = new JsonRpcRemoteException(new JsonRpcError(-32602, "Invalid parameters", data));
+        CodexAppServerReadOnlyAccessOverridesSupport.ShouldMarkRejected(error).Should().BeFalse();
+        var truncated = JsonSerializer.SerializeToElement(new { details = "unknown field readOnlyAccess " + new string('x', 2100) });
+        CodexAppServerReadOnlyAccessOverridesSupport.ShouldMarkRejected(new JsonRpcRemoteException(new JsonRpcError(-32602, "Invalid parameters", truncated))).Should().BeTrue();
+    }
+
 }

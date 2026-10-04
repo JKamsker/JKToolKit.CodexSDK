@@ -114,4 +114,62 @@ public sealed class AppServerModelBoundaryContractTests
         CodexAccountInfo key = new CodexApiKeyAccountInfo(raw); CodexAccountInfo chat = new CodexChatGptAccountInfo("mail@example.test", CodexPlanType.Plus, raw);
         key.Type.Should().Be("apiKey"); chat.Type.Should().Be("chatgpt"); JsonElement.DeepEquals(key.Raw, raw).Should().BeTrue(); JsonElement.DeepEquals(chat.Raw, raw).Should().BeTrue();
     }
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData(" ", null)]
+    [InlineData("codex", null)]
+    [InlineData("codex/", null)]
+    [InlineData("codex/future", null)]
+    [InlineData("codex/1.2.3", "1.2.3")]
+    [InlineData("codex/1.2.3-alpha.1 (Linux)", "1.2.3")]
+    [InlineData("codex/1.2.3.4 extra/9.9", "1.2.3.4")]
+    public void InitializeResult_ParsesBestEffortVersionWithoutDiscardingUserAgent(string? agent, string? expected)
+    {
+        var raw = JsonSerializer.SerializeToElement(new { userAgent = agent, future = 42 });
+        var result = new AppServerInitializeResult(raw);
+        result.UserAgent.Should().Be(agent); result.CodexBuildVersion?.ToString().Should().Be(expected);
+        result.Raw.GetProperty("future").GetInt32().Should().Be(42);
+        foreach (var malformed in new[] { "null", "[]", "{}", "{\"userAgent\":42}" })
+        {
+            var unknown = new AppServerInitializeResult(Json(malformed));
+            unknown.UserAgent.Should().BeNull(); unknown.CodexBuildVersion.Should().BeNull();
+        }
+    }
+
+    [Fact]
+    public void NotificationAndClientIdentityConstructors_RejectMissingIdentity()
+    {
+        var invalid = new (Action Construct, string Parameter)[]
+        {
+            (() => new AppServerClientInfo(null!, "Title", "1"), "name"),
+            (() => new AppServerClientInfo("name", null!, "1"), "title"),
+            (() => new AppServerClientInfo("name", "Title", null!), "version"),
+            (() => new AppServerRpcNotification(null!, Json("{}")), "method"),
+            (() => new JKToolKit.CodexSDK.AppServer.Notifications.UnknownNotification(null!, Json("{}")), "method")
+        };
+        foreach (var (construct, parameter) in invalid)
+            construct.Should().Throw<ArgumentNullException>().WithParameterName(parameter);
+    }
+
+    [Fact]
+    public void InputFactories_KeepMentionSkillAndImagePayloadsDistinct()
+    {
+        var cases = new (TurnInputItem Item, string Expected)[]
+        {
+            (TurnInputItem.Mention("Name", "app://connector"), """{"type":"mention","name":"Name","path":"app://connector"}"""),
+            (TurnInputItem.Skill("Name", "/skills/demo"), """{"type":"skill","name":"Name","path":"/skills/demo"}"""),
+            (TurnInputItem.LocalImage("/images/demo.png"), """{"type":"localImage","path":"/images/demo.png"}"""),
+            (TurnInputItem.ImageUrl("https://images.test/demo"), """{"type":"image","url":"https://images.test/demo"}""")
+        };
+        foreach (var (item, expected) in cases)
+            JsonElement.DeepEquals(JsonSerializer.SerializeToElement(item.Wire, CodexAppServerClient.CreateDefaultSerializerOptions()), Json(expected)).Should().BeTrue();
+        Action absent = () => new TurnInputItem(null!); absent.Should().Throw<ArgumentNullException>().WithParameterName("wire");
+        foreach (var invalid in new string?[] { null, "", " " })
+        {
+            Action url = () => TurnInputItem.ImageUrl(invalid!); Action file = () => TurnInputItem.ImageFile(invalid!);
+            url.Should().Throw<ArgumentException>().WithParameterName("url"); file.Should().Throw<ArgumentException>().WithParameterName("fileId");
+        }
+    }
+
 }
