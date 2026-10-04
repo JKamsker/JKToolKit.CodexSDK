@@ -45,10 +45,16 @@ public sealed class CodexRemoteAppServerAttachment : IAsyncDisposable
             return;
         }
 
-        await Client.DisposeAsync().ConfigureAwait(false);
-        if (_ownedTransport is not null)
+        try
         {
-            await _ownedTransport.DisposeAsync().ConfigureAwait(false);
+            await Client.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            if (_ownedTransport is not null)
+            {
+                await _ownedTransport.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 }

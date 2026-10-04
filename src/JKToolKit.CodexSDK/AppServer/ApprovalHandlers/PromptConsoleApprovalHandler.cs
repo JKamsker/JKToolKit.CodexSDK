@@ -12,9 +12,23 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
+    private readonly Func<ConsoleKeyInfo> _readKey;
+
+    /// <summary>Initializes a console approval handler.</summary>
+    public PromptConsoleApprovalHandler() : this(() => Console.ReadKey(intercept: true))
+    {
+    }
+
+    internal PromptConsoleApprovalHandler(Func<ConsoleKeyInfo> readKey)
+    {
+        _readKey = readKey ?? throw new ArgumentNullException(nameof(readKey));
+    }
+
     /// <inheritdoc />
     public ValueTask<JsonElement> HandleAsync(string method, JsonElement? @params, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+
         if (method == AppServerMethods.ItemCommandExecutionRequestApproval)
         {
             return ValueTask.FromResult(HandleCommandExecutionRequestApproval(@params));
@@ -178,7 +192,7 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
             SerializerOptions);
     }
 
-    private static JsonElement HandleChatgptAuthTokensRefresh(JsonElement? @params)
+    private JsonElement HandleChatgptAuthTokensRefresh(JsonElement? @params)
     {
         if (@params is not { } raw)
         {
@@ -219,13 +233,13 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
             SerializerOptions);
     }
 
-    private static string ReadSecretLine()
+    private string ReadSecretLine()
     {
         var sb = new StringBuilder();
 
         while (true)
         {
-            var key = Console.ReadKey(intercept: true);
+            var key = _readKey();
             if (key.Key == ConsoleKey.Enter)
             {
                 Console.Error.WriteLine();
@@ -381,7 +395,7 @@ public sealed class PromptConsoleApprovalHandler : IAppServerApprovalHandler
             SerializerOptions);
     }
 
-    private static JsonElement HandleRequestUserInput(JsonElement? @params)
+    private JsonElement HandleRequestUserInput(JsonElement? @params)
     {
         if (@params is not { } raw)
         {

@@ -61,6 +61,10 @@ internal sealed class RemoteAppServerConnector
                     ct)
                 .ConfigureAwait(false);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch
         {
             return false;
@@ -101,19 +105,31 @@ internal sealed class RemoteAppServerConnector
                     ct)
                 .ConfigureAwait(false);
             var uri = new Uri($"ws://127.0.0.1:{localPort}");
-            if (await _context.HealthProbe.IsReadyAsync(uri, _context.Options.HealthCheckTimeout, ct).ConfigureAwait(false))
+            var ownershipTransferred = false;
+            try
             {
-                var client = await _context.ClientFactory(new CodexAppServerWebSocketOptions
+                if (await _context.HealthProbe.IsReadyAsync(uri, _context.Options.HealthCheckTimeout, ct).ConfigureAwait(false))
                 {
-                    Uri = uri,
-                    BearerToken = bearerToken,
-                    ClientOptions = clientOptions
-                }, ct).ConfigureAwait(false);
-                return new CodexRemoteAppServerAttachment(entry, uri, client, tunnel);
-            }
+                    var client = await _context.ClientFactory(new CodexAppServerWebSocketOptions
+                    {
+                        Uri = uri,
+                        BearerToken = bearerToken,
+                        ClientOptions = clientOptions
+                    }, ct).ConfigureAwait(false);
+                    var attachment = new CodexRemoteAppServerAttachment(entry, uri, client, tunnel);
+                    ownershipTransferred = true;
+                    return attachment;
+                }
 
-            lastError = new TimeoutException($"SSH tunnel for '{entry.Id}' did not become ready on local port {localPort}.");
-            await tunnel.DisposeAsync().ConfigureAwait(false);
+                lastError = new TimeoutException($"SSH tunnel for '{entry.Id}' did not become ready on local port {localPort}.");
+            }
+            finally
+            {
+                if (!ownershipTransferred)
+                {
+                    await tunnel.DisposeAsync().ConfigureAwait(false);
+                }
+            }
             if (attempt < MaxAttachAttempts - 1)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(AttachRetryDelayMilliseconds * (attempt + 1)), ct).ConfigureAwait(false);

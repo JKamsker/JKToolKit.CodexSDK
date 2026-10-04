@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
-public sealed class RemoteAppServerManagerTests
+public sealed partial class RemoteAppServerManagerTests
 {
     [Fact]
     public async Task StartSshWebSocketAsync_UsesLoopbackPortZero_AndQuotesRemotePaths()
@@ -151,10 +151,10 @@ public sealed class RemoteAppServerManagerTests
             health,
             (options, _) => Task.FromResult(CreateClient()));
 
-    private static CodexAppServerClient CreateClient() =>
+    private static CodexAppServerClient CreateClient(FakeLifetime? lifetime = null) =>
         new(
             new CodexAppServerClientOptions(),
-            new FakeLifetime(),
+            lifetime ?? new FakeLifetime(),
             new FakeRpc(),
             NullLogger.Instance,
             new JsonSerializerOptions(JsonSerializerDefaults.Web),
@@ -198,6 +198,8 @@ public sealed class RemoteAppServerManagerTests
     {
         private readonly Queue<RemoteProcessResult> _runResults = new();
 
+        public RemoteProcessResult? DefaultRunResult { get; set; }
+
         public List<CodexLaunch> RunLaunches { get; } = [];
 
         public List<CodexLaunch> StartLaunches { get; } = [];
@@ -210,6 +212,11 @@ public sealed class RemoteAppServerManagerTests
         public Task<RemoteProcessResult> RunAsync(CodexLaunch launch, TimeSpan timeout, CancellationToken ct)
         {
             RunLaunches.Add(launch);
+            if (_runResults.Count == 0 && DefaultRunResult is { } fallback)
+            {
+                return Task.FromResult(fallback);
+            }
+
             if (_runResults.Count == 0)
             {
                 throw new InvalidOperationException(
@@ -233,12 +240,14 @@ public sealed class RemoteAppServerManagerTests
     {
         public bool IsReady { get; set; }
 
+        public Func<CancellationToken, Task<bool>>? Probe { get; set; }
+
         public List<Uri> ProbedUris { get; } = [];
 
         public Task<bool> IsReadyAsync(Uri webSocketUri, TimeSpan timeout, CancellationToken ct)
         {
             ProbedUris.Add(webSocketUri);
-            return Task.FromResult(IsReady);
+            return Probe?.Invoke(ct) ?? Task.FromResult(IsReady);
         }
     }
 
@@ -246,17 +255,21 @@ public sealed class RemoteAppServerManagerTests
     {
         public bool Disposed { get; private set; }
 
+        public int DisposeCount { get; private set; }
+
         public Task Completion { get; } = Task.CompletedTask;
 
         public ValueTask DisposeAsync()
         {
             Disposed = true;
+            DisposeCount++;
             return ValueTask.CompletedTask;
         }
     }
 
     private sealed class FakeLifetime : IAppServerLifetime
     {
+        public Exception? DisposeError { get; set; }
         public Task Completion { get; } = Task.CompletedTask;
 
         public int? ProcessId => null;
@@ -265,7 +278,7 @@ public sealed class RemoteAppServerManagerTests
 
         public IReadOnlyList<string> DiagnosticTail => [];
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync() => DisposeError is { } error ? ValueTask.FromException(error) : ValueTask.CompletedTask;
     }
 
     private sealed class FakeRpc : IJsonRpcConnection
