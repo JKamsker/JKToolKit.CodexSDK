@@ -30,6 +30,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
     private SessionExitReason _exitReason = SessionExitReason.Unknown;
     private List<Action<int>> _exitCallbacks = new();
     private int _idleTerminationStarted;
+    private int _customTerminationsInProgress;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CodexSessionHandle"/> class.
@@ -218,9 +219,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
             throw new InvalidOperationException("Process launcher is not available to terminate the process.");
         }
 
-        var code = await _processLauncher
-            .TerminateProcessAsync(_process, _processExitTimeout, cancellationToken)
-            .ConfigureAwait(false);
+        var code = await TerminateWithCustomExitReasonAsync(cancellationToken).ConfigureAwait(false);
 
         // Ensure exit callbacks are fired (guarded for idempotency)
         NotifyExitSafe(code, SessionExitReason.Custom);
@@ -245,10 +244,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
                 {
                     try
                     {
-                        await _processLauncher.TerminateProcessAsync(
-                            _process,
-                            _processExitTimeout,
-                            CancellationToken.None).ConfigureAwait(false);
+                        await TerminateWithCustomExitReasonAsync(CancellationToken.None).ConfigureAwait(false);
                         // Make sure callbacks run even if Exited didn't fire for any reason
                         NotifyExitSafe(_process.HasExited ? _process.ExitCode : -1, SessionExitReason.Custom);
                     }
@@ -276,6 +272,19 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
         DeleteTempFilesBestEffort();
 
         await Task.CompletedTask;
+    }
+
+    private async Task<int> TerminateWithCustomExitReasonAsync(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _customTerminationsInProgress);
+        try
+        {
+            return await _processLauncher!.TerminateProcessAsync(_process!, _processExitTimeout, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _customTerminationsInProgress);
+        }
     }
 
     private void DeleteTempFilesBestEffort()
@@ -339,6 +348,16 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
             if (_exitSignaled)
             {
                 return;
+            }
+
+            // Process.Exited can run before the terminating launcher returns. Preserve the
+            // reason that initiated termination even when the process event wins that race.
+            if (reason == SessionExitReason.Success)
+            {
+                if (Volatile.Read(ref _idleTerminationStarted) != 0)
+                    reason = SessionExitReason.Timeout;
+                else if (Volatile.Read(ref _customTerminationsInProgress) != 0)
+                    reason = SessionExitReason.Custom;
             }
 
             _exitSignaled = true;

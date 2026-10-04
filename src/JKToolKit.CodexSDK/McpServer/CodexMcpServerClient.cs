@@ -461,7 +461,13 @@ public sealed partial class CodexMcpServerClient : IAsyncDisposable
             return;
         }
 
-        await _rpc.DisposeAsync();
-        await _process.DisposeAsync();
+        try
+        {
+            await _rpc.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            await _process.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }

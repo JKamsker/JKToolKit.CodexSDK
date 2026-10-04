@@ -205,6 +205,7 @@ internal static class CodexSessionRunnerLogHelpers
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         logger.LogWarning("Log stream ended before session_meta was received for {LogPath}", logPath);
         throw new InvalidOperationException("Session stream ended before session_meta was received.");
     }

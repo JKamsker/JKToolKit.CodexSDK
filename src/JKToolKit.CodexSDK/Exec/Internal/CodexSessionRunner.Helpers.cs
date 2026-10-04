@@ -61,6 +61,7 @@ internal sealed partial class CodexSessionRunner
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         throw new InvalidOperationException("Session stream ended before session_meta was received.");
     }
 

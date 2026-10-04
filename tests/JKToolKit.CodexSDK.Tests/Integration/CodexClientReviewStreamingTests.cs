@@ -127,6 +127,37 @@ public sealed class CodexClientReviewStreamingTests
         }
     }
 
+    [Fact]
+    public async Task ReviewCancellation_KillsChildAndPropagatesCancellation()
+    {
+        using var process = CreateEchoThenSleepProcess();
+        using var observer = Process.GetProcessById(process.Id);
+        using var client = new CodexClient(Options.Create(new CodexClientOptions()), new ReviewProcessLauncher(process), loggerFactory: NullLoggerFactory.Instance);
+        using var cancellation = new CancellationTokenSource();
+        var stdout = new SignalTextWriter();
+        var review = client.ReviewAsync(new CodexReviewOptions(Path.GetTempPath()) { Prompt = "review" }, stdout, null, cancellation.Token);
+        await stdout.FirstWrite.WaitAsync(TimeSpan.FromSeconds(10));
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => review);
+        await observer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(observer.HasExited);
+    }
+
+    [Fact]
+    public async Task ReviewMissingSessionLog_PreservesSuccessfulReviewOutputAndSessionId()
+    {
+        using var process = CreateEchoSessionProcess(SessionId.Parse("review-session"), false);
+        using var client = new CodexClient(Options.Create(new CodexClientOptions()), new ReviewProcessLauncher(process),
+            sessionLocator: new FakeSessionLocator("missing") { LookupFailure = new IOException("log missing") },
+            pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: NullLoggerFactory.Instance);
+        var result = await client.ReviewAsync(new CodexReviewOptions(Path.GetTempPath()) { Prompt = "review" });
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("review-session", result.SessionId!.Value.Value);
+        Assert.Null(result.LogPath);
+        Assert.Contains("OUT", result.StandardOutput);
+        Assert.Contains("ERR", result.StandardError);
+    }
+
     private static Process CreateEchoThenSleepProcess()
     {
         ProcessStartInfo startInfo;
@@ -215,11 +246,12 @@ public sealed class CodexClientReviewStreamingTests
 
     private sealed class FakeSessionLocator(string logPath) : ICodexSessionLocator
     {
+        public Exception? LookupFailure;
         public Task<string> WaitForNewSessionFileAsync(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout, CancellationToken cancellationToken) =>
             throw new NotImplementedException();
 
         public Task<string> FindSessionLogAsync(SessionId sessionId, string sessionsRoot, CancellationToken cancellationToken) =>
-            Task.FromResult(logPath);
+            LookupFailure is null ? Task.FromResult(logPath) : Task.FromException<string>(LookupFailure);
 
         public Task<string> WaitForSessionLogByIdAsync(SessionId sessionId, string sessionsRoot, TimeSpan timeout, CancellationToken cancellationToken) =>
             Task.FromResult(logPath);
