@@ -19,6 +19,67 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed class AgentFrameworkRuntimeContractTests
 {
     [Fact]
+    public void AgentFactory_InvalidClient_DoesNotEnumerateCallerToolsOrProviders()
+    {
+        var enumerations = 0;
+        IEnumerable<AITool> Tools()
+        {
+            enumerations++;
+            yield return AIFunctionFactory.Create(() => "unused", "unused");
+        }
+        IEnumerable<AIContextProvider> Providers()
+        {
+            enumerations++;
+            yield return new Context();
+        }
+
+        var create = () => ((CodexAgentClient)null!).AsAIAgent(tools: Tools(), aiContextProviders: Providers());
+
+        create.Should().Throw<ArgumentNullException>().WithParameterName("client");
+        enumerations.Should().Be(0, "invalid receivers must be rejected before caller iterators execute");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AgentFactory_InvalidClient_DoesNotRunCustomChatOptionsClone(bool overrideModel)
+    {
+        var cloneCalls = 0;
+        var options = new ChatClientAgentOptions { ChatOptions = new TrackingChatOptions(() => cloneCalls++) };
+        var create = () => overrideModel
+            ? ((CodexAgentClient)null!).AsAIAgent("model", options)
+            : ((CodexAgentClient)null!).AsAIAgent(options);
+
+        create.Should().Throw<ArgumentNullException>().WithParameterName("client");
+        cloneCalls.Should().Be(0, "argument validation must precede extensible option conversion");
+    }
+
+    private sealed class TrackingChatOptions(Action onClone) : ChatOptions
+    {
+        public override ChatOptions Clone()
+        {
+            onClone();
+            return base.Clone();
+        }
+    }
+
+    [Fact]
+    public async Task AgentRegistration_InvalidFactoryResult_DoesNotResolveSdkServices()
+    {
+        await using var sdk = CodexSdk.Create();
+        var resolutions = 0;
+        var services = new ServiceCollection();
+        services.AddSingleton(_ => { resolutions++; return sdk; });
+        services.AddCodexAIAgent(_ => (CodexAIAgentOptions)null!);
+        await using var provider = services.BuildServiceProvider();
+
+        var resolve = () => provider.GetRequiredService<AIAgent>();
+
+        resolve.Should().Throw<ArgumentNullException>().WithParameterName("options");
+        resolutions.Should().Be(0, "invalid agent options must fail before invoking unrelated SDK factories");
+    }
+
+    [Fact]
     public void ConfigureCodex_InvalidReceiver_DoesNotInvokeConfigurationCallback()
     {
         var calls = 0;

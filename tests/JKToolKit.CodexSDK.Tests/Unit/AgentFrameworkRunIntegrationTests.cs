@@ -4,6 +4,7 @@ using JKToolKit.CodexSDK.AgentFramework.Agents;
 using JKToolKit.CodexSDK.AgentFramework.Internal;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.AppServer.Internal;
+using JKToolKit.CodexSDK.AppServer.Notifications;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc.Messages;
@@ -20,6 +21,55 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRunIntegrationTests
 {
+    [Fact]
+    public async Task Streaming_ConsumerBreak_ClosesUnfinishedRunAndRestoresCallerContext()
+    {
+        await using var fixture = new Fixture { AutoComplete = false, InvokeTool = true };
+        var callerRunContext = AIAgent.CurrentRunContext;
+        var callerFunctionContext = FunctionInvokingChatClient.CurrentContext;
+        var session = new CodexAgentSession();
+        var history = new History();
+        var tool = AIFunctionFactory.Create(() =>
+        {
+            AIAgent.CurrentRunContext!.Session.Should().BeSameAs(session);
+            FunctionInvokingChatClient.CurrentContext!.Options!.ModelId.Should().Be("inner-model");
+            return "observed inner context";
+        }, "inspect_context");
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions
+        {
+            Tools = [tool], ChatOptions = new() { ModelId = "inner-model" }, ChatHistoryProvider = history
+        });
+        using var callerOptions = AgentFrameworkFunctionInvoker.PushEffectiveChatOptions(new() { ModelId = "caller-model" });
+        var received = new List<string>();
+
+        await foreach (var update in agent.RunStreamingAsync("hello", session))
+        {
+            received.Add(update.Text);
+            fixture.Rpcs.Single().Disposed.Should().BeFalse();
+            fixture.Lifetimes.Single().DisposeCalls.Should().Be(0);
+            break;
+        }
+
+        received.Should().Equal("hello ");
+        fixture.Rpcs.Single().ToolResponse!.Result!.Value.GetProperty("success").GetBoolean().Should().BeTrue();
+        fixture.Rpcs.Single().Disposed.Should().BeTrue();
+        fixture.Lifetimes.Single().DisposeCalls.Should().Be(1);
+        AIAgent.CurrentRunContext.Should().BeSameAs(callerRunContext);
+        FunctionInvokingChatClient.CurrentContext.Should().BeSameAs(callerFunctionContext);
+        var probe = AIFunctionFactory.Create(() => FunctionInvokingChatClient.CurrentContext!.Options!.ModelId, "probe");
+        var model = await AgentFrameworkFunctionInvoker.InvokeAsync(probe, new(), new("probe-call", "probe", null), default);
+        model!.ToString().Should().Be("caller-model");
+        history.Completed.Should().NotContain(completion => completion.InvokeException == null,
+            "stopping after the first delta must not record the partial response as a completed run");
+
+        // No terminal turn notification was sent: closure must come from disposing the consumer's iterator.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var notifications = fixture.Clients.Single().Notifications(timeout.Token).GetAsyncEnumerator();
+        (await notifications.MoveNextAsync()).Should().BeTrue();
+        notifications.Current.Should().BeOfType<AgentMessageDeltaNotification>();
+        (await notifications.MoveNextAsync()).Should().BeFalse();
+    }
+
     [Fact]
     public async Task RunAsync_NoChatOptions_LeavesFunctionInvocationOptionsUnspecified()
     {
@@ -444,6 +494,8 @@ public sealed class AgentFrameworkRunIntegrationTests
         private readonly CodexClient _exec = new(new CodexClientOptions());
         public CodexSdk Sdk { get; }
         public List<Rpc> Rpcs { get; } = [];
+        public List<CodexAppServerClient> Clients { get; } = [];
+        public List<Lifetime> Lifetimes { get; } = [];
         public List<CodexAppServerClientOptions> ClientOptions { get; } = [];
         public bool AutoComplete { get; init; } = true;
         public string? FailureStage { get; init; }
@@ -461,8 +513,12 @@ public sealed class AgentFrameworkRunIntegrationTests
             ClientOptions.Add(options);
             var rpc = new Rpc { AutoComplete = AutoComplete, FailureStage = FailureStage, ReportErrors = ReportErrors, InvokeTool = InvokeTool, CompletedStatusWithError = CompletedStatusWithError };
             Rpcs.Add(rpc);
-            return Task.FromResult(new CodexAppServerClient(options, new Lifetime(), rpc, NullLogger.Instance,
-                CodexAppServerClient.CreateDefaultSerializerOptions(), startExitWatcher: false));
+            var lifetime = new Lifetime();
+            Lifetimes.Add(lifetime);
+            var client = new CodexAppServerClient(options, lifetime, rpc, NullLogger.Instance,
+                CodexAppServerClient.CreateDefaultSerializerOptions(), startExitWatcher: false);
+            Clients.Add(client);
+            return Task.FromResult(client);
         }
         Task<CodexMcpServerClient> ICodexMcpServerClientFactory.StartAsync(CancellationToken ct) => throw new NotSupportedException();
         public async ValueTask DisposeAsync() { await Sdk.DisposeAsync(); await _exec.DisposeAsync(); }
@@ -470,11 +526,12 @@ public sealed class AgentFrameworkRunIntegrationTests
 
     private sealed class Lifetime : IAppServerLifetime
     {
+        public int DisposeCalls { get; private set; }
         public Task Completion => Task.CompletedTask;
         public int? ProcessId => null;
         public int? ExitCode => null;
         public IReadOnlyList<string> DiagnosticTail => [];
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync() { DisposeCalls++; return ValueTask.CompletedTask; }
     }
 
     private sealed class Rpc : IJsonRpcConnection
