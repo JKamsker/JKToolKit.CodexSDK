@@ -20,6 +20,24 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRunIntegrationTests
 {
+    [Theory]
+    [InlineData(null, "base instructions\ncontext instructions")]
+    [InlineData("run instructions", "run instructions\ncontext instructions")]
+    public async Task RunAsync_DirectInstructions_AreContextDefaultsWithoutOverridingRunInstructions(string? runInstructions, string expected)
+    {
+        await using var fixture = new Fixture();
+        var defaults = new ChatOptions { ModelId = "gpt-5.4" };
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions
+        {
+            Instructions = "base instructions", ChatOptions = defaults, AIContextProviders = [new Context()]
+        });
+        await agent.RunAsync("hello", options: new ChatClientAgentRunOptions(new ChatOptions { Instructions = runInstructions }));
+        var thread = fixture.Rpcs.Single().Requests.Single(x => x.Method == "thread/start").Parameters;
+        thread.GetProperty("developerInstructions").GetString().Should().Be(expected);
+        thread.GetProperty("model").GetString().Should().Be("gpt-5.4");
+        defaults.Instructions.Should().BeNull();
+    }
+
     [Fact]
     public async Task RunAsync_WithoutTools_SupportsFactoriesWithoutPerStartConfiguration()
     {
@@ -143,6 +161,7 @@ public sealed class AgentFrameworkRunIntegrationTests
         var thread = fixture.Rpcs[0].Requests.Single(x => x.Method == "thread/start").Parameters;
         thread.GetProperty("cwd").GetString().Should().Be("/thread-configured");
         thread.GetProperty("model").GetString().Should().Be("gpt-5.4");
+        thread.GetProperty("developerInstructions").GetString().Should().Be("base instructions\ncontext instructions");
         thread.GetProperty("dynamicTools").GetArrayLength().Should().Be(1);
         var turn = fixture.Rpcs[0].Requests.Single(x => x.Method == "turn/start").Parameters;
         turn.GetProperty("summary").GetString().Should().Be("detailed");

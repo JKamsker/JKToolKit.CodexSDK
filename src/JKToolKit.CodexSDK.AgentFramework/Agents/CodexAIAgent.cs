@@ -127,6 +127,13 @@ public sealed class CodexAIAgent : AIAgent
                 options,
                 cancellationToken)
             .ConfigureAwait(false);
+        var instructions = _options.Instructions;
+        if (chatOptions?.Instructions is null && instructions is not null)
+        {
+            chatOptions ??= new ChatOptions();
+            chatOptions.Instructions = instructions;
+        }
+
         var preparedRun = await _contextPipeline.PrepareAsync(codexSession, requestMessages, chatOptions, cancellationToken)
             .ConfigureAwait(false);
         var preparedRunContext = new AgentRunContext(this, codexSession, preparedRun.Messages, options);
