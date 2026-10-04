@@ -24,6 +24,17 @@ public sealed class ModelWireBoundaryTests
         Assert.Equal(default, value);
     }
 
+    [Fact]
+    public void GranularApproval_OmittedOptionalCategoriesDefaultToFalse()
+    {
+        using var doc = JsonDocument.Parse("""{"granular":{"sandbox_approval":true,"rules":false,"mcp_elicitations":true}}""");
+        Assert.True(CodexAskForApproval.TryParse(doc.RootElement, out var value));
+        Assert.False(value.Granular!.SkillApproval);
+        Assert.False(value.Granular.RequestPermissions);
+        Assert.Throws<ArgumentNullException>(() => CodexAskForApproval.FromGranular(null!));
+        Assert.Throws<ArgumentNullException>(() => CodexAskForApproval.Rejecting(null!));
+    }
+
     [Theory]
     [InlineData(true, false, true)]
     [InlineData(false, true, false)]
@@ -154,6 +165,7 @@ public sealed class ModelWireBoundaryTests
     {
         Assert.Throws<NotSupportedException>(() => CodexJsonSchemaGenerator.Generate<Dictionary<string, int>>());
         Assert.Throws<ArgumentException>(() => CodexOutputSchema.FromFile(" "));
+        Assert.Throws<ArgumentNullException>(() => CodexOutputSchema.FromFile(null!));
         Assert.Throws<ArgumentException>(() => CodexOutputSchema.FromJson(default));
     }
 }

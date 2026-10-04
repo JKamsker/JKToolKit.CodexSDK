@@ -166,7 +166,7 @@ public sealed class ExecOptionBoundaryTests
         Assert.False(options.Follow);
         Assert.Equal(timestamp, options.AfterTimestamp);
         Assert.Null(options.FromByteOffset);
-        Assert.Throws<ArgumentOutOfRangeException>(() => EventStreamOptions.FromOffset(-1));
+        Assert.Equal("byteOffset", Assert.Throws<ArgumentOutOfRangeException>(() => EventStreamOptions.FromOffset(-1)).ParamName);
         Assert.Throws<ArgumentOutOfRangeException>(() => new EventStreamOptions(FromByteOffset: -1));
         Assert.Equal(0, new EventStreamOptions(FromByteOffset: 0).FromByteOffset);
         Assert.Throws<ArgumentOutOfRangeException>(() => new EventStreamOptions { FromByteOffset = -1 });
@@ -182,7 +182,8 @@ public sealed class ExecOptionBoundaryTests
         Assert.Throws<ArgumentException>(() => new SessionFilter(FromDate: date, ToDate: date.AddTicks(-1)));
         Assert.Throws<ArgumentException>(() => new SessionFilter { ToDate = date, FromDate = date.AddTicks(1) });
         Assert.Throws<ArgumentException>(() => new SessionFilter(FromDate: date, ToDate: date) with { FromDate = date.AddTicks(1) });
-        Assert.Throws<ArgumentException>(() => SessionFilter.ForDateRange(date, date.AddTicks(-1)));
+        Assert.Equal("toDate", Assert.Throws<ArgumentException>(() => SessionFilter.ForDateRange(date, date.AddTicks(-1))).ParamName);
+        Assert.Equal(date.AddTicks(1), SessionFilter.ForDateRange(date, date.AddTicks(1)).ToDate);
         Assert.Throws<ArgumentException>(() => new SessionFilter { FromDate = date, ToDate = date.AddTicks(-1) });
         Assert.Equal(date, (new SessionFilter { FromDate = date, ToDate = date }).ToDate);
         Assert.Null((new SessionFilter { FromDate = date, ToDate = null }).ToDate);
@@ -191,6 +192,8 @@ public sealed class ExecOptionBoundaryTests
         Assert.Equal("model", SessionFilter.ForModel("model").Model!.Value.Value);
         Assert.Equal("/repo", SessionFilter.ForWorkingDirectory("/repo").WorkingDirectory);
         Assert.Equal("abc*", SessionFilter.ForSessionIdPattern("abc*").SessionIdPattern);
+        Assert.Throws<ArgumentNullException>(() => SessionFilter.ForSessionIdPattern(null!));
+        Assert.Throws<ArgumentNullException>(() => SessionFilter.ForWorkingDirectory(null!));
     }
 
     [Fact]

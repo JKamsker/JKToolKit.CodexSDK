@@ -97,6 +97,55 @@ public sealed class StructuredOutputBehaviorTests
         Assert.All(client.Handles, h => Assert.True(h.Disposed));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Exec_CustomSerializer_AppliesToSchemaAndValue(bool resume, bool retry)
+    {
+        await using var client = new ScriptedExec("{\"Text\":\"answer\"}");
+        var options = new CodexSessionOptions(Path.GetTempPath(), "original");
+        var structured = new CodexStructuredOutputOptions { SerializerOptions = new JsonSerializerOptions(), TolerantJsonExtraction = false };
+        var id = SessionId.Parse("session");
+        var result = (resume, retry) switch
+        {
+            (false, false) => await client.RunStructuredAsync<Answer>(options, structured),
+            (true, false) => await client.RunStructuredAsync<Answer>(id, options, structured),
+            (false, true) => await client.RunStructuredWithRetryAsync<Answer>(options, structured: structured),
+            _ => await client.RunStructuredWithRetryAsync<Answer>(id, options, structured: structured)
+        };
+        Assert.Equal("answer", result.Value.Text);
+        Assert.True(Assert.Single(client.Calls).Options.OutputSchema!.Json!.Value.GetProperty("properties").TryGetProperty("Text", out _));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Exec_StrictExtraction_RejectsSurroundingProse(bool retry)
+    {
+        await using var client = new ScriptedExec("prefix {\"text\":\"answer\"}");
+        var options = new CodexSessionOptions(Path.GetTempPath(), "original");
+        var structured = new CodexStructuredOutputOptions { TolerantJsonExtraction = false };
+        if (retry)
+            await Assert.ThrowsAsync<CodexStructuredOutputRetryFailedException>(() => client.RunStructuredWithRetryAsync<Answer>(options, new CodexStructuredRetryOptions { MaxAttempts = 1 }, structured));
+        else
+            await Assert.ThrowsAsync<CodexStructuredOutputParseException>(() => client.RunStructuredAsync<Answer>(options, structured));
+    }
+
+    [Fact]
+    public async Task Exec_Retry_PreservesPromptArgumentMode()
+    {
+        await using var client = new ScriptedExec("broken", "{\"text\":\"fixed\"}");
+        var options = new CodexSessionOptions { WorkingDirectory = Path.GetTempPath(), PromptArgument = "original", StdinPayload = "separate context" };
+        var result = await client.RunStructuredWithRetryAsync<Answer>(options, new CodexStructuredRetryOptions { RetryPromptFactory = _ => "repair" });
+        Assert.Equal("fixed", result.Value.Text);
+        Assert.Equal("repair", client.Calls[1].Options.PromptArgument);
+        Assert.Null(client.Calls[1].Options.ResumeStandardInputPayload);
+        Assert.Equal("original", options.PromptArgument);
+        Assert.Equal("separate context", options.StdinPayload);
+    }
+
     [Fact]
     public async Task Exec_EmptyFinalMessage_IsParseFailureAndDisposesSession()
     {
@@ -220,6 +269,42 @@ public sealed class StructuredOutputBehaviorTests
     }
 
     [Fact]
+    public async Task NullArguments_AreRejectedAtPublicBoundary()
+    {
+        await using var exec = new ScriptedExec();
+        var options = new CodexSessionOptions(Path.GetTempPath(), "prompt");
+        var id = SessionId.Parse("session");
+        var progress = new CodexStructuredRunProgress();
+        await Check("client", () => ((ICodexClient)null!).RunStructuredAsync<Answer>(options));
+        await Check("options", () => exec.RunStructuredAsync<Answer>(null!));
+        await Check("client", () => ((ICodexClient)null!).RunStructuredAsync<Answer>(id, options));
+        await Check("options", () => exec.RunStructuredAsync<Answer>(id, null!));
+        await Check("client", () => ((ICodexClient)null!).RunStructuredWithRetryAsync<Answer>(options));
+        await Check("options", () => exec.RunStructuredWithRetryAsync<Answer>((CodexSessionOptions)null!));
+        await Check("client", () => ((ICodexClient)null!).RunStructuredWithRetryAsync<Answer>(options, progress));
+        await Check("options", () => exec.RunStructuredWithRetryAsync<Answer>((CodexSessionOptions)null!, progress));
+        await Check("progress", () => exec.RunStructuredWithRetryAsync<Answer>(options, (CodexStructuredRunProgress)null!));
+        await Check("client", () => ((ICodexClient)null!).RunStructuredWithRetryAsync<Answer>(id, options));
+        await Check("options", () => exec.RunStructuredWithRetryAsync<Answer>(id, (CodexSessionOptions)null!));
+        await Check("client", () => ((ICodexClient)null!).RunStructuredWithRetryAsync<Answer>(id, options, progress));
+        await Check("options", () => exec.RunStructuredWithRetryAsync<Answer>(id, null!, progress));
+        await Check("progress", () => exec.RunStructuredWithRetryAsync<Answer>(id, options, (CodexStructuredRunProgress)null!));
+        var rpc = new ScriptedRpc(false);
+        await using var fixture = new HighLevelTurnTests.Fixture(connection: rpc);
+        await using var client = await fixture.StartAsync();
+        var turn = new TurnStartOptions { Input = [TurnInputItem.Text("prompt")] };
+        await Check("client", () => ((CodexAppServerClient)null!).RunTurnStructuredAsync<Answer>("t", turn));
+        await Check("client", () => ((CodexAppServerClient)null!).RunTurnStructuredWithRetryAsync<Answer>("t", turn));
+        await Check("options", () => client.RunTurnStructuredAsync<Answer>("t", null!));
+        await Check("options", () => client.RunTurnStructuredWithRetryAsync<Answer>("t", null!));
+        Assert.Empty(exec.Calls);
+        Assert.Empty(rpc.Requests);
+
+        static async Task Check(string parameter, Func<Task> action) =>
+            Assert.Equal(parameter, (await Assert.ThrowsAsync<ArgumentNullException>(action)).ParamName);
+    }
+
+    [Fact]
     public async Task InvalidAttemptsAndCanceledCalls_NeverReachTransport()
     {
         await using var exec = new ScriptedExec();
@@ -235,6 +320,7 @@ public sealed class StructuredOutputBehaviorTests
         await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredAsync<Answer>(" ", turn));
         await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredWithRetryAsync<Answer>(" ", turn));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, new() { MaxAttempts = -1 }));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, new() { MaxAttempts = 0 }));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, ct: cancellation.Token));
@@ -275,6 +361,7 @@ public sealed class StructuredOutputBehaviorTests
         private Task<ICodexSessionHandle> Run(bool resume, CodexSessionOptions options, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+            options.Validate();
             var output = outputs[Calls.Count];
             Calls.Add((resume, options));
             return Task.FromResult<ICodexSessionHandle>(Add(output));
