@@ -16,7 +16,7 @@ def source_name(value):
     value = value.replace("\\", "/")
     marker = "/src/"
     if marker in value:
-        return "src/" + value.split(marker, 1)[1]
+        return "src/" + value.rsplit(marker, 1)[1]
     if value.startswith("src/"):
         return value
     raise ValueError(f"Coverage source is outside src: {value}")

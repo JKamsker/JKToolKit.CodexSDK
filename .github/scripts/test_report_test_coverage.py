@@ -42,6 +42,14 @@ class CoverageReportTests(unittest.TestCase):
         self.assertEqual(100, result["handwritten"]["lines_percent"])
         self.assertEqual(100, result["handwritten"]["branches_percent"])
 
+    def test_checkout_under_another_src_directory_keeps_one_source_identity(self):
+        first = self.write("linux.json", {"/home/dev/src/repo/src/JKToolKit.CodexSDK/A.cs": self.method(0, (0, 1))})
+        second = self.write("windows.json", {r"D:\repo\src\JKToolKit.CodexSDK\A.cs": self.method(1, (1, 0))})
+        result = reporter.summarize([first, second])
+        self.assertEqual(["src/JKToolKit.CodexSDK/A.cs"], [row["file"] for row in result["files"]])
+        self.assertEqual(1, result["handwritten"]["lines_total"])
+        self.assertEqual(100, result["handwritten"]["branches_percent"])
+
     def test_generated_misses_remain_visible_without_lowering_handwritten_score(self):
         path = self.write("a.json", {
             "/repo/src/JKToolKit.CodexSDK/A.cs": self.method(1, (1, 1)),
