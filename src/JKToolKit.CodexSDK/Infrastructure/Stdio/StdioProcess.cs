@@ -88,6 +88,7 @@ internal sealed class StdioProcess : IStdioProcess
     {
         ArgumentNullException.ThrowIfNull(launchOptions);
         ArgumentNullException.ThrowIfNull(logger);
+        ct.ThrowIfCancellationRequested();
 
         using var startupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         startupCts.CancelAfter(launchOptions.StartupTimeout);

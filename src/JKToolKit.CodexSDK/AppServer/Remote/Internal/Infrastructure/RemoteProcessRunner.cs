@@ -30,6 +30,7 @@ internal sealed class RemoteProcessRunner : IRemoteProcessRunner
 
     public async Task<RemoteProcessResult> RunAsync(CodexLaunch launch, TimeSpan timeout, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         using var process = StartProcess(launch);
         var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
         var stderrTask = process.StandardError.ReadToEndAsync(ct);
@@ -44,11 +45,13 @@ internal sealed class RemoteProcessRunner : IRemoteProcessRunner
         {
             await process.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
             TryKill(process);
             await ObserveReadTaskAsync(stdoutTask).ConfigureAwait(false);
             await ObserveReadTaskAsync(stderrTask).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+
             throw new TimeoutException($"Remote command timed out after {timeout}.");
         }
 
@@ -128,7 +131,7 @@ internal sealed class RemoteProcessRunner : IRemoteProcessRunner
         }
         catch
         {
-            // Ignore read failures after timeout cleanup.
+            // Ignore read failures after cancellation or timeout cleanup.
         }
     }
 
