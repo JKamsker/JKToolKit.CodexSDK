@@ -31,6 +31,8 @@ internal sealed partial class JsonRpcConnection
 
     private void ThrowIfFaulted()
     {
+        ObjectDisposedException.ThrowIf(_disposeCts.IsCancellationRequested, this);
+
         if (_fault is not null)
         {
             throw new JsonRpcProtocolException("JSON-RPC connection is faulted.", _fault);

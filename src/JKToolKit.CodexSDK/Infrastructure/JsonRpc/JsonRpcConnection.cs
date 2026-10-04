@@ -230,7 +230,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                 Fault(new JsonRpcConnectionClosedException("JSON-RPC stream closed by remote endpoint."));
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
         {
             // ignore
         }
