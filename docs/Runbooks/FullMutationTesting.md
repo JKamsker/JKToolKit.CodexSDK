@@ -1,6 +1,6 @@
 # Full handwritten SDK mutation campaigns
 
-Run from a clean checkout with Python 3 and the .NET SDK in `global.json`:
+Run from a clean checkout with Python 3 and the .NET 10 SDK:
 
 ```sh
 python3 .github/scripts/run_full_mutation.py \
