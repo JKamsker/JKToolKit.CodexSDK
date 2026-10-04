@@ -149,6 +149,21 @@ public sealed class ProcessLifetimeCoverageTests
         ex.InnerException.Should().BeOfType<System.ComponentModel.Win32Exception>();
     }
 
+    [Fact]
+    public async Task RemoteRun_InvalidTimeoutIsRejectedBeforeStartingProcess()
+    {
+        var missing = new CodexLaunch { FileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()) };
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => new RemoteProcessRunner(NullLogger.Instance).RunAsync(
+            missing, TimeSpan.FromMilliseconds(-2), default));
+    }
+
+    [Fact]
+    public async Task Stdio_ExpiredStartupTimeoutIsReportedAsTimeout()
+    {
+        await Assert.ThrowsAsync<TimeoutException>(() => StdioProcess.StartAsync(
+            Options("wait") with { StartupTimeout = TimeSpan.Zero }, NullLogger.Instance, default));
+    }
+
     internal static async Task WaitForMarkerAsync(string marker)
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));

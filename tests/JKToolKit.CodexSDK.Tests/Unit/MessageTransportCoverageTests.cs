@@ -1,4 +1,7 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using FluentAssertions;
 using JKToolKit.CodexSDK.Infrastructure.JsonRpc;
@@ -18,11 +21,13 @@ public sealed class MessageTransportCoverageTests
         (await Assert.ThrowsAsync<IOException>(() => transport.Completion)).Should().BeSameAs(error);
     }
 
-    [Fact]
-    public async Task WebSocketTransport_ReassemblesUtf8AcrossFragmentsAndCompletesOnClose()
+    [Theory]
+    [InlineData(WebSocketState.Open)]
+    [InlineData(WebSocketState.CloseReceived)]
+    public async Task WebSocketTransport_ReassemblesUtf8AcrossFragmentsAndCompletesOnClose(WebSocketState state)
     {
         var bytes = Encoding.UTF8.GetBytes("αβ");
-        var socket = new ScriptedSocket();
+        var socket = new ScriptedSocket { CurrentState = state };
         socket.Frames.Enqueue((bytes[..1], WebSocketMessageType.Text, false));
         socket.Frames.Enqueue((bytes[1..], WebSocketMessageType.Text, true));
         socket.Frames.Enqueue(([], WebSocketMessageType.Close, true));
@@ -108,6 +113,92 @@ public sealed class MessageTransportCoverageTests
             new Uri("ws://127.0.0.1:1"), "test-token", Timeout.InfiniteTimeSpan, NullLogger.Instance, cts.Token));
     }
 
+    [Fact]
+    public async Task WebSocketTransport_ConnectsAuthenticatesAndExchangesMessagesOverLoopback()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var endpoint = (IPEndPoint)listener.LocalEndpoint;
+        var serve = ServeAsync();
+        await using (var transport = await WebSocketJsonRpcMessageTransport.ConnectAsync(
+            new Uri($"ws://127.0.0.1:{endpoint.Port}/rpc"), "local-token", TimeSpan.FromSeconds(5), NullLogger.Instance, deadline.Token))
+        {
+            await transport.SendAsync("request α", deadline.Token);
+            await using var messages = transport.ReceiveAsync(deadline.Token).GetAsyncEnumerator();
+            (await messages.MoveNextAsync()).Should().BeTrue();
+            messages.Current.Should().Be("response β");
+        }
+        await serve.WaitAsync(deadline.Token);
+
+        async Task ServeAsync()
+        {
+            using var client = await listener.AcceptTcpClientAsync(deadline.Token);
+            await using var stream = client.GetStream();
+            using var headers = new StreamReader(stream, Encoding.ASCII, false, 1024, leaveOpen: true);
+            (await headers.ReadLineAsync(deadline.Token)).Should().Be("GET /rpc HTTP/1.1");
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            while (await headers.ReadLineAsync(deadline.Token) is { Length: > 0 } line)
+            {
+                var split = line.IndexOf(':');
+                values[line[..split]] = line[(split + 1)..].Trim();
+            }
+            values["Authorization"].Should().Be("Bearer local-token");
+            var accept = Convert.ToBase64String(SHA1.HashData(Encoding.ASCII.GetBytes(values["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
+            var response = Encoding.ASCII.GetBytes($"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n");
+            await stream.WriteAsync(response, deadline.Token);
+            using var socket = WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: Timeout.InfiniteTimeSpan);
+            var buffer = new byte[1024];
+            var received = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), deadline.Token);
+            Encoding.UTF8.GetString(buffer, 0, received.Count).Should().Be("request α");
+            await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("response β")), WebSocketMessageType.Text, true, deadline.Token);
+            (await socket.ReceiveAsync(new ArraySegment<byte>(buffer), deadline.Token)).MessageType.Should().Be(WebSocketMessageType.Close);
+            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "done", deadline.Token);
+        }
+    }
+
+    [Fact]
+    public async Task WebSocketTransport_ConnectTimeoutIsDistinctFromCallerCancellation()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var endpoint = (IPEndPoint)listener.LocalEndpoint;
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var connect = WebSocketJsonRpcMessageTransport.ConnectAsync(new Uri($"ws://127.0.0.1:{endpoint.Port}"),
+            null, TimeSpan.FromMilliseconds(100), NullLogger.Instance, deadline.Token);
+        using var client = await listener.AcceptTcpClientAsync(deadline.Token);
+        await Assert.ThrowsAsync<TimeoutException>(() => connect);
+        deadline.IsCancellationRequested.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Transports_UnrelatedCancellationFaultsCompletion()
+    {
+        var error = new OperationCanceledException("unrelated cancellation");
+        await using var line = new LineJsonRpcMessageTransport(new ThrowingReader(error), TextWriter.Null);
+        await using var socket = Transport(new ScriptedSocket { ReceiveError = error });
+        foreach (var transport in new IJsonRpcMessageTransport[] { line, socket })
+        {
+            await using var reader = transport.ReceiveAsync(default).GetAsyncEnumerator();
+            (await Assert.ThrowsAsync<OperationCanceledException>(() => reader.MoveNextAsync().AsTask())).Should().BeSameAs(error);
+            (await Assert.ThrowsAsync<OperationCanceledException>(() => transport.Completion)).Should().BeSameAs(error);
+        }
+    }
+
+    [Fact]
+    public async Task Transports_RejectNullMessagesAndDependencies()
+    {
+        Assert.Throws<ArgumentNullException>(() => new LineJsonRpcMessageTransport(null!, TextWriter.Null));
+        Assert.Throws<ArgumentNullException>(() => new LineJsonRpcMessageTransport(TextReader.Null, null!));
+        Assert.Throws<ArgumentNullException>(() => new WebSocketJsonRpcMessageTransport(null!, new Uri("ws://localhost"), NullLogger.Instance));
+        Assert.Throws<ArgumentNullException>(() => new WebSocketJsonRpcMessageTransport(new ScriptedSocket(), null!, NullLogger.Instance));
+        Assert.Throws<ArgumentNullException>(() => new WebSocketJsonRpcMessageTransport(new ScriptedSocket(), new Uri("ws://localhost"), null!));
+        await using var line = new LineJsonRpcMessageTransport(TextReader.Null, TextWriter.Null);
+        await using var socket = Transport(new ScriptedSocket());
+        await Assert.ThrowsAsync<ArgumentNullException>(() => line.SendAsync(null!, default));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => socket.SendAsync(null!, default));
+    }
+
     private static WebSocketJsonRpcMessageTransport Transport(WebSocket socket) => new(socket, new Uri("ws://localhost"), NullLogger.Instance);
 
     private sealed class ThrowingReader(Exception error) : TextReader
@@ -120,6 +211,7 @@ public sealed class MessageTransportCoverageTests
         public Queue<(byte[] Bytes, WebSocketMessageType Type, bool End)> Frames { get; } = new();
         public WebSocketState CurrentState { get; init; } = WebSocketState.Open;
         public bool FailClose { get; init; }
+        public Exception? ReceiveError { get; init; }
         public int CloseCalls { get; private set; }
         public int DisposeCalls { get; private set; }
         public int AbortCalls { get; private set; }
@@ -143,6 +235,7 @@ public sealed class MessageTransportCoverageTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             ReceiveCalls++;
+            if (ReceiveError is not null) return Task.FromException<WebSocketReceiveResult>(ReceiveError);
             var frame = Frames.Dequeue();
             frame.Bytes.AsSpan().CopyTo(buffer.AsSpan());
             return Task.FromResult(new WebSocketReceiveResult(frame.Bytes.Length, frame.Type, frame.End));

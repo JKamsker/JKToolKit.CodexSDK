@@ -31,15 +31,15 @@ internal sealed class RemoteProcessRunner : IRemoteProcessRunner
     public async Task<RemoteProcessResult> RunAsync(CodexLaunch launch, TimeSpan timeout, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        using var process = StartProcess(launch);
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
-        var stderrTask = process.StandardError.ReadToEndAsync(ct);
-
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         if (timeout != Timeout.InfiniteTimeSpan)
         {
             timeoutCts.CancelAfter(timeout);
         }
+
+        using var process = StartProcess(launch);
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
 
         try
         {
