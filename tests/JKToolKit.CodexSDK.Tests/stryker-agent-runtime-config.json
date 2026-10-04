@@ -1,0 +1,32 @@
+{
+  "stryker-config": {
+    "project": "JKToolKit.CodexSDK.AgentFramework.csproj",
+    "configuration": "Release",
+    "mutate": [
+      "**/Agents/**/*.cs",
+      "**/Internal/AgentFrameworkFunctionInvoker.cs",
+      "**/Internal/CodexAgentAppServerLease.cs",
+      "**/Internal/CodexAgentContextPipeline.cs",
+      "**/Internal/CodexAgentNoOpChatClient.cs",
+      "**/Internal/CodexAgentPreparedRun.cs",
+      "**/Internal/CodexAgentSessionJson.cs",
+      "**/Internal/CodexAgentSessionStateUpdater.cs",
+      "**/Internal/CodexAgentToolSchemaHasher.cs",
+      "**/Internal/CodexAgentToolSetFactory.cs"
+    ],
+    "test-case-filter": "FullyQualifiedName~AgentFramework|FullyQualifiedName~AdapterTool",
+    "concurrency": 2,
+    "coverage-analysis": "perTest",
+    "additional-timeout": 3000,
+    "reporters": [
+      "json",
+      "html",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 95,
+      "low": 85,
+      "break": 0
+    }
+  }
+}

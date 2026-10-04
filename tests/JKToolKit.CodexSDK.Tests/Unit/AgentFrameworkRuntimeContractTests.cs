@@ -16,6 +16,117 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRuntimeContractTests
 {
+    [Fact]
+    public async Task EffectiveOptionsScopes_RestoreOuterOptionsAfterNestedInvocation()
+    {
+        var function = AIFunctionFactory.Create(() => FunctionInvokingChatClient.CurrentContext?.Options?.ModelId ?? "none", "read_model");
+        var call = new FunctionCallContent("call", "read_model", null);
+        async Task<string?> Invoke() => (await AgentFrameworkFunctionInvoker.InvokeAsync(function, new(), call, default))?.ToString();
+        (await Invoke()).Should().Be("none");
+        using (AgentFrameworkFunctionInvoker.PushEffectiveChatOptions(new() { ModelId = "outer" }))
+        {
+            using (AgentFrameworkFunctionInvoker.PushEffectiveChatOptions(new() { ModelId = "inner" }))
+                (await Invoke()).Should().Be("inner");
+            (await Invoke()).Should().Be("outer");
+        }
+        (await Invoke()).Should().Be("none");
+    }
+
+    [Fact]
+    public void ContextServices_PreferContextProviderOverHistoryProvider()
+    {
+        var contextService = new object();
+        var historyService = new object();
+        var agent = new CodexAgentClient().AsAIAgent(new CodexAIAgentOptions
+        {
+            AIContextProviders = [new ServiceContext(contextService)],
+            ChatHistoryProvider = new ServiceHistory(historyService)
+        });
+        agent.GetService(typeof(object)).Should().BeSameAs(contextService);
+        agent.GetService(typeof(object), "history").Should().BeSameAs(historyService);
+    }
+
+    private sealed class ServiceContext(object service) : AIContextProvider
+    {
+        public override object? GetService(Type serviceType, object? serviceKey = null) =>
+            serviceType == typeof(object) && serviceKey is null ? service : null;
+    }
+
+    private sealed class ServiceHistory(object service) : ChatHistoryProvider
+    {
+        public override object? GetService(Type serviceType, object? serviceKey = null) =>
+            serviceType == typeof(object) ? service : null;
+    }
+
+    [Fact]
+    public void PublicFactoryAndConfigurationGuards_RejectNullArgumentsAtCallTime()
+    {
+        var client = new CodexAgentClient();
+        var services = new ServiceCollection();
+        (string Parameter, Action Call)[] cases =
+        [
+            ("sdk", () => new CodexAgentClient((CodexSdk)null!)),
+            ("client", () => ((CodexAgentClient)null!).AsAIAgent(new CodexAIAgentOptions())),
+            ("options", () => client.AsAIAgent((CodexAIAgentOptions)null!)),
+            ("client", () => ((CodexAgentClient)null!).AsAIAgent()),
+            ("client", () => ((CodexAgentClient)null!).AsAIAgent(new ChatClientAgentOptions())),
+            ("client", () => ((CodexAgentClient)null!).AsAIAgent("model", new ChatClientAgentOptions())),
+            ("options", () => client.AsAIAgent((ChatClientAgentOptions)null!)),
+            ("options", () => client.AsAIAgent("model", (ChatClientAgentOptions)null!)),
+            ("sdk", () => ((CodexSdk)null!).AsAIAgent(new CodexAIAgentOptions())),
+            ("sdk", () => ((CodexSdk)null!).AsAIAgent()),
+            ("sdk", () => ((CodexSdk)null!).AsAIAgent(new ChatClientAgentOptions())),
+            ("sdk", () => ((CodexSdk)null!).AsAIAgent("model", new ChatClientAgentOptions())),
+            ("options", () => ((CodexAgentRunOptions)null!).WithCodex(new())),
+            ("configuration", () => new CodexAgentRunOptions().WithCodex(null!)),
+            ("options", () => ((CodexAgentRunOptions)null!).ConfigureCodex(_ => { })),
+            ("configure", () => new CodexAgentRunOptions().ConfigureCodex(null!)),
+            ("configureAgent", () => services.AddCodexAIAgent((Action<CodexAIAgentOptions>)null!)),
+            ("options", () => services.AddCodexAIAgent((ChatClientAgentOptions)null!)),
+            ("optionsFactory", () => services.AddCodexAIAgent((Func<IServiceProvider, CodexAIAgentOptions>)null!)),
+            ("configureAgent", () => services.AddKeyedCodexAIAgent("key", (Action<CodexAIAgentOptions>)null!)),
+            ("options", () => services.AddKeyedCodexAIAgent("key", (ChatClientAgentOptions)null!)),
+            ("optionsFactory", () => services.AddKeyedCodexAIAgent("key", (Func<IServiceProvider, object?, CodexAIAgentOptions>)null!)),
+            ("services", () => ((IServiceCollection)null!).AddCodexAgentClient()),
+            ("services", () => ((IServiceCollection)null!).AddCodexAIAgent(_ => { })),
+            ("services", () => ((IServiceCollection)null!).AddCodexAIAgent(new ChatClientAgentOptions())),
+            ("services", () => ((IServiceCollection)null!).AddCodexAIAgent(_ => new CodexAIAgentOptions())),
+            ("services", () => ((IServiceCollection)null!).AddKeyedCodexAIAgent("key", _ => { })),
+            ("services", () => ((IServiceCollection)null!).AddKeyedCodexAIAgent("key", new ChatClientAgentOptions())),
+            ("services", () => ((IServiceCollection)null!).AddKeyedCodexAIAgent("key", (_, _) => new CodexAIAgentOptions())),
+            ("client", () => new CodexAgentAppServerLease(null!, null)),
+            ("serviceType", () => CodexAgentNoOpChatClient.Instance.GetService(null!))
+        ];
+        foreach (var (parameter, call) in cases)
+            call.Should().Throw<ArgumentNullException>().WithParameterName(parameter);
+    }
+
+    [Fact]
+    public async Task RuntimeConfiguration_PreservesUnrelatedPropertiesAndValidatesFactories()
+    {
+        var options = new CodexAgentRunOptions { AdditionalProperties = new() { ["caller"] = "retained" } };
+        options.WithCodex(new() { Model = "first" }).ConfigureCodex(config => config.Model = "second");
+        options.AdditionalProperties!["caller"].Should().Be("retained");
+        options.GetCodexConfiguration()!.Model.Should().Be("second");
+        ((CodexAgentRunOptions)options.Clone()).Tools.Should().BeNull();
+        var services = new ServiceCollection();
+        services.AddCodexAIAgent(_ => (CodexAIAgentOptions)null!);
+        using var provider = services.BuildServiceProvider();
+        var resolve = () => provider.GetRequiredService<AIAgent>();
+        resolve.Should().Throw<ArgumentNullException>().WithParameterName("options");
+        var start = async () => await new CodexAgentClient().StartAppServerAsync(null, null!, default);
+        await start.Should().ThrowAsync<ArgumentNullException>().WithParameterName("agentOptions");
+    }
+
+    [Fact]
+    public async Task SessionSerialization_HonorsCallerFormattingOptions()
+    {
+        var agent = new CodexAgentClient().AsAIAgent();
+        var serialized = await agent.SerializeSessionAsync(new CodexAgentSession { ThreadId = "thread" }, new() { WriteIndented = true });
+        serialized.GetRawText().Should().Contain("\n");
+        serialized.GetProperty("threadId").GetString().Should().Be("thread");
+    }
+
     private static ChatOptions HistoryOptions(ChatHistoryProvider history)
     {
         var options = new ChatOptions { AdditionalProperties = new() };
@@ -41,6 +152,7 @@ public sealed class AgentFrameworkRuntimeContractTests
         perRun.Completed.Should().ContainSingle();
         configured.Completed.Should().BeEmpty();
         options.Instructions.Should().BeNull("the caller's chat options must not be mutated");
+        prepared.ChatOptions!.AdditionalProperties![typeof(ChatHistoryProvider).FullName!].Should().BeSameAs(perRun);
     }
 
     [Fact]
@@ -105,6 +217,12 @@ public sealed class AgentFrameworkRuntimeContractTests
         overridden.ChatOptions!.ModelId.Should().Be("override");
         overridden.Instructions.Should().Be("instructions");
         options.ChatOptions.ModelId.Should().Be("base");
+        Action nullNative = () => sdk.AsAIAgent((ChatClientAgentOptions)null!);
+        nullNative.Should().Throw<ArgumentNullException>().WithParameterName("options");
+        Action nullConfigured = () => sdk.AsAIAgent((CodexAIAgentOptions)null!);
+        nullConfigured.Should().Throw<ArgumentNullException>().WithParameterName("options");
+        Action nullOverride = () => sdk.AsAIAgent("model", (ChatClientAgentOptions)null!);
+        nullOverride.Should().Throw<ArgumentNullException>().WithParameterName("options");
     }
 
     [Fact]

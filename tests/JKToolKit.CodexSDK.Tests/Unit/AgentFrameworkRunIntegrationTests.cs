@@ -12,6 +12,7 @@ using JKToolKit.CodexSDK.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
@@ -19,6 +20,47 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRunIntegrationTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LeaseDisposal_UsesClientOwnerAndDisposesSdkEvenWhenOwnerFails(bool throwOnDispose)
+    {
+        await using var fixture = new Fixture();
+        var client = await fixture.StartAsync();
+        var owner = new Owner(client, throwOnDispose);
+        var lease = new CodexAgentAppServerLease(client, fixture.Sdk, owner);
+        if (throwOnDispose)
+        {
+            var dispose = async () => await lease.DisposeAsync();
+            await dispose.Should().ThrowAsync<IOException>().WithMessage("owner disposal failed");
+        }
+        else await lease.DisposeAsync();
+        owner.Calls.Should().Be(1);
+        fixture.Rpcs.Single().Disposed.Should().BeTrue();
+        var startAfterDisposal = () => fixture.Sdk.Threads.StartAsync();
+        await startAfterDisposal.Should().ThrowAsync<ObjectDisposedException>();
+    }
+
+    [Fact]
+    public async Task DependencyInjection_ReusesSdkUnlessBuilderConfigurationIsExplicit()
+    {
+        await using var fixture = new Fixture();
+        var services = new ServiceCollection();
+        services.AddSingleton(fixture.Sdk);
+        services.AddCodexAIAgent(options => options.Name = "injected");
+        await using var provider = services.BuildServiceProvider();
+        (await provider.GetRequiredService<AIAgent>().RunAsync("hello")).Text.Should().Be("hello world");
+        fixture.Rpcs.Should().ContainSingle();
+
+        var overridden = new ServiceCollection();
+        overridden.AddSingleton(fixture.Sdk);
+        overridden.AddCodexAgentClient(_ => throw new InvalidOperationException("builder configuration used"));
+        await using var overriddenProvider = overridden.BuildServiceProvider();
+        var run = () => overriddenProvider.GetRequiredService<CodexAgentClient>().AsAIAgent().RunAsync("hello");
+        await run.Should().ThrowAsync<InvalidOperationException>().WithMessage("builder configuration used");
+        fixture.Rpcs.Should().ContainSingle();
+    }
+
     [Fact]
     public async Task RunAsync_CreatesThreadWithEffectiveOptions_ThenResumesWithoutOverwritingSessionMetadata()
     {
@@ -33,7 +75,7 @@ public sealed class AgentFrameworkRunIntegrationTests
             Effort = CodexReasoningEffort.Low, Summary = "auto", Instructions = "base instructions",
             ChatHistoryProvider = history, AIContextProviders = [context], Tools = [tool],
             ConfigureThread = thread => thread.Cwd = "/thread-configured",
-            ConfigureTurn = turn => turn.Summary = "concise"
+            ConfigureTurn = turn => { turn.Summary = "concise"; turn.Cwd = "/configured-turn"; }
         };
         var agent = fixture.Sdk.AsAIAgent(options);
         var session = (CodexAgentSession)await agent.CreateSessionAsync();
@@ -64,6 +106,7 @@ public sealed class AgentFrameworkRunIntegrationTests
         var turn = fixture.Rpcs[0].Requests.Single(x => x.Method == "turn/start").Parameters;
         turn.GetProperty("summary").GetString().Should().Be("detailed");
         turn.GetProperty("effort").GetString().Should().Be("high");
+        turn.GetProperty("cwd").GetString().Should().Be("/configured-turn");
         turn.GetProperty("input").GetRawText().Should().Contain("remembered").And.Contain("hello").And.Contain("context message");
         history.Completed.Should().ContainSingle().Which.InvokeException.Should().BeNull();
         context.Completed.Should().ContainSingle().Which.ResponseMessages!.Single().Text.Should().Be("hello world");
@@ -93,9 +136,53 @@ public sealed class AgentFrameworkRunIntegrationTests
         fixture.Rpcs.Single().Disposed.Should().BeTrue();
         fixture.ClientOptions.Single().ExperimentalApi.Should().BeFalse();
         agent.Description.Should().Be("Codex CLI agent.");
+        ((CodexAIAgent)agent).AIContextProviders.Should().BeNull();
         agent.GetService(typeof(IDisposable), "unknown").Should().BeNull();
 
         static IEnumerable<ChatMessage> Messages() { yield return new(ChatRole.User, "hello"); }
+    }
+
+    [Fact]
+    public async Task RunAsync_ToolInvocation_ReceivesPreparedMessagesSessionAndEffectiveOptions()
+    {
+        await using var fixture = new Fixture { InvokeTool = true };
+        var session = new CodexAgentSession();
+        var tool = AIFunctionFactory.Create(() =>
+        {
+            var run = AIAgent.CurrentRunContext;
+            var invocation = FunctionInvokingChatClient.CurrentContext;
+            run.Should().NotBeNull();
+            run!.Session.Should().BeSameAs(session);
+            invocation.Should().NotBeNull();
+            invocation!.Messages.Select(x => x.Text).Should().Equal("remembered", "hello", "context message");
+            invocation.Options!.Instructions.Should().Be("base instructions\ncontext instructions");
+            invocation.Options.ModelId.Should().Be("gpt-5.4");
+            invocation.IsStreaming.Should().BeTrue();
+            return "local-tool-result";
+        }, "inspect_context");
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions
+        {
+            ChatOptions = new() { ModelId = "gpt-5.4", Instructions = "base instructions" },
+            ChatHistoryProvider = new History(), AIContextProviders = [new Context()], Tools = [tool]
+        });
+        await agent.RunAsync("hello", session);
+        var response = fixture.Rpcs.Single().ToolResponse!;
+        response.Error.Should().BeNull();
+        response.Result!.Value.GetProperty("success").GetBoolean().Should().BeTrue();
+        response.Result.Value.GetProperty("contentItems")[0].GetProperty("text").GetString().Should().Be("local-tool-result");
+    }
+
+    [Theory]
+    [InlineData("completed")]
+    [InlineData("COMPLETED")]
+    public async Task Streaming_CompletedStatus_DoesNotEmitTerminalError(string status)
+    {
+        await using var fixture = new Fixture { CompletedStatusWithError = status };
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions());
+        var updates = new List<AgentResponseUpdate>();
+        await foreach (var update in agent.RunStreamingAsync("hello")) updates.Add(update);
+        updates.SelectMany(x => x.Contents).Should().NotContain(x => x is ErrorContent);
+        updates.Select(x => x.Text).Should().Equal("hello ", "world");
     }
 
     [Fact]
@@ -202,12 +289,23 @@ public sealed class AgentFrameworkRunIntegrationTests
         var agent = new CodexAgentClient().AsAIAgent();
         var other = new OtherSession();
         var run = () => agent.RunAsync("hello", other);
-        await run.Should().ThrowAsync<ArgumentException>().WithParameterName("session");
+        await run.Should().ThrowAsync<ArgumentException>().WithMessage("Session was not created by this Codex agent.*").WithParameterName("session");
         var serialize = async () => await agent.SerializeSessionAsync(other);
         await serialize.Should().ThrowAsync<ArgumentException>().WithParameterName("session");
     }
 
     private sealed class OtherSession : AgentSession;
+
+    private sealed class Owner(CodexAppServerClient client, bool throwOnDispose) : IAsyncDisposable
+    {
+        public int Calls { get; private set; }
+        public async ValueTask DisposeAsync()
+        {
+            Calls++;
+            await client.DisposeAsync();
+            if (throwOnDispose) throw new IOException("owner disposal failed");
+        }
+    }
 
     internal sealed class History(string stateKey = "history") : ChatHistoryProvider
     {
@@ -244,6 +342,8 @@ public sealed class AgentFrameworkRunIntegrationTests
         public bool AutoComplete { get; init; } = true;
         public string? FailureStage { get; init; }
         public bool ReportErrors { get; init; }
+        public bool InvokeTool { get; init; }
+        public string? CompletedStatusWithError { get; init; }
         public Fixture() => Sdk = new(_exec, this, this);
         public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default) => StartAsync(_ => { }, ct);
         public Task<CodexAppServerClient> StartAsync(Action<CodexAppServerClientOptions> configure, CancellationToken ct = default)
@@ -253,7 +353,7 @@ public sealed class AgentFrameworkRunIntegrationTests
             var options = new CodexAppServerClientOptions();
             configure(options);
             ClientOptions.Add(options);
-            var rpc = new Rpc { AutoComplete = AutoComplete, FailureStage = FailureStage, ReportErrors = ReportErrors };
+            var rpc = new Rpc { AutoComplete = AutoComplete, FailureStage = FailureStage, ReportErrors = ReportErrors, InvokeTool = InvokeTool, CompletedStatusWithError = CompletedStatusWithError };
             Rpcs.Add(rpc);
             return Task.FromResult(new CodexAppServerClient(options, new Lifetime(), rpc, NullLogger.Instance,
                 CodexAppServerClient.CreateDefaultSerializerOptions(), startExitWatcher: false));
@@ -279,7 +379,10 @@ public sealed class AgentFrameworkRunIntegrationTests
         public bool AutoComplete { get; init; }
         public string? FailureStage { get; init; }
         public bool ReportErrors { get; init; }
+        public bool InvokeTool { get; init; }
+        public string? CompletedStatusWithError { get; init; }
         public bool Disposed { get; private set; }
+        public JsonRpcResponse? ToolResponse { get; private set; }
         public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
         {
             if (method == FailureStage) throw new IOException(method + " failed");
@@ -287,11 +390,20 @@ public sealed class AgentFrameworkRunIntegrationTests
             if (method is "thread/start" or "thread/resume") return Json("""{"thread":{"id":"thread-1"}}""");
             if (method == "turn/start")
             {
+                if (InvokeTool)
+                {
+                    ToolResponse = await OnServerRequest!(new(JsonRpcId.FromNumber(10), "item/tool/call",
+                        Json("""{"threadId":"thread-1","turnId":"turn-1","callId":"call-1","tool":"inspect_context","arguments":{}}""")));
+                }
                 await Emit("item/agentMessage/delta", """{"threadId":"thread-1","turnId":"turn-1","itemId":"message-1","delta":"hello "}""");
                 if (AutoComplete)
                 {
                     await Emit("item/agentMessage/delta", """{"threadId":"thread-1","turnId":"turn-1","itemId":"message-1","delta":"world"}""");
-                    if (ReportErrors)
+                    if (CompletedStatusWithError is { } completedStatus)
+                    {
+                        await Emit("turn/completed", JsonSerializer.Serialize(new { threadId = "thread-1", turn = new { id = "turn-1", status = completedStatus, error = new { message = "stale error" } } }));
+                    }
+                    else if (ReportErrors)
                     {
                         await Emit("error", """{"threadId":"thread-1","turnId":"turn-1","error":{"message":"temporary failure"},"willRetry":true}""");
                         await Emit("turn/completed", """{"threadId":"thread-1","turn":{"id":"turn-1","status":"failed","error":{"message":"terminal failure"}}}""");

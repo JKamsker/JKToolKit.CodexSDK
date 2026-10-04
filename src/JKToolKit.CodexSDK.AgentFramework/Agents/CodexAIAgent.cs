@@ -136,7 +136,6 @@ public sealed class CodexAIAgent : AIAgent
             .GetAsyncEnumerator(cancellationToken);
         while (true)
         {
-            AgentResponseUpdate update;
             try
             {
                 CurrentRunContext = preparedRunContext;
@@ -145,7 +144,6 @@ public sealed class CodexAIAgent : AIAgent
                     break;
                 }
 
-                update = updates.Current;
             }
             catch (Exception ex)
             {
@@ -154,6 +152,7 @@ public sealed class CodexAIAgent : AIAgent
                 throw;
             }
 
+            var update = updates.Current;
             responseUpdates.Add(update);
             yield return update;
         }
