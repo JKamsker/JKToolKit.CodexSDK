@@ -93,7 +93,7 @@ jobs:
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml .github/scripts/report_test_coverage.py)"
+          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py scripts/sync-package-version.py src tests Directory.Build.props JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml .github/scripts/report_test_coverage.py .github/scripts/verify_sdk_release.py)"
           if [[ -n "$changed_files" ]]; then
             echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Changed package or upstream files:"
@@ -134,9 +134,10 @@ jobs:
         id: set-version
         shell: bash
         run: |
-          VERSION="0.0.${{ github.run_number }}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          VERSION="$(python3 scripts/sync-package-version.py --check)"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         run: dotnet restore JKToolKit.CodexSDK.sln
@@ -187,9 +188,9 @@ jobs:
       - name: Pack NuGet Packages
         if: matrix.os == 'ubuntu-latest'
         run: |
-          dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
-          dotnet pack src/JKToolKit.CodexSDK.SemanticKernel/JKToolKit.CodexSDK.SemanticKernel.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
-          dotnet pack src/JKToolKit.CodexSDK.AgentFramework/JKToolKit.CodexSDK.AgentFramework.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+          dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages
+          dotnet pack src/JKToolKit.CodexSDK.SemanticKernel/JKToolKit.CodexSDK.SemanticKernel.csproj --configuration Release --no-build --output nuget-packages
+          dotnet pack src/JKToolKit.CodexSDK.AgentFramework/JKToolKit.CodexSDK.AgentFramework.csproj --configuration Release --no-build --output nuget-packages
           test -f "nuget-packages/JKToolKit.CodexSDK.${{ env.VERSION }}.nupkg"
           test -f "nuget-packages/JKToolKit.CodexSDK.SemanticKernel.${{ env.VERSION }}.nupkg"
           test -f "nuget-packages/JKToolKit.CodexSDK.AgentFramework.${{ env.VERSION }}.nupkg"
@@ -278,6 +279,16 @@ jobs:
     if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && needs.automation-tests.result == 'success' && needs.changes.outputs.package_changed == 'true' && needs.build-and-test.result == 'success' && needs.coverage.result == 'success' && needs.runtime-packages.result == 'success' && needs.runtime-smoke.result == 'success'
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout release verification script
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ needs.changes.outputs.checkout_ref }}
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
     - name: Download NuGet Packages
       uses: actions/download-artifact@v4
       with:
@@ -291,6 +302,11 @@ jobs:
         merge-multiple: true
         path: nuget-packages
 
+    - name: Verify SDK release contents
+      env:
+        SDK_VERSION: ${{ needs.build-and-test.outputs.version }}
+      run: python3 .github/scripts/verify_sdk_release.py --packages nuget-packages --version "$SDK_VERSION" --output sdk-packages-to-publish.txt
+
     - name: Get Secrets
       uses: bitwarden/sm-action@v2
       with:
@@ -301,7 +317,11 @@ jobs:
 
     - name: Upload to NuGet.org
       run: |
-        for package in nuget-packages/*.nupkg; do
+        set -euo pipefail
+        while IFS= read -r package; do
+          dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
+        done < sdk-packages-to-publish.txt
+        for package in nuget-packages/JKToolKit.CodexSDK.Runtime.*.nupkg; do
           dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
         done
         echo "Version: ${{ needs.build-and-test.outputs.version }}"

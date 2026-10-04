@@ -9,6 +9,40 @@ This repo keeps Codex app-server wire DTOs in sync with upstream by generating *
 - `api`: the version used for generated upstream schema/DTO artifacts. The upstream sync workflow updates this field.
 - `integration`: the version whose deeper handwritten SDK parity pass is complete. The gh-aw parity workflow updates this field after validation.
 
+### SDK package versions
+
+`Directory.Build.props` supplies the same version to the SDK, Semantic Kernel,
+and Agent Framework packages for local builds and CI. The initial release for
+a Codex CLI version uses that version (for example, `0.160.0`). For additional
+SDK releases against the same CLI, bump only the patch:
+
+```bash
+python scripts/sync-package-version.py --bump-patch
+```
+
+Commit that change with the SDK release (`0.160.1`, then `0.160.2`, etc.).
+The CLI pin stays unchanged. Multiple changes in one SDK release need only one
+patch bump. CI publishes the committed version; reruns reuse that version.
+Before publishing, CI checks all three SDK package identities against NuGet.org.
+It skips an existing package only when every archive entry matches (excluding
+NuGet.org's repository signature and ZIP timestamps). Conflicting contents fail
+the release with a request to commit a patch bump, before any package is pushed.
+Identical retries and partially completed uploads can resume; unchanged runtime
+packages continue to use duplicate skipping.
+
+Upstream sync and the gh-aw parity workflow run
+`python scripts/sync-package-version.py` to align the package version with the
+API pin. Synchronization preserves SDK patches for an unchanged CLI baseline.
+A new major/minor CLI line resets to the CLI version, such as `0.161.0`.
+If a CLI patch release collides with an SDK patch already used on the same
+major/minor line, the package advances to the next patch instead of reusing or
+downgrading a NuGet version. `CodexCliVersion` records the exact CLI baseline
+independently of `VersionPrefix`.
+
+`python scripts/sync-package-version.py --check` validates alignment and prints
+the package version; CI and gh-aw enforce this check. Runtime packages continue
+to use the exact bundled CLI version, independently of SDK-only patches.
+
 When bumping the API version, also update the `external/codex` submodule to the matching tag:
 
 - `rust-v<version>` (example: `rust-v0.104.0`)

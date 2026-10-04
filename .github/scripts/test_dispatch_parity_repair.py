@@ -13,11 +13,12 @@ class DispatcherTests(unittest.TestCase):
     @patch.object(repair, "load_agent_log", return_value="")
     @patch.object(repair, "load_source_run")
     def test_only_standalone_parity_failure_dispatches_repair(self, load_run, load_log, dispatch):
+        """Retry version validation failures without racing upstream orchestration."""
         failed_run = {
             "conclusion": "failure",
             "jobs": [{"name": "parity / agent", "steps": [
                 {"name": "Check whether parity validation is required", "conclusion": "success"},
-                {"name": "Build before safe output", "conclusion": "failure"},
+                {"name": "Verify SDK package version", "conclusion": "failure"},
             ]}],
         }
         load_run.return_value = {**failed_run, "workflowName": "Upstream Sync (@openai/codex)"}

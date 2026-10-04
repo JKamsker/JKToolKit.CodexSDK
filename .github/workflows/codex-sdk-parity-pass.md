@@ -2,7 +2,7 @@
 description: |
   Runs the local codex-sdk-parity-pass skill after upstream Codex sync activity.
   The workflow repairs SDK drift on upstream-sync PRs and creates a parity PR if
-  the default branch ever has an upstream API/submodule or integration mismatch.
+  the default branch has an upstream API/submodule, integration, or package version mismatch.
 
 on:
   workflow_call:
@@ -90,6 +90,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "UPSTREAM_CODEX_VERSION.json"
+      - "Directory.Build.props"
+      - "scripts/sync-package-version.py"
       - "external/codex"
       - "external/codex/**"
       - "src/JKToolKit.CodexSDK/Generated/Upstream/**"
@@ -260,6 +262,9 @@ post-steps:
 
       git status --short
 
+  - name: Verify SDK package version
+    run: python3 scripts/sync-package-version.py --check
+
   - name: Restore parity validation dependencies
     if: steps.parity-validation-guard.outputs.should_validate == 'true'
     run: dotnet restore JKToolKit.CodexSDK.sln
@@ -293,6 +298,7 @@ This workflow exists to keep `JKToolKit.CodexSDK` aligned with the vendored upst
 2. The run was called or dispatched by `Upstream Sync (@openai/codex)` with `inputs.upstream_sync_pr` set to `true`.
 3. `UPSTREAM_CODEX_VERSION.json` has an `api` version whose tag commit does not match the checked-out `external/codex` submodule commit.
 4. `UPSTREAM_CODEX_VERSION.json` has different `api` and `integration` versions, which means generated API artifacts are ahead of the deeper SDK parity baseline.
+5. `python3 scripts/sync-package-version.py --check` fails, which means the SDK package version needs to be synchronized with the API pin.
 
 ## First: Decide Whether A Pass Is Needed
 
@@ -322,6 +328,7 @@ these are true:
 
 - the API marker and submodule commit already match,
 - the API marker and integration marker already match, and
+- `python3 scripts/sync-package-version.py --check` is clean (SDK-only patch increments are valid), and
 - `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check` is clean.
 
 Do not re-audit the already-completed upstream delta in this case. An
@@ -331,11 +338,28 @@ the Codex implementation pass.
 
 When no-oping, leave the workspace unchanged and emit a concise explanation in the final output. Do not create a pull request and do not push to a pull request branch.
 
+## Package Version Synchronization
+
+Every run must check the SDK package version, including resumed and otherwise
+completed parity passes. Run `python3 scripts/sync-package-version.py` whenever
+the version check fails, and again after changing the API pin. Include changes
+to `Directory.Build.props` in the same commit and safe output as the parity
+changes. A package version mismatch alone requires a repair; do not no-op or
+repeat an already completed semantic audit in that case.
+
+The script aligns the package's major/minor version with the checked-out
+`UPSTREAM_CODEX_VERSION.json` `api` version. A new CLI baseline normally uses
+the exact CLI version; an upstream patch that collides with an SDK-only patch
+uses the next available local patch number. Preserve SDK-only patch increments
+when the CLI baseline is unchanged. Do not use workflow run numbers or the
+version of the CLI running this agent as the SDK package version.
+
 ## Pull Request And Upstream-Sync Runs
 
 On `pull_request` events, only make changes when the triggering PR is an upstream Codex sync PR or clearly changes upstream Codex inputs:
 
 - `UPSTREAM_CODEX_VERSION.json`
+- `Directory.Build.props` or `scripts/sync-package-version.py`
 - the `external/codex` submodule
 - generated upstream schema/DTO files
 - upstream generator code
@@ -348,7 +372,7 @@ When changes are needed:
 
 1. Follow `.codex/skills/codex-sdk-parity-pass/SKILL.md`.
 2. Audit the upstream delta from the `integration` version to the `api` version in `UPSTREAM_CODEX_VERSION.json`.
-3. Regenerate DTOs with `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- generate` before checking or building the SDK. The bootstrap PR intentionally contains only the API pin and submodule update so schema or generator changes cannot prevent a repair branch from being created. If generation fails, repair the generator against the vendored schema and regenerate. Implement confirmed SDK drift fixes.
+3. Run `python3 scripts/sync-package-version.py`. Regenerate DTOs with `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- generate` before checking or building the SDK. The bootstrap PR includes the API pin, submodule, and package version update even if generation fails, so schema or generator changes cannot prevent a repair branch from being created. If generation fails, repair the generator against the vendored schema and regenerate. Implement confirmed SDK drift fixes.
 4. Update or create the relevant `docs/codex-<from>-to-<to>-interop.md` note.
 5. Run focused tests for every touched surface.
 6. Run `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check`.
@@ -372,7 +396,7 @@ Do not request `create_pull_request` or `push_to_pull_request_branch` until the 
 
 Completing the main parity task includes making CI likely to pass. Do not stop after writing code or composing a PR. Run the CI-equivalent validation locally, fix any restore, generated DTO, build, or test failures, and only request safe output once the same commit is expected to pass hosted CI.
 
-The workflow also enforces this after the agent runs: if a safe-output write is requested, post-steps materialize the proposed patch if needed and run restore, generated DTO check, build, and full tests before safe outputs are processed. If those checks fail, the workflow run must fail instead of creating or updating a red pull request.
+The workflow also enforces this after the agent runs: post-steps always check the package version. If a safe-output write is requested, they materialize the proposed patch if needed and run restore, generated DTO check, build, and full tests before safe outputs are processed. If those checks fail, the workflow run must fail instead of creating or updating a red pull request.
 
 ## Repair Dispatch Runs
 
@@ -388,7 +412,7 @@ For repair runs:
 
 ## Scheduled And Other Manual Runs
 
-On `schedule` or manual `workflow_dispatch` runs where `inputs.upstream_sync_pr` is not `true`, use the API/submodule mismatch and API/integration mismatch checks above as the primary triggers.
+On `schedule` or manual `workflow_dispatch` runs where `inputs.upstream_sync_pr` is not `true`, use the API/submodule, API/integration, and package version mismatch checks above as the primary triggers.
 
 If the default branch has an API/submodule mismatch:
 
@@ -407,6 +431,10 @@ If the default branch has an API/integration mismatch:
 3. Update `UPSTREAM_CODEX_VERSION.json` so `integration` matches `api`.
 4. Commit the changes locally.
 5. Use the `create_pull_request` safe-output tool with a title beginning `[parity] Codex SDK parity for <api-version>`.
+
+For a package version mismatch, run `python3 scripts/sync-package-version.py`,
+validate, commit, and use `create_pull_request` even if integration parity is
+already complete. Include the package version repair in any other parity PR.
 
 If there is no mismatch and no actionable drift, no-op.
 
