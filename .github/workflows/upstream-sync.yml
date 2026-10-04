@@ -154,6 +154,10 @@ jobs:
           git -C external/codex fetch origin "refs/tags/rust-v${LATEST_CODEX_VERSION}:refs/tags/rust-v${LATEST_CODEX_VERSION}"
           git -C external/codex checkout --detach "rust-v${LATEST_CODEX_VERSION}"
 
+      - name: Sync SDK package version
+        if: steps.tag.outputs.ready == 'true'
+        run: python3 scripts/sync-package-version.py
+
       - name: Setup .NET for deterministic DTO generation
         if: steps.tag.outputs.ready == 'true'
         uses: actions/setup-dotnet@v6

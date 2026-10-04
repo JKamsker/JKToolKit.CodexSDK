@@ -17,7 +17,7 @@ class DispatcherTests(unittest.TestCase):
             "conclusion": "failure",
             "jobs": [{"name": "parity / agent", "steps": [
                 {"name": "Check whether parity validation is required", "conclusion": "success"},
-                {"name": "Build before safe output", "conclusion": "failure"},
+                {"name": "Verify SDK package version", "conclusion": "failure"},
             ]}],
         }
         load_run.return_value = {**failed_run, "workflowName": "Upstream Sync (@openai/codex)"}

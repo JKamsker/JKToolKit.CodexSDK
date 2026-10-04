@@ -15,6 +15,7 @@ from typing import Any
 VALIDATION_STEP_NAMES = {
     "Setup .NET for parity validation",
     "Materialize safe-output patch for validation",
+    "Verify SDK package version",
     "Restore parity validation dependencies",
     "Verify generated DTOs before safe output",
     "Build before safe output",

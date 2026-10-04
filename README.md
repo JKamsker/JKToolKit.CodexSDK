@@ -22,6 +22,10 @@ dotnet add package JKToolKit.CodexSDK
 
 > **Prerequisites:** .NET 10+ and Codex CLI on your PATH.
 
+SDK package versions follow the Codex CLI release, starting at `0.160.0`.
+Additional SDK releases for the same CLI increment the patch (`0.160.1`,
+`0.160.2`, etc.). See [package versioning](docs/upstreamgen.md#sdk-package-versions).
+
 ## Quickstart
 
 ```csharp

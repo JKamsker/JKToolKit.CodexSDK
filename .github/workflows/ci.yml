@@ -93,7 +93,7 @@ jobs:
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py src tests JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml .github/scripts/report_test_coverage.py)"
+          changed_files="$(git diff --name-only "$base" "$head" -- runtime samples scripts/pack-codex-runtime.py scripts/sync-package-version.py src tests Directory.Build.props JKToolKit.CodexSDK.sln UPSTREAM_CODEX_VERSION.json external/codex .github/workflows/ci.yml .github/scripts/report_test_coverage.py)"
           if [[ -n "$changed_files" ]]; then
             echo "package_changed=true" >> "$GITHUB_OUTPUT"
             echo "Changed package or upstream files:"
@@ -134,9 +134,10 @@ jobs:
         id: set-version
         shell: bash
         run: |
-          VERSION="0.0.${{ github.run_number }}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          VERSION="$(python3 scripts/sync-package-version.py --check)"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         run: dotnet restore JKToolKit.CodexSDK.sln
@@ -187,9 +188,9 @@ jobs:
       - name: Pack NuGet Packages
         if: matrix.os == 'ubuntu-latest'
         run: |
-          dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
-          dotnet pack src/JKToolKit.CodexSDK.SemanticKernel/JKToolKit.CodexSDK.SemanticKernel.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
-          dotnet pack src/JKToolKit.CodexSDK.AgentFramework/JKToolKit.CodexSDK.AgentFramework.csproj --configuration Release --no-build --output nuget-packages /p:Version="${{ env.VERSION }}"
+          dotnet pack src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj --configuration Release --no-build --output nuget-packages
+          dotnet pack src/JKToolKit.CodexSDK.SemanticKernel/JKToolKit.CodexSDK.SemanticKernel.csproj --configuration Release --no-build --output nuget-packages
+          dotnet pack src/JKToolKit.CodexSDK.AgentFramework/JKToolKit.CodexSDK.AgentFramework.csproj --configuration Release --no-build --output nuget-packages
           test -f "nuget-packages/JKToolKit.CodexSDK.${{ env.VERSION }}.nupkg"
           test -f "nuget-packages/JKToolKit.CodexSDK.SemanticKernel.${{ env.VERSION }}.nupkg"
           test -f "nuget-packages/JKToolKit.CodexSDK.AgentFramework.${{ env.VERSION }}.nupkg"
