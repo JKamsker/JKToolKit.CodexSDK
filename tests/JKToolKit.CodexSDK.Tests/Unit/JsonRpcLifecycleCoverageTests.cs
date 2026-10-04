@@ -220,6 +220,59 @@ public class JsonRpcLifecycleCoverageTests
         (await next.Should().ThrowAsync<JsonRpcProtocolException>()).Which.InnerException.Should().BeSameAs(failure);
     }
 
+    [Theory]
+    [InlineData("not json", "invalid JSON")]
+    [InlineData("[]", "non-object")]
+    [InlineData("{}", "unknown JSON-RPC message shape")]
+    [InlineData("{\"method\":false}", "non-string method")]
+    [InlineData("{\"id\":12345,\"result\":true}", "unknown id")]
+    public async Task DroppedFrames_EmitActionableDiagnostics(string frame, string message)
+    {
+        var wire = new Wire();
+        var logger = new RecordingLogger();
+        await using var rpc = Connect(wire, logger: logger);
+        wire.Inbound.Writer.TryWrite(frame);
+        (await logger.WaitFor(message)).Message.Should().Contain(message);
+        await rpc.SendNotificationAsync("still usable", null, default);
+    }
+
+    [Theory]
+    [InlineData("{\"value\":42}")]
+    [InlineData("[1,2]")]
+    [InlineData("\"text\"")]
+    public async Task NotificationAndRequestParams_AreForwardedAndOutliveWireDocuments(string json)
+    {
+        var wire = new Wire();
+        await using var rpc = Connect(wire);
+        var received = new TaskCompletionSource<JsonElement?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        rpc.OnServerRequest = request =>
+        {
+            received.TrySetResult(request.Params);
+            return ValueTask.FromResult(new JsonRpcResponse(request.Id, JsonSerializer.SerializeToElement(true), null));
+        };
+        wire.Inbound.Writer.TryWrite("{\"id\":\"server\",\"method\":\"request\",\"params\":" + json + "}");
+        await wire.Read();
+        wire.Inbound.Writer.TryWrite("{\"method\":\"notification\",\"params\":" + json + "}");
+        using var timeout = new CancellationTokenSource(Deadline);
+        var note = await rpc.Notifications(timeout.Token).FirstAsync();
+        await rpc.DisposeAsync();
+        (await received.Task.WaitAsync(Deadline))!.Value.GetRawText().Should().Be(json);
+        note.Params!.Value.GetRawText().Should().Be(json);
+    }
+
+    [Fact]
+    public async Task ServerResponseError_TakesPrecedenceOverConflictingResult()
+    {
+        var wire = new Wire();
+        await using var rpc = Connect(wire);
+        rpc.OnServerRequest = request => ValueTask.FromResult(new JsonRpcResponse(request.Id,
+            JsonSerializer.SerializeToElement("ignored result"), new JsonRpcError(-32000, "error takes precedence")));
+        wire.Inbound.Writer.TryWrite("{\"id\":1,\"method\":\"request\"}");
+        using var response = JsonDocument.Parse(await wire.Read());
+        response.RootElement.TryGetProperty("result", out _).Should().BeFalse();
+        response.RootElement.GetProperty("error").GetProperty("message").GetString().Should().Be("error takes precedence");
+    }
+
     [Fact]
     public void ClosedException_ConstructorsPreserveContext()
     {
