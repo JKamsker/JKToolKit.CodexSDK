@@ -83,7 +83,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         var result = batch
             ? await client.WriteConfigBatchAsync(new() { Edits = [new() { KeyPath = "model", Value = value, MergeStrategy = ConfigMergeStrategy.Replace }], FilePath = " ", ExpectedVersion = " " })
             : await client.WriteConfigValueAsync(new() { KeyPath = "model", Value = value, MergeStrategy = ConfigMergeStrategy.Replace, FilePath = " ", ExpectedVersion = " " });
-        result.Status.Should().Be(ConfigWriteStatus.OkOverridden); result.Version.Should().Be("server-version"); result.FilePath.Should().Be("/server/config.toml");
+        result.Status.Should().Be(ConfigWriteStatus.OkOverridden); result.Version.Should().Be("server-version"); result.FilePath.Should().Be(PathForPlatform("/server/config.toml"));
         result.OverriddenMetadata.Should().BeNull();
         var request = rpc.Requests.Should().ContainSingle().Subject;
         request.Parameters.TryGetProperty("filePath", out _).Should().BeFalse(); request.Parameters.TryGetProperty("expectedVersion", out _).Should().BeFalse();
