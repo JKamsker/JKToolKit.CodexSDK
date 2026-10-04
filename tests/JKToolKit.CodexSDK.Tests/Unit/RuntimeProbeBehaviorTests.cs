@@ -46,8 +46,9 @@ public sealed class RuntimeProbeBehaviorTests
             using var cancellation = new CancellationTokenSource();
             var probe = sdk.Runtime.GetInfoAsync(false, cancellation.Token);
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            while (!File.Exists(pidFile)) await Task.Delay(10, timeout.Token);
-            var pid = int.Parse(await File.ReadAllTextAsync(pidFile, timeout.Token));
+            int pid;
+            while (!File.Exists(pidFile) || !int.TryParse(await File.ReadAllTextAsync(pidFile, timeout.Token), out pid))
+                await Task.Delay(10, timeout.Token);
             using var process = Process.GetProcessById(pid);
             cancellation.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => probe.WaitAsync(timeout.Token));
