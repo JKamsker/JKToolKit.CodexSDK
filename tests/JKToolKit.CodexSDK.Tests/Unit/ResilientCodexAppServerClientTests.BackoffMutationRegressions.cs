@@ -45,12 +45,19 @@ public sealed partial class ResilientCodexAppServerClientTests
         {
             RestartPolicy = new() { MaxRestarts = 3, InitialBackoff = TimeSpan.FromMinutes(1), MaxBackoff = TimeSpan.FromMinutes(1), JitterFraction = 0 }
         }, logger);
-        await connection.EnsureConnectedAsync(CancellationToken.None);
-        var restart = () => connection.RestartAsync(cancellation.Token).WaitAsync(TimeSpan.FromSeconds(5));
-        await restart.Should().ThrowAsync<OperationCanceledException>();
-        logger.BackoffObserved.Should().BeTrue();
-        attempts.Should().Be(2, "cancellation at the backoff boundary must prevent the next factory invocation");
-        connection.RestartCount.Should().Be(0);
+        try
+        {
+            await connection.EnsureConnectedAsync(CancellationToken.None);
+            var restart = () => connection.RestartAsync(cancellation.Token).WaitAsync(TimeSpan.FromSeconds(5));
+            await restart.Should().ThrowAsync<OperationCanceledException>();
+            logger.BackoffObserved.Should().BeTrue();
+            attempts.Should().Be(2, "cancellation at the backoff boundary must prevent the next factory invocation");
+            connection.RestartCount.Should().Be(0);
+        }
+        finally
+        {
+            await cancellation.CancelAsync();
+        }
     }
 
     private sealed class CancelAtBackoffLogger(CancellationTokenSource cancellation) : ILogger
