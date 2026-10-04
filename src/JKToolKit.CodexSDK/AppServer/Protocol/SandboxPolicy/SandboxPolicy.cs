@@ -9,6 +9,7 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.SandboxPolicy;
 /// <remarks>
 /// This matches the v2 <c>SandboxPolicy</c> DTO offered by <c>codex app-server</c>.
 /// </remarks>
+[JsonConverter(typeof(SandboxPolicyJsonConverter))]
 public abstract partial record class SandboxPolicy
 {
     /// <summary>
