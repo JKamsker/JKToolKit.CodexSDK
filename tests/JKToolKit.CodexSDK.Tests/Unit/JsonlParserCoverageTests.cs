@@ -94,11 +94,41 @@ public class JsonlParserCoverageTests
     [Theory, MemberData(nameof(EventCases))]
     public void Envelopes_DispatchEverySupportedEvent(string type, Type expectedType, string body, string? property, object? expected, int shape)
     {
-        var evt = Parse(shape == 1 ? "event" : "event_msg", Envelope(type, body, shape));
+        var fields = JsonNode.Parse(body)!.AsObject();
+        var optional = type switch
+        {
+            "exec_command_end" => """{"process_id":"process","turn_id":"turn","cwd":"/repo","source":"agent","interaction_input":"input","stdout":"stdout","stderr":"stderr","aggregated_output":"aggregate","exit_code":7,"duration":"1s","formatted_output":"formatted","status":"completed"}""",
+            "web_search_end" => """{"query":"query"}""",
+            "mcp_tool_call_end" => """{"duration":"2s"}""",
+            "patch_apply_begin" => """{"auto_approved":true}""",
+            "patch_apply_end" => """{"stdout":"stdout","stderr":"stderr","success":true,"status":"completed"}""",
+            "plan_update" => """{"name":"plan","explanation":"explain"}""",
+            "task_started" or "turn_started" => """{"model_context_window":123}""",
+            "task_complete" or "turn_complete" => """{"turn_id":"turn"}""",
+            "entered_review_mode" => """{"user_facing_hint":"hint"}""",
+            "undo_completed" => """{"message":"undone"}""",
+            "item_completed" => """{"thread_id":"thread","turn_id":"turn"}""",
+            _ when type.StartsWith("collab_") => """{"receiver_agent_nickname":"nickname","receiver_agent_role":"role","new_thread_id":"newthread","new_agent_nickname":"newnick","new_agent_role":"newrole"}""",
+            _ => "{}"
+        };
+        foreach (var field in JsonNode.Parse(optional)!.AsObject())
+            if (!fields.ContainsKey(field.Key)) fields[field.Key] = field.Value?.DeepClone();
+        var evt = Parse(shape == 1 ? "event" : "event_msg", Envelope(type, fields.ToJsonString(), shape));
         evt.Should().BeOfType(expectedType);
         evt.Type.Should().Be(type);
         if (property is not null)
             expectedType.GetProperty(property)!.GetValue(evt).Should().Be(expected);
+        // Each scalar wire field follows the public PascalCase property convention.
+        // Check distinct sentinels so swapping, dropping, or hardcoding a field is observable.
+        foreach (var field in fields)
+        {
+            var name = string.Concat(field.Key.Split('_').Select(part => char.ToUpperInvariant(part[0]) + part[1..]));
+            var target = expectedType.GetProperty(name);
+            if (target is null || field.Value is not JsonValue scalar) continue;
+            var propertyType = Nullable.GetUnderlyingType(target.PropertyType) ?? target.PropertyType;
+            if (propertyType == typeof(string) || propertyType == typeof(int) || propertyType == typeof(bool))
+                target.GetValue(evt).Should().Be(JsonSerializer.Deserialize(scalar.ToJsonString(), propertyType), $"{type}.{field.Key} must be preserved");
+        }
     }
 
     public static IEnumerable<object[]> RequiredFields()
@@ -173,4 +203,44 @@ public class JsonlParserCoverageTests
         if (success) { evt.Should().BeOfType<UnknownCodexEvent>(); error.Should().BeNull(); }
         else { evt.Should().BeNull(); error.Should().NotBeNullOrEmpty(); }
     }
+    public static IEnumerable<object[]> NonBlankRequiredFields()
+    {
+        foreach (var row in RequiredFields().Where(row => !(bool)row[2]))
+        {
+            var type = (string)row[0];
+            var field = (string)row[1];
+            if (field is "prompt" or "status" or "success" or "num_turns" or "receiver_thread_ids" or "statuses") continue;
+            if (type is "agent_message" or "agent_reasoning" or "user_message") continue;
+            foreach (var blank in new[] { "", " \t" })
+            {
+                var payload = JsonNode.Parse((string)row[3])!.AsObject();
+                payload[field] = blank;
+                yield return [type, field, blank, payload.ToJsonString()];
+            }
+        }
+    }
+
+    [Theory, MemberData(nameof(NonBlankRequiredFields))]
+    public void RequiredIdentifiers_RejectEmptyAndWhitespace(string type, string field, string blank, string body)
+    {
+        var line = JsonSerializer.Serialize(new { timestamp = Timestamp, type = "event_msg", payload = JsonSerializer.Deserialize<JsonElement>(body) });
+        Parser.TryParseLine(line, out var evt, out _).Should().BeFalse($"{type}.{field} must reject {JsonSerializer.Serialize(blank)}");
+        evt.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("user_message")]
+    [InlineData("agent_message")]
+    [InlineData("agent_reasoning")]
+    public void MessageFields_PreferMessageThenTextAndAllowEmptyText(string type)
+    {
+        foreach (var shape in new[] { 0, 1, 2, 3 })
+        {
+            var evt = Parse(shape == 1 ? "event" : "event_msg", Envelope(type, """{"message":"first","text":"second"}""", shape));
+            evt.GetType().GetProperty("Text")!.GetValue(evt).Should().Be("first");
+            evt = Parse(shape == 1 ? "event" : "event_msg", Envelope(type, """{"message":false,"text":""}""", shape));
+            evt.GetType().GetProperty("Text")!.GetValue(evt).Should().Be("");
+        }
+    }
+
 }

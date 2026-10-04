@@ -148,4 +148,31 @@ public class JsonlParserBoundaryCoverageTests
         Parse("compacted", "{}").Should().BeOfType<CompactedEvent>().Which.ReplacementHistory.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ParseAsync_CancellationDuringMoveNext_DisposesSourceAndOnlySuppressesRequestedCancellation(bool cancelToken)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var source = new CancelingLines(cancellation, cancelToken);
+        var parser = new JsonlEventParser(NullLogger<JsonlEventParser>.Instance);
+        var read = async () => await parser.ParseAsync(source, cancellation.Token).ToListAsync();
+        if (cancelToken) (await read()).Should().BeEmpty();
+        else await read.Should().ThrowAsync<OperationCanceledException>();
+        source.Disposed.Should().BeTrue();
+    }
+
+    private sealed class CancelingLines(CancellationTokenSource cancellation, bool cancelToken) : IAsyncEnumerable<string>, IAsyncEnumerator<string>
+    {
+        public bool Disposed { get; private set; }
+        public string Current => throw new InvalidOperationException("No line was read.");
+        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default) => this;
+        public ValueTask<bool> MoveNextAsync()
+        {
+            if (cancelToken) cancellation.Cancel();
+            return ValueTask.FromException<bool>(new OperationCanceledException());
+        }
+        public ValueTask DisposeAsync() { Disposed = true; return ValueTask.CompletedTask; }
+    }
+
 }
