@@ -241,6 +241,18 @@ public sealed class PromptConsoleApprovalHandlerTests
         Console.ReadLine().Should().Be("unconsumed");
     }
 
+    [Fact]
+    public void Handler_RejectsMissingKeyboardReader() =>
+        Assert.Throws<ArgumentNullException>(() => new PromptConsoleApprovalHandler(null!));
+
+    [Fact]
+    public async Task UrlElicitation_MissingIdDisplaysPlaceholder()
+    {
+        using var console = new ConsoleScope("cancel\n");
+        await new PromptConsoleApprovalHandler().HandleAsync("mcpServer/elicitation/request", Json("""{"threadId":"t","serverName":"mcp","mode":"url","message":"Sign in","url":"https://example.test"}"""), default);
+        console.Error.Should().Contain("elicitationId=n/a");
+    }
+
     private static PromptConsoleApprovalHandler HandlerWithKeys(params char[] chars)
     {
         var keys = new Queue<ConsoleKeyInfo>(chars.Select(c => new ConsoleKeyInfo(c, c switch { '\r' => ConsoleKey.Enter, '\b' => ConsoleKey.Backspace, _ => ConsoleKey.A }, false, false, false)));
