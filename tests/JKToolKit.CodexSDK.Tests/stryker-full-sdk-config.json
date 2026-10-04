@@ -7,13 +7,13 @@
       "!**/Generated/**/*.cs"
     ],
     "mutation-level": "Complete",
-    "test-case-filter": "FullyQualifiedName!~SourceFileSizeGuardTests",
     "concurrency": 4,
     "coverage-analysis": "perTest",
     "additional-timeout": 3000,
     "reporters": [
       "json",
-      "cleartext"
+      "cleartext",
+      "dots"
     ],
     "thresholds": {
       "high": 95,

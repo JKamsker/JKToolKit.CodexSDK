@@ -15,11 +15,16 @@ Each profile uses four workers, Complete mutation level, per-test coverage, the
 Release configuration, and stops if the unmutated initial test run fails. It does
 not exclude any mutator categories. The output directory must be new.
 
-All discovered tests are eligible except `SourceFileSizeGuardTests`, a repository
-layout check that does not test runtime behavior. Unit tests and local process,
+All discovered tests are eligible, including repository layout guards. Unit tests and local process,
 filesystem, and WebSocket integration tests remain enabled. The runner removes
 `CODEX_E2E` and `CODEX_DOCKER_E2E` so credentialed live integration tests remain
-skipped, and exports `DOTNET_ROOT` for local fixture apphosts.
+skipped, and exports `DOTNET_ROOT` for local fixture apphosts. A fail-fast `codex`
+stub is first on the child PATH; directories containing installed Codex executables
+are removed from that PATH so path-resolution mutations cannot fall through to a
+real CLI. Explicit process-fixture paths remain available. The runner refuses
+bundled `codex-runtime` executables before and after its preliminary build because
+those take precedence over PATH. These controls isolate normal executable lookup;
+they are not an operating-system network sandbox.
 
 The SDK profile includes every handwritten C# file, including handwritten protocol
 converters and DTOs. Only `Generated/**/*.cs` is outside that profile; generated

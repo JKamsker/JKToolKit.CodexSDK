@@ -36,14 +36,37 @@ class RunnerTests(unittest.TestCase):
 
     def test_sets_fixture_runtime_disables_live_and_deduplicates_profiles(self):
         self.execute()
-        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(len(self.calls), 3)
         command, arguments = self.calls[-1]
         self.assertEqual(arguments['env']['DOTNET_ROOT'], '/fake')
         self.assertNotIn('CODEX_E2E', arguments['env'])
         self.assertNotIn('CODEX_DOCKER_E2E', arguments['env'])
         self.assertIn('--skip-version-check', command)
+        self.assertEqual(arguments['env']['PATH'].split(os.pathsep)[0], str(self.output / 'offline-bin'))
         self.assertEqual(json.loads((self.output / 'sdk.provenance.json').read_text()), self.provenance)
         self.assertTrue((self.output / 'summary.json').exists())
+
+    def test_installed_cli_paths_removed_and_stub_fails_fast(self):
+        installed = self.root / 'installed'
+        installed.mkdir()
+        (installed / 'codex').write_text('not the test fixture')
+        env = {'PATH': str(installed) + os.pathsep + '/fake/dotnet-root'}
+        self.output.mkdir()
+        subject.isolate_default_cli(env, self.output)
+        self.assertNotIn(str(installed), env['PATH'].split(os.pathsep))
+        self.assertIn('/fake/dotnet-root', env['PATH'].split(os.pathsep))
+        if os.name != 'nt':
+            process = subprocess.run([str(self.output / 'offline-bin/codex'), 'exec'], capture_output=True)
+            self.assertEqual(process.returncode, 64)
+            self.assertIn(b'disabled', process.stderr)
+
+    def test_bundled_cli_is_rejected_before_running_mutants(self):
+        bundled = self.root / 'tests/bin/codex-runtime/1/linux-x64/bin'
+        bundled.mkdir(parents=True)
+        (bundled / 'codex').write_text('bundled cli')
+        with self.assertRaisesRegex(RuntimeError, 'bypasses offline'):
+            self.execute()
+        self.assertEqual(self.calls, [])
 
     def test_changed_input_rejects_summary(self):
         changed = dict(self.provenance, source_tree_sha256='changed')
