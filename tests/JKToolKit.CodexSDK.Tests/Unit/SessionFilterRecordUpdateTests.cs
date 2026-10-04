@@ -6,6 +6,15 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class SessionFilterRecordUpdateTests
 {
+    [Fact]
+    public async Task OpenEndedRanges_AreValidAtConstructionAndConsumption()
+    {
+        var date = DateTimeOffset.UtcNow;
+        await ConsumeWithEmptyDirectory(new SessionFilter(FromDate: date));
+        await ConsumeWithEmptyDirectory(new SessionFilter(ToDate: date));
+        await ConsumeWithEmptyDirectory(SessionFilter.None);
+    }
+
     [Theory]
     [InlineData(true, 2)]
     [InlineData(false, 2)]
