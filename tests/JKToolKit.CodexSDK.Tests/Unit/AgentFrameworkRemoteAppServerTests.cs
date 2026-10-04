@@ -16,6 +16,19 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRemoteAppServerTests
 {
+    [Fact]
+    public async Task RemoteConfiguration_RejectsMissingManagerAndEntryIdBeforeAttach()
+    {
+        var client = new CodexAgentClient();
+        var remote = new CodexAgentRemoteAppServerOptions { Manager = null!, EntryId = "entry" };
+        var options = new CodexAIAgentOptions { RemoteAppServer = remote };
+        var start = async () => await client.StartAppServerAsync(null, options, default);
+        await start.Should().ThrowAsync<ArgumentNullException>().WithParameterName("remote.Manager");
+        remote.Manager = new CodexRemoteAppServerManager(new InMemoryCodexRemoteAppServerRegistry());
+        remote.EntryId = " ";
+        await start.Should().ThrowAsync<ArgumentException>().WithParameterName("remote.EntryId");
+    }
+
     [Theory]
     [InlineData(true, true)]
     [InlineData(true, false)]

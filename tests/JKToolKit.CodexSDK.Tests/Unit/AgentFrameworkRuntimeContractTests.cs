@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using JKToolKit.CodexSDK.AgentFramework.Agents;
 using JKToolKit.CodexSDK.AgentFramework.Internal;
+using JKToolKit.CodexSDK.AgentFramework.Tools;
 using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Exec;
 using Microsoft.Agents.AI;
@@ -16,6 +17,23 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRuntimeContractTests
 {
+    [Fact]
+    public async Task ContextProvider_CanClearMessagesWhileRetainingUnrelatedChatOptions()
+    {
+        var pipeline = new CodexAgentContextPipeline(new CodexAgentClient().AsAIAgent(), null, [new EmptyContext()]);
+        var prepared = await pipeline.PrepareAsync(new(), [new(ChatRole.User, "discard")],
+            new ChatOptions { ModelId = "preserved", Temperature = 0.25f }, default);
+        prepared.Messages.Should().BeEmpty();
+        prepared.ChatOptions!.ModelId.Should().Be("preserved");
+        prepared.ChatOptions.Temperature.Should().Be(0.25f);
+    }
+
+    private sealed class EmptyContext : AIContextProvider
+    {
+        protected override ValueTask<AIContext> InvokingCoreAsync(InvokingContext context, CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(new AIContext());
+    }
+
     [Fact]
     public async Task EffectiveOptionsScopes_RestoreOuterOptionsAfterNestedInvocation()
     {
@@ -244,17 +262,20 @@ public sealed class AgentFrameworkRuntimeContractTests
         // This local process only performs the initialization handshake; it never calls Codex.
         var launch = OperatingSystem.IsWindows()
             ? CodexLaunch.FromFileName("pwsh").WithArgs("-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
-                "[Console]::In.ReadLine() | Out-Null; [Console]::Out.WriteLine('{\"id\":1,\"result\":{\"userAgent\":\"local-test\"}}'); [Console]::In.ReadToEnd() | Out-Null")
+                "$request = [Console]::In.ReadLine(); [Console]::Out.WriteLine('{\"id\":1,\"result\":{\"request\":' + $request + '}}'); [Console]::In.ReadToEnd() | Out-Null")
             : CodexLaunch.FromFileName("/bin/bash").WithArgs("-c",
-                "read -r request; printf '%s\\n' '{\"id\":1,\"result\":{\"userAgent\":\"local-test\"}}'; while read -r request; do :; done");
+                "read -r request; printf '{\"id\":1,\"result\":{\"request\":%s}}\\n' \"$request\"; while read -r request; do :; done");
         var client = new CodexAgentClient(builder => builder.ConfigureAppServer(options =>
         {
             options.Launch = launch;
             options.StartupTimeout = TimeSpan.FromSeconds(10);
             options.ShutdownTimeout = TimeSpan.FromSeconds(2);
         }));
-        await using var lease = await client.StartAppServerAsync(null, new(), default);
+        var tools = AgentFrameworkCodexToolAdapter.Create([AIFunctionFactory.Create(() => "ok", "read")]);
+        await using var lease = await client.StartAppServerAsync(tools.ApprovalHandler, new(), default);
         lease.Client.InitializeResult.Should().NotBeNull();
+        lease.Client.InitializeResult!.Raw.GetProperty("request").GetProperty("params").GetProperty("capabilities")
+            .GetProperty("experimentalApi").GetBoolean().Should().BeTrue();
         await lease.DisposeAsync();
         var requestAfterDisposal = () => lease.Client.StartThreadAsync(new ThreadStartOptions());
         await requestAfterDisposal.Should().ThrowAsync<ObjectDisposedException>();

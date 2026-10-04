@@ -20,6 +20,47 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AgentFrameworkRunIntegrationTests
 {
+    [Fact]
+    public async Task RunAsync_WithoutTools_SupportsFactoriesWithoutPerStartConfiguration()
+    {
+        await using var fixture = new Fixture();
+        using var exec = new CodexClient(new CodexClientOptions());
+        await using var sdk = new CodexSdk(exec, new PlainFactory(fixture), fixture);
+        var response = await sdk.AsAIAgent().RunAsync("hello");
+        response.Text.Should().Be("hello world");
+    }
+
+    private sealed class PlainFactory(Fixture fixture) : ICodexAppServerClientFactory
+    {
+        public Task<CodexAppServerClient> StartAsync(CancellationToken ct = default) => fixture.StartAsync(ct);
+    }
+
+    [Fact]
+    public async Task ResumedSession_ChangedTools_ExplainsHowToRecover()
+    {
+        await using var fixture = new Fixture();
+        var agent = fixture.Sdk.AsAIAgent();
+        var run = () => agent.RunAsync("hello", new CodexAgentSession { ThreadId = "existing", ToolSchemaHash = "different-schema" });
+        await run.Should().ThrowAsync<NotSupportedException>()
+            .WithMessage("*different tool schema hash*Create a new AgentSession to use a different tool set.*");
+        fixture.Rpcs.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_AgentSafetyPolicy_IsAppliedToCreatedToolSet()
+    {
+        await using var fixture = new Fixture { InvokeTool = true };
+        var calls = 0;
+        var tool = AIFunctionFactory.Create(() => { calls++; return "should not run"; }, "inspect_context");
+        var agent = fixture.Sdk.AsAIAgent(new CodexAIAgentOptions
+        {
+            Tools = [tool], SafetyOptions = new() { DeniedToolNames = new HashSet<string> { "inspect_context" } }
+        });
+        await agent.RunAsync("hello");
+        calls.Should().Be(0);
+        fixture.Rpcs.Single().ToolResponse!.Result!.Value.GetProperty("success").GetBoolean().Should().BeFalse();
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
