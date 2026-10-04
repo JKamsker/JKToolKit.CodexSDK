@@ -18,6 +18,10 @@ public sealed class StructuredOutputMutationBoundaryTests
     [InlineData("[1,2]\n{broken}", "[1,2]")]
     [InlineData("[1,2]\n{unterminated", "[1,2]")]
     [InlineData("{\"a\":{\"b\":1}}", "{\"a\":{\"b\":1}}")]
+    [InlineData("```text\n[1]\n```\n[2]\n```", "[1]")]
+    [InlineData("```json\n42\n```\n[1]", "[1]")]
+    [InlineData("```json\n{broken}\n```\n[1]", "[1]")]
+    [InlineData("prefix {\"\":1} suffix", "{\"\":1}")]
     public void Extraction_RespectsFencePreferenceAndLastCompleteTopLevelValue(string raw, string expected) =>
         Assert.Equal(expected, CodexStructuredJsonExtractor.ExtractJson(raw, true));
 
@@ -32,8 +36,15 @@ public sealed class StructuredOutputMutationBoundaryTests
     [InlineData("{broken}")]
     [InlineData("[1,]")]
     [InlineData("words")]
+    [InlineData("```\n```")]
     public void TolerantExtraction_DoesNotAcceptInvalidCandidates(string raw) =>
         Assert.ThrowsAny<JsonException>(() => CodexStructuredJsonExtractor.ExtractJson(raw, true));
+
+    [Fact]
+    public void NullText_IsRejectedAsAnArgument()
+    {
+        Assert.Equal("rawText", Assert.Throws<ArgumentNullException>(() => CodexStructuredJsonExtractor.ExtractJson(null!, true)).ParamName);
+    }
 
     [Fact]
     public void Schema_RequiresNestedPropertiesAndFlattensInheritedProperties()

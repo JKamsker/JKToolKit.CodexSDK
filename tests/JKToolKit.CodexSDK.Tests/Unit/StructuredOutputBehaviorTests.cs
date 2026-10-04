@@ -153,6 +153,8 @@ public sealed class StructuredOutputBehaviorTests
         var ex = await Assert.ThrowsAsync<CodexStructuredOutputParseException>(() => client.RunStructuredAsync<Answer>(new(Path.GetTempPath(), "prompt")));
         Assert.Equal("", ex.RawText);
         Assert.Null(ex.ExtractedJson);
+        Assert.Contains("did not emit a final message", ex.Message);
+        Assert.Contains("No final message", Assert.IsType<InvalidOperationException>(ex.InnerException).Message);
         Assert.True(Assert.Single(client.Handles).Disposed);
     }
 
@@ -172,12 +174,27 @@ public sealed class StructuredOutputBehaviorTests
     }
 
     [Fact]
+    public async Task AppServer_DirectRun_UsesCustomSerializerAndStrictExtraction()
+    {
+        var rpc = new ScriptedRpc(false, "{\"Text\":\"answer\"}", "prefix {\"Text\":\"answer\"}");
+        await using var fixture = new HighLevelTurnTests.Fixture(connection: rpc);
+        await using var client = await fixture.StartAsync();
+        var options = new TurnStartOptions { Input = [TurnInputItem.Text("original")] };
+        var structured = new CodexStructuredOutputOptions { SerializerOptions = new JsonSerializerOptions(), TolerantJsonExtraction = false };
+        var result = await client.RunTurnStructuredAsync<Answer>("t", options, structured);
+        Assert.Equal("answer", result.Value.Text);
+        Assert.True(rpc.Requests[0].GetProperty("outputSchema").GetProperty("properties").TryGetProperty("Text", out _));
+        await Assert.ThrowsAsync<CodexStructuredOutputParseException>(() => client.RunTurnStructuredAsync<Answer>("t", options, structured));
+    }
+
+    [Fact]
     public async Task Exec_ExhaustedRetries_PreservesParseFailureAndSession()
     {
         await using var client = new ScriptedExec("broken", "null");
         var ex = await Assert.ThrowsAsync<CodexStructuredOutputRetryFailedException>(() => client.RunStructuredWithRetryAsync<Answer>(
             new(Path.GetTempPath(), "original"), new CodexStructuredRetryOptions { MaxAttempts = 2 }));
         Assert.Equal(2, ex.Attempts);
+        Assert.Contains("after 2 attempts", ex.Message);
         Assert.Equal("session", ex.SessionId);
         Assert.Equal(client.LogPath, ex.LogPath);
         var parse = Assert.IsType<CodexStructuredOutputParseException>(ex.InnerException);
@@ -192,10 +209,12 @@ public sealed class StructuredOutputBehaviorTests
     {
         await using var client = new ScriptedExec("broken");
         using var cancellation = new CancellationTokenSource();
-        var progress = new CodexStructuredRunProgress { ParseFailed = (_, _) => cancellation.Cancel() };
+        var attempts = new List<int>();
+        var progress = new CodexStructuredRunProgress { AttemptStarting = (attempt, _, _) => attempts.Add(attempt), ParseFailed = (_, _) => cancellation.Cancel() };
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.RunStructuredWithRetryAsync<Answer>(new(Path.GetTempPath(), "original"), progress, ct: cancellation.Token));
         Assert.Single(client.Calls);
         Assert.True(Assert.Single(client.Handles).Disposed);
+        Assert.Equal(new[] { 1 }, attempts);
     }
 
     [Theory]
@@ -236,6 +255,8 @@ public sealed class StructuredOutputBehaviorTests
         Assert.Null(context.LogPath);
         Assert.Equal(1, context.Attempt);
         Assert.Equal("{\"text\":1}", context.ExtractedJson);
+        Assert.Equal(context.ExtractedJson, context.RawText);
+        Assert.IsType<CodexStructuredOutputParseException>(context.Exception);
         Assert.Null(options.OutputSchema);
     }
 
@@ -252,6 +273,11 @@ public sealed class StructuredOutputBehaviorTests
             new() { Input = [TurnInputItem.Text("original")] }, new() { MaxAttempts = 2 }));
         Assert.Equal(text, ex.RawText);
         Assert.Equal(2, rpc.Requests.Count);
+        if (text.Length == 0)
+        {
+            Assert.Contains("did not emit a final agent message", ex.Message);
+            Assert.Contains("No final message", Assert.IsType<InvalidOperationException>(ex.InnerException).Message);
+        }
     }
 
     [Fact]
@@ -266,6 +292,20 @@ public sealed class StructuredOutputBehaviorTests
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.Single(rpc.Requests);
+    }
+
+    [Fact]
+    public async Task InvalidThreadId_IsRejectedBeforeDtoSchemaGeneration()
+    {
+        var rpc = new ScriptedRpc(false);
+        await using var fixture = new HighLevelTurnTests.Fixture(connection: rpc);
+        await using var client = await fixture.StartAsync();
+        var options = new TurnStartOptions { Input = [TurnInputItem.Text("prompt")] };
+        var direct = await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredAsync<Dictionary<string, int>>(" ", options));
+        var retry = await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredWithRetryAsync<Dictionary<string, int>>(" ", options));
+        Assert.Equal("threadId", direct.ParamName);
+        Assert.Equal("threadId", retry.ParamName);
+        Assert.Empty(rpc.Requests);
     }
 
     [Fact]
@@ -309,18 +349,18 @@ public sealed class StructuredOutputBehaviorTests
     {
         await using var exec = new ScriptedExec();
         var options = new CodexSessionOptions(Path.GetTempPath(), "original");
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => exec.RunStructuredWithRetryAsync<Answer>(options, new CodexStructuredRetryOptions { MaxAttempts = 0 }));
-        await Assert.ThrowsAsync<ArgumentException>(() => exec.RunStructuredAsync<Answer>(default(SessionId), options));
-        await Assert.ThrowsAsync<ArgumentException>(() => exec.RunStructuredWithRetryAsync<Answer>(default(SessionId), options));
-        await Assert.ThrowsAsync<ArgumentException>(() => exec.RunStructuredWithRetryAsync<Answer>(default(SessionId), options, new CodexStructuredRunProgress()));
+        Assert.Contains("greater than zero", (await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => exec.RunStructuredWithRetryAsync<Answer>(options, new CodexStructuredRetryOptions { MaxAttempts = 0 }))).Message);
+        Assert.Contains("SessionId", (await Assert.ThrowsAsync<ArgumentException>(() => exec.RunStructuredAsync<Answer>(default(SessionId), options))).Message);
+        Assert.Contains("SessionId", (await Assert.ThrowsAsync<ArgumentException>(() => exec.RunStructuredWithRetryAsync<Answer>(default(SessionId), options))).Message);
+        Assert.Contains("SessionId", (await Assert.ThrowsAsync<ArgumentException>(() => exec.RunStructuredWithRetryAsync<Answer>(default(SessionId), options, new CodexStructuredRunProgress()))).Message);
         var rpc = new ScriptedRpc(false);
         await using var fixture = new HighLevelTurnTests.Fixture(connection: rpc);
         await using var client = await fixture.StartAsync();
         var turn = new TurnStartOptions { Input = [TurnInputItem.Text("original")] };
-        await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredAsync<Answer>(" ", turn));
-        await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredWithRetryAsync<Answer>(" ", turn));
+        Assert.Contains("ThreadId", (await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredAsync<Answer>(" ", turn))).Message);
+        Assert.Contains("ThreadId", (await Assert.ThrowsAsync<ArgumentException>(() => client.RunTurnStructuredWithRetryAsync<Answer>(" ", turn))).Message);
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, new() { MaxAttempts = -1 }));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, new() { MaxAttempts = 0 }));
+        Assert.Contains("greater than zero", (await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, new() { MaxAttempts = 0 }))).Message);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.RunTurnStructuredWithRetryAsync<Answer>("t", turn, ct: cancellation.Token));

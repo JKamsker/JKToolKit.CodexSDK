@@ -91,8 +91,26 @@ public sealed class StructuredOutputExecCaptureTests
             EventStreamOptions.Default,
             ct: CancellationToken.None);
 
-        await act.Should().ThrowAsync<JKToolKit.CodexSDK.StructuredOutputs.CodexStructuredOutputParseException>()
-            .WithMessage("*exited with code 2*");
+        var exception = (await act.Should().ThrowAsync<JKToolKit.CodexSDK.StructuredOutputs.CodexStructuredOutputParseException>()
+            .WithMessage("*exited with code 2*")).Which;
+        Assert.Equal("", exception.RawText);
+        Assert.Null(exception.ExtractedJson);
+        Assert.Contains("exited with code 2", Assert.IsType<InvalidOperationException>(exception.InnerException).Message);
+    }
+
+    [Theory]
+    [InlineData("message", "plain message", "plain message")]
+    [InlineData("command", "tool output", "assistant")]
+    [InlineData("message", " ", "assistant")]
+    public async Task Capture_OnlyAcceptsMessageItemsOrNonemptyJsonFallbacks(string kind, string text, string expected)
+    {
+        var session = new FakeSessionHandle(false,
+        [
+            new AgentMessageEvent { Type = "agent_message", Timestamp = DateTimeOffset.UtcNow, RawPayload = CreateEmptyPayload(), Text = "assistant" },
+            new TurnItemCompletedEvent { Type = "item_completed", Timestamp = DateTimeOffset.UtcNow, RawPayload = CreateEmptyPayload(), ItemType = kind, Text = text }
+        ]);
+        var raw = await StructuredOutputExecCapture.CaptureExecFinalTextAsync(session, EventStreamOptions.Default, CancellationToken.None);
+        Assert.Equal(expected, raw);
     }
 
     private static ResponseItemEvent CreateResponseItemAssistantMessage(string text) =>
