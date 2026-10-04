@@ -86,6 +86,8 @@ public sealed class MessageTransportCoverageTests
         var socket = new ScriptedSocket { CurrentState = state, FailClose = fail };
         var transport = Transport(socket);
         await transport.DisposeAsync();
+        socket.CloseCalls.Should().Be(1);
+        socket.DisposeCalls.Should().Be(1);
         await transport.DisposeAsync();
         await transport.Completion;
         socket.CloseCalls.Should().Be(1);
@@ -197,6 +199,30 @@ public sealed class MessageTransportCoverageTests
         await using var socket = Transport(new ScriptedSocket());
         await Assert.ThrowsAsync<ArgumentNullException>(() => line.SendAsync(null!, default));
         await Assert.ThrowsAsync<ArgumentNullException>(() => socket.SendAsync(null!, default));
+    }
+
+    [Fact]
+    public async Task LineTransport_WritesLineFlushesAndCompletesOnDispose()
+    {
+        using var stream = new MemoryStream();
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true);
+        var transport = new LineJsonRpcMessageTransport(new StringReader("first\nsecond\n"), writer);
+        await transport.SendAsync("message α", default);
+        Encoding.UTF8.GetString(stream.ToArray()).Should().Be("message α" + Environment.NewLine);
+        var lines = new List<string>();
+        await foreach (var line in transport.ReceiveAsync(default)) lines.Add(line);
+        lines.Should().Equal("first", "second");
+        await transport.Completion;
+        await transport.DisposeAsync();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await using var canceled = new LineJsonRpcMessageTransport(new ThrowingReader(new OperationCanceledException(cts.Token)), TextWriter.Null);
+        await using var reader = canceled.ReceiveAsync(cts.Token).GetAsyncEnumerator();
+        (await reader.MoveNextAsync()).Should().BeFalse();
+        await canceled.Completion;
+        var disposedBeforeRead = new LineJsonRpcMessageTransport(TextReader.Null, TextWriter.Null);
+        await disposedBeforeRead.DisposeAsync();
+        disposedBeforeRead.Completion.IsCompletedSuccessfully.Should().BeTrue();
     }
 
     private static WebSocketJsonRpcMessageTransport Transport(WebSocket socket) => new(socket, new Uri("ws://localhost"), NullLogger.Instance);

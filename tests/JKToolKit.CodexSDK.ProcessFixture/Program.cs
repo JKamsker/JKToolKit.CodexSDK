@@ -20,6 +20,20 @@ public static class Program
                 Console.Write($"{Environment.GetEnvironmentVariable("CODEX_TEST_VALUE")}|{Environment.CurrentDirectory}|α");
                 Console.Error.Write("stderr-β");
                 return 7;
+            case "stderr-boundary":
+                Console.Error.WriteLine();
+                Console.Error.WriteLine(new string('x', 4096));
+                Console.Out.WriteLine("ready");
+                await Console.In.ReadToEndAsync();
+                return 0;
+            case "tree":
+                var childInfo = new System.Diagnostics.ProcessStartInfo("dotnet");
+                childInfo.ArgumentList.Add(typeof(Program).Assembly.Location);
+                childInfo.ArgumentList.Add("wait");
+                childInfo.Environment["CODEX_TEST_MARKER"] = Environment.GetEnvironmentVariable("CODEX_TEST_CHILD_MARKER")!;
+                using (var child = System.Diagnostics.Process.Start(childInfo)!)
+                    await child.WaitForExitAsync();
+                return 0;
             case "stderr":
                 Console.Error.WriteLine();
                 for (var i = 0; i < 205; i++) Console.Error.WriteLine($"line-{i}");

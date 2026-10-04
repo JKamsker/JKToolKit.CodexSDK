@@ -80,6 +80,46 @@ public sealed class JsonlTailerBoundaryCoverageTests
         });
     }
 
+    [Fact]
+    public async Task CrLfSplitAfterMaximumLengthLine_IsAccepted()
+    {
+        var prefix = new string('p', 4094);
+        var line = new string('a', 1024 * 1024);
+        await WithFileAsync(prefix + "\n" + line + "\r\n", async (path, tailer) =>
+            (await ReadAsync(tailer, path, new(Follow: false))).Should().Equal(prefix, line));
+    }
+
+    [Fact]
+    public async Task GrowthBetweenEofAndMetadataCheck_ResumesReading()
+    {
+        await WithFileAsync("first\n", async (path, _) =>
+        {
+            var fs = new GrowingFileSystem(path);
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await using var reader = Create(fs).TailAsync(path, new(Follow: true), deadline.Token).GetAsyncEnumerator();
+            (await reader.MoveNextAsync()).Should().BeTrue();
+            reader.Current.Should().Be("first");
+            (await reader.MoveNextAsync()).Should().BeTrue();
+            reader.Current.Should().Be("second");
+            fs.Grew.Should().BeTrue();
+        });
+    }
+
+    private sealed class GrowingFileSystem(string file) : IFileSystem
+    {
+        public bool Grew { get; private set; }
+        public bool FileExists(string path) => File.Exists(path);
+        public bool DirectoryExists(string path) => Directory.Exists(path);
+        public IEnumerable<string> GetFiles(string directory, string searchPattern) => throw new NotSupportedException();
+        public Stream OpenRead(string path) => File.OpenRead(path);
+        public DateTime GetFileCreationTimeUtc(string path) => new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public long GetFileSize(string path)
+        {
+            if (!Grew) { File.AppendAllText(file, "second\n"); Grew = true; }
+            return new FileInfo(path).Length;
+        }
+    }
+
     private static JsonlTailer Create(IFileSystem fs) => new(fs, NullLogger<JsonlTailer>.Instance,
         Options.Create(new CodexClientOptions { TailPollInterval = TimeSpan.FromMilliseconds(50) }));
 

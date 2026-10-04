@@ -164,6 +164,62 @@ public sealed class ProcessLifetimeCoverageTests
             Options("wait") with { StartupTimeout = TimeSpan.Zero }, NullLogger.Instance, default));
     }
 
+    [Fact]
+    public async Task Stdio_ExactStderrBoundaryIsPreservedAndBlankLinesAreIgnored()
+    {
+        await using var process = await StdioProcess.StartAsync(Options("stderr-boundary"), NullLogger.Instance, default);
+        (await process.Stdout.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5))).Should().Be("ready");
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (process.StderrTail.Count == 0) await Task.Delay(10, deadline.Token);
+        process.StderrTail.Should().Equal(new string('x', 4096));
+    }
+
+    [Fact]
+    public async Task Stdio_DisposeSignalsEofAndAllowsGracefulOutput()
+    {
+        var process = await StdioProcess.StartAsync(Options("echo") with { ShutdownTimeout = TimeSpan.FromSeconds(5) }, NullLogger.Instance, default);
+        await process.Stdin.WriteAsync("pending input");
+        var output = process.Stdout.ReadToEndAsync();
+        await process.DisposeAsync();
+        (await output.WaitAsync(TimeSpan.FromSeconds(5))).Should().Be("pending input");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ProcessCleanup_TerminatesDescendants(bool stdio)
+    {
+        var marker = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".child.pid");
+        Process? child = null;
+        StdioProcess? process = null;
+        using var cts = new CancellationTokenSource();
+        Task<RemoteProcessResult>? run = null;
+        try
+        {
+            if (stdio)
+                process = await StdioProcess.StartAsync(Options("tree") with { Environment = new Dictionary<string, string> { ["CODEX_TEST_CHILD_MARKER"] = marker } }, NullLogger.Instance, default);
+            else
+                run = new RemoteProcessRunner(NullLogger.Instance).RunAsync(Fixture("tree").WithEnvironment("CODEX_TEST_CHILD_MARKER", marker), Timeout.InfiniteTimeSpan, cts.Token);
+            await WaitForMarkerAsync(marker);
+            child = Process.GetProcessById(int.Parse(await File.ReadAllTextAsync(marker)));
+            if (stdio) await process!.DisposeAsync();
+            else
+            {
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run!);
+            }
+            await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            if (child is not null) { if (!child.HasExited) child.Kill(entireProcessTree: true); child.Dispose(); }
+            if (process is not null) await process.DisposeAsync();
+            cts.Cancel();
+            if (run is not null) { try { await run.WaitAsync(TimeSpan.FromSeconds(5)); } catch { } }
+            File.Delete(marker);
+        }
+    }
+
     internal static async Task WaitForMarkerAsync(string marker)
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
