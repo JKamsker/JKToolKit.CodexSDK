@@ -83,6 +83,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.ThreadShellCommandAsync(new() { ThreadId = " ", Command = "echo hello" }));
         yield return Invalid(c => c.ThreadShellCommandAsync(new() { ThreadId = "thread-1", Command = " " }));
         yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = " " }));
+        yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", GitInfo = new() { UpdateOriginUrl = true, OriginUrl = " " } }));
         yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", UpdateProjectId = true, ClearProjectId = true }));
         yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", UpdateProjectId = true, ProjectId = " " }));
         yield return Invalid(c => c.UpdateThreadSettingsAsync(new() { ThreadId = " " }));
@@ -117,6 +118,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.StopThreadRealtimeAsync("thread-1"));
         yield return Invalid(c => c.CleanThreadBackgroundTerminalsAsync("thread-1"));
         yield return Invalid(c => c.ListCollaborationModesAsync());
+        yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", UpdateProjectId = true, ProjectId = "project-1" }));
         yield return Invalid(c => c.AddEnvironmentAsync(new() { EnvironmentId = "env", ExecServerUrl = "https://example.test" }));
     }
 

@@ -8,6 +8,8 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 public sealed partial class AppServerResilientTransportCoverageTests
 {
     [Theory]
+    [InlineData("enablement", "{}") ]
+    [InlineData("enablement", "{\"enablement\":null}") ]
     [InlineData("model", "{\"data\":[42]}")]
     [InlineData("feature", "{\"data\":[42]}")]
     [InlineData("write", "{\"status\":\"future\",\"version\":\"v\",\"filePath\":\"/config\"}")]
@@ -25,6 +27,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         await using var client = await ResilientCodexAppServerClient.StartAsync(new Factory(rpc));
         Func<Task> action = operation switch
         {
+            "enablement" => () => client.SetExperimentalFeatureEnablementAsync(new() { Enablement = new Dictionary<string, bool> { ["feature"] = true } }),
             "model" => () => client.ListModelsAsync(),
             "feature" => () => client.ListExperimentalFeaturesAsync(),
             "write" => () => client.WriteConfigValueAsync(ValidWrite()),
