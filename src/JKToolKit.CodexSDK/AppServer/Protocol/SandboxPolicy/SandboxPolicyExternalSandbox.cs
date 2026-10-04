@@ -15,6 +15,7 @@ public abstract partial record class SandboxPolicy
     public sealed record class ExternalSandbox : SandboxPolicy
     {
         /// <inheritdoc />
+        [JsonPropertyName(JsonFieldNames.Type)]
         public override string Type => "externalSandbox";
 
         /// <summary>

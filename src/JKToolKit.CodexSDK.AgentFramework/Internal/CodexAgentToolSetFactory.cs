@@ -41,7 +41,7 @@ internal static class CodexAgentToolSetFactory
         bool hasRunTools,
         string? toolSchemaHash)
     {
-        if (session.ThreadId is null)
+        if (string.IsNullOrWhiteSpace(session.ThreadId))
         {
             return;
         }

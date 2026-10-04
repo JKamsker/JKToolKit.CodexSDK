@@ -7,7 +7,7 @@ namespace JKToolKit.CodexSDK.Infrastructure.JsonRpc;
 
 internal sealed partial class JsonRpcConnection
 {
-    private async Task WriteAsync(object payload, CancellationToken ct)
+    private async Task WriteAsync(object payload, CancellationToken ct, Action? onDispatch = null)
     {
         ThrowIfFaulted();
         ct.ThrowIfCancellationRequested();
@@ -20,6 +20,7 @@ internal sealed partial class JsonRpcConnection
             ThrowIfFaulted();
 
             // Don't cancel mid-write. Callers can cancel waiting for responses, but the wire must remain well-formed.
+            onDispatch?.Invoke();
             await _transport.SendAsync(json, CancellationToken.None).ConfigureAwait(false);
         }
         finally
@@ -30,6 +31,8 @@ internal sealed partial class JsonRpcConnection
 
     private void ThrowIfFaulted()
     {
+        ObjectDisposedException.ThrowIf(_disposeCts.IsCancellationRequested, this);
+
         if (_fault is not null)
         {
             throw new JsonRpcProtocolException("JSON-RPC connection is faulted.", _fault);
@@ -75,7 +78,8 @@ internal sealed partial class JsonRpcConnection
             return new JsonRpcError(JsonRpcErrorCodes.ServerError, JsonRpcProtocolConstants.RemoteErrorMessage, Data: errorProp.Clone());
         }
 
-        var code = errorProp.TryGetProperty("code", out var codeProp) && codeProp.TryGetInt32(out var c)
+        var code = errorProp.TryGetProperty("code", out var codeProp) &&
+            codeProp.ValueKind == JsonValueKind.Number && codeProp.TryGetInt32(out var c)
             ? c
             : JsonRpcErrorCodes.ServerError;
 

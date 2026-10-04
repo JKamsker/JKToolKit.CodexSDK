@@ -51,6 +51,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK\JKToolKit.CodexSDK.csproj" />
+    <ProjectReference Include="..\JKToolKit.CodexSDK.ProcessFixture\JKToolKit.CodexSDK.ProcessFixture.csproj" />
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK.Demo\JKToolKit.CodexSDK.Demo.csproj" />
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK.AgentFramework\JKToolKit.CodexSDK.AgentFramework.csproj" />
     <ProjectReference Include="..\..\src\JKToolKit.CodexSDK.SemanticKernel\JKToolKit.CodexSDK.SemanticKernel.csproj" />

@@ -30,6 +30,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
     private SessionExitReason _exitReason = SessionExitReason.Unknown;
     private List<Action<int>> _exitCallbacks = new();
     private int _idleTerminationStarted;
+    private int _customTerminationsInProgress;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CodexSessionHandle"/> class.
@@ -149,7 +150,9 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
                 ? pipeline.ApplyIdleTimeout(filteredStream, _idleTimeout.Value, pipelineCts, cancellationToken)
                 : filteredStream;
 
-            await using var enumerator = finalStream.WithCancellation(pipelineCts.Token).GetAsyncEnumerator();
+            // Each stage already has its token. Overriding the final iterator token would
+            // merge internal idle cancellation into ApplyIdleTimeout's caller token.
+            await using var enumerator = finalStream.GetAsyncEnumerator();
             while (true)
             {
                 CodexEvent current;
@@ -218,13 +221,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
             throw new InvalidOperationException("Process launcher is not available to terminate the process.");
         }
 
-        var code = await _processLauncher
-            .TerminateProcessAsync(_process, _processExitTimeout, cancellationToken)
-            .ConfigureAwait(false);
-
-        // Ensure exit callbacks are fired (guarded for idempotency)
-        NotifyExitSafe(code, SessionExitReason.Custom);
-        return code;
+        return await TerminateAndNotifyCustomExitAsync(cancellationToken, useProcessExitCode: false).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -245,12 +242,7 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
                 {
                     try
                     {
-                        await _processLauncher.TerminateProcessAsync(
-                            _process,
-                            _processExitTimeout,
-                            CancellationToken.None).ConfigureAwait(false);
-                        // Make sure callbacks run even if Exited didn't fire for any reason
-                        NotifyExitSafe(_process.HasExited ? _process.ExitCode : -1, SessionExitReason.Custom);
+                        await TerminateAndNotifyCustomExitAsync(CancellationToken.None, useProcessExitCode: true).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -276,6 +268,22 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
         DeleteTempFilesBestEffort();
 
         await Task.CompletedTask;
+    }
+
+    private async Task<int> TerminateAndNotifyCustomExitAsync(CancellationToken cancellationToken, bool useProcessExitCode)
+    {
+        Interlocked.Increment(ref _customTerminationsInProgress);
+        try
+        {
+            var code = await _processLauncher!.TerminateProcessAsync(_process!, _processExitTimeout, cancellationToken).ConfigureAwait(false);
+            // Publish the final reason before clearing intent, including when Exited is still queued.
+            NotifyExitSafe(useProcessExitCode ? (_process!.HasExited ? _process.ExitCode : -1) : code, SessionExitReason.Custom);
+            return code;
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _customTerminationsInProgress);
+        }
     }
 
     private void DeleteTempFilesBestEffort()
@@ -339,6 +347,16 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
             if (_exitSignaled)
             {
                 return;
+            }
+
+            // Process.Exited can run before the terminating launcher returns. Preserve the
+            // reason that initiated termination even when the process event wins that race.
+            if (reason == SessionExitReason.Success)
+            {
+                if (Volatile.Read(ref _idleTerminationStarted) != 0)
+                    reason = SessionExitReason.Timeout;
+                else if (Volatile.Read(ref _customTerminationsInProgress) != 0)
+                    reason = SessionExitReason.Custom;
             }
 
             _exitSignaled = true;

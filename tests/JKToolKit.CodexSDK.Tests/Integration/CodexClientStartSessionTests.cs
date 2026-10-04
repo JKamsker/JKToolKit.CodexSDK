@@ -143,9 +143,152 @@ public class CodexClientStartSessionTests
         }
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task StartFailure_WithAndWithoutCapturedId_PreservesDiscoveryCauseAndCleansSchema(bool emitId, bool fallback)
+    {
+        using var process = emitId ? FakeProcessLauncher.CreateLongLivedProcess("captured") : FakeProcessLauncher.CreateShortProcess();
+        var launcher = new FakeProcessLauncher(process);
+        var original = new IOException("lookup-failure");
+        var locator = new FakeSessionLocator(throwOnWait: true) { LookupFailure = original };
+        var clientOptions = Options.Create(new CodexClientOptions
+        {
+            StartTimeout = TimeSpan.FromMilliseconds(250), EnableUncorrelatedNewSessionFileDiscovery = fallback,
+            EnableDiagnosticCapture = true
+        });
+        using var client = new CodexClient(clientOptions, launcher, locator, new FakeTailer([]),
+            pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: LoggerFactory);
+        var sessionOptions = new CodexSessionOptions(Path.GetTempPath(), "prompt")
+        {
+            OutputSchema = JKToolKit.CodexSDK.StructuredOutputs.CodexOutputSchema.FromJson(System.Text.Json.JsonSerializer.SerializeToElement(new { type = "object" }))
+        };
+        var failure = await Assert.ThrowsAnyAsync<Exception>(() => client.StartSessionAsync(sessionOptions));
+        if (emitId && fallback) Assert.IsType<TimeoutException>(failure);
+        else
+        {
+            Assert.IsType<InvalidOperationException>(failure);
+            Assert.Contains("Failed to locate", failure.Message);
+            Assert.Contains("redacted", failure.Message);
+            if (emitId) Assert.Same(original, failure.InnerException);
+            else if (fallback) Assert.IsType<TimeoutException>(failure.InnerException);
+        }
+        Assert.NotNull(launcher.LastOptions!.OutputSchema);
+        Assert.False(File.Exists(launcher.LastOptions.OutputSchema!.FilePath));
+        Assert.True(launcher.TerminateCalls > 0);
+    }
+
+    [Fact]
+    public async Task CapturedIdLookupFailure_UsesOptedInDiscoveryAndMetadata()
+    {
+        using var process = FakeProcessLauncher.CreateLongLivedProcess("captured");
+        var launcher = new FakeProcessLauncher(process);
+        var locator = new FakeSessionLocator("fallback.jsonl") { LookupFailure = new IOException("missing captured log") };
+        using var client = new CodexClient(Options.Create(new CodexClientOptions { EnableUncorrelatedNewSessionFileDiscovery = true }),
+            launcher, locator, new FakeTailer(["""{"timestamp":"2025-11-20T22:00:00Z","type":"session_meta","payload":{"id":"discovered"}}"""]),
+            pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: LoggerFactory);
+        await using var handle = await client.StartSessionAsync(new(Path.GetTempPath(), "prompt"));
+        Assert.Equal("discovered", handle.Info.Id.Value);
+        Assert.Equal("fallback.jsonl", handle.Info.LogPath);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MetadataWait_DistinguishesTimeoutFromProcessExit_AndCleansProcess(bool exitEarly)
+    {
+        using var process = exitEarly ? FakeProcessLauncher.CreateShortProcess() : FakeProcessLauncher.CreateLongLivedProcess("captured");
+        var launcher = new FakeProcessLauncher(process);
+        using var client = new CodexClient(Options.Create(new CodexClientOptions
+        {
+            StartTimeout = TimeSpan.FromMilliseconds(100), EnableUncorrelatedNewSessionFileDiscovery = true
+        }), launcher, new FakeSessionLocator("log"), new FakeTailer([]) { WaitAfterLines = true },
+            pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: LoggerFactory);
+        var start = () => client.StartSessionAsync(new(Path.GetTempPath(), "prompt"));
+        if (exitEarly)
+        {
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(start);
+            Assert.Contains("exited with code 0", failure.Message);
+        }
+        else
+        {
+            var failure = await Assert.ThrowsAsync<TimeoutException>(start);
+            Assert.Contains("session_meta", failure.Message);
+        }
+        Assert.True(launcher.TerminateCalls > 0);
+    }
+
+    [Theory]
+    [InlineData("capture")]
+    [InlineData("lookup")]
+    [InlineData("discovery")]
+    public async Task StartCancellation_PropagatesAtEveryDiscoveryPhase_AndTerminatesChild(string phase)
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var process = phase == "capture" ? FakeProcessLauncher.CreateSilentProcess() : phase == "lookup"
+            ? FakeProcessLauncher.CreateLongLivedProcess("captured") : FakeProcessLauncher.CreateShortProcess();
+        using var observer = phase == "discovery" ? null : Process.GetProcessById(process.Id);
+        var launcher = new FakeProcessLauncher(process);
+        var locator = new FakeSessionLocator("log");
+        if (phase == "capture") launcher.AfterStart = cancellation.Cancel;
+        if (phase == "lookup") locator.LookupOverride = token => { cancellation.Cancel(); return Task.FromCanceled<string>(token); };
+        if (phase == "discovery") locator.DiscoveryOverride = token => CancelDiscoveryAsync(token);
+        using var client = new CodexClient(Options.Create(new CodexClientOptions { EnableUncorrelatedNewSessionFileDiscovery = phase == "discovery" }),
+            launcher, locator, new FakeTailer([]), pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: LoggerFactory);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.StartSessionAsync(new(Path.GetTempPath(), "prompt"), cancellation.Token));
+        Assert.Equal(1, launcher.TerminateCalls);
+        if (observer is not null) await observer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task<string> CancelDiscoveryAsync(CancellationToken token)
+        {
+            await Task.Delay(300);
+            cancellation.Cancel();
+            token.ThrowIfCancellationRequested();
+            return "unreachable";
+        }
+    }
+
+    [Fact]
+    public async Task SessionIdCaptureTimeout_UsesOptedInDiscovery_AfterSilentChildProducesNoId()
+    {
+        using var process = FakeProcessLauncher.CreateSilentProcess();
+        var launcher = new FakeProcessLauncher(process);
+        using var client = new CodexClient(Options.Create(new CodexClientOptions
+        {
+            StartTimeout = TimeSpan.FromMilliseconds(100), EnableUncorrelatedNewSessionFileDiscovery = true
+        }), launcher, new FakeSessionLocator("discovered-log"),
+            new FakeTailer(["""{"timestamp":"2025-11-20T22:00:00Z","type":"session_meta","payload":{"id":"discovered"}}"""]),
+            pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: LoggerFactory);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        await using var handle = await client.StartSessionAsync(new(Path.GetTempPath(), "prompt"), deadline.Token);
+        Assert.Equal("discovered", handle.Info.Id.Value);
+        Assert.Equal("discovered-log", handle.Info.LogPath);
+    }
+
+    [Fact]
+    public async Task FailedGracefulCleanup_StillKillsChild_AndPreservesOriginalStartFailure()
+    {
+        using var process = FakeProcessLauncher.CreateLongLivedProcess("captured");
+        using var observer = Process.GetProcessById(process.Id);
+        var launcher = new FakeProcessLauncher(process) { TerminationFailure = new IOException("termination failed") };
+        using var client = new CodexClient(Options.Create(new CodexClientOptions()), launcher,
+            new FakeSessionLocator("log") { LookupFailure = new IOException("lookup failed") }, new FakeTailer([]),
+            pathProvider: new FakePathProvider(Path.GetTempPath()), loggerFactory: LoggerFactory);
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => client.StartSessionAsync(new(Path.GetTempPath(), "prompt")));
+        Assert.Equal("lookup failed", failure.InnerException!.Message);
+        await observer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(1, launcher.TerminateCalls);
+    }
+
     private sealed class FakeProcessLauncher : ICodexProcessLauncher
     {
         private readonly Process _process;
+        public CodexSessionOptions? LastOptions;
+        public int TerminateCalls;
+        public Action? AfterStart;
+        public Exception? TerminationFailure;
 
         public FakeProcessLauncher(Process process)
         {
@@ -154,6 +297,8 @@ public class CodexClientStartSessionTests
 
         public Task<Process> StartSessionAsync(CodexSessionOptions options, CodexClientOptions clientOptions, CancellationToken cancellationToken)
         {
+            LastOptions = options;
+            AfterStart?.Invoke();
             return Task.FromResult(_process);
         }
 
@@ -169,9 +314,12 @@ public class CodexClientStartSessionTests
 
         public Task<int> TerminateProcessAsync(Process process, TimeSpan timeout, CancellationToken cancellationToken)
         {
+            TerminateCalls++;
+            if (TerminationFailure is not null) throw TerminationFailure;
             if (!process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
+                process.WaitForExit(5000);
             }
             return Task.FromResult(process.ExitCode);
         }
@@ -207,6 +355,18 @@ public class CodexClientStartSessionTests
             return Process.Start(psi)!;
         }
 
+        public static Process CreateSilentProcess()
+        {
+            var start = new ProcessStartInfo
+            {
+                FileName = OperatingSystem.IsWindows() ? "powershell.exe" : "/bin/sh",
+                UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
+            };
+            start.ArgumentList.Add(OperatingSystem.IsWindows() ? "-Command" : "-c");
+            start.ArgumentList.Add(OperatingSystem.IsWindows() ? "[Console]::ReadLine() | Out-Null" : "read ignored");
+            return Process.Start(start)!;
+        }
+
         public static Process CreateShortProcess()
         {
             var isWindows = OperatingSystem.IsWindows();
@@ -235,6 +395,9 @@ public class CodexClientStartSessionTests
     {
         private readonly string _path;
         private readonly bool _throwOnWait;
+        public Exception? LookupFailure;
+        public Func<CancellationToken, Task<string>>? LookupOverride;
+        public Func<CancellationToken, Task<string>>? DiscoveryOverride;
 
         public FakeSessionLocator(string path)
         {
@@ -249,6 +412,7 @@ public class CodexClientStartSessionTests
 
         public Task<string> WaitForNewSessionFileAsync(string sessionsRoot, DateTimeOffset startTime, TimeSpan timeout, CancellationToken cancellationToken)
         {
+            if (DiscoveryOverride is not null) return DiscoveryOverride(cancellationToken);
             if (_throwOnWait)
             {
                 throw new TimeoutException("No session file");
@@ -264,7 +428,8 @@ public class CodexClientStartSessionTests
 
         public Task<string> WaitForSessionLogByIdAsync(SessionId sessionId, string sessionsRoot, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            return Task.FromResult(_path);
+            if (LookupOverride is not null) return LookupOverride(cancellationToken);
+            return LookupFailure is null ? Task.FromResult(_path) : Task.FromException<string>(LookupFailure);
         }
 
         public Task<string> ValidateLogFileAsync(string logFilePath, CancellationToken cancellationToken)
@@ -281,6 +446,7 @@ public class CodexClientStartSessionTests
     private sealed class FakeTailer : IJsonlTailer
     {
         private readonly IReadOnlyList<string> _lines;
+        public bool WaitAfterLines;
 
         public FakeTailer(IEnumerable<string> lines)
         {
@@ -295,6 +461,7 @@ public class CodexClientStartSessionTests
                 yield return line;
                 await Task.Yield();
             }
+            if (WaitAfterLines) await Task.Delay(Timeout.Infinite, cancellationToken);
         }
     }
 

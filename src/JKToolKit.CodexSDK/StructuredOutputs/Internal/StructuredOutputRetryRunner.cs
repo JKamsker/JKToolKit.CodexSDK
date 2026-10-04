@@ -98,7 +98,10 @@ internal static class StructuredOutputRetryRunner
                     });
 
                     resumeOptions = effectiveBase.Clone();
-                    resumeOptions.Prompt = retryPrompt;
+                    if (resumeOptions.UsesPromptArgumentMode)
+                        resumeOptions.PromptArgument = retryPrompt;
+                    else
+                        resumeOptions.Prompt = retryPrompt;
                 }
 
                 // Capture a pre-resume boundary, otherwise a fast resume could write all new events before we sample the offset.

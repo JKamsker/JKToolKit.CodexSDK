@@ -75,7 +75,8 @@ public static class CodexJsonSchemaGenerator
                     };
                     obj.Clear();
                     obj["anyOf"] = anyOf;
-                    return;
+                    // The composed schema may contain inline child schemas that also
+                    // need their OpenAPI nullability converted to JSON Schema.
                 }
             }
         }

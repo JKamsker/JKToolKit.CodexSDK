@@ -403,7 +403,7 @@ internal static partial class AppServerNotificationMapper
     }
 
     private static string? GetStringOrNull(JsonElement obj, string propertyName) =>
-        obj.TryGetProperty(propertyName, out var prop) && prop.ValueKind is JsonValueKind.String
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propertyName, out var prop) && prop.ValueKind is JsonValueKind.String
             ? prop.GetString()
             : null;
 
@@ -452,7 +452,7 @@ internal static partial class AppServerNotificationMapper
 
     private static IReadOnlyList<string> GetStringArray(JsonElement obj, string propertyName)
     {
-        if (!obj.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.Array)
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.Array)
         {
             return Array.Empty<string>();
         }

@@ -42,26 +42,24 @@ public sealed record SessionFilter(
     /// </summary>
     public DateTimeOffset? FromDate { get; init; } = FromDate;
 
-    private readonly DateTimeOffset? _toDate = ToDate;
-
     /// <summary>
     /// Gets the optional end date for filtering sessions.
     /// </summary>
-    /// <exception cref="ArgumentException">
-    /// Thrown when ToDate is earlier than FromDate.
-    /// </exception>
-    public DateTimeOffset? ToDate
-    {
-        get => _toDate;
-        init
-        {
-            if (value.HasValue && FromDate.HasValue && value.Value < FromDate.Value)
-                throw new ArgumentException(
-                    $"ToDate ({value.Value:O}) must be on or after FromDate ({FromDate.Value:O}).",
-                    nameof(ToDate));
+    /// <remarks>
+    /// The completed date range is validated when listing sessions, allowing both dates
+    /// to be assigned in either order in object initializers and record updates.
+    /// </remarks>
+    public DateTimeOffset? ToDate { get; init; } = ValidateDateRange(FromDate, ToDate);
 
-            _toDate = value;
-        }
+    internal void Validate() => ValidateDateRange(FromDate, ToDate);
+
+    private static DateTimeOffset? ValidateDateRange(DateTimeOffset? fromDate, DateTimeOffset? toDate)
+    {
+        if (toDate.HasValue && fromDate.HasValue && toDate.Value < fromDate.Value)
+            throw new ArgumentException(
+                $"ToDate ({toDate.Value:O}) must be on or after FromDate ({fromDate.Value:O}).",
+                nameof(ToDate));
+        return toDate;
     }
 
     /// <summary>

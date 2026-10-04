@@ -157,6 +157,9 @@ public class CodexClientResumeSessionTests
 
         try
         {
+            using var scope = new CurrentDirectoryScope(cwd);
+            // Use the OS-reported cwd (macOS resolves /var to /private/var).
+            cwd = Directory.GetCurrentDirectory();
             var logs = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase)
             {
                 [newestPath] = new[]
@@ -184,7 +187,6 @@ public class CodexClientResumeSessionTests
                 LoggerFactory.CreateLogger<CodexClient>(),
                 LoggerFactory);
 
-            using var scope = new CurrentDirectoryScope(cwd);
             await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent());
             var events = await handle.GetEventsAsync(EventStreamOptions.Default, CancellationToken.None).ToListAsync();
 
@@ -214,6 +216,9 @@ public class CodexClientResumeSessionTests
 
         try
         {
+            using var scope = new CurrentDirectoryScope(cwd);
+            // Use the OS-reported cwd (macOS resolves /var to /private/var).
+            cwd = Directory.GetCurrentDirectory();
             var locator = new StubSessionLocator(
                 insidePath,
                 listedSessions:
@@ -241,7 +246,6 @@ public class CodexClientResumeSessionTests
                 LoggerFactory.CreateLogger<CodexClient>(),
                 LoggerFactory);
 
-            using var scope = new CurrentDirectoryScope(cwd);
             await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent());
 
             Assert.Equal(insideId, handle.Info.Id);
@@ -268,6 +272,9 @@ public class CodexClientResumeSessionTests
 
         try
         {
+            using var scope = new CurrentDirectoryScope(cwd);
+            // Use the OS-reported cwd (macOS resolves /var to /private/var).
+            cwd = Directory.GetCurrentDirectory();
             var openAiPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime.AddMinutes(1), openAiId);
             var locator = new StubSessionLocator(
                 openAiPath,
@@ -296,7 +303,6 @@ public class CodexClientResumeSessionTests
                 LoggerFactory.CreateLogger<CodexClient>(),
                 LoggerFactory);
 
-            using var scope = new CurrentDirectoryScope(cwd);
             await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent());
 
             Assert.Equal(openAiId, handle.Info.Id);

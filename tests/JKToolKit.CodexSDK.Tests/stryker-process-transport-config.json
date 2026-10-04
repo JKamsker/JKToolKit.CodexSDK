@@ -1,0 +1,26 @@
+{
+  "stryker-config": {
+    "project": "JKToolKit.CodexSDK.csproj",
+    "configuration": "Release",
+    "mutate": [
+      "**/Infrastructure/Stdio/StdioProcess.cs",
+      "**/AppServer/Remote/Internal/Infrastructure/RemoteProcessRunner.cs",
+      "**/Infrastructure/JsonRpc/LineJsonRpcMessageTransport.cs",
+      "**/Infrastructure/JsonRpc/WebSocketJsonRpcMessageTransport.cs"
+    ],
+    "test-case-filter": "FullyQualifiedName~ProcessLifetimeCoverageTests|FullyQualifiedName~MessageTransportCoverageTests|FullyQualifiedName~ProcessLauncherCoverageTests",
+    "concurrency": 2,
+    "coverage-analysis": "perTest",
+    "additional-timeout": 3000,
+    "reporters": [
+      "json",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 95,
+      "low": 80,
+      "break": 0
+    },
+    "break-on-initial-test-failure": true
+  }
+}

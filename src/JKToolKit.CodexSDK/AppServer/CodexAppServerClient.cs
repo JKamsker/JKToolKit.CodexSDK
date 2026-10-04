@@ -168,7 +168,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
             registerTurnHandle: _core.RegisterTurnHandle,
             removeTurnHandle: _core.RemoveTurnHandle,
             readOnlyAccessOverridesSupport: _readOnlyAccessOverridesSupport,
-            experimentalApiEnabled: experimentalApiEnabled);
+            experimentalApiEnabled: experimentalApiEnabled,
+            trackTurnStart: _core.TrackTurnStart,
+            sendTrackedRequestAsync: _core.SendRequestAsync);
     }
 
     internal CodexAppServerClient(
@@ -430,6 +432,9 @@ public sealed partial class CodexAppServerClient : IAsyncDisposable
     /// </summary>
     public Task<CodexTurnHandle> StartTurnAsync(string threadId, TurnStartOptions options, CancellationToken ct = default) =>
         _turnsClient.StartTurnAsync(threadId, options, ct);
+
+    internal Task<CodexTurnHandle> StartOwnedTurnAsync(string threadId, TurnStartOptions options, Action onIndeterminateStart) =>
+        _turnsClient.StartTurnAsync(threadId, options, CancellationToken.None, onIndeterminateStart);
 
     /// <summary>
     /// Steers an in-progress turn by appending input items.

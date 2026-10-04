@@ -94,8 +94,10 @@ public sealed class CodexClientLiveResumeBootstrapTests
         Assert.Contains("started fresh", File.ReadAllText(newLogPath));
     }
 
-    [Fact]
-    public async Task ResumeSessionAsync_WhenCapturedIdCannotBeResolved_FallsBackToUncorrelatedDiscovery()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ResumeSessionAsync_WhenCapturedIdCannotBeResolved_FallsBackToUncorrelatedDiscovery(bool useSessionIdOverload)
     {
         using var fixture = new ResumeFixture();
         var newSessionId = SessionId.Parse("33333333-3333-3333-3333-333333333333");
@@ -128,7 +130,9 @@ public sealed class CodexClientLiveResumeBootstrapTests
             NullLoggerFactory.Instance);
 
         var options = new CodexSessionOptions(fixture.WorkingDirectory, "resume prompt");
-        await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent(), options);
+        await using var handle = useSessionIdOverload
+            ? await client.ResumeSessionAsync(newSessionId, options)
+            : await client.ResumeSessionAsync(CodexResumeTarget.MostRecent(), options);
 
         Assert.Equal(newSessionId, handle.Info.Id);
         Assert.Equal(newLogPath, handle.Info.LogPath);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using JKToolKit.CodexSDK.Infrastructure.Json;
 
@@ -180,19 +181,25 @@ internal static class CodexAppServerClientConfigReadParsers
             return null;
         }
 
-        if (p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out var d))
+        double seconds;
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out seconds) ||
+            p.ValueKind == JsonValueKind.String && double.TryParse(
+                p.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds))
         {
-            if (d < 0)
+            if (!double.IsFinite(seconds) || seconds < 0)
             {
                 return null;
             }
 
-            return TimeSpan.FromSeconds(d);
-        }
-
-        if (p.ValueKind == JsonValueKind.String && double.TryParse(p.GetString(), out var s) && s >= 0)
-        {
-            return TimeSpan.FromSeconds(s);
+            try
+            {
+                return TimeSpan.FromSeconds(seconds);
+            }
+            catch (OverflowException)
+            {
+                // Invalid optional timeout values must not discard the rest of config/read.
+                return null;
+            }
         }
 
         return null;

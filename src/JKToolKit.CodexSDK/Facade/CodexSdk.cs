@@ -19,6 +19,13 @@ public sealed class CodexSdk : IAsyncDisposable
 {
     private readonly ICodexClient _exec;
     private readonly bool _ownsExec;
+    private int _disposed;
+
+    /// <summary>Gets high-level thread operations on an SDK-owned shared connection.</summary>
+    public CodexThreads Threads { get; }
+
+    /// <summary>Gets executable and connected-server diagnostics.</summary>
+    public CodexRuntime Runtime { get; }
 
     /// <summary>
     /// Gets the facade for the <c>codex exec</c> mode.
@@ -50,7 +57,9 @@ public sealed class CodexSdk : IAsyncDisposable
         ICodexClient exec,
         ICodexAppServerClientFactory appServer,
         ICodexMcpServerClientFactory mcpServer,
-        bool ownsExec)
+        bool ownsExec,
+        CodexAppServerClientOptions? runtimeOptions = null,
+        IReadOnlyList<ICodexTurnMiddleware>? middleware = null)
     {
         ArgumentNullException.ThrowIfNull(exec);
         ArgumentNullException.ThrowIfNull(appServer);
@@ -62,6 +71,9 @@ public sealed class CodexSdk : IAsyncDisposable
         Exec = new CodexExecFacade(exec);
         AppServer = new CodexAppServerFacade(appServer);
         McpServer = new CodexMcpServerFacade(mcpServer);
+        Threads = new CodexThreads(AppServer, middleware);
+        var runtimeFactory = appServer as CodexAppServerClientFactory;
+        Runtime = new CodexRuntime(Threads, runtimeOptions ?? runtimeFactory?.OptionsSnapshot, runtimeFactory?.PathProvider);
     }
 
     /// <summary>
@@ -73,6 +85,14 @@ public sealed class CodexSdk : IAsyncDisposable
         var builder = new CodexSdkBuilder();
         configure?.Invoke(builder);
         return builder.Build();
+    }
+
+    /// <summary>Creates an SDK and initializes its shared high-level app-server connection.</summary>
+    public static async Task<CodexSdk> StartAsync(Action<CodexSdkBuilder>? configure = null, CancellationToken ct = default)
+    {
+        var sdk = Create(configure);
+        try { await sdk.Threads.GetClientAsync(ct).ConfigureAwait(false); return sdk; }
+        catch { await sdk.DisposeAsync().ConfigureAwait(false); throw; }
     }
 
     /// <summary>
@@ -177,23 +197,24 @@ public sealed class CodexSdk : IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (!_ownsExec)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        try { await Threads.DisposeAsync().ConfigureAwait(false); }
+        finally
         {
-            return;
+            if (_ownsExec)
+            {
+                if (_exec is IAsyncDisposable asyncDisposable)
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                else _exec.Dispose();
+            }
         }
-
-        if (_exec is IAsyncDisposable asyncDisposable)
-        {
-            await asyncDisposable.DisposeAsync();
-            return;
-        }
-
-        _exec.Dispose();
     }
 
     internal static CodexSdk CreateOwned(
         ICodexClient exec,
         ICodexAppServerClientFactory appServer,
-        ICodexMcpServerClientFactory mcpServer) =>
-        new(exec, appServer, mcpServer, ownsExec: true);
+        ICodexMcpServerClientFactory mcpServer,
+        CodexAppServerClientOptions? runtimeOptions = null,
+        IReadOnlyList<ICodexTurnMiddleware>? middleware = null) =>
+        new(exec, appServer, mcpServer, ownsExec: true, runtimeOptions, middleware);
 }

@@ -13,6 +13,8 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
     private readonly CodexAppServerResilienceOptions _options;
     private readonly ILogger _logger;
 
+    private readonly object _disposeLock = new();
+    private Task? _disposeTask;
     private readonly SemaphoreSlim _restartLock = new(1, 1);
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Queue<DateTimeOffset> _restartTimes = new();
@@ -171,6 +173,9 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
 
             var previous = _inner;
             _inner = null;
+            // Retire the old exit watcher before disposal. If startup is canceled, its
+            // completion must not start a second, uncanceled restart for the retired client.
+            Interlocked.Increment(ref _innerVersion);
 
             if (previous is not null)
             {
@@ -289,7 +294,15 @@ internal sealed class ResilientAppServerConnection : IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
+    {
+        lock (_disposeLock)
+        {
+            return new ValueTask(_disposeTask ??= DisposeCoreAsync());
+        }
+    }
+
+    private async Task DisposeCoreAsync()
     {
         _state = CodexAppServerConnectionState.Disposed;
         _disposeCts.Cancel();

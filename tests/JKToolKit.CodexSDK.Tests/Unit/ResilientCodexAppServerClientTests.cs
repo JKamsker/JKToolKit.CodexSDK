@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
-public sealed class ResilientCodexAppServerClientTests
+public sealed partial class ResilientCodexAppServerClientTests
 {
     private static readonly string[] StableParityMethodNames =
     [
@@ -410,6 +410,7 @@ public sealed class ResilientCodexAppServerClientTests
         result.GetProperty("ok").GetBoolean().Should().BeTrue();
         factory.StartCount.Should().Be(2);
         client.RestartCount.Should().Be(1);
+        client.LastRestart!.Reason.Should().Be("policy-ensure-restarted");
     }
 
     [Fact]

@@ -724,7 +724,8 @@ public sealed class JsonRpcConnectionTests
 
         public static async Task<PipeHarness> CreateAsync()
         {
-            var name = $"ncodexsdk-jsonrpc-{Guid.NewGuid():N}";
+            // macOS temp paths are long; leave room for the domain socket path limit.
+            var name = $"csdk-{Guid.NewGuid():N}";
 
             var server = new NamedPipeServerStream(
                 name,

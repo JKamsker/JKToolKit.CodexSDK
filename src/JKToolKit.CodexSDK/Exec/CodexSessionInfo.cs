@@ -55,7 +55,7 @@ public sealed record CodexSessionInfo(
     /// </summary>
     public SessionId Id { get; init; } = Id;
 
-    private readonly string _logPath = LogPath;
+    private readonly string _logPath = ValidateLogPath(LogPath);
 
     /// <summary>
     /// Gets the file system path to the session's log file.
@@ -66,14 +66,15 @@ public sealed record CodexSessionInfo(
     public string LogPath
     {
         get => _logPath;
-        init
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Log path cannot be empty or whitespace.", nameof(LogPath));
+        init => _logPath = ValidateLogPath(value);
+    }
 
-            _logPath = value;
-        }
+    private static string ValidateLogPath(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("Log path cannot be empty or whitespace.", nameof(LogPath));
+        return value;
     }
 
     /// <summary>

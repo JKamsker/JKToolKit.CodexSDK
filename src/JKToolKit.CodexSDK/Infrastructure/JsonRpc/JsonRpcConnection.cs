@@ -68,7 +68,10 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
         _readLoop = Task.Run(ReadLoopAsync);
     }
 
-    public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct)
+    public Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct) =>
+        SendRequestAsync(method, @params, ct, onDispatch: null);
+
+    public async Task<JsonElement> SendRequestAsync(string method, object? @params, CancellationToken ct, Action? onDispatch)
     {
         ThrowIfFaulted();
         if (string.IsNullOrWhiteSpace(method))
@@ -87,7 +90,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
         var requestWritten = false;
         try
         {
-            await WriteAsync(CreateRequestObject(id, method, @params), ct);
+            await WriteAsync(CreateRequestObject(id, method, @params), ct, onDispatch);
             requestWritten = true;
             return await tcs.Task.WaitAsync(ct);
         }
@@ -227,7 +230,7 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
                 Fault(new JsonRpcConnectionClosedException("JSON-RPC stream closed by remote endpoint."));
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
         {
             // ignore
         }
@@ -269,6 +272,16 @@ internal sealed partial class JsonRpcConnection : IJsonRpcConnection
             return;
         }
 
+        try { CompleteResponse(root, tcs); }
+        catch (Exception ex)
+        {
+            // Once removed from _pending, even a malformed response must settle its caller.
+            tcs.TrySetException(new JsonRpcProtocolException("Malformed JSON-RPC response.", ex));
+        }
+    }
+
+    private static void CompleteResponse(JsonElement root, TaskCompletionSource<JsonElement> tcs)
+    {
         if (root.TryGetProperty(JsonFieldNames.Error, out var errorProp) && errorProp.ValueKind == JsonValueKind.Object)
         {
             var error = ParseError(errorProp);

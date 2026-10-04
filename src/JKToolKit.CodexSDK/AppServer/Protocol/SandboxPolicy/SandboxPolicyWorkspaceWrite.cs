@@ -14,6 +14,7 @@ public abstract partial record class SandboxPolicy
         private IReadOnlyList<string> _writableRoots = Array.Empty<string>();
 
         /// <inheritdoc />
+        [JsonPropertyName(JsonFieldNames.Type)]
         public override string Type => "workspaceWrite";
 
         /// <summary>

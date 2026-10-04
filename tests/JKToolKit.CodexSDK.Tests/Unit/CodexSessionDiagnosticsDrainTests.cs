@@ -12,7 +12,7 @@ public sealed class CodexSessionDiagnosticsDrainTests
     public async Task StartLiveSessionStdIoDrain_ContinuesDraining_WhenCallerCancelsWait()
     {
         using var process = CreateLargeOutputProcess();
-        var (sessionIdTask, _, _) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, NullLogger.Instance);
+        var (sessionIdTask, stdout, stderr) = CodexSessionDiagnostics.StartLiveSessionStdIoDrain(process, NullLogger.Instance);
 
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
@@ -25,7 +25,9 @@ public sealed class CodexSessionDiagnosticsDrainTests
 
         await wait.Should().ThrowAsync<OperationCanceledException>();
 
-        using var exitCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        // This checks continued draining, not throughput. Windows PowerShell startup and
+        // writing 16 MB can exceed five seconds on a loaded hosted runner.
+        using var exitCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try
         {
             await process.WaitForExitAsync(exitCts.Token);
@@ -47,6 +49,9 @@ public sealed class CodexSessionDiagnosticsDrainTests
 
             throw;
         }
+        (await sessionIdTask.WaitAsync(TimeSpan.FromSeconds(5))).Should().BeNull();
+        stdout().Length.Should().Be(8192);
+        stderr().Length.Should().Be(8192);
         process.ExitCode.Should().Be(0); // If draining stopped, the child can hang on full stdout/stderr pipes or fail with broken-pipe; exit code 0 verifies the drain kept consuming output.
     }
 

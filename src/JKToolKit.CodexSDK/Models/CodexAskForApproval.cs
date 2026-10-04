@@ -141,7 +141,8 @@ public readonly record struct CodexAskForApproval
 
     private static bool TryParseGranular(JsonElement element, out CodexAskForApprovalGranular granular)
     {
-        if (!TryGetBoolProperty(element, JsonFieldNames.SnakeCase.SandboxApproval, out var sandbox) ||
+        if (element.ValueKind != JsonValueKind.Object ||
+            !TryGetBoolProperty(element, JsonFieldNames.SnakeCase.SandboxApproval, out var sandbox) ||
             !TryGetBoolProperty(element, JsonFieldNames.Rules, out var rules) ||
             !TryGetBoolProperty(element, JsonFieldNames.SnakeCase.McpElicitations, out var mcp))
         {
