@@ -103,7 +103,7 @@ public sealed class TelemetryOutcomeContractTests
         await using var turn = await thread.RunStreamedAsync("private prompt");
         var failure = new IOException("private transport detail");
         turn.Terminate(failure);
-        Assert.Same(failure, await Record.ExceptionAsync(() => turn.RunAsync()));
+        Assert.Same(failure, await Record.ExceptionAsync(() => turn.RunAsync().WaitAsync(TimeSpan.FromSeconds(5))));
         var activity = await capture.WaitAsync();
         Assert.Equal("error", activity.GetTagItem("codex.turn.status"));
         Assert.Equal(nameof(IOException), activity.GetTagItem("error.type"));
