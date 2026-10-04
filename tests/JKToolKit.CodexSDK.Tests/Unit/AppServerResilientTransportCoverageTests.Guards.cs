@@ -59,6 +59,42 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.ReadMcpResourceAsync(new() { Server = "server", Uri = " " }));
         yield return Invalid(c => c.WriteSkillsConfigAsync(new() { Enabled = true }));
         yield return Invalid(c => c.WriteSkillsConfigAsync(new() { Enabled = true, Name = "named", Path = PathForPlatform("/skill") }));
+        yield return Invalid(c => c.StartTurnAsync(" ", new()));
+        yield return Invalid(c => c.SteerTurnAsync(new() { ThreadId = " ", ExpectedTurnId = "turn-1" }));
+        yield return Invalid(c => c.SteerTurnAsync(new() { ThreadId = "thread-1", ExpectedTurnId = " " }));
+        yield return Invalid(c => c.StartReviewAsync(new() { ThreadId = " ", Target = new ReviewTarget.UncommittedChanges() }));
+        yield return Invalid(c => c.StartReviewAsync(new() { ThreadId = "thread-1", Target = null! }));
+        yield return Invalid(c => c.AddThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = "review-1", Payload = default }));
+        yield return Invalid(c => c.ListThreadAttachmentsAsync(new() { ThreadId = " " }));
+        yield return Invalid(c => c.RemoveThreadAttachmentAsync(new() { ThreadId = " ", AttachmentType = "review", IdentityKey = "review-1" }));
+        yield return Invalid(c => c.RemoveThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = " ", IdentityKey = "review-1" }));
+        yield return Invalid(c => c.RemoveThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = " " }));
+        yield return Invalid(c => c.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions { ThreadId = " " }));
+        yield return Invalid(c => c.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions { ThreadId = "thread-1", SessionId = " " }));
+        yield return Invalid(c => c.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions { ThreadId = "thread-1", Voice = " " }));
+        yield return Invalid(c => c.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions { ThreadId = "thread-1", PromptMode = ThreadRealtimePromptMode.Custom }));
+        yield return Invalid(c => c.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions { ThreadId = "thread-1", PromptMode = ThreadRealtimePromptMode.Default, Prompt = "not allowed" }));
+        yield return Invalid(c => c.StartThreadRealtimeAsync(new ThreadRealtimeStartOptions { ThreadId = "thread-1", PromptMode = ThreadRealtimePromptMode.None, Prompt = "not allowed" }));
+        yield return Invalid(c => c.SearchThreadsAsync(new() { SearchTerm = " " }));
+        yield return Invalid(c => c.GetThreadGoalAsync(" "));
+        yield return Invalid(c => c.ClearThreadGoalAsync(" "));
+        yield return Invalid(c => c.SetThreadGoalAsync(new() { ThreadId = " " }));
+        yield return Invalid(c => c.SetThreadGoalAsync(new() { ThreadId = "thread-1", Objective = " " }));
+        yield return Invalid(c => c.ThreadShellCommandAsync(new() { ThreadId = " ", Command = "echo hello" }));
+        yield return Invalid(c => c.ThreadShellCommandAsync(new() { ThreadId = "thread-1", Command = " " }));
+        yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = " " }));
+        yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", UpdateProjectId = true, ClearProjectId = true }));
+        yield return Invalid(c => c.UpdateThreadMetadataAsync(new() { ThreadId = "thread-1", UpdateProjectId = true, ProjectId = " " }));
+        yield return Invalid(c => c.UpdateThreadSettingsAsync(new() { ThreadId = " " }));
+        yield return Invalid(c => c.ListThreadsAsync(new() { UnsectionedOnly = true, SectionId = "section-1" }));
+        yield return Invalid(c => c.UpdateThreadSectionAsync(new() { SectionId = "section-1", Name = "Planning", ClearAppearance = true, Appearance = new() }));
+        yield return Invalid(c => c.CommandExecAsync(new() { Command = ["echo"], DisableOutputCap = true, OutputBytesCap = 1 }));
+        yield return Invalid(c => c.CommandExecAsync(new() { Command = ["echo"], Size = new() { Columns = 80, Rows = 24 }, Tty = false }));
+        yield return Invalid(c => c.StartThreadAsync(new() { ClearServiceTier = true, ServiceTier = JKToolKit.CodexSDK.Models.CodexServiceTier.Fast }));
+        yield return Invalid(c => c.StartThreadAsync(new() { Environments = [new() { EnvironmentId = " ", Cwd = PathForPlatform("/workspace") }] }));
+        yield return Invalid(c => c.StartTurnAsync("thread-1", new() { AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry> { ["context"] = null! } }));
+        yield return Invalid(c => c.ResumeThreadAsync(new ThreadResumeOptions { ThreadId = "thread-1", InitialTurnsPage = new() { Limit = -1 } }));
+
     }
 
     [Theory]

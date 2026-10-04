@@ -132,6 +132,9 @@ public sealed partial class AppServerResilientTransportCoverageTests
 
         yield return Case("account/login/start", c => c.StartAccountLoginAsync(new AccountLoginStartOptions.ApiKey("test-only-key")), """{"type":"apiKey","apiKey":"test-only-key"}""", """{"type":"apiKey"}""");
 
+        yield return Case("thread/start", c => c.StartThreadAsync(new() { ClearServiceTier = true }), """{"serviceTier":null}""", """{"thread":{"id":"thread-1"}}""");
+        yield return Case("thread/resume", c => c.ResumeThreadAsync(new ThreadResumeOptions { ThreadId = "thread-1", InitialTurnsPage = new() { Limit = 2, SortDirection = "desc", ItemsView = "summary" } }), """{"threadId":"thread-1","initialTurnsPage":{"limit":2,"sortDirection":"desc","itemsView":"summary"}}""", """{"thread":{"id":"thread-1"}}""");
+
     }
 
     [Theory]
