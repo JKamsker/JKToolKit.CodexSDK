@@ -150,7 +150,9 @@ public sealed class CodexSessionHandle : ICodexSessionHandle
                 ? pipeline.ApplyIdleTimeout(filteredStream, _idleTimeout.Value, pipelineCts, cancellationToken)
                 : filteredStream;
 
-            await using var enumerator = finalStream.WithCancellation(pipelineCts.Token).GetAsyncEnumerator();
+            // Each stage already has its token. Overriding the final iterator token would
+            // merge internal idle cancellation into ApplyIdleTimeout's caller token.
+            await using var enumerator = finalStream.GetAsyncEnumerator();
             while (true)
             {
                 CodexEvent current;
