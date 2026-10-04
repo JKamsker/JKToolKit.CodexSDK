@@ -11,7 +11,10 @@ python3 .github/scripts/run_full_mutation.py \
 The runner restores the pinned local Stryker tool and runs the SDK, Agent Framework,
 and Semantic Kernel profiles sequentially. Select a subset with repeatable
 `--profile sdk`, `--profile agentframework`, or `--profile semantickernel`.
-Each profile uses four workers, Complete mutation level, per-test coverage, the
+Each profile defaults to four workers. Override with `--concurrency 16` when the
+host has capacity, and use `--verbosity debug` to inspect execution costs. The
+runner records overrides in the exact effective configuration stored with each
+profile. Each profile uses Complete mutation level, per-test coverage, the
 Release configuration, and stops if the unmutated initial test run fails. It does
 not exclude any mutator categories. The output directory must be new.
 

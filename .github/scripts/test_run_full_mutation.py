@@ -15,18 +15,20 @@ class RunnerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'tests/JKToolKit.CodexSDK.Tests').mkdir(parents=True)
+        (self.root / 'tests/JKToolKit.CodexSDK.Tests/stryker-full-sdk-config.json').write_text(
+            json.dumps({'stryker-config': {'concurrency': 4, 'mutate': ['**/*.cs']}}))
         self.output = self.root / 'artifacts'
         self.provenance = dict.fromkeys(('revision', 'source_tree_sha256', 'test_tree_sha256',
                                         'tool_manifest_sha256', 'configuration_sha256'), 'stable')
         self.calls = []
 
-    def execute(self, *, snapshots=None, failure=False):
+    def execute(self, *, snapshots=None, failure=False, extra_args=()):
         def run(command, **kwargs):
             self.calls.append((command, kwargs))
             return subprocess.CompletedProcess(command, 1 if failure and 'stryker' in command else 0)
         with mock.patch.object(subject, '__file__', str(self.root / '.github/scripts/run_full_mutation.py')), \
              mock.patch('sys.argv', ['run', '--profile', 'sdk', '--profile', 'sdk',
-                                     '--output', str(self.output), '--dotnet', '/fake/dotnet']), \
+                                     '--output', str(self.output), '--dotnet', '/fake/dotnet', *extra_args]), \
              mock.patch.object(subject.shutil, 'which', return_value='/fake/dotnet'), \
              mock.patch.object(subject, 'capture', side_effect=snapshots or [self.provenance, self.provenance]), \
              mock.patch.object(subject, 'summarize', return_value={'groups': []}), \
@@ -66,6 +68,22 @@ class RunnerTests(unittest.TestCase):
         (bundled / 'codex').write_text('bundled cli')
         with self.assertRaisesRegex(RuntimeError, 'bypasses offline'):
             self.execute()
+        self.assertEqual(self.calls, [])
+
+    def test_worker_override_is_captured_in_exact_effective_config(self):
+        self.execute(extra_args=('--concurrency', '16', '--verbosity', 'debug'))
+        effective = self.output / 'sdk.effective-config.json'
+        config = json.loads(effective.read_text())['stryker-config']
+        self.assertEqual(config['concurrency'], 16)
+        self.assertEqual(config['verbosity'], 'debug')
+        self.assertEqual(config['mutate'], ['**/*.cs'])
+        self.assertIn(str(effective), self.calls[-1][0])
+        original = self.root / 'tests/JKToolKit.CodexSDK.Tests/stryker-full-sdk-config.json'
+        self.assertEqual(json.loads(original.read_text())['stryker-config']['concurrency'], 4)
+
+    def test_zero_workers_rejected(self):
+        with self.assertRaises(SystemExit):
+            self.execute(extra_args=('--concurrency', '0'))
         self.assertEqual(self.calls, [])
 
     def test_changed_input_rejects_summary(self):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run reproducible, offline full mutation profiles in sequence (four workers each)."""
+"""Run reproducible, offline full mutation profiles in sequence (four workers by default)."""
 import argparse
 import json
 import os
@@ -40,7 +40,12 @@ def main():
     parser.add_argument('--output', type=Path, required=True,
                         help='New artifact directory (must not already exist).')
     parser.add_argument('--dotnet', default='dotnet')
+    parser.add_argument('--concurrency', type=int, help='Override worker count in each effective profile.')
+    parser.add_argument('--verbosity', choices=('error', 'warning', 'info', 'debug', 'trace'),
+                        help='Override Stryker logging verbosity.')
     args = parser.parse_args()
+    if args.concurrency is not None and args.concurrency < 1:
+        parser.error('Concurrency must be a positive integer.')
     root = Path(__file__).resolve().parents[2]
     project = root / 'tests/JKToolKit.CodexSDK.Tests'
     output = args.output.resolve()
@@ -64,12 +69,18 @@ def main():
     reject_bundled_cli(root)
     inputs = []
     for profile in dict.fromkeys(args.profile or PROFILES):
-        config = project / f'stryker-full-{profile}-config.json'
+        settings = json.loads((project / f'stryker-full-{profile}-config.json').read_text())
+        if args.concurrency is not None:
+            settings['stryker-config']['concurrency'] = args.concurrency
+        if args.verbosity is not None:
+            settings['stryker-config']['verbosity'] = args.verbosity
+        config = output / f'{profile}.effective-config.json'
+        config.write_text(json.dumps(settings, indent=2) + '\n')
         provenance = capture(root, config)
         provenance_path = output / f'{profile}.provenance.json'
         provenance_path.write_text(json.dumps(provenance, indent=2) + '\n')
         command = [executable, 'stryker', '--skip-version-check', '--config-file',
-                   config.name, '--output', str(output / profile)]
+                   str(config), '--output', str(output / profile)]
         print(f'Running {profile}; log: {output / (profile + ".log")}', flush=True)
         with (output / f'{profile}.log').open('w') as log:
             result = subprocess.run(command, cwd=project, env=environment, stdout=log, stderr=subprocess.STDOUT)
