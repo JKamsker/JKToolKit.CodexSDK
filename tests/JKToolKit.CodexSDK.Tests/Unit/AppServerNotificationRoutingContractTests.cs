@@ -210,4 +210,25 @@ public sealed class AppServerNotificationRoutingContractTests
         Map<WindowsSandboxSetupCompletedNotification>("windowsSandbox/setupCompleted", "{}").Mode.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData("null")]
+    [InlineData("{}")]
+    [InlineData("{\"id\":42,\"type\":42}")]
+    public void OpaqueLifecyclePayloads_LeaveUnrecognizedConvenienceFieldsAbsent(string json)
+    {
+        var payload = Json(json); var empty = Json("{}");
+        new ThreadStartedNotification(payload, null, empty).ThreadId.Should().BeNull();
+        new TurnStartedNotification("thread", payload, empty).TurnId.Should().BeNull();
+        new ThreadRealtimeItemAddedNotification("thread", payload, empty).ItemType.Should().BeNull();
+    }
+
+    [Fact]
+    public void NotificationCollectionContracts_DistinguishOptionalListsFromRequiredLists()
+    {
+        var settings = new ThreadSettingsUpdatedNotification("thread", Json("{}"), null, null, null, null, Json("{}"));
+        settings.DisabledPluginIds.Should().BeEmpty();
+        Action required = () => new WindowsWorldWritableWarningNotification(null!, 0, false, Json("{}"));
+        required.Should().Throw<ArgumentNullException>().WithParameterName("SamplePaths");
+    }
+
 }

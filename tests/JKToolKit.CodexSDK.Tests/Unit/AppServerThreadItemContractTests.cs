@@ -290,4 +290,31 @@ public sealed class AppServerThreadItemContractTests
         var empty = CodexTurnError.Parse(JsonSerializer.Deserialize<JsonElement>("{}"))!;
         empty.Message.Should().BeEmpty(); empty.AdditionalDetails.Should().BeNull(); empty.CodexErrorInfo.Should().BeNull();
     }
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"type\":null}")]
+    [InlineData("{\"type\":42}")]
+    public void MissingOrInvalidDiscriminator_PreservesPayloadAsUnknown(string json)
+    {
+        var item = Parse(json).Should().BeOfType<CodexThreadItemUnknown>().Subject;
+        item.Type.Should().BeEmpty(); item.Id.Should().BeEmpty(); item.Raw.GetRawText().Should().Be(json);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"type\":null}")]
+    [InlineData("null")]
+    public void CommandActionWithoutType_PreservesWholeCommandAsUnknown(string action) =>
+        AssertUnknown("{\"id\":\"i\",\"type\":\"commandExecution\",\"command\":\"pwd\",\"cwd\":\"/repo\",\"status\":\"completed\",\"commandActions\":[" + action + "]}");
+
+    [Theory]
+    [InlineData("{\"type\":\"search\",\"query\":\"query\"}")]
+    [InlineData("{\"type\":\"search\",\"query\":\"query\",\"queries\":[]}")]
+    [InlineData("{\"type\":\"search\",\"query\":\"query\",\"queries\":null}")]
+    public void SearchAction_AbsentOrEmptyQueriesKeepsSingleQuery(string action)
+    {
+        var search = Parse("{\"id\":\"i\",\"type\":\"webSearch\",\"query\":\"outer\",\"action\":" + action + "}").Should().BeOfType<CodexThreadItemWebSearch>().Subject;
+        search.Action!.Kind.Should().Be(CodexWebSearchActionKind.Search); search.Action.Query.Should().Be("query"); search.Action.Queries.Should().BeNull();
+    }
+
 }
