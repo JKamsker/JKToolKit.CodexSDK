@@ -378,6 +378,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
     {
         ArgumentNullException.ThrowIfNull(sessionsRoot);
         cancellationToken.ThrowIfCancellationRequested();
+        filter?.Validate();
 
         if (!_fileSystem.DirectoryExists(sessionsRoot))
         {

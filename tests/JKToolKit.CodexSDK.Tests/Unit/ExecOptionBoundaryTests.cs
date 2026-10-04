@@ -180,11 +180,8 @@ public sealed class ExecOptionBoundaryTests
         var date = DateTimeOffset.UtcNow;
         Assert.Equal(date, SessionFilter.ForDateRange(date, date).ToDate);
         Assert.Throws<ArgumentException>(() => new SessionFilter(FromDate: date, ToDate: date.AddTicks(-1)));
-        Assert.Throws<ArgumentException>(() => new SessionFilter { ToDate = date, FromDate = date.AddTicks(1) });
-        Assert.Throws<ArgumentException>(() => new SessionFilter(FromDate: date, ToDate: date) with { FromDate = date.AddTicks(1) });
         Assert.Equal("toDate", Assert.Throws<ArgumentException>(() => SessionFilter.ForDateRange(date, date.AddTicks(-1))).ParamName);
         Assert.Equal(date.AddTicks(1), SessionFilter.ForDateRange(date, date.AddTicks(1)).ToDate);
-        Assert.Throws<ArgumentException>(() => new SessionFilter { FromDate = date, ToDate = date.AddTicks(-1) });
         Assert.Equal(date, (new SessionFilter { FromDate = date, ToDate = date }).ToDate);
         Assert.Null((new SessionFilter { FromDate = date, ToDate = null }).ToDate);
         Assert.Equal(date, (new SessionFilter { ToDate = date }).ToDate);

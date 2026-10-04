@@ -81,6 +81,7 @@ public sealed class CodexClient : ICodexClient, IAsyncDisposable
     /// <inheritdoc />
     public IAsyncEnumerable<CodexSessionInfo> ListSessionsAsync(SessionFilter? filter = null, CancellationToken cancellationToken = default)
     {
+        filter?.Validate();
         _clientOptions.Validate();
         var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
 

@@ -40,36 +40,18 @@ public sealed record SessionFilter(
     /// <summary>
     /// Gets the optional start date for filtering sessions.
     /// </summary>
-    public DateTimeOffset? FromDate
-    {
-        get => _fromDate;
-        init
-        {
-            ValidateDateRange(value, _toDate);
-            _fromDate = value;
-        }
-    }
-
-    private readonly DateTimeOffset? _fromDate = FromDate;
-
-    private readonly DateTimeOffset? _toDate = ValidateDateRange(FromDate, ToDate);
+    public DateTimeOffset? FromDate { get; init; } = FromDate;
 
     /// <summary>
     /// Gets the optional end date for filtering sessions.
     /// </summary>
-    /// <exception cref="ArgumentException">
-    /// Thrown when ToDate is earlier than FromDate.
-    /// </exception>
-    public DateTimeOffset? ToDate
-    {
-        get => _toDate;
-        init
-        {
-            ValidateDateRange(FromDate, value);
+    /// <remarks>
+    /// The completed date range is validated when listing sessions, allowing both dates
+    /// to be assigned in either order in object initializers and record updates.
+    /// </remarks>
+    public DateTimeOffset? ToDate { get; init; } = ValidateDateRange(FromDate, ToDate);
 
-            _toDate = value;
-        }
-    }
+    internal void Validate() => ValidateDateRange(FromDate, ToDate);
 
     private static DateTimeOffset? ValidateDateRange(DateTimeOffset? fromDate, DateTimeOffset? toDate)
     {
