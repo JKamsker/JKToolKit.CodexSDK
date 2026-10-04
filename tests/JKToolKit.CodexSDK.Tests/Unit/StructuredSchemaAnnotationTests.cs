@@ -34,6 +34,77 @@ public sealed class StructuredSchemaAnnotationTests
         Assert.DoesNotContain("\"nullable\"", element.GetRawText());
     }
 
+    [Fact]
+    public void InheritedInterface_ContainsPropertiesFromTheWholeContract()
+    {
+        var schema = CodexJsonSchemaGenerator.Generate<IDerivedContract>();
+        var required = schema.GetProperty("required").EnumerateArray().Select(x => x.GetString()).Order().ToArray();
+        Assert.Equal(new[] { "count", "name" }, required);
+    }
+
+    [Fact]
+    public async Task NullableComposedSchema_NormalizesNestedNullabilityAndStrictObjects()
+    {
+        var element = CodexJsonSchemaGenerator.Generate<ChoiceDto>();
+        var schema = await JsonSchema.FromJsonAsync(element.GetRawText());
+        Assert.Empty(schema.Validate("""{"choice":null}"""));
+        Assert.Empty(schema.Validate("""{"choice":{"name":null}}"""));
+        Assert.Empty(schema.Validate("""{"choice":{"name":"text"}}"""));
+        Assert.Empty(schema.Validate("""{"choice":{"count":4}}"""));
+        Assert.NotEmpty(schema.Validate("""{"choice":{}}"""));
+        Assert.NotEmpty(schema.Validate("""{"choice":{"count":4,"extra":1}}"""));
+        Assert.DoesNotContain("\"nullable\"", element.GetRawText());
+    }
+
+    [Fact]
+    public async Task PropertyOnlySchema_RetainsRequiredAndAdditionalPropertyRules()
+    {
+        var element = CodexJsonSchemaGenerator.Generate<PropertyOnlyDto>();
+        var schema = await JsonSchema.FromJsonAsync(element.GetRawText());
+        Assert.Empty(schema.Validate("""{"value":{"name":"text"}}"""));
+        Assert.NotEmpty(schema.Validate("""{"value":{}}"""));
+        Assert.NotEmpty(schema.Validate("""{"value":{"name":"text","extra":1}}"""));
+    }
+
+    public sealed class PropertyOnlyDto { public PropertyOnly Value { get; set; } = new(); }
+    [JsonSchemaProcessor(typeof(PropertyOnlySchemaProcessor))]
+    public sealed class PropertyOnly;
+    public sealed class PropertyOnlySchemaProcessor : ISchemaProcessor
+    {
+        public void Process(SchemaProcessorContext context)
+        {
+            context.Schema.Type = JsonObjectType.None;
+            context.Schema.AllowAdditionalProperties = true;
+            context.Schema.Properties["name"] = new JsonSchemaProperty { Type = JsonObjectType.String };
+        }
+    }
+
+    public interface IBaseContract { string Name { get; set; } }
+    public interface IDerivedContract : IBaseContract { int Count { get; set; } }
+    public sealed class ChoiceDto { public Choice Choice { get; set; } = new(); }
+    [JsonSchemaProcessor(typeof(ChoiceSchemaProcessor))]
+    public sealed class Choice;
+    public sealed class ChoiceSchemaProcessor : ISchemaProcessor
+    {
+        public void Process(SchemaProcessorContext context)
+        {
+            context.Schema.Type = JsonObjectType.None;
+            context.Schema.Properties.Clear();
+            context.Schema.AllowAdditionalProperties = true;
+            context.Schema.ExtensionData = new Dictionary<string, object?> { ["nullable"] = true };
+            var named = new JsonSchema { Type = JsonObjectType.Object };
+            named.Properties["name"] = new JsonSchemaProperty
+            {
+                Type = JsonObjectType.String,
+                ExtensionData = new Dictionary<string, object?> { ["nullable"] = true }
+            };
+            var numbered = new JsonSchema { Type = JsonObjectType.Object };
+            numbered.Properties["count"] = new JsonSchemaProperty { Type = JsonObjectType.Integer };
+            context.Schema.OneOf.Add(named);
+            context.Schema.OneOf.Add(numbered);
+        }
+    }
+
     public sealed class UnionDto { public ScalarUnion Value { get; set; } = new(); }
     [JsonSchemaProcessor(typeof(ScalarUnionSchemaProcessor))]
     public sealed class ScalarUnion;
