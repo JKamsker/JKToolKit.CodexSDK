@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using FluentAssertions;
 using JKToolKit.CodexSDK.Abstractions;
+using JKToolKit.CodexSDK.AppServer;
 using JKToolKit.CodexSDK.Exec;
 using JKToolKit.CodexSDK.Exec.Protocol;
 using JKToolKit.CodexSDK.Infrastructure;
@@ -114,6 +115,24 @@ public sealed class ProcessLauncherCoverageTests
         unstarted.StartInfo.RedirectStandardError = true;
         (await CodexProcessLauncherIo.TryReadStandardErrorAsync(unstarted)).Should().BeNull();
         CodexProcessLauncherDiagnostics.CreateDiagnosticMessage("detail", "exe").Should().Contain("detail").And.Contain("exe");
+    }
+
+    [Fact]
+    public async Task AppServerStartup_ForwardsConfiguredCodexHomeIntoRealChild()
+    {
+        var home = Path.Combine(Path.GetTempPath(), "codex-home-" + Guid.NewGuid());
+        var options = new CodexAppServerClientOptions
+        {
+            Launch = ProcessLifetimeCoverageTests.Fixture("appserver").WithEnvironment("CODEX_HOME", "overridden"),
+            CodexHomeDirectory = home,
+            StartupTimeout = TimeSpan.FromSeconds(10),
+            ShutdownTimeout = TimeSpan.FromSeconds(2)
+        };
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        await using var client = await CodexAppServerClient.StartAsync(options, deadline.Token);
+        client.InitializeResult!.Raw.GetProperty("codexHome").GetString().Should().Be(home);
+        client.InitializeResult.UserAgent.Should().Be("process-fixture");
+        options.Launch.Environment["CODEX_HOME"].Should().Be("overridden");
     }
 
     private static Task<Process> LaunchAsync(CodexProcessLauncher launcher, string operation, bool argumentMode, string? flag = null, string prompt = "prompt α", CancellationToken ct = default)

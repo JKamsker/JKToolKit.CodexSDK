@@ -15,6 +15,21 @@ public static class Program
         }
         switch (mode)
         {
+            case "appserver":
+                using (var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+                {
+                    while (await Console.In.ReadLineAsync(deadline.Token) is { } line)
+                    {
+                        using var message = System.Text.Json.JsonDocument.Parse(line);
+                        if (message.RootElement.TryGetProperty("id", out var id))
+                            Console.Out.WriteLine(System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                id,
+                                result = new { userAgent = "process-fixture", codexHome = Environment.GetEnvironmentVariable("CODEX_HOME") }
+                            }));
+                    }
+                }
+                return 0;
             case "ready-echo":
                 Console.Out.WriteLine("ready");
                 Console.Out.Write(await Console.In.ReadToEndAsync());
