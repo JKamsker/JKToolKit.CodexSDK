@@ -39,6 +39,23 @@ public sealed class ApprovalDecisionEdgeTests
     }
 
     [Theory]
+    [InlineData(true, "item/commandExecution/requestApproval", "[\"decline\",{\"acceptWithExecpolicyAmendment\":{\"rule\":\"allow\"}}]", "{\"acceptWithExecpolicyAmendment\":{\"rule\":\"allow\"}}")]
+    [InlineData(true, "item/commandExecution/requestApproval", "[\"decline\",{\"applyNetworkPolicyAmendment\":{\"host\":\"example.test\"}}]", "{\"applyNetworkPolicyAmendment\":{\"host\":\"example.test\"}}")]
+    [InlineData(true, "item/commandExecution/requestApproval", "[{},42,\"accept\"]", "\"accept\"")]
+    [InlineData(false, "item/commandExecution/requestApproval", "[{},42,\"decline\"]", "\"decline\"")]
+    [InlineData(true, "item/fileChange/requestApproval", "[\"decline\",\"accept\"]", "\"accept\"")]
+    [InlineData(true, "item/fileChange/requestApproval", "[\"decline\",\"acceptForSession\"]", "\"acceptForSession\"")]
+    [InlineData(false, "item/fileChange/requestApproval", "[\"accept\",\"decline\"]", "\"decline\"")]
+    [InlineData(false, "item/fileChange/requestApproval", "[\"accept\",\"cancel\"]", "\"cancel\"")]
+    public async Task AutomaticDecision_SelectsPolicyFromCompetingChoices(bool approve, string method, string choices, string expected)
+    {
+        IAppServerApprovalHandler handler = approve ? new AlwaysApproveHandler() : new AlwaysDenyHandler();
+        var payload = JsonSerializer.Deserialize<JsonElement>("{\"threadId\":\"t\",\"turnId\":\"u\",\"itemId\":\"i\",\"availableDecisions\":" + choices + "}");
+        var result = await handler.HandleAsync(method, payload, default);
+        result.GetProperty("decision").GetRawText().Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData("null")]
     [InlineData("[]")]
     [InlineData("{}")]
@@ -75,7 +92,7 @@ public sealed class ApprovalDecisionEdgeTests
     [Fact]
     public async Task AutomaticHandlers_RejectUnknownMethod()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() => new AlwaysApproveHandler().HandleAsync("unknown", null, default).AsTask());
-        await Assert.ThrowsAsync<InvalidOperationException>(() => new AlwaysDenyHandler().HandleAsync("unknown", null, default).AsTask());
+        (await Assert.ThrowsAsync<InvalidOperationException>(() => new AlwaysApproveHandler().HandleAsync("unknown", null, default).AsTask())).Message.Should().Contain("unknown");
+        (await Assert.ThrowsAsync<InvalidOperationException>(() => new AlwaysDenyHandler().HandleAsync("unknown", null, default).AsTask())).Message.Should().Contain("unknown");
     }
 }

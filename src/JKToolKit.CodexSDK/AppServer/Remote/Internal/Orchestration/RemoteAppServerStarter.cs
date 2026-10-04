@@ -78,7 +78,7 @@ internal sealed class RemoteAppServerStarter
         {
             if (containerStarted)
             {
-                await TryRemoveContainerAsync(options.DockerExecutable, containerName!, ct).ConfigureAwait(false);
+                await TryRemoveContainerAsync(options.DockerExecutable, containerName!).ConfigureAwait(false);
             }
 
             throw;
@@ -267,7 +267,7 @@ internal sealed class RemoteAppServerStarter
     private static string NormalizeId(string? id) =>
         string.IsNullOrWhiteSpace(id) ? $"codexsdk-{Guid.NewGuid():N}" : id;
 
-    private async Task TryRemoveContainerAsync(string dockerExecutable, string containerName, CancellationToken ct)
+    private async Task TryRemoveContainerAsync(string dockerExecutable, string containerName)
     {
         try
         {
@@ -278,7 +278,7 @@ internal sealed class RemoteAppServerStarter
                         ContainerName = containerName
                     }),
                     _context.Options.StopTimeout,
-                    ct)
+                    CancellationToken.None)
                 .ConfigureAwait(false);
         }
         catch

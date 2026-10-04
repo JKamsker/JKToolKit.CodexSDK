@@ -8,6 +8,22 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed partial class RemoteAppServerManagerTests
 {
+    [Fact]
+    public async Task StartContainer_CancellationStillCleansUpOwnedContainer()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var runner = new RecordingProcessRunner();
+        runner.EnqueueRun("container-id");
+        runner.EnqueueRun("127.0.0.1:4567");
+        runner.EnqueueRun("");
+        var health = new RecordingHealthProbe { Probe = ct => { cancellation.Cancel(); return Task.FromCanceled<bool>(ct); } };
+        var manager = CreateManager(runner, health);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => manager.StartDockerContainerWebSocketAsync(new() { Id = "container", Image = "image" }, cancellation.Token));
+        runner.RunLaunches.Last().Arguments.Should().Equal("rm", "-f", "container");
+        runner.RunTokens.Last().IsCancellationRequested.Should().BeFalse();
+        (await manager.ListAsync()).Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(65536)]
@@ -51,7 +67,7 @@ public sealed partial class RemoteAppServerManagerTests
         entry.CreatedAt.Should().Be(entry.UpdatedAt);
         runner.RunLaunches[0].Arguments.Should().ContainInOrder("-F", "/config", "-T", "-i", "/key", "-p", port.ToString(), "-l", "user", "-v", "host");
         runner.RunLaunches[0].Arguments.Last().Should().Contain("${CODEX_HOME:-$HOME/.codex}").And.Contain("'--some-flag'");
-        await registry.UpsertAsync(entry with { BearerToken = null });
+        await registry.UpsertAsync(entry with { BearerToken = "outdated persisted token" });
         await using var attachment = await manager.AttachAsync(entry.Id);
         received!.BearerToken.Should().Be("token");
         runner.StartLaunches.Single().Environment.Should().Contain("SSHPASS", "secret");

@@ -114,6 +114,7 @@ public sealed partial class RemoteAppServerManagerTests
         await using (var attachment = await manager.AttachAsync("remote-1"))
         {
             attachment.EndpointUri.Host.Should().Be("127.0.0.1");
+            runner.StartedProcesses.Single().Disposed.Should().BeFalse();
         }
 
         runner.StartLaunches.Should().ContainSingle();
@@ -200,6 +201,8 @@ public sealed partial class RemoteAppServerManagerTests
 
         public RemoteProcessResult? DefaultRunResult { get; set; }
 
+        public List<CancellationToken> RunTokens { get; } = [];
+
         public List<CodexLaunch> RunLaunches { get; } = [];
 
         public List<CodexLaunch> StartLaunches { get; } = [];
@@ -212,6 +215,8 @@ public sealed partial class RemoteAppServerManagerTests
         public Task<RemoteProcessResult> RunAsync(CodexLaunch launch, TimeSpan timeout, CancellationToken ct)
         {
             RunLaunches.Add(launch);
+            RunTokens.Add(ct);
+            ct.ThrowIfCancellationRequested();
             if (_runResults.Count == 0 && DefaultRunResult is { } fallback)
             {
                 return Task.FromResult(fallback);

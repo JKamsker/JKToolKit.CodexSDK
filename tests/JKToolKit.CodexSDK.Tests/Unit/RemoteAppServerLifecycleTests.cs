@@ -31,6 +31,30 @@ public sealed partial class RemoteAppServerManagerTests
         runner.StartedProcesses.Single().DisposeCount.Should().Be(1);
     }
 
+    [Fact]
+    public async Task RefreshDirect_ReadyEndpointPersistsRunningStatus()
+    {
+        var registry = new InMemoryCodexRemoteAppServerRegistry();
+        await registry.UpsertAsync(DockerEntry("docker") with { Status = CodexRemoteAppServerStatus.Stale });
+        var health = new RecordingHealthProbe { IsReady = true };
+        var entries = await CreateManager(new RecordingProcessRunner(), health, registry).ListAsync(refresh: true);
+        entries.Single().Status.Should().Be(CodexRemoteAppServerStatus.Running);
+        health.ProbedUris.Should().ContainSingle().Which.Should().Be(new Uri("ws://127.0.0.1:4500"));
+        (await registry.GetAsync("docker"))!.Status.Should().Be(CodexRemoteAppServerStatus.Running);
+    }
+
+    [Fact]
+    public async Task AttachSsh_CancellationDuringRetryDelayStopsFurtherAttempts()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var registry = new InMemoryCodexRemoteAppServerRegistry();
+        await registry.UpsertAsync(SshEntry("ssh"));
+        var runner = new RecordingProcessRunner();
+        var health = new RecordingHealthProbe { Probe = _ => { cancellation.Cancel(); return Task.FromResult(false); } };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CreateManager(runner, health, registry).AttachAsync("ssh", ct: cancellation.Token));
+        runner.StartedProcesses.Should().ContainSingle().Which.DisposeCount.Should().Be(1);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -106,12 +130,13 @@ public sealed partial class RemoteAppServerManagerTests
     {
         var registry = new InMemoryCodexRemoteAppServerRegistry();
         await registry.UpsertAsync(DockerEntry("docker") with { BearerToken = "stored" });
-        var supplied = new CodexAppServerClientOptions();
+        var supplied = new CodexAppServerClientOptions { NotificationBufferCapacity = 37 };
         CodexAppServerWebSocketOptions? received = null;
         var manager = new CodexRemoteAppServerManager(new() { Registry = registry }, new RecordingProcessRunner(), new RecordingHealthProbe(), (options, _) => { received = options; return Task.FromResult(CreateClient()); });
         await using var attachment = await manager.AttachAsync("docker", new() { ClientOptions = supplied });
         received!.BearerToken.Should().Be("stored");
         received.ClientOptions.Should().NotBeSameAs(supplied);
+        received.ClientOptions.NotificationBufferCapacity.Should().Be(37);
     }
 
     [Theory]

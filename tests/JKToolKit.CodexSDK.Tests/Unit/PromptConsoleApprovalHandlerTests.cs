@@ -63,7 +63,7 @@ public sealed class PromptConsoleApprovalHandlerTests
         using var console = new ConsoleScope(input);
         var result = await new PromptConsoleApprovalHandler().HandleAsync(method, Json("""{"threadId":"thread","turnId":"turn","itemId":"item"}"""), default);
         result.GetProperty("decision").GetString().Should().Be(expected);
-        console.Error.Should().Contain("threadId=thread turnId=turn itemId=item");
+        console.Error.Should().Contain("threadId=thread turnId=turn itemId=item").And.Contain("Approve? [y/N]: ");
     }
 
     [Theory]
@@ -75,7 +75,7 @@ public sealed class PromptConsoleApprovalHandlerTests
         using var console = new ConsoleScope(input);
         var result = await new PromptConsoleApprovalHandler().HandleAsync(method, Json("""{"threadId":"t","turnId":"u","itemId":"i","availableDecisions":["accept","decline"]}"""), default);
         result.GetProperty("decision").GetString().Should().Be(expected);
-        console.Error.Should().Contain("1) accept").And.Contain("2) decline");
+        console.Error.Should().Contain("Available decisions:").And.Contain("Decision [1]: ").And.Contain("1) accept").And.Contain("2) decline");
     }
 
     [Theory]
@@ -85,7 +85,8 @@ public sealed class PromptConsoleApprovalHandlerTests
     public async Task AvailableDecisions_RejectInvalidSelection(string input)
     {
         using var console = new ConsoleScope(input);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => new PromptConsoleApprovalHandler().HandleAsync("item/fileChange/requestApproval", Json("""{"threadId":"t","turnId":"u","itemId":"i","availableDecisions":["accept","decline"]}"""), default).AsTask());
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => new PromptConsoleApprovalHandler().HandleAsync("item/fileChange/requestApproval", Json("""{"threadId":"t","turnId":"u","itemId":"i","availableDecisions":["accept","decline"]}"""), default).AsTask());
+        error.Message.Should().Be("Invalid approval decision selection.");
     }
 
     [Fact]
@@ -136,7 +137,8 @@ public sealed class PromptConsoleApprovalHandlerTests
         result.GetProperty("action").GetString().Should().Be(action);
         if (content is null) result.GetProperty("content").ValueKind.Should().Be(JsonValueKind.Null);
         else result.GetProperty("content").GetRawText().Should().Be(content);
-        console.Error.Should().Contain("Question").And.Contain("object");
+        console.Error.Should().Contain("Question").And.Contain("object").And.Contain("Action? [a]ccept/[d]ecline/[c]ancel (default decline): ");
+        if (action == "accept") console.Error.Should().Contain("Accepted form content as JSON (blank for {}): ");
     }
 
     [Fact]
@@ -145,6 +147,7 @@ public sealed class PromptConsoleApprovalHandlerTests
         using var console = new ConsoleScope("accept\nnot-json\n");
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => new PromptConsoleApprovalHandler().HandleAsync("mcpServer/elicitation/request", Json("""{"threadId":"t","serverName":"mcp","mode":"form","message":"Question"}"""), default).AsTask());
         error.InnerException.Should().BeAssignableTo<JsonException>();
+        error.Message.Should().Be("Accepted elicitation content must be valid JSON.");
     }
 
     [Fact]
@@ -198,7 +201,7 @@ public sealed class PromptConsoleApprovalHandlerTests
         var handler = HandlerWithKeys('\b', 's', 'x', '\b', '\t', 'e', 'c', 'r', 'e', 't', '\r');
         var result = await handler.HandleAsync("item/tool/requestUserInput", Json("""{"threadId":"t","turnId":"u","itemId":"i","questions":[{"id":"password","header":"Password","question":"Password","isSecret":true}]}"""), default);
         result.GetProperty("answers").GetProperty("password").GetProperty("answers")[0].GetString().Should().Be("secret");
-        console.Error.Should().Contain("input hidden").And.NotContain("secret");
+        console.Error.Should().Contain("input hidden").And.NotContain("secret").And.EndWith(Environment.NewLine);
     }
 
     [Theory]
@@ -228,7 +231,8 @@ public sealed class PromptConsoleApprovalHandlerTests
     public async Task UnknownRequest_ThrowsWithoutPrompting()
     {
         using var console = new ConsoleScope("");
-        await Assert.ThrowsAsync<InvalidOperationException>(() => new PromptConsoleApprovalHandler().HandleAsync("unknown", null, default).AsTask());
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => new PromptConsoleApprovalHandler().HandleAsync("unknown", null, default).AsTask());
+        error.Message.Should().Contain("unknown");
         console.Error.Should().BeEmpty();
     }
 
