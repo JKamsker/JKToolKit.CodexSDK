@@ -288,6 +288,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(sessionsRoot);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!_fileSystem.DirectoryExists(sessionsRoot))
         {
@@ -376,6 +377,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionsRoot);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!_fileSystem.DirectoryExists(sessionsRoot))
         {
@@ -424,7 +426,7 @@ public sealed class CodexSessionLocator : ICodexSessionLocator
             {
                 sessionInfo = await CodexSessionLocatorHelpers.ParseSessionInfoAsync(_fileSystem, _logger, filePath, createdAtUtc, cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogWarning(
                     ex,
