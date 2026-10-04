@@ -59,6 +59,30 @@ public sealed class RealFileSystemCoverageTests
         size.InnerException.Should().BeOfType<FileNotFoundException>();
     }
 
+    [UnixPermissionFact]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void DeniedDirectoryPreservesUnauthorizedAccessFailures()
+    {
+        var directory = Directory.CreateTempSubdirectory("codex-denied-");
+        var path = Path.Combine(directory.FullName, "file.jsonl");
+        File.WriteAllText(path, "contents");
+        var originalMode = File.GetUnixFileMode(directory.FullName);
+        try
+        {
+            File.SetUnixFileMode(directory.FullName, UnixFileMode.None);
+            var fs = new RealFileSystem();
+            Assert.Throws<UnauthorizedAccessException>(() => fs.GetFiles(directory.FullName, "*")).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+            Assert.Throws<UnauthorizedAccessException>(() => fs.OpenRead(path)).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+            Assert.Throws<UnauthorizedAccessException>(() => fs.GetFileSize(path)).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+            Assert.Throws<UnauthorizedAccessException>(() => fs.GetFileCreationTimeUtc(path)).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+        }
+        finally
+        {
+            File.SetUnixFileMode(directory.FullName, originalMode);
+            directory.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void InvalidPaths_WrapIoExceptions()
     {
@@ -68,5 +92,14 @@ public sealed class RealFileSystemCoverageTests
         Assert.Throws<IOException>(() => fs.GetFileSize("\0")).InnerException.Should().BeOfType<ArgumentException>();
         Assert.Throws<IOException>(() => fs.GetFileCreationTimeUtc("\0")).InnerException.Should().BeOfType<ArgumentException>();
         Assert.Throws<UnauthorizedAccessException>(() => fs.OpenRead(Path.GetTempPath())).InnerException.Should().BeOfType<UnauthorizedAccessException>();
+    }
+}
+
+internal sealed class UnixPermissionFactAttribute : FactAttribute
+{
+    public UnixPermissionFactAttribute()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+            Skip = "Requires a non-root Unix process to enforce directory access bits.";
     }
 }
