@@ -64,6 +64,12 @@ dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen -- generate
 dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen -- check
 ```
 
+The scheduled upstream-sync workflow refreshes `runtime/runtime-lock.json` from
+the official npm metadata for all six platforms after updating the API pin.
+The update PR includes the archive URLs and SHA-512 integrity hashes; runtime
+packaging verifies the downloaded archives against that committed lock.
+Automation tests also check that the lock version matches the API pin.
+
 The scheduled upstream-sync workflow runs generation and the generated-output
 check deterministically before it creates the update PR. If an upstream schema
 change breaks the generator, it restores the generated tree before creating the
@@ -79,8 +85,9 @@ permanently pause future scheduled attempts.
 
 1. Update `UPSTREAM_CODEX_VERSION.json` `api`
 2. Update `external/codex` to the matching `rust-v<version>` tag
-3. Run `UpstreamGen generate`
-4. Run the deeper parity pass
-5. Update `UPSTREAM_CODEX_VERSION.json` `integration` after parity is complete
-6. Run `dotnet test -c Release`
-7. Commit the changes
+3. Run `python3 scripts/pack-codex-runtime.py --update-lock` and review the URLs and hashes
+4. Run `UpstreamGen generate`
+5. Run the deeper parity pass
+6. Update `UPSTREAM_CODEX_VERSION.json` `integration` after parity is complete
+7. Run `dotnet test -c Release`
+8. Commit the changes

@@ -158,6 +158,10 @@ jobs:
         if: steps.tag.outputs.ready == 'true'
         run: python3 scripts/sync-package-version.py
 
+      - name: Refresh pinned runtime integrity lock
+        if: steps.tag.outputs.ready == 'true'
+        run: python3 scripts/pack-codex-runtime.py --update-lock
+
       - name: Setup .NET for deterministic DTO generation
         if: steps.tag.outputs.ready == 'true'
         uses: actions/setup-dotnet@v6

@@ -2,6 +2,7 @@ import base64
 import hashlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import shutil
@@ -20,6 +21,18 @@ SPEC.loader.exec_module(PACKER)
 
 
 class RuntimePackagingTests(unittest.TestCase):
+    def test_committed_lock_matches_api_pin_and_covers_every_platform(self):
+        root = SCRIPT.parents[1]
+        version = json.loads((root / 'UPSTREAM_CODEX_VERSION.json').read_text())['api']
+        lock = json.loads((root / 'runtime/runtime-lock.json').read_text())
+        self.assertEqual(version, lock['version'])
+        self.assertEqual(set(PACKER.RIDS), set(lock['packages']))
+        for rid, entry in lock['packages'].items():
+            with self.subTest(rid=rid):
+                PACKER.validate_source(rid, version, entry)
+                self.assertTrue(entry['integrity'].startswith('sha512-'))
+                self.assertEqual(64, len(base64.b64decode(entry['integrity'][7:], validate=True)))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='runtime packaging ')
         self.addCleanup(self.temp.cleanup)
