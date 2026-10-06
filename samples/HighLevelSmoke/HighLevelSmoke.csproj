@@ -8,6 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/JKToolKit.CodexSDK/JKToolKit.CodexSDK.csproj" />
-    <PackageReference Include="JKToolKit.CodexSDK.Runtime.$(RuntimePackageRid)" Version="0.160.0" Condition="'$(UsePinnedRuntime)' == 'true'" />
+    <PackageReference Include="JKToolKit.CodexSDK.Runtime.$(RuntimePackageRid)" Version="$(CodexCliVersion)" Condition="'$(UsePinnedRuntime)' == 'true'" />
   </ItemGroup>
 </Project>

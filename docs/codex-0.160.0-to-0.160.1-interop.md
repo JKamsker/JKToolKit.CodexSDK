@@ -33,3 +33,21 @@
 ## Remaining Drift
 
 No remaining actionable drift was identified for existing SDK surfaces in the `0.160.0 -> 0.160.1` window.
+
+## Runtime Packaging CI Repair
+
+The initial CI gate passed SDK builds, tests, and coverage on all three operating
+systems, but every runtime packaging job rejected the stale `0.160.0` lock.
+Refreshed all six official npm archive URLs and SHA-512 hashes for `0.160.1`,
+and added the same refresh to upstream-sync bootstrap for future releases.
+Automation tests now require the committed lock to match the API pin and cover
+every supported platform with a valid official source and SHA-512 digest.
+
+The runtime smoke consumer also hardcoded `0.160.0`; it now uses
+`$(CodexCliVersion)` so CLI updates and SDK-only patches resolve the correct
+runtime independently of the SDK package version.
+
+Repair validation: 93 automation tests passed, generated DTOs remained current,
+and the full Release suite passed (3,764 passed, 17 opt-in integration tests
+skipped). The Linux runtime consumer resolved and executed `0.160.1` both from
+build output and published output.
