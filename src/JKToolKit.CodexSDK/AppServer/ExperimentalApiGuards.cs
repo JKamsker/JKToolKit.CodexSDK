@@ -152,6 +152,11 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("turn/start.collaborationMode");
         }
 
+        if (!experimentalApiEnabled && options.CyberAccessProgram is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/start.cyberAccessProgram");
+        }
+
         if (!experimentalApiEnabled && options.ResponsesApiClientMetadata is not null)
         {
             throw new CodexExperimentalApiRequiredException("turn/start.responsesapiClientMetadata");

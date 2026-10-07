@@ -13,8 +13,12 @@ public sealed record class McpServerOauthLoginResult
     public required string AuthorizationUrl { get; init; }
 
     /// <summary>
+    /// Gets the identifier that correlates this login attempt with its completion notification.
+    /// </summary>
+    public string? LoginId { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON payload for the response.
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-

@@ -51,6 +51,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add(options.WorkingDirectory);
         AddOptionalModelAndReasoningOverrides(startInfo, options);
         AddOptionalThreadSource(startInfo, options);
+        AddOptionalCyberAccessProgram(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -112,6 +113,7 @@ internal static class ProcessStartInfoBuilder
         startInfo.ArgumentList.Add("--cd");
         startInfo.ArgumentList.Add(options.WorkingDirectory);
         AddOptionalModelAndReasoningOverrides(startInfo, options);
+        AddOptionalCyberAccessProgram(startInfo, options);
 
         if (options.OutputSchema is { Kind: CodexOutputSchemaKind.File, FilePath: { } schemaPath })
         {
@@ -278,6 +280,15 @@ internal static class ProcessStartInfoBuilder
         {
             startInfo.ArgumentList.Add("--thread-source");
             startInfo.ArgumentList.Add(options.ThreadSource);
+        }
+    }
+
+    private static void AddOptionalCyberAccessProgram(ProcessStartInfo startInfo, CodexSessionOptions options)
+    {
+        if (options.CyberAccessProgram is { } program)
+        {
+            startInfo.ArgumentList.Add("--cyber-access-program");
+            startInfo.ArgumentList.Add(program.Value);
         }
     }
 }

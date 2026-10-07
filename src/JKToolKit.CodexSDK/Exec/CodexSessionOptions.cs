@@ -15,7 +15,7 @@ namespace JKToolKit.CodexSDK.Exec;
 /// including the initial prompt, working directory, model selection, and reasoning effort level.
 /// Required fields must be set before starting a session.
 /// </remarks>
-public class CodexSessionOptions
+public partial class CodexSessionOptions
 {
     private string? _workingDirectory;
     private string? _prompt;
@@ -448,6 +448,8 @@ public class CodexSessionOptions
                 }
             }
         }
+
+        ValidateCyberAccessProgram();
     }
 
     /// <summary>
@@ -468,6 +470,7 @@ public class CodexSessionOptions
             CodexBinaryPath = CodexBinaryPath,
             IdleTimeout = IdleTimeout,
             OutputSchema = OutputSchema,
+            CyberAccessProgram = CyberAccessProgram,
             StdinPayload = StdinPayload,
             ThreadSource = ThreadSource,
             ResumeTargetOverride = ResumeTargetOverride
@@ -485,16 +488,12 @@ public class CodexSessionOptions
     }
 
     internal bool UsesPromptArgumentMode => !string.IsNullOrWhiteSpace(_promptArgument);
-
     internal bool HasExplicitModelOverride => _modelOverrideExplicitlySet;
-
     internal bool HasExplicitReasoningEffortOverride => _reasoningEffortOverrideExplicitlySet;
-
     internal string CommandPromptToken => UsesPromptArgumentMode ? _promptArgument! : "-";
-
     internal string? StandardInputPayload => UsesPromptArgumentMode ? StdinPayload : _prompt;
-
     internal string? ResumeStandardInputPayload => UsesPromptArgumentMode ? null : _prompt;
 
     internal bool RequestsEphemeralSession => CodexExecOptionHelpers.RequestsEphemeralSession(_additionalOptions);
+
 }

@@ -133,6 +133,10 @@ internal static class CodexSessionThreadNameIndex
         }
 
         value = text;
+        if (string.Equals(propertyName, JsonFieldNames.SnakeCase.ThreadName, StringComparison.Ordinal))
+        {
+            value = value.Trim();
+        }
         return true;
     }
 }

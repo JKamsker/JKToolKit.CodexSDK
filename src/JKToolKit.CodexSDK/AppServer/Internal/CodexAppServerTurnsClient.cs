@@ -103,7 +103,8 @@ internal sealed class CodexAppServerTurnsClient
             Summary = options.Summary,
             Personality = options.Personality,
             OutputSchema = options.OutputSchema,
-            CollaborationMode = options.CollaborationMode
+            CollaborationMode = options.CollaborationMode,
+            CyberAccessProgram = options.CyberAccessProgram?.Value
         };
 
         using var pendingStart = _trackTurnStart(threadId);

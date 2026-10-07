@@ -307,6 +307,28 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task StartTurn_WithCyberAccessProgram_SendsWireValue()
+    {
+        using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        _ = await client.StartTurnAsync("thr_1", new TurnStartOptions
+        {
+            CyberAccessProgram = CodexCyberAccessProgram.DaybreakBlue
+        });
+
+        var parameters = rpc.LastParams.Should().BeOfType<TurnStartParams>().Subject;
+        parameters.CyberAccessProgram.Should().Be("daybreak_blue");
+    }
+
+    [Fact]
     public async Task StartTurn_WithStandaloneToolOutput_SendsStableTurnFields()
     {
         using var doc = JsonDocument.Parse("""{"turnId":"turn_1"}""");

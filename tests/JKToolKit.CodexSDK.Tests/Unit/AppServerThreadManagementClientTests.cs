@@ -233,6 +233,8 @@ public sealed class AppServerThreadManagementClientTests
         });
 
         rpc.LastMethod.Should().Be("thread/goal/set");
+        JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"origin\":\"user\"");
         set.Goal.Should().NotBeNull();
         set.Goal!.Status.Should().Be(ThreadGoalStatus.Active);
         set.Goal.TokensUsed.Should().Be(5);
@@ -241,6 +243,8 @@ public sealed class AppServerThreadManagementClientTests
         rpc.Result = clearDoc.RootElement;
         var clear = await client.ClearThreadGoalAsync("thr_1");
 
+        JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"origin\":\"user\"");
         rpc.LastMethod.Should().Be("thread/goal/clear");
         clear.Cleared.Should().BeTrue();
     }

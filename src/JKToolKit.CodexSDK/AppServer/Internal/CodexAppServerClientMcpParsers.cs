@@ -115,6 +115,7 @@ internal static class CodexAppServerClientMcpParsers
         return new McpServerOauthLoginResult
         {
             AuthorizationUrl = url,
+            LoginId = GetStringOrNull(result, JsonFieldNames.LoginId),
             Raw = result
         };
     }

@@ -153,8 +153,9 @@ public sealed class AppServerMcpParserContractTests
     [InlineData("authorization_url")]
     public void OAuth_ParsesBothUrlSpellings(string field)
     {
-        var result = CodexAppServerClientMcpParsers.ParseMcpServerOauthLoginResult(Json("{\"" + field + "\":\"https://auth.test\"}"));
+        var result = CodexAppServerClientMcpParsers.ParseMcpServerOauthLoginResult(Json("{\"" + field + "\":\"https://auth.test\",\"loginId\":\"login-1\"}"));
         result.AuthorizationUrl.Should().Be("https://auth.test");
+        result.LoginId.Should().Be("login-1");
         result.Raw.GetProperty(field).GetString().Should().Be("https://auth.test");
     }
 }
