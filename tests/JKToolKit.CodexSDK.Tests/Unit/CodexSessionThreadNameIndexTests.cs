@@ -22,7 +22,7 @@ public sealed class CodexSessionThreadNameIndexTests
         );
         fixture.WriteSessionIndex(
             """
-            {"id":"11111111-1111-1111-1111-111111111111","thread_name":"Renamed Thread","updated_at":"2026-04-01T10:05:00Z"}
+            {"id":"11111111-1111-1111-1111-111111111111","thread_name":"  Renamed Thread  ","updated_at":"2026-04-01T10:05:00Z"}
             """
         );
 

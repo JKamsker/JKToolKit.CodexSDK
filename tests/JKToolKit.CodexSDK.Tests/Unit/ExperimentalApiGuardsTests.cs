@@ -43,6 +43,17 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateTurnStart_Throws_WhenCyberAccessProgramSet_AndExperimentalDisabled()
+    {
+        var options = new TurnStartOptions { CyberAccessProgram = CodexCyberAccessProgram.DaybreakRed };
+
+        Action act = () => ExperimentalApiGuards.ValidateTurnStart(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("turn/start.cyberAccessProgram");
+    }
+
+    [Fact]
     public void ValidateThreadStart_Throws_WhenAskForApprovalGranularSet_AndExperimentalDisabled()
     {
         var options = new ThreadStartOptions

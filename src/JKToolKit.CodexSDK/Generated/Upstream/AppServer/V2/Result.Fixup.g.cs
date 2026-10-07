@@ -9,18 +9,9 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
-[System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ThreadGoalClearParams
+[System.CodeDom.Compiler.GeneratedCode("JKToolKit.CodexSDK.UpstreamGen", "0.0.0")]
+internal partial class Result
 {
-
-    /// <summary>
-    /// Missing provenance does not supply user authorization.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("origin")]
-    public Origin? Origin { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
-    public string ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

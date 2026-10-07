@@ -184,4 +184,10 @@ public sealed record class TurnStartParams
     /// </remarks>
     [JsonPropertyName(JsonFieldNames.CollaborationMode)]
     public JsonElement? CollaborationMode { get; init; }
+
+    /// <summary>
+    /// Gets an optional Cyber access program requested for this turn.
+    /// </summary>
+    [JsonPropertyName("cyberAccessProgram")]
+    public string? CyberAccessProgram { get; init; }
 }

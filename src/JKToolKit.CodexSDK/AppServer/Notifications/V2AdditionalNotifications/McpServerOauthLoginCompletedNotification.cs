@@ -19,6 +19,11 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     public string? ThreadId { get; }
 
     /// <summary>
+    /// Gets the identifier of the explicit login attempt, when upstream reports one.
+    /// </summary>
+    public string? LoginId { get; }
+
+    /// <summary>
     /// Gets a value indicating whether the login succeeded.
     /// </summary>
     public bool Success { get; }
@@ -32,7 +37,7 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
     /// </summary>
     public McpServerOauthLoginCompletedNotification(string Name, bool Success, string? Error, JsonElement Params)
-        : this(Name, null, Success, Error, Params)
+        : this(Name, null, null, Success, Error, Params)
     {
     }
 
@@ -40,10 +45,19 @@ public sealed record class McpServerOauthLoginCompletedNotification : AppServerN
     /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
     /// </summary>
     public McpServerOauthLoginCompletedNotification(string Name, string? ThreadId, bool Success, string? Error, JsonElement Params)
+        : this(Name, ThreadId, null, Success, Error, Params)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="McpServerOauthLoginCompletedNotification"/>.
+    /// </summary>
+    public McpServerOauthLoginCompletedNotification(string Name, string? ThreadId, string? LoginId, bool Success, string? Error, JsonElement Params)
         : base(AppServerMethods.McpServerOauthLoginCompleted, Params)
     {
         this.Name = Name;
         this.ThreadId = ThreadId;
+        this.LoginId = LoginId;
         this.Success = Success;
         this.Error = Error;
     }

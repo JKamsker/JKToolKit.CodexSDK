@@ -16,6 +16,12 @@ internal partial class ThreadGoalSetParams
     [System.Text.Json.Serialization.JsonPropertyName("objective")]
     public string? Objective { get; set; } = default!;
 
+    /// <summary>
+    /// Missing provenance does not supply user authorization.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("origin")]
+    public Origin2? Origin { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     public Status3? Status { get; set; } = default!;
 

@@ -16,6 +16,12 @@ internal partial class McpServerOauthLoginCompletedNotification
     [System.Text.Json.Serialization.JsonPropertyName("error")]
     public string? Error { get; set; } = default!;
 
+    /// <summary>
+    /// Identifies the explicit login attempt. Older servers omit this field.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
+    public string? LoginId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 

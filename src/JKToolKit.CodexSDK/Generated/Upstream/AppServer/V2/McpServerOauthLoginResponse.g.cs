@@ -16,6 +16,12 @@ internal partial class McpServerOauthLoginResponse
     [System.Text.Json.Serialization.JsonPropertyName("authorizationUrl")]
     public string AuthorizationUrl { get; set; } = default!;
 
+    /// <summary>
+    /// Identifies this login attempt across the response and completion notification. Older servers omit this field; current servers always return it.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
+    public string? LoginId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

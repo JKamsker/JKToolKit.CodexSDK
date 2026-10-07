@@ -202,6 +202,14 @@ public sealed class TurnStartOptions
     public JsonElement? CollaborationMode { get; set; }
 
     /// <summary>
+    /// Gets or sets an experimental Cyber access program for this turn.
+    /// </summary>
+    /// <remarks>
+    /// Omit to preserve upstream automatic behavior. This selection does not grant access.
+    /// </remarks>
+    public CodexCyberAccessProgram? CyberAccessProgram { get; set; }
+
+    /// <summary>
     /// Creates a copy of the current options.
     /// </summary>
     /// <returns>A new <see cref="TurnStartOptions"/> instance with the same values.</returns>
@@ -232,7 +240,8 @@ public sealed class TurnStartOptions
             Summary = Summary,
             Personality = Personality,
             OutputSchema = OutputSchema,
-            CollaborationMode = CollaborationMode
+            CollaborationMode = CollaborationMode,
+            CyberAccessProgram = CyberAccessProgram
         };
     }
 }

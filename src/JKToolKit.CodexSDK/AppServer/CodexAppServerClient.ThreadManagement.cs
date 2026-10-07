@@ -88,6 +88,7 @@ public sealed partial class CodexAppServerClient
             new
             {
                 options.ThreadId,
+                Origin = "user",
                 options.Objective,
                 Status = options.Status is { } status
                     ? CodexAppServerThreadManagementParsers.FormatThreadGoalStatus(status)
@@ -125,7 +126,7 @@ public sealed partial class CodexAppServerClient
 
         var result = await _core.SendRequestAsync(
             "thread/goal/clear",
-            new { ThreadId = threadId },
+            new { ThreadId = threadId, Origin = "user" },
             ct).ConfigureAwait(false);
 
         return new ThreadGoalClearResult

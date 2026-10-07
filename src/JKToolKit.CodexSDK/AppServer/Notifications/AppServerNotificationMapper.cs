@@ -246,8 +246,8 @@ internal static partial class AppServerNotificationMapper
                 Params: p),
 
             AppServerMethods.McpServerOauthLoginCompleted => new McpServerOauthLoginCompletedNotification(
-                Name: GetString(p, JsonFieldNames.Name) ?? string.Empty,
-                ThreadId: GetStringOrNull(p, JsonFieldNames.ThreadId),
+                Name: GetString(p, JsonFieldNames.Name) ?? string.Empty, ThreadId: GetStringOrNull(p, JsonFieldNames.ThreadId),
+                LoginId: GetStringOrNull(p, JsonFieldNames.LoginId),
                 Success: GetBool(p, JsonFieldNames.Success),
                 Error: GetStringOrNull(p, JsonFieldNames.Error),
                 Params: p),

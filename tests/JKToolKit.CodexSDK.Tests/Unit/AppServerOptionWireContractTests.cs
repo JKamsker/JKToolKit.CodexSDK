@@ -23,7 +23,8 @@ public sealed class AppServerOptionWireContractTests
             ApprovalPolicy = CodexApprovalPolicy.OnRequest, AskForApproval = CodexAskForApproval.FromPolicy(CodexApprovalPolicy.Never), ApprovalsReviewer = CodexApprovalsReviewer.User,
             SandboxPolicy = new SandboxPolicy.ReadOnly(), PermissionProfileId = "profile", Model = CodexModel.Parse("model"), ServiceTier = CodexServiceTier.Parse("fast"), ClearServiceTier = true,
             ServiceTierForTurn = CodexServiceTier.Parse("flex"), Effort = CodexReasoningEffort.High, Summary = "concise", Personality = "friendly",
-            OutputSchema = JsonSerializer.Deserialize<JsonElement>("{\"type\":\"object\"}"), CollaborationMode = JsonSerializer.Deserialize<JsonElement>("{\"mode\":\"plan\"}")
+            OutputSchema = JsonSerializer.Deserialize<JsonElement>("{\"type\":\"object\"}"), CollaborationMode = JsonSerializer.Deserialize<JsonElement>("{\"mode\":\"plan\"}"),
+            CyberAccessProgram = CodexCyberAccessProgram.DaybreakBlue
         };
         var clone = options.Clone();
         clone.Should().NotBeSameAs(options);

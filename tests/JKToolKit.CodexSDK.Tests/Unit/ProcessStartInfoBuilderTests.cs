@@ -25,6 +25,7 @@ public class ProcessStartInfoBuilderTests
             {
                 Model = CodexModel.Gpt51CodexMini,
                 ReasoningEffort = CodexReasoningEffort.High,
+                CyberAccessProgram = CodexCyberAccessProgram.DaybreakRed,
                 AdditionalOptions = new[] { "--cheap-model", "--flag" }
             };
             var clientOptions = new CodexClientOptions();
@@ -44,6 +45,8 @@ public class ProcessStartInfoBuilderTests
                 "gpt-5.1-codex-mini",
                 "--config",
                 "model_reasoning_effort=high",
+                "--cyber-access-program",
+                "daybreak_red",
                 "--cheap-model",
                 "--flag",
                 "-");
@@ -52,6 +55,19 @@ public class ProcessStartInfoBuilderTests
         {
             Directory.Delete(workingDirectory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void Validate_RejectsDuplicateCyberAccessProgramArgument()
+    {
+        var options = new CodexSessionOptions(Path.GetTempPath(), "prompt")
+        {
+            CyberAccessProgram = CodexCyberAccessProgram.Standard,
+            AdditionalOptions = ["--cyber-access-program=daybreak_blue"]
+        };
+
+        options.Invoking(value => value.Validate()).Should().Throw<InvalidOperationException>()
+            .WithMessage("*--cyber-access-program*");
     }
 
     [Fact]
