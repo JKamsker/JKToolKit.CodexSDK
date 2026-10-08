@@ -26,6 +26,12 @@ internal partial class MisalignmentErrorDetails
     public string? ErrorType { get; set; } = default!;
 
     /// <summary>
+    /// Opaque server-issued block target. Presence alone does not enable target-based continuation.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("reviewTarget")]
+    public string? ReviewTarget { get; set; } = default!;
+
+    /// <summary>
     /// Instruction to submit as the next turn's user input if continuation is confirmed.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("steer")]

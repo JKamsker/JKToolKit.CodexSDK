@@ -13,8 +13,8 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal enum ResponseItemType
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"message")]
-    Message = 0,
+    [System.Runtime.Serialization.EnumMember(Value = @"additional_tools")]
+    Additional_tools = 0,
 
 
 }

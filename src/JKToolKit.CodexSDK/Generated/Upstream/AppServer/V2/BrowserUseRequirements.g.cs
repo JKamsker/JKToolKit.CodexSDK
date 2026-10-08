@@ -28,6 +28,9 @@ internal partial class BrowserUseRequirements
     [System.Text.Json.Serialization.JsonPropertyName("disableAutoReview")]
     public bool? DisableAutoReview { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("extension")]
+    public Extension? Extension { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("origins")]
     public System.Collections.Generic.IDictionary<string, BrowserUseOriginPolicy>? Origins { get; set; } = default!;
 
