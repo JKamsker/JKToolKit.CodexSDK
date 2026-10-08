@@ -163,14 +163,16 @@ public sealed class RemoteControlEnvironmentClientTests
         {
             EnvironmentId = "env-1",
             ExecServerUrl = "https://exec.example.test",
-            AuthBearerToken = "opaque-credential"
+            AuthBearerToken = "opaque-credential",
+            RequiredSkills = ["repo-maintenance", "testing"]
         });
 
         rpc.LastMethod.Should().Be("environment/add");
         JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             .Should().Contain("\"environmentId\":\"env-1\"")
             .And.Contain("\"execServerUrl\":\"https://exec.example.test\"")
-            .And.Contain("\"authBearerToken\":\"opaque-credential\"");
+            .And.Contain("\"authBearerToken\":\"opaque-credential\"")
+            .And.Contain("\"skills\":{\"required\":[\"repo-maintenance\",\"testing\"]}");
     }
 
     [Fact]

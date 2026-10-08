@@ -203,6 +203,13 @@ internal static class CodexAppServerClientConfigRequirementsParser
     {
         return new BrowserUseRequirements
         {
+            Extension = TryGetObject(browserUse, "extension") is { } extension
+                ? new BrowserUseExtensionRequirements
+                {
+                    RequestHeaders = ParseBrowserUseRequestHeaders(extension),
+                    Raw = extension.Clone()
+                }
+                : null,
             AllowWebMcp = GetBoolOrNull(browserUse, "allowWebmcp"),
             AllowHistoryAccess = GetBoolOrNull(browserUse, "allowHistoryAccess"),
             DisableAutoReview = GetBoolOrNull(browserUse, "disableAutoReview"),
@@ -213,6 +220,33 @@ internal static class CodexAppServerClientConfigRequirementsParser
             Origins = ParseBrowserUseOriginPolicyMap(browserUse, JsonFieldNames.Origins),
             Raw = browserUse.Clone()
         };
+    }
+
+    private static IReadOnlyList<BrowserUseRequestHeader>? ParseBrowserUseRequestHeaders(JsonElement extension)
+    {
+        var headers = TryGetArray(extension, "requestHeaders");
+        if (headers is null)
+        {
+            return null;
+        }
+
+        var result = new List<BrowserUseRequestHeader>();
+        foreach (var header in headers.Value.EnumerateArray())
+        {
+            if (header.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var name = GetStringOrNull(header, JsonFieldNames.Name);
+            var value = GetStringOrNull(header, "value");
+            if (name is not null && value is not null)
+            {
+                result.Add(new BrowserUseRequestHeader { Name = name, Value = value });
+            }
+        }
+
+        return result;
     }
 
     private static BrowserUseOriginPolicy ParseBrowserUseOriginPolicy(JsonElement policy)

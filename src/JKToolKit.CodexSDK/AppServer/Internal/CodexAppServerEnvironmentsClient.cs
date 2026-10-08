@@ -33,7 +33,8 @@ internal sealed class CodexAppServerEnvironmentsClient
             {
                 environmentId = options.EnvironmentId,
                 execServerUrl = options.ExecServerUrl,
-                authBearerToken = options.AuthBearerToken
+                authBearerToken = options.AuthBearerToken,
+                skills = options.RequiredSkills is null ? null : new { required = options.RequiredSkills }
             },
             ct);
 

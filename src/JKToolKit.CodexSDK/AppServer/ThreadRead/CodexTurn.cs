@@ -15,6 +15,11 @@ public sealed record class CodexTurn
     public string Id { get; }
 
     /// <summary>
+    /// Gets the first turn in the attributed chain of work, when known.
+    /// </summary>
+    public string? RootTurnId { get; }
+
+    /// <summary>
     /// Gets the upstream turn status.
     /// </summary>
     public CodexTurnStatus Status { get; }
@@ -34,9 +39,10 @@ public sealed record class CodexTurn
     /// </summary>
     public JsonElement Raw { get; }
 
-    internal CodexTurn(string id, CodexTurnStatus status, IReadOnlyList<CodexThreadItem> items, CodexTurnError? error, JsonElement raw)
+    internal CodexTurn(string id, string? rootTurnId, CodexTurnStatus status, IReadOnlyList<CodexThreadItem> items, CodexTurnError? error, JsonElement raw)
     {
         Id = id;
+        RootTurnId = rootTurnId;
         Status = status;
         Items = items;
         Error = error;
@@ -56,6 +62,6 @@ public sealed record class CodexTurn
         var items = CodexThreadItemParser.ParseItems(element);
         var error = CodexTurnError.Parse(CodexAppServerClientJson.TryGetObject(element, JsonFieldNames.Error));
 
-        return new CodexTurn(id, status, items, error, raw);
+        return new CodexTurn(id, CodexAppServerClientJson.GetStringOrNull(element, "rootTurnId"), status, items, error, raw);
     }
 }

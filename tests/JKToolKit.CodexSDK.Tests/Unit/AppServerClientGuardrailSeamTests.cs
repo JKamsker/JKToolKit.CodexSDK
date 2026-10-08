@@ -344,6 +344,8 @@ public sealed class AppServerClientGuardrailSeamTests
         _ = await client.StartTurnAsync("thr_1", new TurnStartOptions
         {
             TurnTrigger = "toolResult",
+            ParentTurnId = "turn-parent",
+            RootTurnId = "turn-root",
             ToolOutput = TurnToolOutput.Text("memory_lookup", "Alice mentioned you.", "memories"),
             ServiceTierForTurn = CodexServiceTier.Parse("default")
         });
@@ -353,6 +355,8 @@ public sealed class AppServerClientGuardrailSeamTests
         var p = rpc.LastParams.Should().BeOfType<TurnStartParams>().Subject;
         p.Input.Should().BeEmpty();
         p.TurnTrigger.Should().Be("toolResult");
+        p.ParentTurnId.Should().Be("turn-parent");
+        p.RootTurnId.Should().Be("turn-root");
         p.ServiceTierForTurn.Should().Be("default");
         p.ToolOutput.Should().NotBeNull();
         p.ToolOutput!.Name.Should().Be("memory_lookup");

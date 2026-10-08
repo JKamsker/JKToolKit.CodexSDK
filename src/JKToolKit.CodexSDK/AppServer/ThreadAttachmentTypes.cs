@@ -149,6 +149,79 @@ public sealed record class ThreadAttachmentListPage
 }
 
 /// <summary>
+/// Options for reverse lookup of threads that own an attachment identity.
+/// </summary>
+public sealed class ThreadAttachmentOwnerListOptions
+{
+    /// <summary>
+    /// Gets or sets the application-defined attachment type.
+    /// </summary>
+    public required string AttachmentType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the stable attachment identity.
+    /// </summary>
+    public required string IdentityKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the archive-state filter. Null includes archived and non-archived threads.
+    /// </summary>
+    public bool? Archived { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional pagination cursor.
+    /// </summary>
+    public string? Cursor { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional page size.
+    /// </summary>
+    public int? Limit { get; set; }
+}
+
+/// <summary>
+/// Represents a thread that owns the requested attachment identity.
+/// </summary>
+public sealed record class ThreadAttachmentOwner
+{
+    /// <summary>
+    /// Gets the owning thread identifier.
+    /// </summary>
+    public required string ThreadId { get; init; }
+
+    /// <summary>
+    /// Gets whether the owning thread is archived.
+    /// </summary>
+    public bool Archived { get; init; }
+
+    /// <summary>
+    /// Gets the raw owner payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents a page of threads that own an attachment identity.
+/// </summary>
+public sealed record class ThreadAttachmentOwnerListPage
+{
+    /// <summary>
+    /// Gets the matching owners.
+    /// </summary>
+    public required IReadOnlyList<ThreadAttachmentOwner> Owners { get; init; }
+
+    /// <summary>
+    /// Gets the next cursor token, if any.
+    /// </summary>
+    public string? NextCursor { get; init; }
+
+    /// <summary>
+    /// Gets the raw response payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
 /// Options for <c>thread/attachment/remove</c>.
 /// </summary>
 public sealed class ThreadAttachmentRemoveOptions

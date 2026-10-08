@@ -19,6 +19,14 @@ public sealed partial class CodexAppServerClient
         _threadsClient.ListThreadAttachmentsAsync(options, ct);
 
     /// <summary>
+    /// Lists threads that own an attachment with the requested identity.
+    /// </summary>
+    public Task<ThreadAttachmentOwnerListPage> ListThreadAttachmentOwnersAsync(
+        ThreadAttachmentOwnerListOptions options,
+        CancellationToken ct = default) =>
+        _threadsClient.ListThreadAttachmentOwnersAsync(options, ct);
+
+    /// <summary>
     /// Removes an attachment by its stable thread-local identity.
     /// </summary>
     public Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(

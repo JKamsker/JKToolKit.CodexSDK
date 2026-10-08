@@ -42,6 +42,35 @@ internal static class CodexAppServerThreadAttachmentParsers
         };
     }
 
+    public static ThreadAttachmentOwnerListPage ParseOwnerListPage(JsonElement result)
+    {
+        var data = CodexAppServerClientJson.TryGetArray(result, JsonFieldNames.Data)
+            ?? throw new InvalidOperationException("Missing required property 'data' on thread/attachmentOwner/list response.");
+        var owners = new List<ThreadAttachmentOwner>();
+
+        foreach (var item in data.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException("thread/attachmentOwner/list response contains a non-object entry in 'data'.");
+            }
+
+            owners.Add(new ThreadAttachmentOwner
+            {
+                ThreadId = CodexAppServerClientJson.GetRequiredString(item, JsonFieldNames.ThreadId, "thread attachment owner"),
+                Archived = CodexAppServerClientJson.GetRequiredBool(item, "archived", "thread attachment owner"),
+                Raw = item.Clone()
+            });
+        }
+
+        return new ThreadAttachmentOwnerListPage
+        {
+            Owners = owners,
+            NextCursor = CodexAppServerClientJson.GetStringOrNull(result, JsonFieldNames.NextCursor),
+            Raw = result
+        };
+    }
+
     private static ThreadAttachmentInfo ParseAttachment(JsonElement attachment)
     {
         if (!attachment.TryGetProperty(JsonFieldNames.Payload, out var payload))
