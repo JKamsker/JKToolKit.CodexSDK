@@ -52,6 +52,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ListThreadAttachmentsAsync(options, token), ct);
 
+    public Task<ThreadAttachmentOwnerListPage> ListThreadAttachmentOwnersAsync(ThreadAttachmentOwnerListOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.ListThreadAttachmentOwnersAsync(options, token), ct);
+
     public Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.ThreadManagement, (c, token) => c.RemoveThreadAttachmentAsync(options, token), ct);
 

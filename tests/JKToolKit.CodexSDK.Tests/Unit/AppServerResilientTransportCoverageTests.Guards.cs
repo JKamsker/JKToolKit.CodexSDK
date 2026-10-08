@@ -67,6 +67,8 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Invalid(c => c.StartReviewAsync(new() { ThreadId = "thread-1", Target = null! }));
         yield return Invalid(c => c.AddThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = "review-1", Payload = default }));
         yield return Invalid(c => c.ListThreadAttachmentsAsync(new() { ThreadId = " " }));
+        yield return Invalid(c => c.ListThreadAttachmentOwnersAsync(new() { AttachmentType = " ", IdentityKey = "review-1" }));
+        yield return Invalid(c => c.ListThreadAttachmentOwnersAsync(new() { AttachmentType = "review", IdentityKey = " " }));
         yield return Invalid(c => c.RemoveThreadAttachmentAsync(new() { ThreadId = " ", AttachmentType = "review", IdentityKey = "review-1" }));
         yield return Invalid(c => c.RemoveThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = " ", IdentityKey = "review-1" }));
         yield return Invalid(c => c.RemoveThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = " " }));

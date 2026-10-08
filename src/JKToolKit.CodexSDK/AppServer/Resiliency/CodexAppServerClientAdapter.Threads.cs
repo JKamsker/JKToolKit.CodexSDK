@@ -34,6 +34,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct);
 
+    Task<ThreadAttachmentOwnerListPage> ListThreadAttachmentOwnersAsync(ThreadAttachmentOwnerListOptions options, CancellationToken ct);
+
     Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct);
 
     Task CompactThreadAsync(string threadId, CancellationToken ct);
@@ -103,6 +105,9 @@ internal sealed partial class CodexAppServerClientAdapter
 
     public Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct) =>
         _inner.ListThreadAttachmentsAsync(options, ct);
+
+    public Task<ThreadAttachmentOwnerListPage> ListThreadAttachmentOwnersAsync(ThreadAttachmentOwnerListOptions options, CancellationToken ct) =>
+        _inner.ListThreadAttachmentOwnersAsync(options, ct);
 
     public Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct) =>
         _inner.RemoveThreadAttachmentAsync(options, ct);

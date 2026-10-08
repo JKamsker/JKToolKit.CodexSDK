@@ -9,15 +9,18 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// One page of matching owners, including threads without their own user messages.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-internal partial class ModelProviderCapabilitiesReadResponse
+internal partial class ThreadAttachmentOwnerListResponse
 {
 
-    [System.Text.Json.Serialization.JsonPropertyName("imageGeneration")]
-    public bool ImageGeneration { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("data")]
+    public System.Collections.Generic.ICollection<ThreadAttachmentOwner> Data { get; set; } = new System.Collections.ObjectModel.Collection<ThreadAttachmentOwner>();
 
-    [System.Text.Json.Serialization.JsonPropertyName("webSearch")]
-    public bool WebSearch { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

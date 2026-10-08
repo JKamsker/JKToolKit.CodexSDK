@@ -71,12 +71,16 @@ public sealed class TurnStartParamsSerializationTests
                 ThreadId = "thr_123",
                 Input = [],
                 TurnTrigger = "toolResult",
+                ParentTurnId = "turn-parent",
+                RootTurnId = "turn-root",
                 ServiceTierForTurn = "default",
                 ToolOutput = TurnToolOutput.Text("memory_lookup", "Alice mentioned you.", "memories")
             },
             CodexAppServerClient.CreateDefaultSerializerOptions());
 
         json.Should().Contain("\"turnTrigger\":\"toolResult\"")
+            .And.Contain("\"parentTurnId\":\"turn-parent\"")
+            .And.Contain("\"rootTurnId\":\"turn-root\"")
             .And.Contain("\"serviceTierForTurn\":\"default\"")
             .And.Contain("\"toolOutput\":{\"name\":\"memory_lookup\",\"namespace\":\"memories\",\"output\":\"Alice mentioned you.\"}");
     }

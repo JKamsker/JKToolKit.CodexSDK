@@ -48,6 +48,12 @@ internal partial class Turn
     public ItemsView3? ItemsView { get; set; } = default!;
 
     /// <summary>
+    /// ID of the first turn in the chain of work that led to this turn. Pass this as `rootTurnId` when starting work on behalf of this turn. May be null in older history or a `review/start` response.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("rootTurnId")]
+    public string? RootTurnId { get; set; } = default!;
+
+    /// <summary>
     /// Unix timestamp (in seconds) when the turn started.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("startedAt")]

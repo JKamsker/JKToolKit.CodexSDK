@@ -8,6 +8,11 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed record class ConfigRequirementsReadResult
 {
     /// <summary>
+    /// Gets whether Fast and Ultra Fast requirements are enforced independently, when reported by the server.
+    /// </summary>
+    public bool? SupportsIndependentSpeedModes { get; init; }
+
+    /// <summary>
     /// Gets the parsed requirements object, or null if no requirements are configured.
     /// </summary>
     public ConfigRequirements? Requirements { get; init; }
@@ -17,4 +22,3 @@ public sealed record class ConfigRequirementsReadResult
     /// </summary>
     public required JsonElement Raw { get; init; }
 }
-

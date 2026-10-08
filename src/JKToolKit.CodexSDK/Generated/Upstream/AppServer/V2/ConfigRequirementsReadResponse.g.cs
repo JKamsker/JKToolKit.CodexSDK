@@ -19,6 +19,12 @@ internal partial class ConfigRequirementsReadResponse
     [System.Text.Json.Serialization.JsonPropertyName("requirements")]
     public Requirements? Requirements { get; set; } = default!;
 
+    /// <summary>
+    /// Whether Fast and Ultra Fast requirements are enforced independently. Older servers omit this field and use Fast mode as a shared speed gate.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("supportsIndependentSpeedModes")]
+    public bool? SupportsIndependentSpeedModes { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

@@ -62,10 +62,26 @@ internal partial class TurnStartParams
     public object? OutputSchema { get; set; } = default!;
 
     /// <summary>
+    /// ID of the turn that caused this new turn to start.
+    /// <br/>
+    /// <br/>Set this when starting work on behalf of another turn, such as delegated work in a different thread. Leave unset for work started directly by the user. Ignored when this request adds input to an active turn.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("parentTurnId")]
+    public string? ParentTurnId { get; set; } = default!;
+
+    /// <summary>
     /// @deprecated `friendly` and `pragmatic` no longer select a style. Changing this does not rewrite the thread's existing instructions.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("personality")]
     public Personality5? Personality { get; set; } = default!;
+
+    /// <summary>
+    /// ID of the first turn in the chain of work that led to this new turn.
+    /// <br/>
+    /// <br/>When setting `parentTurnId`, set this to the parent turn's `rootTurnId` when known. This keeps descendant work attributed to the original turn. If omitted, the new turn becomes its own root. Ignored when this request adds input to an active turn.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("rootTurnId")]
+    public string? RootTurnId { get; set; } = default!;
 
     /// <summary>
     /// Override the sandbox policy for this turn and subsequent turns.

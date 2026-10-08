@@ -37,6 +37,7 @@ public sealed partial class ResilientCodexAppServerClientTests
         nameof(CodexAppServerClient.UnsubscribeThreadAsync),
         nameof(CodexAppServerClient.AddThreadAttachmentAsync),
         nameof(CodexAppServerClient.ListThreadAttachmentsAsync),
+        nameof(CodexAppServerClient.ListThreadAttachmentOwnersAsync),
         nameof(CodexAppServerClient.RemoveThreadAttachmentAsync),
         nameof(CodexAppServerClient.CompactThreadAsync),
         nameof(CodexAppServerClient.RollbackThreadAsync),
@@ -1044,6 +1045,9 @@ public sealed partial class ResilientCodexAppServerClientTests
 
         public Task<ThreadAttachmentListPage> ListThreadAttachmentsAsync(ThreadAttachmentListOptions options, CancellationToken ct) =>
             NotSupported<ThreadAttachmentListPage>();
+
+        public Task<ThreadAttachmentOwnerListPage> ListThreadAttachmentOwnersAsync(ThreadAttachmentOwnerListOptions options, CancellationToken ct) =>
+            NotSupported<ThreadAttachmentOwnerListPage>();
 
         public Task<ThreadAttachmentRemoveResult> RemoveThreadAttachmentAsync(ThreadAttachmentRemoveOptions options, CancellationToken ct) =>
             NotSupported<ThreadAttachmentRemoveResult>();

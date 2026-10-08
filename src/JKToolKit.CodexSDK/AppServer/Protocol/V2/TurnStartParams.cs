@@ -38,6 +38,18 @@ public sealed record class TurnStartParams
     public string? TurnTrigger { get; init; }
 
     /// <summary>
+    /// Gets the identifier of the turn that caused this turn to start.
+    /// </summary>
+    [JsonPropertyName("parentTurnId")]
+    public string? ParentTurnId { get; init; }
+
+    /// <summary>
+    /// Gets the identifier of the first turn in the attributed chain of work.
+    /// </summary>
+    [JsonPropertyName("rootTurnId")]
+    public string? RootTurnId { get; init; }
+
+    /// <summary>
     /// Gets the input items for the turn (wire payloads).
     /// </summary>
     /// <remarks>

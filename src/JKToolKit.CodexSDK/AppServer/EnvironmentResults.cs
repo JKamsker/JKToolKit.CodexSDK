@@ -24,6 +24,11 @@ public sealed class EnvironmentAddOptions
     /// Upstream requires a secure transport or a loopback destination when this value is supplied.
     /// </remarks>
     public string? AuthBearerToken { get; set; }
+
+    /// <summary>
+    /// Gets or sets exact skill catalog names that must be available from this environment.
+    /// </summary>
+    public IReadOnlyList<string>? RequiredSkills { get; set; }
 }
 
 /// <summary>

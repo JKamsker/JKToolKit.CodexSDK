@@ -258,6 +258,11 @@ public sealed record class ComputerUseRequirements
 public sealed record class BrowserUseRequirements
 {
     /// <summary>
+    /// Gets managed browser-extension requirements, when present.
+    /// </summary>
+    public BrowserUseExtensionRequirements? Extension { get; init; }
+
+    /// <summary>
     /// Gets whether WebMCP browser use is allowed.
     /// </summary>
     public bool? AllowWebMcp { get; init; }
@@ -291,6 +296,38 @@ public sealed record class BrowserUseRequirements
     /// Gets the raw JSON requirements payload.
     /// </summary>
     public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents managed requirements for the browser extension.
+/// </summary>
+public sealed record class BrowserUseExtensionRequirements
+{
+    /// <summary>
+    /// Gets request headers the extension must attach, when present.
+    /// </summary>
+    public IReadOnlyList<BrowserUseRequestHeader>? RequestHeaders { get; init; }
+
+    /// <summary>
+    /// Gets the raw extension requirements payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents a managed browser-extension request header.
+/// </summary>
+public sealed record class BrowserUseRequestHeader
+{
+    /// <summary>
+    /// Gets the request header name.
+    /// </summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// Gets the request header value or value template.
+    /// </summary>
+    public required string Value { get; init; }
 }
 
 /// <summary>

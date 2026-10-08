@@ -15,9 +15,17 @@ public sealed class ConfigRequirementsReadWrapperTests
     {
         var rawResult = JsonSerializer.SerializeToElement(new
         {
+            supportsIndependentSpeedModes = true,
             requirements = new
             {
-                allowedApprovalPolicies = new[] { "never" }
+                allowedApprovalPolicies = new[] { "never" },
+                browserUse = new
+                {
+                    extension = new
+                    {
+                        requestHeaders = new[] { new { name = "x-browser-agent", value = "Codex/{{session_id}}" } }
+                    }
+                }
             }
         });
 
@@ -37,10 +45,14 @@ public sealed class ConfigRequirementsReadWrapperTests
         var result = await client.ReadConfigRequirementsAsync();
 
         result.Raw.ValueKind.Should().Be(JsonValueKind.Object);
+        result.SupportsIndependentSpeedModes.Should().BeTrue();
         result.Requirements.Should().NotBeNull();
         result.Requirements!.AllowedApprovalPolicies!.Select(p => p.Value).Should().Equal("never");
         result.Requirements.AllowedAskForApproval.Should().NotBeNull();
         result.Requirements.AllowedAskForApproval!.Should().HaveCount(1);
+        result.Requirements.BrowserUse!.Extension!.RequestHeaders.Should().ContainSingle();
+        result.Requirements.BrowserUse.Extension.RequestHeaders![0].Name.Should().Be("x-browser-agent");
+        result.Requirements.BrowserUse.Extension.RequestHeaders[0].Value.Should().Be("Codex/{{session_id}}");
     }
 
     [Fact]

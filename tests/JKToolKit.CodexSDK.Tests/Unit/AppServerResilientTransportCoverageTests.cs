@@ -113,6 +113,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Case("remoteControl/client/list", c => c.ListRemoteControlClientsAsync(new() { EnvironmentId = "env-1", Limit = 2 }), """{"environmentId":"env-1","limit":2}""", """{"data":[]}""");
         yield return Case("remoteControl/client/revoke", c => c.RevokeRemoteControlClientAsync(new() { EnvironmentId = "env-1", ClientId = "client-1" }), """{"environmentId":"env-1","clientId":"client-1"}""");
         yield return Case("thread/attachment/list", c => c.ListThreadAttachmentsAsync(new() { ThreadId = "thread-1", Limit = 2 }), """{"threadId":"thread-1","limit":2}""", """{"data":[]}""");
+        yield return Case("thread/attachmentOwner/list", c => c.ListThreadAttachmentOwnersAsync(new() { AttachmentType = "review", IdentityKey = "review-1", Archived = false, Limit = 2 }), """{"archived":false,"attachmentType":"review","identityKey":"review-1","limit":2}""", """{"data":[]}""");
         yield return Case("thread/attachment/remove", c => c.RemoveThreadAttachmentAsync(new() { ThreadId = "thread-1", AttachmentType = "review", IdentityKey = "review-1" }), """{"threadId":"thread-1","attachmentType":"review","identityKey":"review-1"}""");
         yield return Case("thread/settings/update", c => c.UpdateThreadSettingsAsync(new() { ThreadId = "thread-1", DisabledPluginIds = ["plugin-1"] }), """{"threadId":"thread-1","disabledPluginIds":["plugin-1"]}""");
         yield return Case("permissionProfile/list", c => c.ListPermissionProfilesAsync(new()), "{}", """{"data":[]}""");

@@ -69,6 +69,28 @@ internal sealed partial class CodexAppServerThreadsClient
         return new ThreadAttachmentRemoveResult { Raw = result };
     }
 
+    public async Task<ThreadAttachmentOwnerListPage> ListThreadAttachmentOwnersAsync(
+        ThreadAttachmentOwnerListOptions options,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ValidateAttachmentIdentity(options.AttachmentType, options.IdentityKey, nameof(options));
+
+        var result = await _sendRequestAsync(
+            "thread/attachmentOwner/list",
+            new UpstreamV2.ThreadAttachmentOwnerListParams
+            {
+                AttachmentType = options.AttachmentType,
+                IdentityKey = options.IdentityKey,
+                Archived = options.Archived,
+                Cursor = options.Cursor,
+                Limit = options.Limit
+            },
+            ct).ConfigureAwait(false);
+
+        return CodexAppServerThreadAttachmentParsers.ParseOwnerListPage(result);
+    }
+
     private static void ValidateAttachmentIdentity(
         string threadId,
         string attachmentType,
@@ -77,6 +99,14 @@ internal sealed partial class CodexAppServerThreadsClient
     {
         if (string.IsNullOrWhiteSpace(threadId))
             throw new ArgumentException("ThreadId cannot be empty or whitespace.", parameterName);
+        if (string.IsNullOrWhiteSpace(attachmentType))
+            throw new ArgumentException("AttachmentType cannot be empty or whitespace.", parameterName);
+        if (string.IsNullOrWhiteSpace(identityKey))
+            throw new ArgumentException("IdentityKey cannot be empty or whitespace.", parameterName);
+    }
+
+    private static void ValidateAttachmentIdentity(string attachmentType, string identityKey, string parameterName)
+    {
         if (string.IsNullOrWhiteSpace(attachmentType))
             throw new ArgumentException("AttachmentType cannot be empty or whitespace.", parameterName);
         if (string.IsNullOrWhiteSpace(identityKey))

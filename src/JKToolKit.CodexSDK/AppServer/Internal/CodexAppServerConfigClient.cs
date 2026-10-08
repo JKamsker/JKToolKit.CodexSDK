@@ -33,6 +33,7 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new ConfigRequirementsReadResult
         {
+            SupportsIndependentSpeedModes = CodexAppServerClientJson.GetBoolOrNull(result, "supportsIndependentSpeedModes"),
             Requirements = CodexAppServerClientConfigRequirementsParser.ParseConfigRequirementsReadRequirements(result, experimentalApiEnabled: _experimentalApiEnabled()),
             Raw = result
         };

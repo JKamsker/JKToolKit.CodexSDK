@@ -76,6 +76,8 @@ internal sealed class CodexAppServerTurnsClient
             DisabledPluginIds = options.DisabledPluginIds,
             ClientUserMessageId = options.ClientUserMessageId,
             TurnTrigger = options.TurnTrigger,
+            ParentTurnId = options.ParentTurnId,
+            RootTurnId = options.RootTurnId,
             Input = options.Input.Select(i => i.Wire).ToArray(),
             ToolOutput = options.ToolOutput,
             ResponsesApiClientMetadata = options.ResponsesApiClientMetadata,

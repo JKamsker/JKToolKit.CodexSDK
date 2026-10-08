@@ -34,6 +34,24 @@ public sealed class TurnStartOptions
     public string? TurnTrigger { get; set; }
 
     /// <summary>
+    /// Gets or sets the identifier of the turn that caused this turn to start.
+    /// </summary>
+    /// <remarks>
+    /// Set this for delegated work started on behalf of another turn. Upstream ignores it when the request
+    /// steers an already-active turn.
+    /// </remarks>
+    public string? ParentTurnId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the first turn in the attributed chain of work.
+    /// </summary>
+    /// <remarks>
+    /// When <see cref="ParentTurnId"/> is set, use the parent turn's root turn id when known. Upstream ignores
+    /// this value when the request steers an already-active turn.
+    /// </remarks>
+    public string? RootTurnId { get; set; }
+
+    /// <summary>
     /// Gets or sets optional standalone tool output to submit instead of user input.
     /// </summary>
     /// <remarks>
@@ -221,6 +239,8 @@ public sealed class TurnStartOptions
             Input = Input,
             ClientUserMessageId = ClientUserMessageId,
             TurnTrigger = TurnTrigger,
+            ParentTurnId = ParentTurnId,
+            RootTurnId = RootTurnId,
             ToolOutput = ToolOutput,
             ResponsesApiClientMetadata = ResponsesApiClientMetadata,
             AdditionalContext = AdditionalContext,

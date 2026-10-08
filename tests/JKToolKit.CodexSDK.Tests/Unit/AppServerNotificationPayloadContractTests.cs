@@ -163,9 +163,9 @@ public sealed class AppServerNotificationPayloadContractTests
     public void HistoryTurn_ParsesStatusItemsAndErrorAsOneSnapshot()
     {
         CodexTurn turn;
-        using (var document = JsonDocument.Parse("""{"id":"turn","status":"failed","items":[{"id":"i","type":"plan","text":"plan"}],"error":{"message":"failure"}}"""))
+        using (var document = JsonDocument.Parse("""{"id":"turn","rootTurnId":"root-turn","status":"failed","items":[{"id":"i","type":"plan","text":"plan"}],"error":{"message":"failure"}}"""))
             turn = CodexTurn.TryParse(document.RootElement)!;
-        turn.Id.Should().Be("turn"); turn.Status.Should().Be(CodexTurnStatus.Failed); turn.Error!.Message.Should().Be("failure");
+        turn.Id.Should().Be("turn"); turn.RootTurnId.Should().Be("root-turn"); turn.Status.Should().Be(CodexTurnStatus.Failed); turn.Error!.Message.Should().Be("failure");
         turn.Items.Should().ContainSingle().Which.Id.Should().Be("i"); turn.Raw.GetProperty("status").GetString().Should().Be("failed");
         CodexTurn.TryParse(Json("null")).Should().BeNull();
     }

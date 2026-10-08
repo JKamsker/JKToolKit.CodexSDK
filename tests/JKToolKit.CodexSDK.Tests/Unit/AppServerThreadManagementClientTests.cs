@@ -89,6 +89,34 @@ public sealed class AppServerThreadManagementClientTests
         page.Attachments.Should().ContainSingle().Which.IdentityKey.Should().Be("review-1");
         page.NextCursor.Should().Be("next-1");
 
+        using var ownersDoc = JsonDocument.Parse("""
+        {
+          "data": [
+            { "threadId": "thr_1", "archived": false },
+            { "threadId": "thr_2", "archived": true }
+          ],
+          "nextCursor": "owner-next"
+        }
+        """);
+        rpc.Result = ownersDoc.RootElement;
+        var owners = await client.ListThreadAttachmentOwnersAsync(new ThreadAttachmentOwnerListOptions
+        {
+            AttachmentType = "review",
+            IdentityKey = "review-1",
+            Archived = false,
+            Cursor = "owner-cursor",
+            Limit = 5
+        });
+
+        rpc.LastMethod.Should().Be("thread/attachmentOwner/list");
+        var ownerParams = JsonSerializer.SerializeToElement(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
+        ownerParams.GetProperty("attachmentType").GetString().Should().Be("review");
+        ownerParams.GetProperty("identityKey").GetString().Should().Be("review-1");
+        ownerParams.GetProperty("archived").GetBoolean().Should().BeFalse();
+        owners.Owners.Select(owner => owner.ThreadId).Should().Equal("thr_1", "thr_2");
+        owners.Owners[1].Archived.Should().BeTrue();
+        owners.NextCursor.Should().Be("owner-next");
+
         using var removeDoc = JsonDocument.Parse("""{}""");
         rpc.Result = removeDoc.RootElement;
         var removed = await client.RemoveThreadAttachmentAsync(new ThreadAttachmentRemoveOptions
