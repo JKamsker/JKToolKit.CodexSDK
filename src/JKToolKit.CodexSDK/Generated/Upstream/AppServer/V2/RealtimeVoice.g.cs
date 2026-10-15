@@ -25,68 +25,132 @@ internal enum RealtimeVoice
     Ash = 2,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"aube")]
+    Aube = 3,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"ballad")]
-    Ballad = 3,
+    Ballad = 4,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"breeze")]
-    Breeze = 4,
+    Breeze = 5,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"bubbie")]
+    Bubbie = 6,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"cedar")]
-    Cedar = 5,
+    Cedar = 7,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"coral")]
-    Coral = 6,
+    Coral = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"cove")]
-    Cove = 7,
+    Cove = 9,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"echo")]
-    Echo = 8,
+    Echo = 10,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"ember")]
-    Ember = 9,
+    Ember = 11,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"haetsal")]
+    Haetsal = 12,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"hanul")]
+    Hanul = 13,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"himari")]
+    Himari = 14,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"juniper")]
-    Juniper = 10,
+    Juniper = 15,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"leher")]
+    Leher = 16,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"maple")]
-    Maple = 11,
+    Maple = 17,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"marin")]
-    Marin = 12,
+    Marin = 18,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"miko")]
+    Miko = 19,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"neer")]
+    Neer = 20,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"porto")]
+    Porto = 21,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"rindo")]
+    Rindo = 22,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"rio")]
+    Rio = 23,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"rivage")]
+    Rivage = 24,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"sage")]
-    Sage = 13,
+    Sage = 25,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"selva")]
+    Selva = 26,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"shimmer")]
-    Shimmer = 14,
+    Shimmer = 27,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"sol")]
-    Sol = 15,
+    Sol = 28,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"sonna")]
+    Sonna = 29,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"spruce")]
-    Spruce = 16,
+    Spruce = 30,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"tinta")]
+    Tinta = 31,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"vale")]
-    Vale = 17,
+    Vale = 32,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"verse")]
-    Verse = 18,
+    Verse = 33,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"viola")]
+    Viola = 34,
 
 
 }
