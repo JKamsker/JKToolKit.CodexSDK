@@ -86,6 +86,37 @@ public sealed class TurnStartParamsSerializationTests
     }
 
     [Fact]
+    public void Serialize_WritesRetainedToolOutputOnlyWhenRequested()
+    {
+        var retained = JsonSerializer.Serialize(
+            new TurnStartParams
+            {
+                ThreadId = "thr_123",
+                Input = [],
+                ToolOutput = new TurnToolOutput
+                {
+                    Name = "memory_lookup",
+                    Output = JsonSerializer.SerializeToElement("result"),
+                    Retain = true
+                }
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        retained.Should().Contain("\"retain\":true");
+
+        var transient = JsonSerializer.Serialize(
+            new TurnStartParams
+            {
+                ThreadId = "thr_123",
+                Input = [],
+                ToolOutput = TurnToolOutput.Text("memory_lookup", "result")
+            },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        transient.Should().NotContain("\"retain\"");
+    }
+
+    [Fact]
     public void Serialize_WritesDisabledPluginsAndImageFileReference()
     {
         var json = JsonSerializer.Serialize(

@@ -170,6 +170,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 ProjectId = BuildThreadListProjectId(options, _experimentalApiEnabled()),
                 Cwd = options.Cwd,
                 Limit = options.Limit,
+                ExcludedThreadIds = options.ExcludedThreadIds,
                 ModelProviders = options.ModelProviders,
                 SearchTerm = options.SearchTerm,
                 SourceKinds = options.SourceKinds,
@@ -418,7 +419,8 @@ internal sealed partial class CodexAppServerThreadsClient
                 BaseInstructions = options.BaseInstructions,
                 DeveloperInstructions = options.DeveloperInstructions,
                 ExcludeTurns = options.ExcludeTurns,
-                Ephemeral = options.Ephemeral
+                Ephemeral = options.Ephemeral,
+                ExperimentalPredictionMode = options.ExperimentalPredictionMode
             },
             ct);
 

@@ -29,6 +29,10 @@ internal partial class RealtimeVoicesList
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
     public System.Collections.Generic.ICollection<RealtimeVoice> V2 { get; set; } = new System.Collections.ObjectModel.Collection<RealtimeVoice>();
 
+    [System.Text.Json.Serialization.JsonPropertyName("v3")]
+    // TODO(system.text.json): Add ItemConverterType with enum converter when supported
+    public System.Collections.Generic.ICollection<RealtimeVoice>? V3 { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

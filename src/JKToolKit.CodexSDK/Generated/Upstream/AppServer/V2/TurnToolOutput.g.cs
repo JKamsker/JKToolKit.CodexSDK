@@ -22,6 +22,12 @@ internal partial class TurnToolOutput
     [System.Text.Json.Serialization.JsonPropertyName("output")]
     public FunctionCallOutputBody Output { get; set; } = default!;
 
+    /// <summary>
+    /// Requests retention of this output in the thread's model history.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("retain")]
+    public bool? Retain { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

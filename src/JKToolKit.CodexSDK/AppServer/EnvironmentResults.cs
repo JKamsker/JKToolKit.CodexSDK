@@ -26,6 +26,14 @@ public sealed class EnvironmentAddOptions
     public string? AuthBearerToken { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional request identifier used for direct WebSocket upgrades and reconnects.
+    /// </summary>
+    /// <remarks>
+    /// Upstream requires a secure transport or a loopback destination when this value is supplied.
+    /// </remarks>
+    public string? WebSocketRequestId { get; set; }
+
+    /// <summary>
     /// Gets or sets exact skill catalog names that must be available from this environment.
     /// </summary>
     public IReadOnlyList<string>? RequiredSkills { get; set; }

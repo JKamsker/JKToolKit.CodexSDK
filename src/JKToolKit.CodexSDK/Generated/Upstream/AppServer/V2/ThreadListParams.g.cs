@@ -32,6 +32,12 @@ internal partial class ThreadListParams
     public Cwd? Cwd { get; set; } = default!;
 
     /// <summary>
+    /// Thread IDs to exclude before applying the result limit. Up to 100 entries; invalid IDs or a larger list are rejected, never truncated. Send the same exclusions on each page. Omitted, null, or empty means no exclusions.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("excludedThreadIds")]
+    public System.Collections.Generic.ICollection<string>? ExcludedThreadIds { get; set; } = default!;
+
+    /// <summary>
     /// Optional page size; defaults to a reasonable server-side value.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("limit")]

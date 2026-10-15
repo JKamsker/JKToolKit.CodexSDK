@@ -1,29 +1,29 @@
 {
-  "version": "0.162.1",
+  "version": "0.163.0",
   "packages": {
     "linux-x64": {
-      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.162.1-linux-x64.tgz",
-      "integrity": "sha512-cjK2mdHIfEepZ1lQ1MX3aTQC+8ncIsvnacl/6vI2dIIcfP8/MrhTQ2+qRlkXFNDzJSj1d36quIszP+3/4CUJWQ=="
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-linux-x64.tgz",
+      "integrity": "sha512-uwRaOsrYogLQhcxAM/GoeWrw0QIWEMRo7c9gM8sKAviVkZQHlu9kRLJ5PkufbV+ABGjyZgIwiFdJ0LCJ0N6e8w=="
     },
     "linux-arm64": {
-      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.162.1-linux-arm64.tgz",
-      "integrity": "sha512-Ss7W/SrKtQFNaMtSojNoiykJgX+iDC8daM+YrcvgmJADtQPk0cd3w6Dna4CYH2CYvf9nQranj69fpcTzZ3sQIQ=="
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-linux-arm64.tgz",
+      "integrity": "sha512-IH2/R+4OarjGvsAf1ll3fdyLwrPgYLl3uzp6u9CyD9sj2Lw+ViDSe3QBZVHdcHJs0eIiZFg6Wprcuy4CRZaUGw=="
     },
     "win-x64": {
-      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.162.1-win32-x64.tgz",
-      "integrity": "sha512-dfl4MhHuEi0ARKyNmrTxk+RQmsWNCQAoVLUtrYq+yrW1C8P2sg5ziwgHUUACHjYLKuACV7ARH5Nq5pnCz3GlaQ=="
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-win32-x64.tgz",
+      "integrity": "sha512-QQGQ/q9dCJ5C5jqhgFrwycpWG3szIyFNThMiKl6hYtu6N/eM3Qd7StesgnCFAfzVED8IkE3N3oH71szzcludqw=="
     },
     "win-arm64": {
-      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.162.1-win32-arm64.tgz",
-      "integrity": "sha512-teVVACnEcupkR6XSmUQKwlGg/oA15d1DQDPVSoAfilHgctPEpTi5y11jYS6JhJO+AFnYM84gyo5SOS5vlnCQSg=="
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-win32-arm64.tgz",
+      "integrity": "sha512-QnLn3gR2dExcdTThE/HAo5BrUq0/C8zDGQ0UZL3hNzfqt9ZklT6jGTyt8JhDyNZX4uSB4HhcJtbcOWucZGC0VQ=="
     },
     "osx-x64": {
-      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.162.1-darwin-x64.tgz",
-      "integrity": "sha512-0/WHRhbUnM1wAjfyCO54Q8s4vQRxLVBbqW6XuQf7rZTEMTYPKRIQU9aPeRgjG653ZCSjtBrslWQ+G9urY9CksQ=="
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-darwin-x64.tgz",
+      "integrity": "sha512-Ioj7h+B1ME9ZU1PH1ATfvFV5DiototEpFFaSSbg3kfDifB9djhl5fcJ++g5mpcL/+uVbcnReei+RiSXEx8o+kw=="
     },
     "osx-arm64": {
-      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.162.1-darwin-arm64.tgz",
-      "integrity": "sha512-YVXpg57itBuQxjofay3KDF5UbnZF4Y1ZmNFzUCz0ZQiQN+DndxOjN5V87rnXvPaC4qCPO2El74DzewoBP8JyPQ=="
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-darwin-arm64.tgz",
+      "integrity": "sha512-i7Dzk2a5aGmuGM9aNZgaUVTojZ/4bc5lRfosz++Y7X2BGhDkz+cySgbD+NYS1pOxfm0VEbLi9PZ3pAulI4kchw=="
     }
   }
 }
