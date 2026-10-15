@@ -58,6 +58,14 @@ public sealed class ThreadListOptions
     public int? Limit { get; set; }
 
     /// <summary>
+    /// Gets or sets thread identifiers to exclude before the server applies the page limit.
+    /// </summary>
+    /// <remarks>
+    /// Upstream accepts at most 100 valid thread identifiers. Send the same exclusions on every page.
+    /// </remarks>
+    public IReadOnlyList<string>? ExcludedThreadIds { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional model provider filter, if supported upstream.
     /// </summary>
     public IReadOnlyList<string>? ModelProviders { get; set; }

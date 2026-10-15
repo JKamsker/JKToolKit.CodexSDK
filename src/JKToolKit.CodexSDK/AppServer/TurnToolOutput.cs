@@ -31,6 +31,13 @@ public sealed class TurnToolOutput
     public required JsonElement Output { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the server should retain this output in model history.
+    /// </summary>
+    [JsonPropertyName("retain")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Retain { get; set; }
+
+    /// <summary>
     /// Creates text tool output.
     /// </summary>
     public static TurnToolOutput Text(string name, string output, string? @namespace = null) =>

@@ -164,6 +164,7 @@ public sealed class RemoteControlEnvironmentClientTests
             EnvironmentId = "env-1",
             ExecServerUrl = "https://exec.example.test",
             AuthBearerToken = "opaque-credential",
+            WebSocketRequestId = "request-123",
             RequiredSkills = ["repo-maintenance", "testing"]
         });
 
@@ -172,6 +173,7 @@ public sealed class RemoteControlEnvironmentClientTests
             .Should().Contain("\"environmentId\":\"env-1\"")
             .And.Contain("\"execServerUrl\":\"https://exec.example.test\"")
             .And.Contain("\"authBearerToken\":\"opaque-credential\"")
+            .And.Contain("\"websocketRequestId\":\"request-123\"")
             .And.Contain("\"skills\":{\"required\":[\"repo-maintenance\",\"testing\"]}");
     }
 

@@ -125,4 +125,11 @@ public sealed record class ThreadForkParams
     [JsonPropertyName(JsonFieldNames.Ephemeral)]
     public bool? Ephemeral { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether the fork should inherit the loaded parent's effective state for prediction.
+    /// </summary>
+    [JsonPropertyName("experimentalPredictionMode")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ExperimentalPredictionMode { get; init; }
+
 }

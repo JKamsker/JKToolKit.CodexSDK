@@ -17,7 +17,7 @@ internal partial class ThreadReadState
 {
 
     [System.Text.Json.Serialization.JsonPropertyName("firstUnread")]
-    public FirstUnread? FirstUnread { get; set; } = default!;
+    public ThreadUnreadPosition? FirstUnread { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("revision")]
     public string Revision { get; set; } = default!;

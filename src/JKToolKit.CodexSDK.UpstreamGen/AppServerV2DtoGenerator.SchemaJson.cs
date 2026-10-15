@@ -78,6 +78,51 @@ internal static partial class AppServerV2DtoGenerator
             };
         }
 
+        // NJsonSchema collapses these tagged unions to the first variant, producing
+        // empty placeholder classes and incomplete discriminator enums. Preserve the
+        // complete wire shape instead; handwritten projections can interpret known
+        // discriminator values while generated DTOs remain forward-compatible.
+        if (string.Equals(definitionName, "ThreadUnreadPosition", StringComparison.Ordinal))
+        {
+            return new JsonObject
+            {
+                ["title"] = definitionName,
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["type"] = new JsonObject { ["type"] = "string" },
+                    ["turnId"] = new JsonObject { ["type"] = "string" }
+                },
+                ["required"] = new JsonArray { "type" }
+            };
+        }
+
+        if (string.Equals(definitionName, "ThreadReadStateOperation", StringComparison.Ordinal))
+        {
+            return new JsonObject
+            {
+                ["title"] = definitionName,
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["type"] = new JsonObject { ["type"] = "string" }
+                },
+                ["required"] = new JsonArray { "type" }
+            };
+        }
+
+        if (string.Equals(definitionName, "ThreadReadState", StringComparison.Ordinal) &&
+            node is JsonObject readState &&
+            readState["properties"] is JsonObject properties)
+        {
+            // firstUnread is optional, so a direct reference remains nullable in C#
+            // without the anonymous FirstUnread type produced for `ref | null`.
+            properties["firstUnread"] = new JsonObject
+            {
+                ["$ref"] = "#/definitions/ThreadUnreadPosition"
+            };
+        }
+
         return node;
     }
 

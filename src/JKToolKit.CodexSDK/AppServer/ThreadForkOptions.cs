@@ -28,6 +28,15 @@ public sealed class ThreadForkOptions
     public string? LastTurnId { get; set; }
 
     /// <summary>
+    /// [UNSTABLE] Gets or sets a value indicating whether the fork should inherit the loaded parent's
+    /// effective configuration, tools, environments, and persisted history for prediction.
+    /// </summary>
+    /// <remarks>
+    /// Upstream requires a loaded persisted parent and <see cref="Ephemeral"/> set to <see langword="true"/>.
+    /// </remarks>
+    public bool ExperimentalPredictionMode { get; set; }
+
+    /// <summary>
     /// [UNSTABLE] Gets or sets a rollout path to fork from (experimental-gated in newer upstream Codex builds).
     /// </summary>
     public string? Path { get; set; }

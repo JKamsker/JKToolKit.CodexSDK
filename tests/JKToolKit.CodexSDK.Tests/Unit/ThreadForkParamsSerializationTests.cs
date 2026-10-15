@@ -181,4 +181,32 @@ public sealed class ThreadForkParamsSerializationTests
         captured.Should().NotBeNull();
         captured!.ExcludeTurns.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task ForkThreadAsync_MapsExperimentalPredictionMode()
+    {
+        ThreadForkParams? captured = null;
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_new"}""");
+        var response = doc.RootElement.Clone();
+
+        var client = new CodexAppServerThreadsClient(
+            sendRequestAsync: (_, @params, _) =>
+            {
+                captured = @params.Should().BeOfType<ThreadForkParams>().Subject;
+                return Task.FromResult(response);
+            },
+            experimentalApiEnabled: () => true);
+
+        _ = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            Ephemeral = true,
+            ExperimentalPredictionMode = true
+        });
+
+        captured.Should().NotBeNull();
+        captured!.ExperimentalPredictionMode.Should().BeTrue();
+        JsonSerializer.Serialize(captured, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"experimentalPredictionMode\":true");
+    }
 }

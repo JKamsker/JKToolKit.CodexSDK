@@ -252,6 +252,19 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task ListThreadsAsync_SendsExcludedThreadIds()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };
+        await using var client = CreateClient(rpc);
+
+        await client.ListThreadsAsync(new ThreadListOptions { ExcludedThreadIds = ["thr_1", "thr_2"] });
+
+        rpc.LastMethod.Should().Be("thread/list");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"excludedThreadIds\":[\"thr_1\",\"thr_2\"]");
+    }
+
+    [Fact]
     public async Task ListThreadsAsync_SendsProjectFilters_WhenExperimentalEnabled()
     {
         var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };

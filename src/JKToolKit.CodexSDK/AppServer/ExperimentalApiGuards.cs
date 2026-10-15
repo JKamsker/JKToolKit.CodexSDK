@@ -119,6 +119,21 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("thread/fork.path");
         }
 
+        if (!experimentalApiEnabled && options.ExperimentalPredictionMode)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/fork.experimentalPredictionMode");
+        }
+
+        if (options.ExperimentalPredictionMode && options.Ephemeral is not true)
+        {
+            throw new ArgumentException("ExperimentalPredictionMode requires Ephemeral to be true.", nameof(options));
+        }
+
+        if (options.ExperimentalPredictionMode && (hasPath || !string.IsNullOrWhiteSpace(options.LastTurnId)))
+        {
+            throw new ArgumentException("ExperimentalPredictionMode cannot be combined with Path or LastTurnId.", nameof(options));
+        }
+
         if (!experimentalApiEnabled && options.AskForApproval is { Granular: not null })
         {
             throw new CodexExperimentalApiRequiredException("askForApproval.granular");

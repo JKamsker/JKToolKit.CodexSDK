@@ -46,6 +46,12 @@ public sealed record class ThreadListParams
     public int? Limit { get; init; }
 
     /// <summary>
+    /// Gets thread identifiers to exclude before the server applies the page limit.
+    /// </summary>
+    [JsonPropertyName("excludedThreadIds")]
+    public IReadOnlyList<string>? ExcludedThreadIds { get; init; }
+
+    /// <summary>
     /// Gets an optional model provider filter, if supported upstream.
     /// </summary>
     [JsonPropertyName(JsonFieldNames.ModelProviders)]
