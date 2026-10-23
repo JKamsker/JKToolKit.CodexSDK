@@ -50,6 +50,12 @@ internal partial class McpServerStatus
     [System.Text.Json.Serialization.JsonPropertyName("serverInfo")]
     public ServerInfo? ServerInfo { get; set; } = default!;
 
+    /// <summary>
+    /// Opaque `_meta` from the first page of the corresponding MCP tool catalog. Null when unavailable.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("toolListMeta")]
+    public object? ToolListMeta { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("tools")]
     public System.Collections.Generic.IDictionary<string, Tool> Tools { get; set; } = new System.Collections.Generic.Dictionary<string, Tool>();
 

@@ -16,6 +16,9 @@ internal partial class ApplicationRequirements
     [System.Text.Json.Serialization.JsonPropertyName("network")]
     public Network? Network { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("storage")]
+    public Storage? Storage { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
