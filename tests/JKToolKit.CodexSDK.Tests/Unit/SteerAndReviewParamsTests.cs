@@ -20,6 +20,10 @@ public sealed class SteerAndReviewParamsTests
             {
                 ["workspace_kind"] = "local"
             },
+            ResponsesApiClientMetadataPatch = new Dictionary<string, string>
+            {
+                ["request_kind"] = "steer"
+            },
             AdditionalContext = new Dictionary<string, TurnAdditionalContextEntry>
             {
                 ["note"] = new()
@@ -39,6 +43,7 @@ public sealed class SteerAndReviewParamsTests
         json.Should().Contain("\"text\":\"hello\"");
         json.Should().Contain("\"clientUserMessageId\":\"msg_1\"");
         json.Should().Contain("\"responsesapiClientMetadata\":{\"workspace_kind\":\"local\"}");
+        json.Should().Contain("\"responsesapiClientMetadataPatch\":{\"request_kind\":\"steer\"}");
         json.Should().Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\"}}");
     }
 
@@ -109,4 +114,3 @@ public sealed class SteerAndReviewParamsTests
         json.Should().Contain("\"instructions\":\"do it\"");
     }
 }
-

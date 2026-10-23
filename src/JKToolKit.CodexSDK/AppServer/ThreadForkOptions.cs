@@ -37,6 +37,14 @@ public sealed class ThreadForkOptions
     public bool ExperimentalPredictionMode { get; set; }
 
     /// <summary>
+    /// [UNSTABLE] Gets or sets whether prediction mode should disable inherited MCP servers.
+    /// </summary>
+    /// <remarks>
+    /// Upstream requires <see cref="ExperimentalPredictionMode"/> set to <see langword="true"/>.
+    /// </remarks>
+    public bool ExperimentalDisablePredictionMcp { get; set; }
+
+    /// <summary>
     /// [UNSTABLE] Gets or sets a rollout path to fork from (experimental-gated in newer upstream Codex builds).
     /// </summary>
     public string? Path { get; set; }

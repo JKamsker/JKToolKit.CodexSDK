@@ -307,13 +307,61 @@ internal static class CodexThreadItemParser
             ? new CodexThreadItemImageView(id, type, path, raw)
             : null;
 
-    private static CodexThreadItem? ParseImageGeneration(string id, string type, JsonElement element, JsonElement raw) =>
-        TryGetRequiredString(element, JsonFieldNames.Status, out var status) &&
-        TryGetRequiredString(element, JsonFieldNames.Result, out var result) &&
-        TryGetOptionalString(element, "revisedPrompt", out var revisedPrompt) &&
-        TryGetOptionalString(element, "savedPath", out var savedPath)
-            ? new CodexThreadItemImageGeneration(id, type, status, result, revisedPrompt, savedPath, raw)
-            : null;
+    private static CodexThreadItem? ParseImageGeneration(string id, string type, JsonElement element, JsonElement raw)
+    {
+        if (!TryGetRequiredString(element, JsonFieldNames.Status, out var status) ||
+            !TryGetOptionalString(element, JsonFieldNames.Result, out var result) ||
+            !TryGetOptionalString(element, "fileId", out var fileId) ||
+            !TryGetOptionalString(element, "revisedPrompt", out var revisedPrompt) ||
+            !TryGetOptionalString(element, "savedPath", out var savedPath) ||
+            !TryParseImageGenerationInputs(element, out var inputImages) ||
+            (string.IsNullOrWhiteSpace(result) && string.IsNullOrWhiteSpace(fileId)))
+        {
+            return null;
+        }
+
+        return new CodexThreadItemImageGeneration(
+            id,
+            type,
+            status,
+            result,
+            fileId,
+            revisedPrompt,
+            savedPath,
+            inputImages,
+            raw);
+    }
+
+    private static bool TryParseImageGenerationInputs(
+        JsonElement element,
+        out IReadOnlyList<CodexImageGenerationInputImage> inputImages)
+    {
+        inputImages = Array.Empty<CodexImageGenerationInputImage>();
+        if (!TryGetOptionalArray(element, "inputImages", out var array))
+        {
+            return false;
+        }
+
+        if (array is null)
+        {
+            return true;
+        }
+
+        var parsed = new List<CodexImageGenerationInputImage>();
+        foreach (var input in array.Value.EnumerateArray())
+        {
+            if (!TryGetRequiredString(input, JsonFieldNames.Path, out var path) ||
+                !TryGetRequiredString(input, "sha256", out var sha256))
+            {
+                return false;
+            }
+
+            parsed.Add(new CodexImageGenerationInputImage(path, sha256, input.Clone()));
+        }
+
+        inputImages = parsed;
+        return true;
+    }
 
     private static CodexThreadItem? ParseEnteredReviewMode(string id, string type, JsonElement element, JsonElement raw) =>
         TryGetRequiredString(element, JsonFieldNames.Review, out var review)

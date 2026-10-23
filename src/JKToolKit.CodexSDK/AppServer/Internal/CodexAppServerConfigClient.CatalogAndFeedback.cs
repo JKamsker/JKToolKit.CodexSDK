@@ -107,6 +107,7 @@ internal sealed partial class CodexAppServerConfigClient
                 Reason = EmptyToNull(options.Reason),
                 ThreadId = EmptyToNull(options.ThreadId),
                 IncludeLogs = options.IncludeLogs,
+                Tags = options.Tags is null ? null : new Dictionary<string, string>(options.Tags),
                 ExtraLogFiles = options.ExtraLogFiles?
                     .Where(static path => !string.IsNullOrWhiteSpace(path))
                     .ToArray()
@@ -116,6 +117,44 @@ internal sealed partial class CodexAppServerConfigClient
         return new FeedbackUploadResult
         {
             ThreadId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.ThreadId, "feedback/upload response"),
+            PromptHash = CodexAppServerClientJson.GetStringOrNull(result, "promptHash"),
+            Raw = result
+        };
+    }
+
+    public async Task<FeedbackSaveResult> SaveFeedbackAsync(FeedbackSaveOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.Classification))
+        {
+            throw new ArgumentException("Classification cannot be empty or whitespace.", nameof(options));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.SavePath))
+        {
+            throw new ArgumentException("SavePath cannot be empty or whitespace.", nameof(options));
+        }
+
+        var result = await _sendRequestAsync(
+            "feedback/save",
+            new UpstreamV2.FeedbackSaveParams
+            {
+                Classification = options.Classification,
+                SavePath = options.SavePath,
+                Reason = EmptyToNull(options.Reason),
+                ThreadId = EmptyToNull(options.ThreadId),
+                IncludeLogs = options.IncludeLogs,
+                Tags = options.Tags is null ? null : new Dictionary<string, string>(options.Tags),
+                ExtraLogFiles = options.ExtraLogFiles?
+                    .Where(static path => !string.IsNullOrWhiteSpace(path))
+                    .ToArray()
+            },
+            ct);
+
+        return new FeedbackSaveResult
+        {
+            SavedPath = CodexAppServerClientJson.GetRequiredString(result, "savedPath", "feedback/save response"),
+            ThreadId = CodexAppServerClientJson.GetRequiredString(result, JsonFieldNames.ThreadId, "feedback/save response"),
             PromptHash = CodexAppServerClientJson.GetStringOrNull(result, "promptHash"),
             Raw = result
         };

@@ -58,6 +58,11 @@ public sealed record class McpServerStatusInfo
     public JsonElement? ServerCapabilities { get; init; }
 
     /// <summary>
+    /// Gets the opaque metadata from the first page of the MCP tool catalog, when available.
+    /// </summary>
+    public JsonElement? ToolListMeta { get; init; }
+
+    /// <summary>
     /// Gets the tools exposed by this server.
     /// </summary>
     public required IReadOnlyList<McpServerToolInfo> Tools { get; init; }

@@ -115,6 +115,9 @@ public sealed class ConfigRequirementsParsingTests
         requirements.Application.Network.Domains.Should().NotBeNull();
         requirements.Application.Network.Domains!["app.example.com"].Should().Be(NetworkDomainPermission.Allow);
         requirements.Application.Network.Domains["blocked.example.com"].Should().Be(NetworkDomainPermission.Deny);
+        requirements.Application.Storage.Should().NotBeNull();
+        requirements.Application.Storage!.DefaultProjectParent.Should().Be("/workspace/projects");
+        requirements.Application.Storage.ProjectlessWorkspaceRoot.Should().Be("/workspace/scratch");
 
         requirements.Raw.TryGetProperty("unknownTopLevelField", out _).Should().BeTrue();
     }

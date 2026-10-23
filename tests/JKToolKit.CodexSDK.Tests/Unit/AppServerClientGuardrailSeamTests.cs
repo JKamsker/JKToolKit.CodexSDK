@@ -202,6 +202,30 @@ public sealed class AppServerClientGuardrailSeamTests
     }
 
     [Fact]
+    public async Task ForkThread_WithPredictionMcpDisabled_SendsExperimentalFlag()
+    {
+        using var doc = JsonDocument.Parse("""{"thread":{"id":"thr_1"}}""");
+        var rpc = new RecordingRpc { Result = doc.RootElement };
+        await using var client = new CodexAppServerClient(
+            new CodexAppServerClientOptions { ExperimentalApi = true },
+            new FakeProcess(),
+            rpc,
+            NullLogger.Instance,
+            startExitWatcher: false);
+
+        await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            Ephemeral = true,
+            ExperimentalPredictionMode = true,
+            ExperimentalDisablePredictionMcp = true
+        });
+
+        var parameters = rpc.LastParams.Should().BeOfType<ThreadForkParams>().Subject;
+        parameters.ExperimentalDisablePredictionMcp.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task StartThread_WithDynamicTools_WhenExperimentalEnabled_SendsThreadStart()
     {
         using var doc = JsonDocument.Parse("""{"threadId":"thr_1"}""");
@@ -583,6 +607,7 @@ public sealed class AppServerClientGuardrailSeamTests
             ThreadId = "thr_1",
             PromptMode = ThreadRealtimePromptMode.Default,
             SessionId = "sess_1",
+            VoiceSessionId = "voice_1",
             Voice = "marin",
             Transport = ThreadRealtimeTransport.WebRtc("v=0\r\no=-")
         });
@@ -590,6 +615,7 @@ public sealed class AppServerClientGuardrailSeamTests
         var json = JsonSerializer.Serialize(rpc.LastParams, CodexAppServerClient.CreateDefaultSerializerOptions());
         json.Should().Contain("\"threadId\":\"thr_1\"")
             .And.Contain("\"sessionId\":\"sess_1\"")
+            .And.Contain("\"voiceSessionId\":\"voice_1\"")
             .And.Contain("\"voice\":\"marin\"")
             .And.Contain("\"transport\":{\"type\":\"webrtc\",\"sdp\":\"v=0\\r\\no=-\"}");
         json.Should().NotContain("\"prompt\"");

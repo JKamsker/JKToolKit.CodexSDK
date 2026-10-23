@@ -98,6 +98,11 @@ public sealed class ThreadRealtimeStartOptions
     public string? SessionId { get; set; }
 
     /// <summary>
+    /// Gets or sets the client-generated product voice-session identifier.
+    /// </summary>
+    public string? VoiceSessionId { get; set; }
+
+    /// <summary>
     /// Gets or sets the optional realtime transport override.
     /// </summary>
     public ThreadRealtimeTransport? Transport { get; set; }

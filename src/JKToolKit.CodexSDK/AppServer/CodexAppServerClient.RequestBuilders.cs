@@ -13,6 +13,7 @@ public sealed partial class CodexAppServerClient
             ClientUserMessageId = options.ClientUserMessageId,
             Input = options.Input.Select(i => i.Wire).ToArray(),
             ResponsesApiClientMetadata = options.ResponsesApiClientMetadata,
+            ResponsesApiClientMetadataPatch = options.ResponsesApiClientMetadataPatch,
             AdditionalContext = CodexAppServerWireBuilders.BuildAdditionalContext(
                 options.AdditionalContext,
                 nameof(TurnSteerOptions.AdditionalContext))

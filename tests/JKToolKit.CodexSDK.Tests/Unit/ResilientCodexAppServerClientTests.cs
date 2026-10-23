@@ -1190,6 +1190,9 @@ public sealed partial class ResilientCodexAppServerClientTests
         public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct) =>
             NotSupported<FeedbackUploadResult>();
 
+        public Task<FeedbackSaveResult> SaveFeedbackAsync(FeedbackSaveOptions options, CancellationToken ct) =>
+            NotSupported<FeedbackSaveResult>();
+
         public Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct) =>
             NotSupported<bool>();
 

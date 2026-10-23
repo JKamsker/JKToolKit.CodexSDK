@@ -22,6 +22,12 @@ public sealed record class ThreadRealtimeStartParams
     public string? SessionId { get; init; }
 
     /// <summary>
+    /// Gets the optional client-generated product voice-session identifier.
+    /// </summary>
+    [JsonPropertyName("voiceSessionId")]
+    public string? VoiceSessionId { get; init; }
+
+    /// <summary>
     /// Gets the optional realtime transport payload.
     /// </summary>
     [JsonPropertyName("transport")]

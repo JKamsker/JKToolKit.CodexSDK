@@ -60,6 +60,19 @@ public sealed class AppServerThreadItemContractTests
         item.Type.Should().Be(JsonNode.Parse(json)!["type"]!.GetValue<string>());
     }
 
+    [Fact]
+    public void ImageGeneration_ParsesFileReferenceAndObservedInputs()
+    {
+        var item = Parse("""{"id":"i","type":"imageGeneration","status":"done","fileId":"file-1","inputImages":[{"path":"/input.png","sha256":"abc"}]}""")
+            .Should().BeOfType<CodexThreadItemImageGeneration>().Subject;
+
+        item.Result.Should().BeNull();
+        item.FileId.Should().Be("file-1");
+        item.InputImages.Should().ContainSingle();
+        item.InputImages[0].Path.Should().Be("/input.png");
+        item.InputImages[0].Sha256.Should().Be("abc");
+    }
+
     [Theory]
     [InlineData("null")]
     [InlineData("42")]

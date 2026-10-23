@@ -14,6 +14,9 @@ internal static class CodexAppServerThreadRealtimeStartWiring
         if (options.SessionId is not null && string.IsNullOrWhiteSpace(options.SessionId))
             throw new ArgumentException("SessionId cannot be empty or whitespace when provided.", nameof(options));
 
+        if (options.VoiceSessionId is not null && string.IsNullOrWhiteSpace(options.VoiceSessionId))
+            throw new ArgumentException("VoiceSessionId cannot be empty or whitespace when provided.", nameof(options));
+
         if (options.Voice is not null && string.IsNullOrWhiteSpace(options.Voice))
             throw new ArgumentException("Voice cannot be empty or whitespace when provided.", nameof(options));
 
@@ -55,6 +58,7 @@ internal static class CodexAppServerThreadRealtimeStartWiring
         {
             ThreadId = options.ThreadId,
             SessionId = options.SessionId,
+            VoiceSessionId = options.VoiceSessionId,
             Transport = options.Transport?.ToJson(),
             Voice = options.Voice,
             ExtensionData = extensionData

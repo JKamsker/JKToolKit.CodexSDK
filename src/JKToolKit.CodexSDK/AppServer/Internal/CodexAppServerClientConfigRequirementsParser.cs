@@ -303,6 +303,14 @@ internal static class CodexAppServerClientConfigRequirementsParser
                     Raw = network.Clone()
                 }
                 : null,
+            Storage = TryGetObject(application, "storage") is { } storage
+                ? new ApplicationStorageRequirements
+                {
+                    DefaultProjectParent = GetStringOrNull(storage, "defaultProjectParent"),
+                    ProjectlessWorkspaceRoot = GetStringOrNull(storage, "projectlessWorkspaceRoot"),
+                    Raw = storage.Clone()
+                }
+                : null,
             Raw = application.Clone()
         };
     }

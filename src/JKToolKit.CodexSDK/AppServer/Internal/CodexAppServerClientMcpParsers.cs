@@ -48,6 +48,10 @@ internal static class CodexAppServerClientMcpParsers
                         : null,
                     ServerInfo = ParseServerInfo(item),
                     ServerCapabilities = TryGetObject(item, "serverCapabilities")?.Clone(),
+                    ToolListMeta = item.TryGetProperty("toolListMeta", out var toolListMeta) &&
+                                   toolListMeta.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined
+                        ? toolListMeta.Clone()
+                        : null,
                     Tools = tools,
                     ToolsError = GetStringOrNull(item, "toolsError") ?? GetStringOrNull(item, "tools_error"),
                     Resources = resources,

@@ -13,7 +13,33 @@ public sealed record class ApplicationRequirements
     public ApplicationNetworkRequirements? Network { get; init; }
 
     /// <summary>
+    /// Gets managed storage defaults for new Desktop workspaces, when present.
+    /// </summary>
+    public ApplicationStorageRequirements? Storage { get; init; }
+
+    /// <summary>
     /// Gets the raw JSON application requirements payload.
+    /// </summary>
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Represents managed storage defaults for new Desktop workspaces.
+/// </summary>
+public sealed record class ApplicationStorageRequirements
+{
+    /// <summary>
+    /// Gets the default parent directory for new projects.
+    /// </summary>
+    public string? DefaultProjectParent { get; init; }
+
+    /// <summary>
+    /// Gets the root directory for projectless workspaces.
+    /// </summary>
+    public string? ProjectlessWorkspaceRoot { get; init; }
+
+    /// <summary>
+    /// Gets the raw JSON storage requirements payload.
     /// </summary>
     public required JsonElement Raw { get; init; }
 }

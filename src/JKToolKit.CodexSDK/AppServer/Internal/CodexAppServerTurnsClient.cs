@@ -81,6 +81,7 @@ internal sealed class CodexAppServerTurnsClient
             Input = options.Input.Select(i => i.Wire).ToArray(),
             ToolOutput = options.ToolOutput,
             ResponsesApiClientMetadata = options.ResponsesApiClientMetadata,
+            ResponsesApiClientMetadataPatch = options.ResponsesApiClientMetadataPatch,
             AdditionalContext = CodexAppServerWireBuilders.BuildAdditionalContext(
                 options.AdditionalContext,
                 nameof(TurnStartOptions.AdditionalContext)),

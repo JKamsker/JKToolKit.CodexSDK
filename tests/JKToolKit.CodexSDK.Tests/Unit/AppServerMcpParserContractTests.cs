@@ -62,6 +62,7 @@ public sealed class AppServerMcpParserContractTests
             "status":"failed","error":"failure","failureReason":"future","tools_error":"tool failure",
             "serverInfo":{"name":"impl","version":"1","title":"Title","description":"Description","website_url":"https://impl.test"},
             "serverCapabilities":{"resources":{}},
+            "toolListMeta":{"catalogVersion":"v2"},
             "tools":{"invalid":null,"blank":{"name":" ","inputSchema":{}},"missing":{},
               "lookup":{"title":"Lookup","description":"Find","input_schema":{"type":"object"},"output_schema":{"type":"string"}}},
             "resources":[null,{}, {"name":"missingUri"},{"uri":"res://missingName"},
@@ -79,6 +80,7 @@ public sealed class AppServerMcpParserContractTests
         server.FailureReason.Should().NotBeNull("unknown future reason values remain forward compatible");
         server.ToolsError.Should().Be("tool failure");
         server.ServerCapabilities!.Value.GetProperty("resources").ValueKind.Should().Be(JsonValueKind.Object);
+        server.ToolListMeta!.Value.GetProperty("catalogVersion").GetString().Should().Be("v2");
         var info = server.ServerInfo!;
         info.Name.Should().Be("impl"); info.Version.Should().Be("1"); info.Title.Should().Be("Title");
         info.Description.Should().Be("Description"); info.WebsiteUrl.Should().Be("https://impl.test");

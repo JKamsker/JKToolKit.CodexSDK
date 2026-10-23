@@ -46,6 +46,10 @@ public sealed class TurnStartParamsSerializationTests
                 {
                     ["workspace_kind"] = "local"
                 },
+                ResponsesApiClientMetadataPatch = new Dictionary<string, string>
+                {
+                    ["request_kind"] = "followup"
+                },
                 AdditionalContext = new Dictionary<string, TurnAdditionalContextEntryParams>
                 {
                     ["note"] = new()
@@ -59,6 +63,7 @@ public sealed class TurnStartParamsSerializationTests
 
         json.Should().Contain("\"clientUserMessageId\":\"msg_1\"")
             .And.Contain("\"responsesapiClientMetadata\":{\"workspace_kind\":\"local\"}")
+            .And.Contain("\"responsesapiClientMetadataPatch\":{\"request_kind\":\"followup\"}")
             .And.Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\"}}");
     }
 
