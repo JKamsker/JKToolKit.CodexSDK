@@ -131,11 +131,18 @@ public sealed record class CodexThreadItemImageGeneration(
     string Id,
     string Type,
     string Status,
-    string Result,
+    string? Result,
+    string? FileId,
     string? RevisedPrompt,
     string? SavedPath,
+    IReadOnlyList<CodexImageGenerationInputImage> InputImages,
     JsonElement Raw)
     : CodexThreadItem(Id, Type, Raw);
+
+/// <summary>
+/// Represents a local image read for an image-generation request.
+/// </summary>
+public sealed record class CodexImageGenerationInputImage(string Path, string Sha256, JsonElement Raw);
 
 /// <summary>
 /// Represents a review-mode item.

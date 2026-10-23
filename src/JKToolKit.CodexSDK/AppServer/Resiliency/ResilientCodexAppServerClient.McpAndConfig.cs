@@ -78,6 +78,9 @@ public sealed partial class ResilientCodexAppServerClient
     public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.UploadFeedbackAsync(options, token), ct);
 
+    public Task<FeedbackSaveResult> SaveFeedbackAsync(FeedbackSaveOptions options, CancellationToken ct = default) =>
+        ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.SaveFeedbackAsync(options, token), ct);
+
     public Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct = default) =>
         ExecuteAsync(CodexAppServerOperationKind.Configuration, (c, token) => c.StartWindowsSandboxSetupAsync(options, token), ct);
 

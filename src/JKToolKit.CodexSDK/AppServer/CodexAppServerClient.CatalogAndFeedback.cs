@@ -49,4 +49,10 @@ public sealed partial class CodexAppServerClient
     /// </summary>
     public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct = default) =>
         _configClient.UploadFeedbackAsync(options, ct);
+
+    /// <summary>
+    /// Saves a feedback report to a local ZIP on the app-server host.
+    /// </summary>
+    public Task<FeedbackSaveResult> SaveFeedbackAsync(FeedbackSaveOptions options, CancellationToken ct = default) =>
+        _configClient.SaveFeedbackAsync(options, ct);
 }

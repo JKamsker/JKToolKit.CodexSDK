@@ -48,6 +48,8 @@ internal partial interface ICodexAppServerClientAdapter
 
     Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct);
 
+    Task<FeedbackSaveResult> SaveFeedbackAsync(FeedbackSaveOptions options, CancellationToken ct);
+
     Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct);
 
     Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupMode mode, string? cwd, CancellationToken ct);
@@ -117,6 +119,8 @@ internal sealed partial class CodexAppServerClientAdapter
     public Task<AccountLogoutResult> LogoutAccountAsync(CancellationToken ct) => _inner.LogoutAccountAsync(ct);
 
     public Task<FeedbackUploadResult> UploadFeedbackAsync(FeedbackUploadOptions options, CancellationToken ct) => _inner.UploadFeedbackAsync(options, ct);
+
+    public Task<FeedbackSaveResult> SaveFeedbackAsync(FeedbackSaveOptions options, CancellationToken ct) => _inner.SaveFeedbackAsync(options, ct);
 
     public Task<bool> StartWindowsSandboxSetupAsync(WindowsSandboxSetupStartOptions options, CancellationToken ct) => _inner.StartWindowsSandboxSetupAsync(options, ct);
 

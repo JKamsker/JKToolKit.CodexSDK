@@ -116,6 +116,10 @@
           "app.example.com": "allow",
           "blocked.example.com": "deny"
         }
+      },
+      "storage": {
+        "defaultProjectParent": "/workspace/projects",
+        "projectlessWorkspaceRoot": "/workspace/scratch"
       }
     },
     "unknownTopLevelField": true

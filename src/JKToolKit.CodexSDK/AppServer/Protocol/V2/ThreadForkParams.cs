@@ -132,4 +132,11 @@ public sealed record class ThreadForkParams
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ExperimentalPredictionMode { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether prediction mode should disable inherited MCP servers.
+    /// </summary>
+    [JsonPropertyName("experimentalDisablePredictionMcp")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ExperimentalDisablePredictionMcp { get; init; }
+
 }

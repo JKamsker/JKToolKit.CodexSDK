@@ -13,52 +13,60 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal enum HookEventName
 {
 
+    [System.Runtime.Serialization.EnumMember(Value = @"preModelRequest")]
+    PreModelRequest = 0,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"postModelRequest")]
+    PostModelRequest = 1,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"preToolUse")]
-    PreToolUse = 0,
+    PreToolUse = 2,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"permissionRequest")]
-    PermissionRequest = 1,
+    PermissionRequest = 3,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"postToolUse")]
-    PostToolUse = 2,
+    PostToolUse = 4,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"preCompact")]
-    PreCompact = 3,
+    PreCompact = 5,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"postCompact")]
-    PostCompact = 4,
+    PostCompact = 6,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"sessionStart")]
-    SessionStart = 5,
+    SessionStart = 7,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"sessionEnd")]
-    SessionEnd = 6,
+    SessionEnd = 8,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"userPromptSubmit")]
-    UserPromptSubmit = 7,
+    UserPromptSubmit = 9,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"subagentStart")]
-    SubagentStart = 8,
+    SubagentStart = 10,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"subagentStop")]
-    SubagentStop = 9,
+    SubagentStop = 11,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"stop")]
-    Stop = 10,
+    Stop = 12,
 
 
     [System.Runtime.Serialization.EnumMember(Value = @"interrupt")]
-    Interrupt = 11,
+    Interrupt = 13,
 
 
 }

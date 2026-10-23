@@ -124,6 +124,16 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("thread/fork.experimentalPredictionMode");
         }
 
+        if (!experimentalApiEnabled && options.ExperimentalDisablePredictionMcp)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/fork.experimentalDisablePredictionMcp");
+        }
+
+        if (options.ExperimentalDisablePredictionMcp && !options.ExperimentalPredictionMode)
+        {
+            throw new ArgumentException("ExperimentalDisablePredictionMcp requires ExperimentalPredictionMode to be true.", nameof(options));
+        }
+
         if (options.ExperimentalPredictionMode && options.Ephemeral is not true)
         {
             throw new ArgumentException("ExperimentalPredictionMode requires Ephemeral to be true.", nameof(options));
@@ -177,6 +187,11 @@ internal static class ExperimentalApiGuards
             throw new CodexExperimentalApiRequiredException("turn/start.responsesapiClientMetadata");
         }
 
+        if (!experimentalApiEnabled && options.ResponsesApiClientMetadataPatch is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/start.responsesapiClientMetadataPatch");
+        }
+
         if (!experimentalApiEnabled && options.AdditionalContext is not null)
         {
             throw new CodexExperimentalApiRequiredException("turn/start.additionalContext");
@@ -203,6 +218,11 @@ internal static class ExperimentalApiGuards
         if (!experimentalApiEnabled && options.ResponsesApiClientMetadata is not null)
         {
             throw new CodexExperimentalApiRequiredException("turn/steer.responsesapiClientMetadata");
+        }
+
+        if (!experimentalApiEnabled && options.ResponsesApiClientMetadataPatch is not null)
+        {
+            throw new CodexExperimentalApiRequiredException("turn/steer.responsesapiClientMetadataPatch");
         }
 
         if (!experimentalApiEnabled && options.AdditionalContext is not null)

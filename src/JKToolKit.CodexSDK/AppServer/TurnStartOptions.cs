@@ -68,6 +68,14 @@ public sealed class TurnStartOptions
     public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadata { get; set; }
 
     /// <summary>
+    /// Gets or sets metadata entries to merge into the Responses API client metadata without clearing existing entries.
+    /// </summary>
+    /// <remarks>
+    /// This field is gated behind app-server experimental API capabilities in newer upstream Codex builds.
+    /// </remarks>
+    public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadataPatch { get; set; }
+
+    /// <summary>
     /// Gets or sets optional client-provided context fragments keyed by opaque source identifier.
     /// </summary>
     /// <remarks>
@@ -243,6 +251,7 @@ public sealed class TurnStartOptions
             RootTurnId = RootTurnId,
             ToolOutput = ToolOutput,
             ResponsesApiClientMetadata = ResponsesApiClientMetadata,
+            ResponsesApiClientMetadataPatch = ResponsesApiClientMetadataPatch,
             AdditionalContext = AdditionalContext,
             Cwd = Cwd,
             RuntimeWorkspaceRoots = RuntimeWorkspaceRoots,

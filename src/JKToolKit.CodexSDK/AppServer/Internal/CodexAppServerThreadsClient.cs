@@ -420,7 +420,8 @@ internal sealed partial class CodexAppServerThreadsClient
                 DeveloperInstructions = options.DeveloperInstructions,
                 ExcludeTurns = options.ExcludeTurns,
                 Ephemeral = options.Ephemeral,
-                ExperimentalPredictionMode = options.ExperimentalPredictionMode
+                ExperimentalPredictionMode = options.ExperimentalPredictionMode,
+                ExperimentalDisablePredictionMcp = options.ExperimentalDisablePredictionMcp
             },
             ct);
 

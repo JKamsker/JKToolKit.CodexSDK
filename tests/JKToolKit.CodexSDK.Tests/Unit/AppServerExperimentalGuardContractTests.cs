@@ -24,7 +24,9 @@ public sealed class AppServerExperimentalGuardContractTests
             ("turn/start.runtimeWorkspaceRoots", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { RuntimeWorkspaceRoots = [] }, enabled)),
             ("turn/start.environments", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { Environments = [] }, enabled)),
             ("turn/start.permissions", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { PermissionProfileId = "profile" }, enabled)),
-            ("turn/steer.responsesapiClientMetadata", enabled => ExperimentalApiGuards.ValidateTurnSteer(new() { ThreadId = "t", ExpectedTurnId = "u", Input = [], ResponsesApiClientMetadata = new Dictionary<string,string>() }, enabled))
+            ("turn/start.responsesapiClientMetadataPatch", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { ResponsesApiClientMetadataPatch = new Dictionary<string,string>() }, enabled)),
+            ("turn/steer.responsesapiClientMetadata", enabled => ExperimentalApiGuards.ValidateTurnSteer(new() { ThreadId = "t", ExpectedTurnId = "u", Input = [], ResponsesApiClientMetadata = new Dictionary<string,string>() }, enabled)),
+            ("turn/steer.responsesapiClientMetadataPatch", enabled => ExperimentalApiGuards.ValidateTurnSteer(new() { ThreadId = "t", ExpectedTurnId = "u", Input = [], ResponsesApiClientMetadataPatch = new Dictionary<string,string>() }, enabled))
         };
         foreach (var (descriptor, validate) in cases)
         {

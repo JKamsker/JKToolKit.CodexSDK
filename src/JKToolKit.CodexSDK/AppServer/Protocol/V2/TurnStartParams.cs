@@ -76,6 +76,12 @@ public sealed record class TurnStartParams
     public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadata { get; init; }
 
     /// <summary>
+    /// Gets metadata entries to merge into the Responses API client metadata.
+    /// </summary>
+    [JsonPropertyName("responsesapiClientMetadataPatch")]
+    public IReadOnlyDictionary<string, string>? ResponsesApiClientMetadataPatch { get; init; }
+
+    /// <summary>
     /// Gets optional client-provided context fragments keyed by opaque source identifier.
     /// </summary>
     [JsonPropertyName(JsonFieldNames.AdditionalContext)]

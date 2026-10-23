@@ -33,6 +33,25 @@ public sealed class FeedbackUploadOptions
     /// Gets or sets optional extra log file paths to attach.
     /// </summary>
     public IReadOnlyList<string>? ExtraLogFiles { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional tags attached to the feedback report.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Tags { get; set; }
+}
+
+/// <summary>
+/// Options for saving a feedback report to a local ZIP via <c>feedback/save</c>.
+/// </summary>
+public sealed class FeedbackSaveOptions
+{
+    public required string Classification { get; set; }
+    public required string SavePath { get; set; }
+    public string? Reason { get; set; }
+    public string? ThreadId { get; set; }
+    public bool IncludeLogs { get; set; }
+    public IReadOnlyList<string>? ExtraLogFiles { get; set; }
+    public IReadOnlyDictionary<string, string>? Tags { get; set; }
 }
 
 /// <summary>
@@ -40,6 +59,17 @@ public sealed class FeedbackUploadOptions
 /// </summary>
 public sealed record class FeedbackUploadResult
 {
+    public required string ThreadId { get; init; }
+    public string? PromptHash { get; init; }
+    public required JsonElement Raw { get; init; }
+}
+
+/// <summary>
+/// Result returned by <c>feedback/save</c>.
+/// </summary>
+public sealed record class FeedbackSaveResult
+{
+    public required string SavedPath { get; init; }
     public required string ThreadId { get; init; }
     public string? PromptHash { get; init; }
     public required JsonElement Raw { get; init; }

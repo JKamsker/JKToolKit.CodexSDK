@@ -81,8 +81,16 @@ internal enum PlanType
     Edu_pro = 16,
 
 
+    [System.Runtime.Serialization.EnumMember(Value = @"sci")]
+    Sci = 17,
+
+
+    [System.Runtime.Serialization.EnumMember(Value = @"sci_plus")]
+    Sci_plus = 18,
+
+
     [System.Runtime.Serialization.EnumMember(Value = @"unknown")]
-    Unknown = 17,
+    Unknown = 19,
 
 
 }

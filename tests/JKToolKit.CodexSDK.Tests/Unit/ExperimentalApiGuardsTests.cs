@@ -338,6 +338,36 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateThreadFork_RequiresPredictionModeWhenDisablingPredictionMcp()
+    {
+        var options = new ThreadForkOptions
+        {
+            ThreadId = "thr_123",
+            ExperimentalDisablePredictionMcp = true
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: true);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ValidateThreadFork_RequiresExperimentalApiWhenDisablingPredictionMcp()
+    {
+        var options = new ThreadForkOptions
+        {
+            ThreadId = "thr_123",
+            Ephemeral = true,
+            ExperimentalPredictionMode = true,
+            ExperimentalDisablePredictionMcp = true
+        };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>();
+    }
+
+    [Fact]
     public void ValidateThreadResume_Throws_WhenInitialTurnsPageSet_AndExperimentalDisabled()
     {
         var options = new ThreadResumeOptions
