@@ -324,6 +324,27 @@ public sealed class ExperimentalApiGuardsTests
     }
 
     [Fact]
+    public void ValidateThreadFork_RequiresExperimentalApiForAttachedFork()
+    {
+        var options = new ThreadForkOptions { ThreadId = "thr_123", AttachToSource = true };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: false);
+
+        act.Should().Throw<CodexExperimentalApiRequiredException>()
+            .Which.Descriptor.Should().Be("thread/fork.attachToSource");
+    }
+
+    [Fact]
+    public void ValidateThreadFork_RejectsEphemeralAttachedFork()
+    {
+        var options = new ThreadForkOptions { ThreadId = "thr_123", AttachToSource = true, Ephemeral = true };
+
+        Action act = () => ExperimentalApiGuards.ValidateThreadFork(options, experimentalApiEnabled: true);
+
+        act.Should().Throw<ArgumentException>().WithMessage("*AttachToSource*Ephemeral*");
+    }
+
+    [Fact]
     public void ValidateThreadFork_RequiresEphemeralPredictionFork()
     {
         var options = new ThreadForkOptions

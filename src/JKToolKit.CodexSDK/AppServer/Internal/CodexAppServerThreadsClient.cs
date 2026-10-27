@@ -160,6 +160,7 @@ internal sealed partial class CodexAppServerThreadsClient
     public async Task<CodexThreadListPage> ListThreadsAsync(ThreadListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ExperimentalApiGuards.ValidateThreadList(options, _experimentalApiEnabled());
 
         var result = await _sendRequestAsync(
             "thread/list",
@@ -175,6 +176,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 SearchTerm = options.SearchTerm,
                 SourceKinds = options.SourceKinds,
                 Originators = options.Originators,
+                AttachedToThreadId = options.AttachedToThreadId,
                 Cursor = options.Cursor,
                 SortKey = options.SortKey,
             },
@@ -420,6 +422,7 @@ internal sealed partial class CodexAppServerThreadsClient
                 DeveloperInstructions = options.DeveloperInstructions,
                 ExcludeTurns = options.ExcludeTurns,
                 Ephemeral = options.Ephemeral,
+                AttachToSource = options.AttachToSource,
                 ExperimentalPredictionMode = options.ExperimentalPredictionMode,
                 ExperimentalDisablePredictionMcp = options.ExperimentalDisablePredictionMcp
             },

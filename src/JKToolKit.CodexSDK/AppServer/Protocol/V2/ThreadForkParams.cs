@@ -126,6 +126,13 @@ public sealed record class ThreadForkParams
     public bool? Ephemeral { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the persistent fork should be attached to its source thread.
+    /// </summary>
+    [JsonPropertyName("attachToSource")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool AttachToSource { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the fork should inherit the loaded parent's effective state for prediction.
     /// </summary>
     [JsonPropertyName("experimentalPredictionMode")]

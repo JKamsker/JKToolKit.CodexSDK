@@ -148,6 +148,15 @@ public sealed class ThreadForkOptions
     public bool? Ephemeral { get; set; }
 
     /// <summary>
+    /// [UNSTABLE] Gets or sets whether the persistent fork should be attached to its source thread.
+    /// </summary>
+    /// <remarks>
+    /// Attached threads are hidden from ordinary listings and require local storage. This option cannot be
+    /// combined with <see cref="Ephemeral"/> set to <see langword="true"/>.
+    /// </remarks>
+    public bool AttachToSource { get; set; }
+
+    /// <summary>
     /// Gets or sets a legacy compatibility switch that is ignored by current upstream app-server builds.
     /// </summary>
     public bool PersistExtendedHistory { get; set; }

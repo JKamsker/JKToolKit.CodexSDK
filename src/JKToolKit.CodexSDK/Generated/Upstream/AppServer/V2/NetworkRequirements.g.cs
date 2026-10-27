@@ -61,6 +61,12 @@ internal partial class NetworkRequirements
     [System.Text.Json.Serialization.JsonPropertyName("managedAllowedDomainsOnly")]
     public bool? ManagedAllowedDomainsOnly { get; set; } = default!;
 
+    /// <summary>
+    /// Host patterns routed to network approval before ordinary allow rules.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("reviewDomains")]
+    public System.Collections.Generic.ICollection<string>? ReviewDomains { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("socksPort")]
     public int? SocksPort { get; set; } = default!;
 

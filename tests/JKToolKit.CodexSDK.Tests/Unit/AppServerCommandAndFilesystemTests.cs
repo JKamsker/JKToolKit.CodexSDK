@@ -286,6 +286,19 @@ public sealed class AppServerCommandAndFilesystemTests
     }
 
     [Fact]
+    public async Task ListThreadsAsync_SendsAttachedThreadFilter_WhenExperimentalEnabled()
+    {
+        var rpc = new RecordingRpc { Result = JsonDocument.Parse("""{"data":[]}""").RootElement };
+        await using var client = CreateClient(rpc, new CodexAppServerClientOptions { ExperimentalApi = true });
+
+        await client.ListThreadsAsync(new ThreadListOptions { AttachedToThreadId = "thr_parent" });
+
+        rpc.LastMethod.Should().Be("thread/list");
+        JsonSerializer.Serialize(rpc.LastParams, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            .Should().Contain("\"attachedToThreadId\":\"thr_parent\"");
+    }
+
+    [Fact]
     public async Task ThreadSectionMethods_SendExpectedMethods_AndParseSections()
     {
         using var listDoc = JsonDocument.Parse(

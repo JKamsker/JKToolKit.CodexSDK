@@ -281,6 +281,7 @@ internal static class CodexAppServerClientConfigRequirementsParser
             DangerouslyAllowNonLoopbackProxy = GetBoolOrNull(network, "dangerouslyAllowNonLoopbackProxy"),
             DangerouslyAllowAllUnixSockets = GetBoolOrNull(network, "dangerouslyAllowAllUnixSockets"),
             Domains = ParseDomainPermissions(network, JsonFieldNames.Domains),
+            ReviewDomains = GetOptionalStringArray(network, "reviewDomains"),
             ManagedAllowedDomainsOnly = GetBoolOrNull(network, "managedAllowedDomainsOnly"),
             AllowedDomains = GetOptionalStringArray(network, JsonFieldNames.AllowedDomains),
             DeniedDomains = GetOptionalStringArray(network, JsonFieldNames.DeniedDomains),

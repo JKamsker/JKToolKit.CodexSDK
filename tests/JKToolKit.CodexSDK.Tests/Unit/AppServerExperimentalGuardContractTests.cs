@@ -21,6 +21,7 @@ public sealed class AppServerExperimentalGuardContractTests
             ("askForApproval.granular", enabled => ExperimentalApiGuards.ValidateThreadFork(new() { ThreadId = "t", AskForApproval = new CodexAskForApprovalGranular { SandboxApproval = false, Rules = false, McpElicitations = false } }, enabled)),
             ("thread/fork.runtimeWorkspaceRoots", enabled => ExperimentalApiGuards.ValidateThreadFork(new() { ThreadId = "t", RuntimeWorkspaceRoots = [] }, enabled)),
             ("thread/fork.permissions", enabled => ExperimentalApiGuards.ValidateThreadFork(new() { ThreadId = "t", PermissionProfileId = "profile" }, enabled)),
+            ("thread/fork.attachToSource", enabled => ExperimentalApiGuards.ValidateThreadFork(new() { ThreadId = "t", AttachToSource = true }, enabled)),
             ("turn/start.runtimeWorkspaceRoots", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { RuntimeWorkspaceRoots = [] }, enabled)),
             ("turn/start.environments", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { Environments = [] }, enabled)),
             ("turn/start.permissions", enabled => ExperimentalApiGuards.ValidateTurnStart(new() { PermissionProfileId = "profile" }, enabled)),

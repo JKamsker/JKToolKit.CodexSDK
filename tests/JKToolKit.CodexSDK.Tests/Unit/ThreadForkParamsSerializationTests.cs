@@ -209,4 +209,28 @@ public sealed class ThreadForkParamsSerializationTests
         JsonSerializer.Serialize(captured, CodexAppServerClient.CreateDefaultSerializerOptions())
             .Should().Contain("\"experimentalPredictionMode\":true");
     }
+
+    [Fact]
+    public async Task ForkThreadAsync_MapsAttachedFork()
+    {
+        ThreadForkParams? captured = null;
+        using var doc = JsonDocument.Parse("""{"threadId":"thr_attached"}""");
+        var client = new CodexAppServerThreadsClient(
+            (_, @params, _) =>
+            {
+                captured = @params.Should().BeOfType<ThreadForkParams>().Subject;
+                return Task.FromResult(doc.RootElement.Clone());
+            },
+            () => true);
+
+        _ = await client.ForkThreadAsync(new ThreadForkOptions
+        {
+            ThreadId = "thr_source",
+            AttachToSource = true
+        });
+
+        captured!.AttachToSource.Should().BeTrue();
+        JsonSerializer.Serialize(captured, CodexAppServerClient.CreateDefaultSerializerOptions())
+            .Should().Contain("\"attachToSource\":true");
+    }
 }
