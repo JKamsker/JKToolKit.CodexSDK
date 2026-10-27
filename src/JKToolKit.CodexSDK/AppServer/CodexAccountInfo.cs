@@ -35,3 +35,12 @@ public sealed record class CodexChatGptAccountInfo(string Email, CodexPlanType P
     /// <inheritdoc />
     public override string Type => "chatgpt";
 }
+
+/// <summary>
+/// Represents Google Cloud Vertex AI account state backed by externally managed credentials.
+/// </summary>
+public sealed record class CodexGcpAccountInfo(JsonElement Raw) : CodexAccountInfo(Raw)
+{
+    /// <inheritdoc />
+    public override string Type => "gcp";
+}

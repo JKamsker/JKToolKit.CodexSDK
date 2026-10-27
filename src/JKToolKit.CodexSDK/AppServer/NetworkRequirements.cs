@@ -52,6 +52,11 @@ public sealed record class NetworkRequirements
     public IReadOnlyDictionary<string, NetworkDomainPermission>? Domains { get; init; }
 
     /// <summary>
+    /// Gets host patterns routed to network approval before ordinary allow rules, when present.
+    /// </summary>
+    public IReadOnlyList<string>? ReviewDomains { get; init; }
+
+    /// <summary>
     /// Gets whether only managed allowed domains should be honored, when present.
     /// </summary>
     public bool? ManagedAllowedDomainsOnly { get; init; }

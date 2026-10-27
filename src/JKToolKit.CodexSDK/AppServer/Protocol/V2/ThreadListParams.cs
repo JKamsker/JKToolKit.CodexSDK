@@ -70,6 +70,12 @@ public sealed record class ThreadListParams
     public IReadOnlyList<string>? Originators { get; init; }
 
     /// <summary>
+    /// Gets the source thread whose persistent attached threads should be returned.
+    /// </summary>
+    [JsonPropertyName("attachedToThreadId")]
+    public string? AttachedToThreadId { get; init; }
+
+    /// <summary>
     /// Gets an optional cursor for paging.
     /// </summary>
     [JsonPropertyName(JsonFieldNames.Cursor)]

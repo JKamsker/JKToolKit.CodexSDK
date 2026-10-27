@@ -255,6 +255,27 @@ public sealed class AuthAccountConfigWrappersTests
     }
 
     [Fact]
+    public async Task ReadAccountAsync_ParsesGcpAccount()
+    {
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/read",
+            Result = JsonSerializer.SerializeToElement(new
+            {
+                account = new { type = "gcp" },
+                requiresOpenaiAuth = false
+            })
+        };
+
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadAccountAsync();
+
+        result.AccountInfo.Should().BeOfType<CodexGcpAccountInfo>()
+            .Which.Type.Should().Be("gcp");
+    }
+
+    [Fact]
     public async Task ReadAccountRateLimitsAsync_CallsExpectedMethod_AndParsesResponse()
     {
         var rawResult = JsonSerializer.SerializeToElement(new

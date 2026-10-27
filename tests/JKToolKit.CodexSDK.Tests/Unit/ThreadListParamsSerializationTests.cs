@@ -74,4 +74,14 @@ public sealed class ThreadListParamsSerializationTests
 
         json.Should().Contain("\"excludedThreadIds\":[\"thr_1\",\"thr_2\"]");
     }
+
+    [Fact]
+    public void Serialize_WritesAttachedThreadFilter()
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadListParams { AttachedToThreadId = "thr_parent" },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.Should().Contain("\"attachedToThreadId\":\"thr_parent\"");
+    }
 }

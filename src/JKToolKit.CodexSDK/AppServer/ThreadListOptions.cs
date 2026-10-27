@@ -81,6 +81,14 @@ public sealed class ThreadListOptions
     public IReadOnlyList<string>? Originators { get; set; }
 
     /// <summary>
+    /// [UNSTABLE] Gets or sets the source thread whose persistent attached threads should be returned.
+    /// </summary>
+    /// <remarks>
+    /// When omitted, attached threads remain hidden from ordinary listings.
+    /// </remarks>
+    public string? AttachedToThreadId { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional cursor for paging.
     /// </summary>
     public string? Cursor { get; set; }

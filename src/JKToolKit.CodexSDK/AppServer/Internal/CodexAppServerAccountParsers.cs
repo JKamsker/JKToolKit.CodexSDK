@@ -23,6 +23,7 @@ internal static class CodexAppServerAccountParsers
                 Email: GetRequiredString(account, "email", context),
                 PlanType: CodexPlanType.Parse(GetRequiredString(account, JsonFieldNames.PlanType, context)),
                 Raw: account.Clone()),
+            "gcp" => new CodexGcpAccountInfo(account.Clone()),
             _ => throw new InvalidOperationException(
                 $"{context} returned unsupported account type '{type}'. Raw result: {account}")
         };

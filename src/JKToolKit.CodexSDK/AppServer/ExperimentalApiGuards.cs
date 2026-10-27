@@ -2,6 +2,16 @@ namespace JKToolKit.CodexSDK.AppServer;
 
 internal static class ExperimentalApiGuards
 {
+    internal static void ValidateThreadList(ThreadListOptions options, bool experimentalApiEnabled)
+    {
+        if (options.AttachedToThreadId is null)
+            return;
+        if (string.IsNullOrWhiteSpace(options.AttachedToThreadId))
+            throw new ArgumentException("AttachedToThreadId cannot be empty or whitespace.", nameof(options));
+        if (!experimentalApiEnabled)
+            throw new CodexExperimentalApiRequiredException("thread/list.attachedToThreadId");
+    }
+
     internal static void ValidateThreadStart(ThreadStartOptions options, bool experimentalApiEnabled)
     {
         if (options.Sandbox is not null && !string.IsNullOrWhiteSpace(options.PermissionProfileId))
@@ -137,6 +147,16 @@ internal static class ExperimentalApiGuards
         if (options.ExperimentalPredictionMode && options.Ephemeral is not true)
         {
             throw new ArgumentException("ExperimentalPredictionMode requires Ephemeral to be true.", nameof(options));
+        }
+
+        if (options.AttachToSource && options.Ephemeral is true)
+        {
+            throw new ArgumentException("AttachToSource cannot be combined with Ephemeral set to true.", nameof(options));
+        }
+
+        if (!experimentalApiEnabled && options.AttachToSource)
+        {
+            throw new CodexExperimentalApiRequiredException("thread/fork.attachToSource");
         }
 
         if (options.ExperimentalPredictionMode && (hasPath || !string.IsNullOrWhiteSpace(options.LastTurnId)))

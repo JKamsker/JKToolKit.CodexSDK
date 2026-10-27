@@ -91,6 +91,7 @@ public sealed class ConfigRequirementsReadWrapperTests
                     httpPort = 8080,
                     dangerouslyAllowAllUnixSockets = true,
                     managedAllowedDomainsOnly = true,
+                    reviewDomains = new[] { "review.example.com", "*.managed.example.com" },
                     domains = new Dictionary<string, string>
                     {
                         ["api.openai.com"] = "allow",
@@ -118,6 +119,7 @@ public sealed class ConfigRequirementsReadWrapperTests
         result.Requirements.Network!.HttpPort.Should().Be(8080);
         result.Requirements.Network.DangerouslyAllowAllUnixSockets.Should().BeTrue();
         result.Requirements.Network.ManagedAllowedDomainsOnly.Should().BeTrue();
+        result.Requirements.Network.ReviewDomains.Should().Equal("review.example.com", "*.managed.example.com");
         result.Requirements.Network.Domains.Should().NotBeNull();
         result.Requirements.Network.Domains!["api.openai.com"].Should().Be(NetworkDomainPermission.Allow);
         result.Requirements.Network.Domains["example.com"].Should().Be(NetworkDomainPermission.Deny);
