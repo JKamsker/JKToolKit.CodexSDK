@@ -14,6 +14,11 @@ public sealed record class TurnAdditionalContextEntry
     /// Gets or sets the context kind.
     /// </summary>
     public TurnAdditionalContextKind Kind { get; init; } = TurnAdditionalContextKind.Untrusted;
+
+    /// <summary>
+    /// Gets or sets an optional label for untrusted context tool output.
+    /// </summary>
+    public string? Name { get; init; }
 }
 
 /// <summary>

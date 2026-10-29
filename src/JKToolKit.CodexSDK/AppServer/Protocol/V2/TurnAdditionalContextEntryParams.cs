@@ -19,4 +19,11 @@ public sealed record class TurnAdditionalContextEntryParams
     /// </summary>
     [JsonPropertyName(JsonFieldNames.Kind)]
     public required string Kind { get; init; }
+
+    /// <summary>
+    /// Gets the optional label for untrusted context tool output.
+    /// </summary>
+    [JsonPropertyName("name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; init; }
 }

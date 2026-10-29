@@ -81,6 +81,7 @@ internal sealed partial class CodexAppServerConfigClient
             ThreadId = CodexAppServerClientJson.GetStringOrNull(usage, JsonFieldNames.ThreadId),
             EstimatedUsageCreditsMicros = CodexAppServerClientJson.GetInt64OrNull(usage, JsonFieldNames.EstimatedUsageCreditsMicros),
             EstimatedUsageUsdMicros = CodexAppServerClientJson.GetInt64OrNull(usage, "estimatedUsageUsdMicros"),
+            NativeUsageUsdMicros = CodexAppServerClientJson.GetInt64OrNull(usage, "nativeUsageUsdMicros"),
             Groups = ParseThreadUsageGroups(usage),
             Raw = usage.Clone()
         };

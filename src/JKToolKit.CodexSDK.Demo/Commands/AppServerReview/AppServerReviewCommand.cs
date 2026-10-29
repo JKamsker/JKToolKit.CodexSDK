@@ -166,8 +166,7 @@ public sealed class AppServerReviewCommand : AsyncCommand<AppServerReviewSetting
         return raw.Trim().ToLowerInvariant() switch
         {
             "inline" => ReviewDelivery.Inline,
-            "detached" => ReviewDelivery.Detached,
-            _ => throw new InvalidOperationException($"Unknown --delivery '{raw}'. Use: inline|detached.")
+            _ => throw new InvalidOperationException($"Unknown --delivery '{raw}'. Use: inline.")
         };
     }
 }

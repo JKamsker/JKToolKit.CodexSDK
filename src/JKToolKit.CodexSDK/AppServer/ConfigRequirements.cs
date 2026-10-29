@@ -144,6 +144,11 @@ public sealed record class ConfigRequirements
     public FeedbackRequirements? Feedback { get; init; }
 
     /// <summary>
+    /// Gets managed OpenTelemetry requirements, when present.
+    /// </summary>
+    public OpenTelemetryRequirements? OpenTelemetry { get; init; }
+
+    /// <summary>
     /// Gets the SQLite home path URI, when enforced by policy.
     /// </summary>
     public string? SqliteHome { get; init; }

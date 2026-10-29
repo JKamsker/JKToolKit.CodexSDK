@@ -93,7 +93,8 @@ internal static class CodexAppServerWireBuilders
             result[entry.Key] = new TurnAdditionalContextEntryParams
             {
                 Value = entry.Value.Value,
-                Kind = entry.Value.Kind.Value
+                Kind = entry.Value.Kind.Value,
+                Name = entry.Value.Name
             };
         }
 

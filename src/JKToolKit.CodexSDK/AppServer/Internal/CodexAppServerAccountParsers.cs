@@ -20,9 +20,12 @@ internal static class CodexAppServerAccountParsers
         {
             "apiKey" => new CodexApiKeyAccountInfo(account.Clone()),
             "chatgpt" => new CodexChatGptAccountInfo(
-                Email: GetRequiredString(account, "email", context),
+                Email: GetStringOrNull(account, "email"),
                 PlanType: CodexPlanType.Parse(GetRequiredString(account, JsonFieldNames.PlanType, context)),
-                Raw: account.Clone()),
+                Raw: account.Clone())
+            {
+                WorkspaceName = GetStringOrNull(account, "workspaceName")
+            },
             "gcp" => new CodexGcpAccountInfo(account.Clone()),
             _ => throw new InvalidOperationException(
                 $"{context} returned unsupported account type '{type}'. Raw result: {account}")

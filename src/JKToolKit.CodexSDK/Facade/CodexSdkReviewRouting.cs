@@ -58,7 +58,7 @@ public sealed class CodexSdkAppServerReviewOptions
     public string? ExistingThreadId { get; init; }
 
     /// <summary>
-    /// Gets or sets the review delivery mode.
+    /// Gets or sets the review delivery mode. Upstream reviews run inline.
     /// </summary>
     public ReviewDelivery? Delivery { get; init; }
 
@@ -125,8 +125,7 @@ public sealed class CodexSdkAppServerReviewSession : IAsyncDisposable
     public CodexThread Thread { get; }
 
     /// <summary>
-    /// Gets the source thread used to submit the review.
-    /// For inline reviews this matches <see cref="Thread"/>; for detached reviews it is the source thread.
+    /// Gets the source thread used to submit the inline review.
     /// </summary>
     public CodexThread SourceThread { get; }
 

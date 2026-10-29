@@ -151,8 +151,9 @@ public sealed class AuthAccountConfigWrappersTests
             account = new
             {
                 type = "chatgpt",
-                email = "person@example.test",
-                planType = "plus"
+                email = (string?)null,
+                planType = "plus",
+                workspaceName = "Research"
             },
             requiresOpenaiAuth = false,
             workspaceRouting = new
@@ -185,8 +186,9 @@ public sealed class AuthAccountConfigWrappersTests
         result.Account.Should().NotBeNull();
         result.Account!.Value.GetProperty("type").GetString().Should().Be("chatgpt");
         var account = result.AccountInfo.Should().BeOfType<CodexChatGptAccountInfo>().Subject;
-        account.Email.Should().Be("person@example.test");
+        account.Email.Should().BeNull();
         account.PlanType.Should().Be(CodexPlanType.Plus);
+        account.WorkspaceName.Should().Be("Research");
         result.WorkspaceRouting!.ChatGptAccountId.Should().Be("acct_123");
         result.WorkspaceRouting.AccountRoutingOverride.Should().Be("US");
     }

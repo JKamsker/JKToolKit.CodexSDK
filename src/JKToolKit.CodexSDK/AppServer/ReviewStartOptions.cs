@@ -16,8 +16,7 @@ public sealed class ReviewStartOptions
     public required ReviewTarget Target { get; set; }
 
     /// <summary>
-    /// Gets or sets an optional delivery mode.
+    /// Gets or sets the optional delivery mode. Upstream reviews run inline.
     /// </summary>
     public ReviewDelivery? Delivery { get; set; }
 }
-
