@@ -20,7 +20,7 @@ internal partial class ItemCompletedNotification
     public long CompletedAtMs { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("item")]
-    public Item Item { get; set; } = default!;
+    public Item Item { get; set; } = new Item();
 
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;

@@ -7,30 +7,6 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class PendingTurnBufferTests
 {
-    [Fact]
-    public async Task PendingDetachedReview_PreservesServerChosenThreadNotifications()
-    {
-        await using var fixture = new Fixture();
-        fixture.Rpc.StartResponseGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        var client = await fixture.StartAsync();
-        var startup = client.StartReviewAsync(new()
-        {
-            ThreadId = "t", Delivery = ReviewDelivery.Detached,
-            Target = new ReviewTarget.UncommittedChanges()
-        });
-        await fixture.Rpc.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        await fixture.Rpc.Emit("item/completed", """{"threadId":"review-t","turnId":"review-u","item":{"id":"i","type":"agentMessage","text":"review preserved"}}""");
-        await fixture.Rpc.Emit("turn/completed", """{"threadId":"review-t","turn":{"id":"review-u","status":"completed"}}""");
-        PruneAtFutureTime(client);
-        fixture.Rpc.StartResponseGate.SetResult();
-        var review = await startup.WaitAsync(TimeSpan.FromSeconds(5));
-        await using var handle = review.Turn;
-        var result = await handle.RunAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        result.FinalResponse.Should().Be("review preserved");
-        result.IsPartial.Should().BeFalse();
-        await client.DisposeAsync();
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

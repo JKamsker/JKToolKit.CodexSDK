@@ -14,10 +14,16 @@ internal partial class HooksListParams
 {
 
     /// <summary>
-    /// When empty, defaults to the current session working directory.
+    /// Working directories to inspect when no thread is specified. An empty list uses the session cwd.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("cwds")]
     public System.Collections.Generic.ICollection<string>? Cwds { get; set; } = default!;
+
+    /// <summary>
+    /// List a loaded thread's hooks, including its selected environments. Omit `cwds` in this mode.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("threadId")]
+    public string? ThreadId { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

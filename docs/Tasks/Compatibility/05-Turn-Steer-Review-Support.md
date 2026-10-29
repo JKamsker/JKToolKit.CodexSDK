@@ -174,7 +174,7 @@ Plan for minimizing user confusion:
 SDK work:
 
 - [x] Ensure per-turn stream plumbing can handle:
-  - [x] detached reviews (turn belongs to a different thread id)
+  - [x] inline reviews (detached delivery was removed upstream in 0.166.0)
   - [x] review mode transitions (if surfaced via notifications)
 
 Strategy:

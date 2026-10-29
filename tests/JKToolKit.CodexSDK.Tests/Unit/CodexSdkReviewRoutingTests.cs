@@ -92,54 +92,6 @@ public sealed class CodexSdkReviewRoutingTests
     }
 
     [Fact]
-    public async Task ReviewAsync_AppServerDetachedMode_ResolvesDetachedReviewThread()
-    {
-        var rpc = new SequencedRpc();
-        rpc.EnqueueResult("thread/start", JsonSerializer.SerializeToElement(new { id = "thr_bootstrap" }));
-        rpc.EnqueueResult("review/start", JsonSerializer.SerializeToElement(new
-        {
-            reviewThreadId = "thr_review",
-            turn = new { id = "turn_1", threadId = "thr_bootstrap" }
-        }));
-        rpc.EnqueueResult("thread/resume", JsonSerializer.SerializeToElement(new { id = "thr_review" }));
-
-        await using var appClient = new CodexAppServerClient(
-            new CodexAppServerClientOptions(),
-            new FakeProcess(),
-            rpc,
-            NullLogger.Instance,
-            startExitWatcher: false);
-
-        var sdk = new CodexSdk(new FakeExecClient(), new FakeAppServerFactory(appClient), new FakeMcpFactory());
-
-        var routed = await sdk.ReviewAsync(new CodexSdkReviewOptions
-        {
-            Mode = CodexSdkReviewMode.AppServer,
-            AppServer = new CodexSdkAppServerReviewOptions
-            {
-                Thread = new ThreadStartOptions
-                {
-                    Cwd = Directory.GetCurrentDirectory(),
-                    Model = CodexModel.Gpt52Codex
-                },
-                Delivery = ReviewDelivery.Detached,
-                Target = new AppServerReviewTarget.UncommittedChanges()
-            }
-        });
-
-        routed.AppServer.Should().NotBeNull();
-        routed.AppServer!.Thread.Id.Should().Be("thr_review");
-        routed.AppServer.SourceThread.Id.Should().Be("thr_bootstrap");
-        routed.AppServer.Review.ReviewThreadId.Should().Be("thr_review");
-
-        await routed.DisposeAsync();
-        Assert.Equal(1, rpc.Disposals);
-        await routed.DisposeAsync();
-        Assert.Equal(1, rpc.Disposals);
-        rpc.AssertDrained();
-    }
-
-    [Fact]
     public async Task ReviewAsync_AppServerMode_CanUseExistingSourceThread()
     {
         var rpc = new SequencedRpc();

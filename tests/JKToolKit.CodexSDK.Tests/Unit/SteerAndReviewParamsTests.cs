@@ -29,7 +29,8 @@ public sealed class SteerAndReviewParamsTests
                 ["note"] = new()
                 {
                     Value = "extra context",
-                    Kind = TurnAdditionalContextKind.Application
+                    Kind = TurnAdditionalContextKind.Application,
+                    Name = "release note"
                 }
             }
         });
@@ -44,7 +45,7 @@ public sealed class SteerAndReviewParamsTests
         json.Should().Contain("\"clientUserMessageId\":\"msg_1\"");
         json.Should().Contain("\"responsesapiClientMetadata\":{\"workspace_kind\":\"local\"}");
         json.Should().Contain("\"responsesapiClientMetadataPatch\":{\"request_kind\":\"steer\"}");
-        json.Should().Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\"}}");
+        json.Should().Contain("\"additionalContext\":{\"note\":{\"value\":\"extra context\",\"kind\":\"application\",\"name\":\"release note\"}}");
     }
 
     [Fact]
@@ -71,13 +72,12 @@ public sealed class SteerAndReviewParamsTests
         var p = CodexAppServerClient.BuildReviewStartParams(new ReviewStartOptions
         {
             ThreadId = "thr_123",
-            Delivery = ReviewDelivery.Detached,
             Target = new ReviewTarget.Commit("abc1234", "Title")
         });
 
         var json = JsonSerializer.Serialize(p, CodexAppServerClient.CreateDefaultSerializerOptions());
 
-        json.Should().Contain("\"delivery\":\"detached\"");
+        json.Should().NotContain("\"delivery\":");
         json.Should().Contain("\"type\":\"commit\"");
         json.Should().Contain("\"sha\":\"abc1234\"");
         json.Should().Contain("\"title\":\"Title\"");

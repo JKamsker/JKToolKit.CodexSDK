@@ -30,10 +30,15 @@ public sealed record class CodexApiKeyAccountInfo(JsonElement Raw) : CodexAccoun
 /// <summary>
 /// Represents managed ChatGPT account state.
 /// </summary>
-public sealed record class CodexChatGptAccountInfo(string Email, CodexPlanType PlanType, JsonElement Raw) : CodexAccountInfo(Raw)
+public sealed record class CodexChatGptAccountInfo(string? Email, CodexPlanType PlanType, JsonElement Raw) : CodexAccountInfo(Raw)
 {
     /// <inheritdoc />
     public override string Type => "chatgpt";
+
+    /// <summary>
+    /// Gets the display name of the selected ChatGPT workspace, when available.
+    /// </summary>
+    public string? WorkspaceName { get; init; }
 }
 
 /// <summary>

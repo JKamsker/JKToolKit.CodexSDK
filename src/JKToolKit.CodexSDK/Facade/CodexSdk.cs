@@ -123,13 +123,7 @@ public sealed class CodexSdk : IAsyncDisposable
                 Target = options.Target
             }, ct);
 
-            var reviewThread = bootstrapThread;
-            if (!string.Equals(review.ReviewThreadId, bootstrapThread.Id, StringComparison.Ordinal))
-            {
-                reviewThread = await client.ResumeThreadAsync(review.ReviewThreadId, ct);
-            }
-
-            return new CodexSdkAppServerReviewSession(client, reviewThread, bootstrapThread, review);
+            return new CodexSdkAppServerReviewSession(client, bootstrapThread, bootstrapThread, review);
         }
         catch
         {

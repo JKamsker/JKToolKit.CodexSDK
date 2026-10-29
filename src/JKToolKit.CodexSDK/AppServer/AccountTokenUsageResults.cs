@@ -107,6 +107,11 @@ public sealed record class AccountThreadUsage
     public long? EstimatedUsageUsdMicros { get; init; }
 
     /// <summary>
+    /// Gets native dollar usage in USD micros, independent of credit estimates, when known.
+    /// </summary>
+    public long? NativeUsageUsdMicros { get; init; }
+
+    /// <summary>
     /// Gets usage breakdown groups returned by upstream.
     /// </summary>
     public required IReadOnlyList<AccountThreadUsageBreakdownGroup> Groups { get; init; }

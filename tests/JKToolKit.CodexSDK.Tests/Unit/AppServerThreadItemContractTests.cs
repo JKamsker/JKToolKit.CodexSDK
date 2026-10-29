@@ -61,6 +61,15 @@ public sealed class AppServerThreadItemContractTests
     }
 
     [Fact]
+    public void ThreadItem_ProjectsLifecycleTimestamps()
+    {
+        var item = Parse("""{"id":"i","type":"agentMessage","text":"answer","startedAtMs":100,"completedAtMs":125}""");
+
+        item.StartedAtMs.Should().Be(100);
+        item.CompletedAtMs.Should().Be(125);
+    }
+
+    [Fact]
     public void ImageGeneration_ParsesFileReferenceAndObservedInputs()
     {
         var item = Parse("""{"id":"i","type":"imageGeneration","status":"done","fileId":"file-1","inputImages":[{"path":"/input.png","sha256":"abc"}]}""")

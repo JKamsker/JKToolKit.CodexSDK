@@ -110,6 +110,9 @@ internal partial class ConfigRequirements
     [System.Text.Json.Serialization.JsonPropertyName("models")]
     public Models? Models { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("otel")]
+    public Otel? Otel { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("sqliteHome")]
     public string? SqliteHome { get; set; } = default!;
 

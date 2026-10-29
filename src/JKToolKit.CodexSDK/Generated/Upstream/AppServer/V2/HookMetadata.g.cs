@@ -28,6 +28,12 @@ internal partial class HookMetadata
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = default!;
 
+    /// <summary>
+    /// The owning execution environment, if this hook came from its requirements.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("eventName")]
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HookEventName>))]
     public HookEventName EventName { get; set; } = default!;

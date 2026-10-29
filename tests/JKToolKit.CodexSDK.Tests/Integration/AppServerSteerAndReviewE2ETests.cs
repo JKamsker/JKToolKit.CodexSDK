@@ -66,29 +66,4 @@ public sealed class AppServerSteerAndReviewE2ETests
         CodexLiveTestSettings.AssertCompleted(await inlineTurn.Completion.WaitAsync(cts.Token));
     }
 
-    [CodexE2EFact]
-    public async Task AppServer_DetachedReview_OnPaginatedThread_ReportsUnsupportedCapability()
-    {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await using var client = await CodexAppServerClient.StartAsync(new CodexAppServerClientOptions(), cts.Token);
-        var thread = await client.StartThreadAsync(new ThreadStartOptions
-        {
-            Cwd = Directory.GetCurrentDirectory(),
-            Model = CodexLiveTestSettings.Model,
-            Ephemeral = false
-        }, cts.Token);
-
-        var error = await Assert.ThrowsAsync<CodexAppServerRequestFailedException>(() =>
-            client.StartReviewAsync(new ReviewStartOptions
-            {
-                ThreadId = thread.Id,
-                Delivery = ReviewDelivery.Detached,
-                Target = new ReviewTarget.Custom("Review a comment typo correction. Do not use tools or edit files.")
-            }, cts.Token));
-
-        error.Method.Should().Be("review/start");
-        error.ErrorCode.Should().Be(-32600);
-        error.ErrorMessage.Should().Be("paginated threads do not support detached review");
-    }
 }
-

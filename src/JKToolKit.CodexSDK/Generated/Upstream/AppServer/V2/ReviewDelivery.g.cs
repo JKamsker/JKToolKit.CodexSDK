@@ -17,8 +17,4 @@ internal enum ReviewDelivery
     Inline = 0,
 
 
-    [System.Runtime.Serialization.EnumMember(Value = @"detached")]
-    Detached = 1,
-
-
 }

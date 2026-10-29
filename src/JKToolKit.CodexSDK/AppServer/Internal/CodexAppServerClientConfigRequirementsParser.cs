@@ -141,6 +141,9 @@ internal static class CodexAppServerClientConfigRequirementsParser
                     Raw = feedback.Clone()
                 }
                 : null,
+            OpenTelemetry = TryGetObject(req, "otel") is { } otel
+                ? CodexAppServerClientOpenTelemetryRequirementsParser.Parse(otel)
+                : null,
             SqliteHome = GetStringOrNull(req, "sqliteHome"),
             LogDir = GetStringOrNull(req, "logDir"),
             ModelCatalogJson = GetStringOrNull(req, "modelCatalogJson"),

@@ -9,9 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
+/// <summary>
+/// A thread item and its recorded lifecycle times. The payload stays flat on the wire.
+/// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class ThreadItem
 {
+
+    /// <summary>
+    /// Unix timestamp in milliseconds when the item completed, if recorded.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("completedAtMs")]
+    public long? CompletedAtMs { get; set; } = default!;
+
+    /// <summary>
+    /// Unix timestamp in milliseconds when the item started, if recorded.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("startedAtMs")]
+    public long? StartedAtMs { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 

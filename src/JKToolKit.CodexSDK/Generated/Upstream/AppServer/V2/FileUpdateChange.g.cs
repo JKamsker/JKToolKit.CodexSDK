@@ -17,7 +17,7 @@ internal partial class FileUpdateChange
     public string Diff { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("kind")]
-    public Kind Kind { get; set; } = default!;
+    public Kind2 Kind { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("path")]
     public string Path { get; set; } = default!;

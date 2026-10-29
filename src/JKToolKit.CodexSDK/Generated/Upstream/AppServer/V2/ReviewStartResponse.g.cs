@@ -14,9 +14,7 @@ internal partial class ReviewStartResponse
 {
 
     /// <summary>
-    /// Identifies the thread where the review runs.
-    /// <br/>
-    /// <br/>For inline reviews, this is the original thread id. For detached reviews, this is the id of the new review thread.
+    /// The thread id supplied to `review/start`.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("reviewThreadId")]
     public string ReviewThreadId { get; set; } = default!;

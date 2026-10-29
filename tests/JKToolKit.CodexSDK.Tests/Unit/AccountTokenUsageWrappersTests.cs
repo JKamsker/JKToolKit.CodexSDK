@@ -126,6 +126,7 @@ public sealed class AccountTokenUsageWrappersTests
                 threadId = "thr_1",
                 estimatedUsageCreditsMicros = 1000L,
                 estimatedUsageUsdMicros = 25L,
+                nativeUsageUsdMicros = 17L,
                 groups = new[]
                 {
                     new
@@ -166,6 +167,7 @@ public sealed class AccountTokenUsageWrappersTests
         result.ThreadUsage!.ThreadId.Should().Be("thr_1");
         result.ThreadUsage.EstimatedUsageCreditsMicros.Should().Be(1000);
         result.ThreadUsage.EstimatedUsageUsdMicros.Should().Be(25);
+        result.ThreadUsage.NativeUsageUsdMicros.Should().Be(17);
         result.ThreadUsage.Groups.Should().ContainSingle().Which.Model.Should().Be("gpt-5");
         result.Raw.GetProperty("summary").GetProperty("lifetimeTokens").GetInt64().Should().Be(1234);
     }

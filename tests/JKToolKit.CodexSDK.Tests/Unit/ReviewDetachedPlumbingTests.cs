@@ -9,13 +9,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JKToolKit.CodexSDK.Tests.Unit;
 
-public sealed class ReviewDetachedPlumbingTests
+public sealed class ReviewStartPlumbingTests
 {
     [Fact]
-    public async Task StartReviewAsync_Detached_CreatesTurnHandle_AndRoutesCompletionByTurnId()
+    public async Task StartReviewAsync_Inline_CreatesTurnHandle_AndRoutesCompletionByTurnId()
     {
-        var turnId = "turn_detached_1";
-        var reviewThreadId = "thr_review_1";
+        var turnId = "turn_inline_1";
+        var reviewThreadId = "thr_original";
 
         var rpc = new FakeRpc
         {
@@ -36,7 +36,7 @@ public sealed class ReviewDetachedPlumbingTests
         var review = await client.StartReviewAsync(new ReviewStartOptions
         {
             ThreadId = "thr_original",
-            Delivery = ReviewDelivery.Detached,
+            Delivery = ReviewDelivery.Inline,
             Target = new ReviewTarget.UncommittedChanges()
         });
 
@@ -53,7 +53,7 @@ public sealed class ReviewDetachedPlumbingTests
             "turn/completed",
             JsonSerializer.SerializeToElement(new
             {
-                threadId = "some_other_thread",
+                threadId = reviewThreadId,
                 turn = new { id = turnId, status = "completed" }
             })));
 

@@ -160,6 +160,44 @@ public sealed class ConfigRequirementsParsingTests
     }
 
     [Fact]
+    public void ParseConfigRequirementsReadRequirements_ProjectsOpenTelemetryPolicy()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "requirements": {
+                "otel": {
+                  "tool_result": { "max_bytes": 4096 },
+                  "log_user_prompt": false,
+                  "log_agent_responses": true,
+                  "log_guardian_assessments": false,
+                  "environment": "managed",
+                  "exporter": "statsig",
+                  "trace_exporter": { "otlp-http": { "endpoint": "https://telemetry.example" } },
+                  "metrics_exporter": "none",
+                  "span_attributes": { "deployment": "test" },
+                  "tracestate": { "vendor": { "tenant": "alpha" } }
+                }
+              }
+            }
+            """);
+
+        var requirements = CodexAppServerClient.ParseConfigRequirementsReadRequirements(doc.RootElement, experimentalApiEnabled: true);
+        requirements!.OpenTelemetry.Should().NotBeNull();
+        var otel = requirements.OpenTelemetry!;
+        otel.ToolResultMaxBytes.Should().Be(4096);
+        otel.LogUserPrompt.Should().BeFalse();
+        otel.LogAgentResponses.Should().BeTrue();
+        otel.LogGuardianAssessments.Should().BeFalse();
+        otel.Environment.Should().Be("managed");
+        otel.Exporter!.Value.GetString().Should().Be("statsig");
+        otel.TraceExporter!.Value.GetProperty("otlp-http").GetProperty("endpoint").GetString().Should().Be("https://telemetry.example");
+        otel.MetricsExporter!.Value.GetString().Should().Be("none");
+        otel.SpanAttributes!["deployment"].Should().Be("test");
+        otel.TraceState!["vendor"]["tenant"].Should().Be("alpha");
+    }
+
+    [Fact]
     public void ParseConfigRequirementsReadRequirements_PopulatesLegacyAllowedPermissionsFallback()
     {
         using var doc = JsonDocument.Parse(

@@ -27,7 +27,6 @@ public sealed partial class CodexAppServerClient
             Delivery = options.Delivery switch
             {
                 ReviewDelivery.Inline => "inline",
-                ReviewDelivery.Detached => "detached",
                 _ => null
             }
         };
