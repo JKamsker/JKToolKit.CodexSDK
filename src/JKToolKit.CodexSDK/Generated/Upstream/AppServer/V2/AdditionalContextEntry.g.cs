@@ -17,6 +17,12 @@ internal partial class AdditionalContextEntry
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AdditionalContextKind>))]
     public AdditionalContextKind Kind { get; set; } = default!;
 
+    /// <summary>
+    /// Optional name for untrusted context, used to label its tool output.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string? Name { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("value")]
     public string Value { get; set; } = default!;
 

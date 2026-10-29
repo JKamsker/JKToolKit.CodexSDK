@@ -44,7 +44,7 @@ internal partial class NetworkRequirements
     public System.Collections.Generic.ICollection<string>? DeniedDomains { get; set; } = default!;
 
     /// <summary>
-    /// Canonical network permission map for `experimental_network`.
+    /// Canonical managed network permission map.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("domains")]
     public System.Collections.Generic.IDictionary<string, NetworkDomainPermission>? Domains { get; set; } = default!;
@@ -71,7 +71,7 @@ internal partial class NetworkRequirements
     public int? SocksPort { get; set; } = default!;
 
     /// <summary>
-    /// Canonical unix socket permission map for `experimental_network`.
+    /// Canonical managed unix socket permission map.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("unixSockets")]
     public System.Collections.Generic.IDictionary<string, NetworkUnixSocketPermission>? UnixSockets { get; set; } = default!;

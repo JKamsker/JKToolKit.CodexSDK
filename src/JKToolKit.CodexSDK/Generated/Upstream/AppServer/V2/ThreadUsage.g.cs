@@ -22,6 +22,12 @@ internal partial class ThreadUsage
     [System.Text.Json.Serialization.JsonPropertyName("groups")]
     public System.Collections.Generic.ICollection<ThreadUsageBreakdownGroup> Groups { get; set; } = new System.Collections.ObjectModel.Collection<ThreadUsageBreakdownGroup>();
 
+    /// <summary>
+    /// Native dollar usage, independent of credit estimates. None means unknown, not zero.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("nativeUsageUsdMicros")]
+    public long? NativeUsageUsdMicros { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("threadId")]
     public string ThreadId { get; set; } = default!;
 

@@ -14,7 +14,7 @@ internal partial class ReviewStartParams
 {
 
     /// <summary>
-    /// Where to run the review: inline (default) on the current thread or detached on a new thread (returned in `reviewThreadId`). Detached delivery is deprecated and emits `deprecationNotice`. Use `thread/start` followed by an inline review for a separate review thread.
+    /// Reviews run inline on the supplied thread. Omit this field or pass `inline`. To review on a separate thread, start a thread first and use its id.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("delivery")]
     public Delivery? Delivery { get; set; } = default!;

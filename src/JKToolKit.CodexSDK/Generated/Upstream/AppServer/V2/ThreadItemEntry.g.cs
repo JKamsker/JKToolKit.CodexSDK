@@ -20,7 +20,7 @@ internal partial class ThreadItemEntry
     public long? CompletedAtMs { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("item")]
-    public Item Item { get; set; } = default!;
+    public Item Item { get; set; } = new Item();
 
     /// <summary>
     /// Unix timestamp (milliseconds) when the item started, if recorded by the producer.
