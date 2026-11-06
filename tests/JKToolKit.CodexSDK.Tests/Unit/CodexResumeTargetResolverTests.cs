@@ -20,7 +20,6 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.MostRecent(),
             workingDirectory: "C:\\repo",
-            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(newer);
@@ -49,7 +48,6 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.MostRecent(),
             workingDirectory: "C:\\repo",
-            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(olderCreatedButLatestUpdated);
@@ -67,7 +65,6 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.BySelector("shared"),
             workingDirectory: "C:\\repo",
-            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(idMatch);
@@ -84,7 +81,6 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.BySelector("remote-thread", includeAllSessions: true),
             workingDirectory: "C:\\repo",
-            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().Be(outsideCwd);
@@ -102,14 +98,13 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.BySelector("casesensitive"),
             workingDirectory: "C:\\repo",
-            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().BeNull();
     }
 
     [Fact]
-    public async Task TryResolveAsync_FiltersMostRecentByModelProvider()
+    public async Task TryResolveAsync_SearchesAllProvidersForMostRecent()
     {
         var openAi = CreateSession(
             "id-openai",
@@ -132,11 +127,10 @@ public sealed class CodexResumeTargetResolverTests
             "C:\\sessions",
             CodexResumeTarget.MostRecent(),
             workingDirectory: "C:\\repo",
-            modelProvider: "openai",
             CancellationToken.None);
 
-        resolved.Should().Be(openAi);
-        locator.LastFilter?.ModelProvider.Should().Be("openai");
+        resolved.Should().Be(custom);
+        locator.LastFilter?.ModelProvider.Should().BeNull();
     }
 
     [Fact]
@@ -145,7 +139,7 @@ public sealed class CodexResumeTargetResolverTests
         var older = CreateSession("older", "shared", "/work", DateTimeOffset.UnixEpoch, modelProvider: "different");
         var newer = CreateSession("newer", "shared", "/work", DateTimeOffset.UnixEpoch.AddHours(1), modelProvider: "different");
         var locator = new RecordingSessionLocator(older, newer);
-        var result = await CodexResumeTargetResolver.TryResolveAsync(locator, "root", CodexResumeTarget.BySelector("shared"), "/work", "configured", default);
+        var result = await CodexResumeTargetResolver.TryResolveAsync(locator, "root", CodexResumeTarget.BySelector("shared"), "/work", default);
         Assert.Same(newer, result);
         Assert.Null(locator.LastFilter?.ModelProvider);
     }

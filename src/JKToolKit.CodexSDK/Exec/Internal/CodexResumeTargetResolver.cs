@@ -9,7 +9,6 @@ internal static class CodexResumeTargetResolver
         string sessionsRoot,
         CodexResumeTarget target,
         string? workingDirectory,
-        string? modelProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionLocator);
@@ -18,7 +17,7 @@ internal static class CodexResumeTargetResolver
 
         target.Validate();
 
-        var filter = BuildFilter(target, workingDirectory, modelProvider);
+        var filter = BuildFilter(target, workingDirectory);
         if (target.UseMostRecent)
         {
             await foreach (var session in sessionLocator.ListSessionsAsync(sessionsRoot, filter, cancellationToken).ConfigureAwait(false))
@@ -48,19 +47,16 @@ internal static class CodexResumeTargetResolver
         return humanLabelMatch;
     }
 
-    private static SessionFilter? BuildFilter(CodexResumeTarget target, string? workingDirectory, string? modelProvider)
+    private static SessionFilter? BuildFilter(CodexResumeTarget target, string? workingDirectory)
     {
         var effectiveWorkingDirectory = target.IncludeAllSessions ? null : workingDirectory;
-        var effectiveModelProvider = target.UseMostRecent ? modelProvider : null;
 
-        if (string.IsNullOrWhiteSpace(effectiveWorkingDirectory) &&
-            string.IsNullOrWhiteSpace(effectiveModelProvider))
+        if (string.IsNullOrWhiteSpace(effectiveWorkingDirectory))
         {
             return null;
         }
 
         return new SessionFilter(
-            WorkingDirectory: effectiveWorkingDirectory,
-            ModelProvider: effectiveModelProvider);
+            WorkingDirectory: effectiveWorkingDirectory);
     }
 }

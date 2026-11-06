@@ -356,7 +356,7 @@ internal static partial class AppServerNotificationMapper
                 Error: GetStringOrNull(p, JsonFieldNames.Error),
                 Params: p),
 
-            _ => TryMapCodex155Notification(method, p) ?? TryMapCodex152Notification(method, p) ?? TryMapCodex149Notification(method, p) ?? new UnknownNotification(method, p)
+            _ => TryMapCodex167Notification(method, p) ?? TryMapCodex155Notification(method, p) ?? TryMapCodex152Notification(method, p) ?? TryMapCodex149Notification(method, p) ?? new UnknownNotification(method, p)
         };
     }
 

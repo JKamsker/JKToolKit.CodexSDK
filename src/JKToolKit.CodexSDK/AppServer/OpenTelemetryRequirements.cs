@@ -19,6 +19,9 @@ public sealed record class OpenTelemetryRequirements
     /// <summary>Gets whether Guardian assessments may be logged.</summary>
     public bool? LogGuardianAssessments { get; init; }
 
+    /// <summary>Gets whether successful server-sent event deltas may be logged.</summary>
+    public bool? LogSseDeltas { get; init; }
+
     /// <summary>Gets the managed telemetry environment name.</summary>
     public string? Environment { get; init; }
 

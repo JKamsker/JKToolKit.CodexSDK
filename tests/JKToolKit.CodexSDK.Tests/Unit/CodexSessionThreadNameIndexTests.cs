@@ -68,7 +68,6 @@ public sealed class CodexSessionThreadNameIndexTests
             fixture.SessionsRoot,
             CodexResumeTarget.BySelector("Shared Name"),
             workingDirectory: "C:\\repo",
-            modelProvider: null,
             CancellationToken.None);
 
         resolved.Should().NotBeNull();

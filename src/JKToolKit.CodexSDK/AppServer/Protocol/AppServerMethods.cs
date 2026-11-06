@@ -82,6 +82,7 @@ internal static class AppServerMethods
     public const string ThreadRealtimeTranscriptUpdated = "thread/realtime/transcriptUpdated";
     public const string ThreadResume = "thread/resume";
     public const string ThreadReverted = "thread/reverted";
+    public const string ThreadSectionChanged = "thread/section/changed";
     public const string ThreadSettingsUpdate = "thread/settings/update";
     public const string ThreadSettingsUpdated = "thread/settings/updated";
     public const string ThreadStarted = "thread/started";
