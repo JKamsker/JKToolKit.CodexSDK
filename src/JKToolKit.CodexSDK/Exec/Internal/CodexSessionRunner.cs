@@ -73,13 +73,11 @@ internal sealed partial class CodexSessionRunner
         _clientOptions.Validate();
 
         var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
-        var modelProvider = CodexModelProviderConfigResolver.ResolveActiveModelProvider(_clientOptions, sessionsRoot);
         var selectedSession = await CodexResumeTargetResolver.TryResolveAsync(
             _sessionLocator,
             sessionsRoot,
             target,
             workingDirectory,
-            modelProvider,
             cancellationToken).ConfigureAwait(false);
 
         if (selectedSession is null)
@@ -357,13 +355,11 @@ internal sealed partial class CodexSessionRunner
             effectiveOptions.ResumeTargetOverride = target;
 
             var sessionsRoot = CodexSessionsRootResolver.GetEffectiveSessionsRootDirectory(_clientOptions, _pathProvider);
-            var modelProvider = CodexModelProviderConfigResolver.ResolveActiveModelProvider(_clientOptions, sessionsRoot);
             var selectedSession = await CodexResumeTargetResolver.TryResolveAsync(
                 _sessionLocator,
                 sessionsRoot,
                 target,
                 options.WorkingDirectory,
-                modelProvider,
                 cancellationToken).ConfigureAwait(false);
             var resumeStartTime = DateTimeOffset.UtcNow;
             var newSessionFileTask = CodexSessionRunnerLogHelpers.StartResumeFallbackDiscoveryIfNeeded(

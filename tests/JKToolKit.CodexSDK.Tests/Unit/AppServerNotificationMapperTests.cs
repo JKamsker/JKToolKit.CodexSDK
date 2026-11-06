@@ -43,6 +43,34 @@ public sealed class AppServerNotificationMapperTests
     }
 
     [Fact]
+    public void Map_ThreadSectionChanged_ParsesTypedNotification_AndRejectsMalformedPayloads()
+    {
+        var moved = AppServerNotificationMapper.Map(
+                "thread/section/changed",
+                JsonDocument.Parse("""{"threadId":"thr_1","sectionId":"sec_2"}""").RootElement)
+            .Should().BeOfType<ThreadSectionChangedNotification>().Subject;
+
+        moved.ThreadId.Should().Be("thr_1");
+        moved.SectionId.Should().Be("sec_2");
+
+        AppServerNotificationMapper.Map(
+                "thread/section/changed",
+                JsonDocument.Parse("""{"threadId":"thr_1","sectionId":null}""").RootElement)
+            .Should().BeOfType<ThreadSectionChangedNotification>()
+            .Which.SectionId.Should().BeNull();
+
+        AppServerNotificationMapper.Map(
+                "thread/section/changed",
+                JsonDocument.Parse("""{"threadId":"thr_1"}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+
+        AppServerNotificationMapper.Map(
+                "thread/section/changed",
+                JsonDocument.Parse("""{"threadId":"thr_1","sectionId":7}""").RootElement)
+            .Should().BeOfType<UnknownNotification>();
+    }
+
+    [Fact]
     public void Map_KnownNotifications_ToTypedRecords()
     {
         var json = JsonDocument.Parse("""{"threadId":"t","turnId":"u","itemId":"i","delta":"hi"}""").RootElement;

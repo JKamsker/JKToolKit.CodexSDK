@@ -171,6 +171,7 @@ public sealed class ConfigRequirementsParsingTests
                   "log_user_prompt": false,
                   "log_agent_responses": true,
                   "log_guardian_assessments": false,
+                  "log_sse_deltas": true,
                   "environment": "managed",
                   "exporter": "statsig",
                   "trace_exporter": { "otlp-http": { "endpoint": "https://telemetry.example" } },
@@ -189,6 +190,7 @@ public sealed class ConfigRequirementsParsingTests
         otel.LogUserPrompt.Should().BeFalse();
         otel.LogAgentResponses.Should().BeTrue();
         otel.LogGuardianAssessments.Should().BeFalse();
+        otel.LogSseDeltas.Should().BeTrue();
         otel.Environment.Should().Be("managed");
         otel.Exporter!.Value.GetString().Should().Be("statsig");
         otel.TraceExporter!.Value.GetProperty("otlp-http").GetProperty("endpoint").GetString().Should().Be("https://telemetry.example");

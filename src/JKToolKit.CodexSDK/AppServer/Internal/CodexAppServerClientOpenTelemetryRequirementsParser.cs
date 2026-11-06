@@ -15,6 +15,7 @@ internal static class CodexAppServerClientOpenTelemetryRequirementsParser
             LogUserPrompt = GetBoolOrNull(otel, "log_user_prompt"),
             LogAgentResponses = GetBoolOrNull(otel, "log_agent_responses"),
             LogGuardianAssessments = GetBoolOrNull(otel, "log_guardian_assessments"),
+            LogSseDeltas = GetBoolOrNull(otel, "log_sse_deltas"),
             Environment = GetStringOrNull(otel, "environment"),
             Exporter = CloneOptionalValue(otel, "exporter"),
             TraceExporter = CloneOptionalValue(otel, "trace_exporter"),

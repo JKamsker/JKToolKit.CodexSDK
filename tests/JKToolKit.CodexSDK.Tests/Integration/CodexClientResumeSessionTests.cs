@@ -259,7 +259,7 @@ public class CodexClientResumeSessionTests
     }
 
     [Fact]
-    public async Task ResumeSessionAsync_WithMostRecentTarget_UsesConfiguredModelProviderScope()
+    public async Task ResumeSessionAsync_WithMostRecentTarget_SearchesAcrossModelProviders()
     {
         var baseTime = DateTimeOffset.Parse("2025-11-21T02:00:00Z");
         var openAiId = SessionId.Parse("session-openai");
@@ -276,16 +276,22 @@ public class CodexClientResumeSessionTests
             // Use the OS-reported cwd (macOS resolves /var to /private/var).
             cwd = Directory.GetCurrentDirectory();
             var openAiPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime.AddMinutes(1), openAiId);
+            var localPath = SessionLogPathTestHelper.BuildNestedRolloutPath("C:\\sessions", baseTime.AddMinutes(2), localId);
             var locator = new StubSessionLocator(
-                openAiPath,
+                localPath,
                 listedSessions:
                 [
-                    new CodexSessionInfo(localId, "C:\\sessions\\local.jsonl", baseTime.AddMinutes(2), cwd, null, "local", ModelProvider: "local"),
+                    new CodexSessionInfo(localId, localPath, baseTime.AddMinutes(2), cwd, null, "local", ModelProvider: "local"),
                     new CodexSessionInfo(openAiId, openAiPath, baseTime.AddMinutes(1), cwd, null, "openai", ModelProvider: "openai")
                 ]);
 
             var logs = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase)
             {
+                [localPath] = new[]
+                {
+                    TestJsonlGenerator.GenerateSessionMeta(localId, cwd, baseTime.AddMinutes(2)),
+                    TestJsonlGenerator.GenerateAgentMessage("local", baseTime.AddMinutes(2).AddSeconds(1))
+                },
                 [openAiPath] = new[]
                 {
                     TestJsonlGenerator.GenerateSessionMeta(openAiId, cwd, baseTime.AddMinutes(1)),
@@ -305,8 +311,8 @@ public class CodexClientResumeSessionTests
 
             await using var handle = await client.ResumeSessionAsync(CodexResumeTarget.MostRecent());
 
-            Assert.Equal(openAiId, handle.Info.Id);
-            Assert.Equal("openai", locator.LastFilter?.ModelProvider);
+            Assert.Equal(localId, handle.Info.Id);
+            Assert.Null(locator.LastFilter?.ModelProvider);
         }
         finally
         {

@@ -25,6 +25,9 @@ internal partial class OtelRequirements
     [System.Text.Json.Serialization.JsonPropertyName("log_guardian_assessments")]
     public bool? Log_guardian_assessments { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("log_sse_deltas")]
+    public bool? Log_sse_deltas { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("log_user_prompt")]
     public bool? Log_user_prompt { get; set; } = default!;
 
