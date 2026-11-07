@@ -345,10 +345,10 @@ def verify_release(github: GitHub, context: GateContext, merge_sha: str) -> bool
     jobs = github.json([
         "run", "view", str(completed["databaseId"]), "--repo", context.repo, "--json", "jobs",
     ])
-    published = any(
-        job.get("name") == "NugetUpload" and job.get("conclusion") == "success"
+    published = all(any(
+        job.get("name") == name and job.get("conclusion") == "success"
         for job in (jobs or {}).get("jobs", [])
-    )
+    ) for name in ("NugetUpload", "GitHubRelease"))
     if completed.get("conclusion") == "success" and published:
         print(f"NuGet release CI succeeded: {completed.get('url')}")
         return True
@@ -359,7 +359,7 @@ def verify_release(github: GitHub, context: GateContext, merge_sha: str) -> bool
         f"NuGet release failed for upstream Codex {context.version}",
         f"The tested upstream sync was merged as `{merge_sha}`, but its post-merge release failed.\n\n"
         f"Run: {completed.get('url')}\n"
-        "The workflow must succeed and its NugetUpload job must complete successfully.",
+        "The workflow must succeed and its NugetUpload and GitHubRelease jobs must complete successfully.",
     )
     return False
 

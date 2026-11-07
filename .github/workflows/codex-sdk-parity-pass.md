@@ -152,10 +152,10 @@ safe-outputs:
 
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
-# The same compile script also injects model_reasoning_effort = "medium" into
+# The same compile script also injects model_reasoning_effort = "high" into
 # the generated Codex config so the model remains controlled by GH_AW_* vars.
 engine: codex
-model: gpt-5.6-sol
+model: gpt-6.1-sol
 max-ai-credits: 2000
 timeout-minutes: 40
 
@@ -373,7 +373,7 @@ When changes are needed:
 1. Follow `.codex/skills/codex-sdk-parity-pass/SKILL.md`.
 2. Audit the upstream delta from the `integration` version to the `api` version in `UPSTREAM_CODEX_VERSION.json`.
 3. Run `python3 scripts/sync-package-version.py`. Regenerate DTOs with `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- generate` before checking or building the SDK. The bootstrap PR includes the API pin, submodule, and package version update even if generation fails, so schema or generator changes cannot prevent a repair branch from being created. If generation fails, repair the generator against the vendored schema and regenerate. Implement confirmed SDK drift fixes.
-4. Update or create the relevant `docs/codex-<from>-to-<to>-interop.md` note.
+4. Update or create the relevant `docs/codex-<from>-to-<to>-interop.md` note. This report becomes the GitHub release notes: include non-empty `## Confirmed Upstream Changes`, `## SDK Changes`, `## Validation`, and `## Remaining Drift` sections. Explain the new CLI behavior, how the SDK implements it, and which features remain runtime-only or raw protocol interop.
 5. Run focused tests for every touched surface.
 6. Run `dotnet run --project src/JKToolKit.CodexSDK.UpstreamGen --configuration Release -- check`.
 7. Run `dotnet test JKToolKit.CodexSDK.sln --configuration Release` if the change is not purely documentation.

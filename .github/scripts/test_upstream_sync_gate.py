@@ -211,7 +211,7 @@ class ReleaseTests(unittest.TestCase):
         }
         github = FakeGitHub([
             [old_run], [old_run, release_run], release_run,
-            {"jobs": [{"name": "NugetUpload", "conclusion": "success"}]},
+            {"jobs": [{"name": name, "conclusion": "success"} for name in ("NugetUpload", "GitHubRelease")]},
         ])
 
         self.assertTrue(gate.verify_release(
@@ -232,11 +232,20 @@ class ReleaseTests(unittest.TestCase):
         }
         github = FakeGitHub([
             [release_run], release_run,
-            {"jobs": [{"name": "NugetUpload", "conclusion": "success"}]},
+            {"jobs": [{"name": name, "conclusion": "success"} for name in ("NugetUpload", "GitHubRelease")]},
         ])
 
         self.assertTrue(gate.verify_release(github, context(), "merge456"))
         self.assertFalse(any(command[:2] == ["workflow", "run"] for command in github.commands))
+
+    def test_successful_upload_without_github_release_fails_gate(self) -> None:
+        run = {"databaseId": 12, "headSha": "merge456", "status": "completed", "conclusion": "success"}
+        github = FakeGitHub([
+            [run], run,
+            {"jobs": [{"name": "NugetUpload", "conclusion": "success"},
+                      {"name": "GitHubRelease", "conclusion": "skipped"}]}, [],
+        ])
+        self.assertFalse(gate.verify_release(github, context(), "merge456"))
 
     def test_successful_workflow_with_skipped_upload_is_not_a_release(self) -> None:
         release_run = {

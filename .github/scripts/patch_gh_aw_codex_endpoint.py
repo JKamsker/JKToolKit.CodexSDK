@@ -19,7 +19,7 @@ AWF_SCHEMA = "awf-config.schema.json"
 AWF_COMMAND = "awf --config"
 PATCH_MARKER = "Patch gh-aw OpenAI proxy target from CODEX_LB_BASE_URL"
 CODEX_CONFIG_HEREDOC = 'mcp-config/config.toml" << GH_AW_CODEX_'
-REASONING_EFFORT_LINE = 'model_reasoning_effort = "medium"'
+REASONING_EFFORT_LINE = 'model_reasoning_effort = "high"'
 CODEX_ENDPOINT_ENV = "          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}"
 DETECTION_UPLOAD_STEPS = {
     "      - name: Upload threat detection artifact",
@@ -174,6 +174,11 @@ def insert_codex_reasoning_effort(lines: list[str]) -> tuple[list[str], int]:
     patched: list[str] = []
     insertions = 0
 
+    lines = [
+        line[:len(line) - len(line.lstrip())] + REASONING_EFFORT_LINE
+        if line.lstrip().startswith("model_reasoning_effort =") else line
+        for line in lines
+    ]
     for index, line in enumerate(lines):
         patched.append(line)
         if CODEX_CONFIG_HEREDOC not in line:

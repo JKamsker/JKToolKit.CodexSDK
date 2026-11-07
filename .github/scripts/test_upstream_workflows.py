@@ -55,6 +55,21 @@ class WorkflowShellTests(unittest.TestCase):
         self.assertIn("needs.resume.outputs.proceed == 'true'", parity)
         self.assertIn("upstream_sync_gate.py can-resume", workflow)
 
+    def test_sync_release_and_model_contract(self) -> None:
+        ci = (WORKFLOWS / "ci.yml").read_text()
+        release_job = ci.split("\n  GitHubRelease:\n", 1)[1]
+        self.assertIn("needs: [changes, build-and-test, NugetUpload]", release_job)
+        self.assertIn("ref: ${{ needs.changes.outputs.checkout_ref }}", release_job)
+        self.assertIn("publish_sdk_release.py", release_job)
+        sync = (WORKFLOWS / "upstream-sync.yml").read_text()
+        self.assertIn("--verify-published", sync)
+        for name in ("codex-sdk-parity-pass", "codex-sdk-parity-coderabbit-fix"):
+            source = (WORKFLOWS / f"{name}.md").read_text()
+            compiled = (WORKFLOWS / f"{name}.lock.yml").read_text()
+            self.assertIn("model: gpt-6.1-sol", source)
+            self.assertNotIn("gpt-5.6-sol", compiled)
+            self.assertEqual(2, compiled.count('model_reasoning_effort = "high"'))
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

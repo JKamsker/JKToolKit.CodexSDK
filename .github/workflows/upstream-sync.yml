@@ -23,6 +23,7 @@ jobs:
       upstream_branch: automation/upstream-codex-${{ steps.latest.outputs.latest }}
       upstream_pr: ${{ steps.existing-pr.outputs.number || steps.cpr.outputs.pull-request-number }}
       upstream_version: ${{ steps.latest.outputs.latest }}
+      up_to_date: ${{ steps.versions.outputs.up_to_date }}
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -304,3 +305,19 @@ jobs:
           --actor "${{ github.actor }}"
           --source-run "${{ github.run_id }}"
           --source-job parity
+
+
+  recover-release:
+    name: Ensure an already synced version has a GitHub release
+    needs: sync
+    if: needs.sync.outputs.up_to_date == 'true' && needs.sync.outputs.upstream_pr == ''
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sdk-github-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish missing release after verifying NuGet CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/publish_sdk_release.py --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --verify-published

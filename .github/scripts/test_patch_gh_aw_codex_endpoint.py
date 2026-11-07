@@ -52,7 +52,7 @@ class EndpointEnvironmentTests(unittest.TestCase):
 
 
 class CodexConfigTests(unittest.TestCase):
-    def test_adds_medium_reasoning_to_agent_and_detection_configs(self) -> None:
+    def test_adds_high_reasoning_to_agent_and_detection_configs(self) -> None:
         lines = [
             'cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_EOF',
             'cat > "${RUNNER_TEMP}/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_DETECTION_CONFIG_EOF',
@@ -62,6 +62,16 @@ class CodexConfigTests(unittest.TestCase):
 
         self.assertEqual(2, count)
         self.assertEqual(2, patched.count(patcher.REASONING_EFFORT_LINE))
+
+
+class ReasoningUpgradeTests(unittest.TestCase):
+    def test_replaces_existing_effort_without_duplicate_override(self):
+        lines = ['cat > config.toml << GH_AW_CODEX_SHELL_POLICY_EOF',
+                 '  model_reasoning_effort = "medium"']
+        patched, _ = patcher.insert_codex_reasoning_effort(lines)
+        self.assertEqual(1, sum('model_reasoning_effort =' in line for line in patched))
+        self.assertIn('  ' + patcher.REASONING_EFFORT_LINE, patched)
+        self.assertEqual((patched, 0), patcher.insert_codex_reasoning_effort(patched))
 
 
 class AWFCommandTests(unittest.TestCase):

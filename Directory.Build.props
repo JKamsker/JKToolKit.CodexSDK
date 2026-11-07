@@ -2,6 +2,6 @@
   <PropertyGroup>
     <!-- Updated by scripts/sync-package-version.py; SDK-only releases bump VersionPrefix. -->
     <CodexCliVersion>0.167.0</CodexCliVersion>
-    <VersionPrefix>0.167.0</VersionPrefix>
+    <VersionPrefix>0.167.1</VersionPrefix>
   </PropertyGroup>
 </Project>

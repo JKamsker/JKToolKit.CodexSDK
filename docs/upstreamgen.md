@@ -78,7 +78,10 @@ without inheriting partial output. The AI parity pass is reserved for generator
 repairs and confirmed handwritten SDK drift. GitHub cannot subscribe directly
 to releases in another repository, so the workflow polls the stable npm release
 hourly and resumes any existing update PR until it validates, merges, and its
-NuGet upload succeeds. Failure issues record exhausted repair cycles but do not
+NuGet upload and GitHub release publication succeed. Each release includes official
+CLI highlights and the reviewed parity report describing SDK implementation,
+validation, and remaining limitations. The hourly sync also recovers a missing
+GitHub release for an already published SDK version. Failure issues record exhausted repair cycles but do not
 permanently pause future scheduled attempts.
 
 ## Manual Bump Checklist

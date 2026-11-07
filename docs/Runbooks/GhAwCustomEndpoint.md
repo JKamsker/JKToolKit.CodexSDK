@@ -21,7 +21,7 @@ Raw `gh aw compile` regenerates `.lock.yml` files without the private endpoint p
 - Passes `CODEX_LB_BASE_URL` only to the runner-side patch step.
 - Adds `--exclude-env CODEX_LB_BASE_URL` so the sandboxed agent does not receive the endpoint value.
 - Redacts endpoint values from gh-aw artifacts before upload, including detection artifacts.
-- Sets Codex reasoning effort to `medium` in each generated Codex configuration block.
+- Sets Codex reasoning effort to `high` in each generated Codex configuration block.
 
 The workflow source files select `gpt-5.6-sol` explicitly so repository or
 organization model defaults cannot silently move these automations to a

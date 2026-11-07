@@ -325,3 +325,24 @@ jobs:
           dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
         done
         echo "Version: ${{ needs.build-and-test.outputs.version }}"
+
+
+  GitHubRelease:
+    needs: [changes, build-and-test, NugetUpload]
+    if: needs.NugetUpload.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: sdk-github-release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout validated release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.checkout_ref }}
+      - name: Publish GitHub release with upstream and SDK changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.changes.outputs.checkout_ref }}
+        run: python3 .github/scripts/publish_sdk_release.py --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA"

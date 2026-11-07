@@ -36,7 +36,7 @@ safe-outputs:
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
 engine: codex
-model: gpt-5.6-sol
+model: gpt-6.1-sol
 max-ai-credits: 2000
 
 post-steps:

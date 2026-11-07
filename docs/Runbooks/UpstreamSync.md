@@ -18,7 +18,10 @@ Never print or copy secret values into workflow logs. Configure them with `gh se
 3. The gate dispatches CI and records the PR's exact head SHA.
 4. The gate merges only when that CI run succeeds and the PR head is still the tested SHA.
 5. With an owner token, the merge triggers push CI on `master`. With the built-in token, the gate explicitly dispatches CI with `publish=true` and `release_sha=<merge SHA>`. GitHub suppresses push workflows for built-in-token merges; [explicit dispatches still run](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow). Release dispatches are restricted to the default branch and an already merged commit. CI builds that exact commit even if the branch advances. Ordinary manual CI runs do not publish.
-6. The gate waits for the post-merge CI run and requires both overall success and a successful `NugetUpload` job. A skipped upload does not count as a release.
+6. The gate waits for the post-merge CI run and requires overall success and successful `NugetUpload` and `GitHubRelease` jobs. After NuGet publishing, CI creates a stable GitHub release tagged with the SDK package version, targeting the tested merge. Its notes include official CLI highlights and the reviewed parity report (upstream changes, SDK implementation, validation, and limitations). Missing or incomplete parity reports fail publication. Existing stable releases are reused on retries. A skipped upload or release does not count as success.
+7. When the latest CLI is already integrated, the hourly sync recovers a missing GitHub release only after finding successful NuGet publishing for that exact commit.
+
+Parity and repair agents use `gpt-6.1-sol` with `model_reasoning_effort = "high"` in both execution and detection configurations.
 
 ## Failure Path
 

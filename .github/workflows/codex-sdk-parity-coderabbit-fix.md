@@ -77,10 +77,10 @@ safe-outputs:
 
 # Use .github/scripts/compile_gh_aw.py after editing this workflow. See
 # docs/Runbooks/GhAwCustomEndpoint.md for the secret-backed endpoint contract.
-# The same compile script also injects model_reasoning_effort = "medium" into
+# The same compile script also injects model_reasoning_effort = "high" into
 # the generated Codex config so the model remains controlled by GH_AW_* vars.
 engine: codex
-model: gpt-5.6-sol
+model: gpt-6.1-sol
 max-ai-credits: 2000
 
 post-steps:
