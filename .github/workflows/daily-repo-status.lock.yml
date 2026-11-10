@@ -834,7 +834,7 @@ jobs:
           # Sync converter output to writable CODEX_HOME for Codex
           mkdir -p /tmp/gh-aw/mcp-config
           cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_79e3d2e6e6d538cf_EOF
-          model_reasoning_effort = "high"
+          model_reasoning_effort = "medium"
 
           model_provider = "openai-proxy"
 
@@ -930,6 +930,8 @@ jobs:
           print(f"::add-mask::{target_host}")
           config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"
           config = json.loads(config_path.read_text())
+          # Conservative accounting estimate for custom models missing from AWF's catalog.
+          config.setdefault("apiProxy", {}).setdefault("defaultAiCreditsPricing", {"input": 10.0, "output": 50.0})
           allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])
           if host not in allow_domains:
               allow_domains.append(host)
@@ -1613,7 +1615,7 @@ jobs:
           printf '%s\n' "{\"mcpServers\":{}}" > "${RUNNER_TEMP}/gh-aw/mcp-config/mcp-servers.json"
           # Point Codex at the AWF OpenAI proxy and disable websocket startup.
           cat > "${RUNNER_TEMP}/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_DETECTION_CONFIG_af28c8b5454431f5_EOF
-          model_reasoning_effort = "high"
+          model_reasoning_effort = "medium"
           model_provider = "openai-proxy"
 
           [history]
@@ -1697,6 +1699,8 @@ jobs:
           print(f"::add-mask::{target_host}")
           config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"
           config = json.loads(config_path.read_text())
+          # Conservative accounting estimate for custom models missing from AWF's catalog.
+          config.setdefault("apiProxy", {}).setdefault("defaultAiCreditsPricing", {"input": 10.0, "output": 50.0})
           allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])
           if host not in allow_domains:
               allow_domains.append(host)

@@ -21,7 +21,7 @@ Never print or copy secret values into workflow logs. Configure them with `gh se
 6. The gate waits for the post-merge CI run and requires overall success and successful `NugetUpload` and `GitHubRelease` jobs. After NuGet publishing, CI creates a stable GitHub release tagged with the SDK package version, targeting the tested merge. Its notes include official CLI highlights and the reviewed parity report (upstream changes, SDK implementation, validation, and limitations). Missing or incomplete parity reports fail publication. Existing stable releases are reused on retries. A skipped upload or release does not count as success.
 7. When the latest CLI is already integrated, the hourly sync recovers a missing GitHub release only after finding successful NuGet publishing for that exact commit.
 
-Parity and repair agents use `gpt-6.1-sol` with `model_reasoning_effort = "high"` in both execution and detection configurations.
+Parity and repair agents use `gpt-6.1-sol` with `model_reasoning_effort = "medium"` in both execution and detection configurations.
 
 ## Failure Path
 
