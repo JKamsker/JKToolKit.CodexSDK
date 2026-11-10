@@ -46,7 +46,11 @@ including runs 35984664354 and 35988724323 on 2026-09-24. Those runs reported
 hit the same cutoff. The parity agent instead has a 40-minute execution limit
 and the existing 2,000-credit ceiling. Sandbox, endpoint redaction, safe-output
 validation, and the exact-commit CI/merge gate remain enabled. .NET 10 is
-installed before the agent starts as well as before host-side validation.
+installed before the parity and CodeRabbit fix agents start as well as before
+host-side validation. Both agents set `XDG_RUNTIME_DIR` to a prepared directory
+under `/tmp/gh-aw`, which AWF mounts writable and transfers to the sandbox user.
+This avoids .NET named-mutex startup failures when the runner's `/run/user/1001`
+is absent inside the sandbox.
 
 Upstream sync checks persistent repair state before starting parity. After
 three failed repair attempts, it opens an `Upstream sync <version> paused

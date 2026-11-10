@@ -83,6 +83,19 @@ engine: codex
 model: gpt-6.1-sol
 max-ai-credits: 2000
 
+# .NET named mutexes need a directory that exists in the AWF sandbox.
+env:
+  XDG_RUNTIME_DIR: /tmp/gh-aw/dotnet-runtime
+
+steps:
+  - name: Setup .NET for CodeRabbit fix agent
+    uses: actions/setup-dotnet@v6
+    with:
+      dotnet-version: 10.0.x
+
+  - name: Prepare .NET runtime directory
+    run: install -d -m 700 /tmp/gh-aw/dotnet-runtime
+
 post-steps:
   - name: Check whether parity CodeRabbit validation is required
     id: coderabbit-validation-guard

@@ -34,6 +34,16 @@ def step_script(workflow: str, name: str, key: str = "run") -> str:
 
 
 class WorkflowShellTests(unittest.TestCase):
+    def test_dotnet_agents_prepare_a_sandbox_runtime_directory(self) -> None:
+        for name in ("codex-sdk-parity-pass", "codex-sdk-parity-coderabbit-fix"):
+            source = (WORKFLOWS / f"{name}.md").read_text()
+            compiled = (WORKFLOWS / f"{name}.lock.yml").read_text()
+            for text in (source, compiled):
+                self.assertIn("XDG_RUNTIME_DIR: /tmp/gh-aw/dotnet-runtime", text)
+                self.assertIn("install -d -m 700 /tmp/gh-aw/dotnet-runtime", text)
+            self.assertLess(compiled.index("- name: Prepare .NET runtime directory"),
+                            compiled.index("- name: Execute Codex CLI"))
+
     def test_parity_runtime_survives_normal_multi_turn_research(self) -> None:
         source = (WORKFLOWS / "codex-sdk-parity-pass.md").read_text().split("\n---\n", 1)[0]
         compiled = (WORKFLOWS / "codex-sdk-parity-pass.lock.yml").read_text()
