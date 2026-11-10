@@ -48,7 +48,7 @@ class WorkflowShellTests(unittest.TestCase):
         source = (WORKFLOWS / "codex-sdk-parity-pass.md").read_text().split("\n---\n", 1)[0]
         compiled = (WORKFLOWS / "codex-sdk-parity-pass.lock.yml").read_text()
         for text in (source, compiled):
-            self.assertIn('\nenv:\n  GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER: "false"', text)
+            self.assertRegex(text, r'(?m)^env:\n(?:  .*\n)*  GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER: "false"$')
         self.assertIn("max-ai-credits: 2000", source)
         execution = compiled.split("      - name: Execute Codex CLI\n", 1)[1].split("      - name:", 1)[0]
         self.assertIn("timeout-minutes: 40", execution)
