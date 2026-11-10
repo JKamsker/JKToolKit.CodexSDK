@@ -63,12 +63,14 @@ class WorkflowShellTests(unittest.TestCase):
         self.assertIn("publish_sdk_release.py", release_job)
         sync = (WORKFLOWS / "upstream-sync.yml").read_text()
         self.assertIn("--verify-published", sync)
-        for name in ("codex-sdk-parity-pass", "codex-sdk-parity-coderabbit-fix"):
+        for name in ("daily-repo-status", "codex-sdk-parity-pass", "codex-sdk-parity-coderabbit-fix"):
             source = (WORKFLOWS / f"{name}.md").read_text()
             compiled = (WORKFLOWS / f"{name}.lock.yml").read_text()
             self.assertIn("model: gpt-6.1-sol", source)
-            self.assertNotIn("gpt-5.6-sol", compiled)
-            self.assertEqual(2, compiled.count('model_reasoning_effort = "high"'))
+            self.assertIn("GH_AW_MODEL_AGENT_CODEX: gpt-6.1-sol", compiled)
+            self.assertIn("GH_AW_MODEL_DETECTION_CODEX: gpt-6.1-sol", compiled)
+            self.assertNotIn('model_reasoning_effort = "high"', compiled)
+            self.assertEqual(2, compiled.count('model_reasoning_effort = "medium"'))
 
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()

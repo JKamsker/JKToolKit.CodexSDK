@@ -834,7 +834,7 @@ jobs:
           # Sync converter output to writable CODEX_HOME for Codex
           mkdir -p /tmp/gh-aw/mcp-config
           cat > "/tmp/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_SHELL_POLICY_79e3d2e6e6d538cf_EOF
-          model_reasoning_effort = "high"
+          model_reasoning_effort = "medium"
 
           model_provider = "openai-proxy"
 
@@ -1613,7 +1613,7 @@ jobs:
           printf '%s\n' "{\"mcpServers\":{}}" > "${RUNNER_TEMP}/gh-aw/mcp-config/mcp-servers.json"
           # Point Codex at the AWF OpenAI proxy and disable websocket startup.
           cat > "${RUNNER_TEMP}/gh-aw/mcp-config/config.toml" << GH_AW_CODEX_DETECTION_CONFIG_af28c8b5454431f5_EOF
-          model_reasoning_effort = "high"
+          model_reasoning_effort = "medium"
           model_provider = "openai-proxy"
 
           [history]

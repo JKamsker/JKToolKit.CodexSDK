@@ -19,7 +19,7 @@ AWF_SCHEMA = "awf-config.schema.json"
 AWF_COMMAND = "awf --config"
 PATCH_MARKER = "Patch gh-aw OpenAI proxy target from CODEX_LB_BASE_URL"
 CODEX_CONFIG_HEREDOC = 'mcp-config/config.toml" << GH_AW_CODEX_'
-REASONING_EFFORT_LINE = 'model_reasoning_effort = "high"'
+REASONING_EFFORT_LINE = 'model_reasoning_effort = "medium"'
 CODEX_ENDPOINT_ENV = "          CODEX_LB_BASE_URL: ${{ secrets.CODEX_LB_BASE_URL }}"
 DETECTION_UPLOAD_STEPS = {
     "      - name: Upload threat detection artifact",
