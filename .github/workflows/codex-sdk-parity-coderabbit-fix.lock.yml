@@ -964,6 +964,8 @@ jobs:
           print(f"::add-mask::{target_host}")
           config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"
           config = json.loads(config_path.read_text())
+          # Conservative accounting estimate for custom models missing from AWF's catalog.
+          config.setdefault("apiProxy", {}).setdefault("defaultAiCreditsPricing", {"input": 10.0, "output": 50.0})
           allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])
           if host not in allow_domains:
               allow_domains.append(host)
@@ -1758,6 +1760,8 @@ jobs:
           print(f"::add-mask::{target_host}")
           config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"
           config = json.loads(config_path.read_text())
+          # Conservative accounting estimate for custom models missing from AWF's catalog.
+          config.setdefault("apiProxy", {}).setdefault("defaultAiCreditsPricing", {"input": 10.0, "output": 50.0})
           allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])
           if host not in allow_domains:
               allow_domains.append(host)

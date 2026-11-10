@@ -21,6 +21,7 @@ Raw `gh aw compile` regenerates `.lock.yml` files without the private endpoint p
 - Passes `CODEX_LB_BASE_URL` only to the runner-side patch step.
 - Adds `--exclude-env CODEX_LB_BASE_URL` so the sandboxed agent does not receive the endpoint value.
 - Redacts endpoint values from gh-aw artifacts before upload, including detection artifacts.
+- Supplies fallback AI-credit accounting for custom models absent from the pinned AWF catalog.
 - Sets Codex reasoning effort to `medium` in each generated Codex configuration block.
 
 The workflow source files select `gpt-6.1-sol` explicitly so repository or
@@ -28,6 +29,14 @@ organization model defaults cannot silently move these automations to a
 different model. They also use a 2,000 AI-credit ceiling and GitHub `gh-proxy`
 mode so full runs are not cut off by the former 1,000-credit default or direct
 GitHub API firewall blocks.
+
+The pinned AWF release does not price `gpt-6.1-sol`, so it otherwise rejects
+requests with `unknown_model_ai_credits` before contacting the model. The runtime
+patch supplies `apiProxy.defaultAiCreditsPricing` with input 10 and output 50
+per million tokens, matching the pinned catalog's `gpt-6-astra` rates as an
+accounting estimate, not a statement of actual model pricing. Explicit fallback
+rates take precedence. The 2,000-credit ceiling remains enforced for both agent
+and detection runs.
 
 The parity workflow also explicitly disables
 `GH_AW_CODEX_CONTEXT_REBUILD_CIRCUIT_BREAKER`. In the pinned v0.88.7 harness,

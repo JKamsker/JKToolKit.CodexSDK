@@ -48,6 +48,8 @@ PATCH_SNIPPET = [
     'print(f"::add-mask::{target_host}")',
     'config_path = Path(os.environ["RUNNER_TEMP"]) / "gh-aw" / "awf-config.json"',
     "config = json.loads(config_path.read_text())",
+    "# Conservative accounting estimate for custom models missing from AWF's catalog.",
+    'config.setdefault("apiProxy", {}).setdefault("defaultAiCreditsPricing", {"input": 10.0, "output": 50.0})',
     'allow_domains = config.setdefault("network", {}).setdefault("allowDomains", [])',
     "if host not in allow_domains:",
     "    allow_domains.append(host)",
@@ -105,20 +107,26 @@ DETECTION_REDACTION_STEP = [
 def insert_runtime_patch(lines: list[str]) -> tuple[list[str], int]:
     patched: list[str] = []
     insertions = 0
-    for index, line in enumerate(lines):
+    index = 0
+    while index < len(lines):
+        line = lines[index]
         patched.append(line)
+        index += 1
         if CONFIG_WRITE not in line or AWF_SCHEMA not in line:
-            continue
-        lookahead = "\n".join(lines[index + 1 : index + 45])
-        if PATCH_MARKER in lookahead:
             continue
 
         indent = line[: len(line) - len(line.lstrip())]
-        patched.extend(
+        snippet = [
             "" if snippet_line == "" else f"{indent}{snippet_line}"
             for snippet_line in PATCH_SNIPPET
-        )
-        insertions += 1
+        ]
+        if index < len(lines) and PATCH_MARKER in lines[index]:
+            end = lines.index(f"{indent}PY", index) + 1
+            insertions += int(lines[index:end] != snippet)
+            index = end
+        else:
+            insertions += 1
+        patched.extend(snippet)
     return patched, insertions
 
 
