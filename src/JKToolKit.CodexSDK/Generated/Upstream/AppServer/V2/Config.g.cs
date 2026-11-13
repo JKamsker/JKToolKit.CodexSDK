@@ -28,6 +28,12 @@ internal partial class Config
     [System.Text.Json.Serialization.JsonPropertyName("browser_use")]
     public Browser_use? Browser_use { get; set; } = default!;
 
+    /// <summary>
+    /// Effective tools.client_search_provider hint. Model-selected providers take precedence.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("client_search_provider")]
+    public Client_search_provider? Client_search_provider { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("compact_prompt")]
     public string? Compact_prompt { get; set; } = default!;
 
