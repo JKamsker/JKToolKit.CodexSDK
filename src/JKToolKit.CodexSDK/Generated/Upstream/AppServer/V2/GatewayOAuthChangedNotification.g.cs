@@ -22,6 +22,12 @@ internal partial class GatewayOAuthChangedNotification
     [System.Text.Json.Serialization.JsonPropertyName("error")]
     public string? Error { get; set; } = default!;
 
+    /// <summary>
+    /// Identifies the completed device login attempt.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("loginId")]
+    public string? LoginId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("providerId")]
     public string ProviderId { get; set; } = default!;
 

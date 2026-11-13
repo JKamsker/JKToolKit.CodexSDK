@@ -19,6 +19,12 @@ internal partial class GetAccountResponse
     [System.Text.Json.Serialization.JsonPropertyName("requiresOpenaiAuth")]
     public bool RequiresOpenaiAuth { get; set; } = default!;
 
+    /// <summary>
+    /// ChatGPT user ID belonging to this account response, when available.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("userId")]
+    public string? UserId { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

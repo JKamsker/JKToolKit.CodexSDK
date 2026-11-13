@@ -13,6 +13,9 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class GatewayOAuthLoginResponse
 {
 
+    [System.Text.Json.Serialization.JsonPropertyName("prompt")]
+    public Prompt? Prompt { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]
