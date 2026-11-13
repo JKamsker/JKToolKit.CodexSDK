@@ -72,6 +72,7 @@ internal sealed partial class CodexAppServerConfigClient
 
         return new AccountReadResult
         {
+            UserId = CodexAppServerClientJson.GetStringOrNull(result, "userId"),
             Account = account.HasValue ? account.Value.Clone() : null,
             AccountInfo = CodexAppServerAccountParsers.ParseAccountOrNull(result, JsonFieldNames.Account, "account/read response"),
             RequiresOpenaiAuth = CodexAppServerClientJson.GetRequiredBool(result, JsonFieldNames.RequiresOpenaiAuth, "account/read response"),

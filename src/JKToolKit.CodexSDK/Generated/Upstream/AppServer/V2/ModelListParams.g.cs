@@ -31,6 +31,12 @@ internal partial class ModelListParams
     [System.Text.Json.Serialization.JsonPropertyName("limit")]
     public int? Limit { get; set; } = default!;
 
+    /// <summary>
+    /// List models for this configured provider instead of the app-server default.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("modelProvider")]
+    public string? ModelProvider { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

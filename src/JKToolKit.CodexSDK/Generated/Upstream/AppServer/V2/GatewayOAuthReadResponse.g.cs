@@ -37,6 +37,12 @@ internal partial class GatewayOAuthReadResponse
     [System.Text.Json.Serialization.JsonPropertyName("status")]
     public Status? Status { get; set; } = default!;
 
+    /// <summary>
+    /// Whether the administrator configured a device authorization endpoint.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("supportsDeviceAuth")]
+    public bool? SupportsDeviceAuth { get; set; } = false;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

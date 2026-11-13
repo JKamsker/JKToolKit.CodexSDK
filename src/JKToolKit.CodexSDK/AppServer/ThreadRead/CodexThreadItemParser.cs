@@ -96,7 +96,8 @@ internal static class CodexThreadItemParser
 
     private static CodexThreadItem? ParseAgentMessage(string id, string type, JsonElement element, JsonElement raw) =>
         TryGetRequiredString(element, JsonFieldNames.Text, out var text) &&
-        TryGetOptionalString(element, JsonFieldNames.Phase, out var phase)
+        TryGetOptionalString(element, JsonFieldNames.Phase, out var phase) &&
+        CodexAgentMessageModerationParser.TryParse(element, out var moderation)
             ? new CodexThreadItemAgentMessage(
                 id,
                 type,
@@ -104,6 +105,9 @@ internal static class CodexThreadItemParser
                 phase,
                 element.TryGetProperty("memoryCitation", out var memoryCitation) ? memoryCitation.Clone() : (JsonElement?)null,
                 raw)
+            {
+                Moderation = moderation
+            }
             : null;
 
     private static CodexThreadItem? ParsePlan(string id, string type, JsonElement element, JsonElement raw) =>

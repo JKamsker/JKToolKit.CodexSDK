@@ -22,6 +22,12 @@ internal partial class QueuedSubmission
     [System.Text.Json.Serialization.JsonPropertyName("input")]
     public System.Collections.Generic.ICollection<Input> Input { get; set; } = new System.Collections.ObjectModel.Collection<Input>();
 
+    /// <summary>
+    /// Metadata retained with this input, including across reconnect and restoration.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("responsesapiClientMetadata")]
+    public System.Collections.Generic.IDictionary<string, string>? ResponsesapiClientMetadata { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

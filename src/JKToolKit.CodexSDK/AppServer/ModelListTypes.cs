@@ -10,6 +10,11 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class ModelListOptions
 {
     /// <summary>
+    /// Gets or sets the configured provider to query without changing the default provider.
+    /// </summary>
+    public string? ModelProvider { get; set; }
+
+    /// <summary>
     /// Gets or sets the opaque pagination cursor.
     /// </summary>
     public string? Cursor { get; set; }

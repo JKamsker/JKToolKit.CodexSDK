@@ -14,6 +14,7 @@ internal sealed partial class CodexAppServerConfigClient
             "model/list",
             new UpstreamV2.ModelListParams
             {
+                ModelProvider = options.ModelProvider,
                 Cursor = EmptyToNull(options.Cursor),
                 IncludeHidden = options.IncludeHidden,
                 Limit = options.Limit

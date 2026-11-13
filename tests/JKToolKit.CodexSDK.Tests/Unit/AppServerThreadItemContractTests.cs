@@ -13,6 +13,66 @@ public sealed class AppServerThreadItemContractTests
         return CodexThreadItemParser.Parse(document.RootElement);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AgentMessage_PreservesModerationAndOpenEndedDisplayAction(bool moderated)
+    {
+        var item = Parse(JsonSerializer.Serialize(new
+        {
+            id = "answer", type = "agentMessage", text = "answer", phase = "final_answer",
+            moderation = new
+            {
+                moderated,
+                display = new { action = "future-action", blockType = "notice", cyberTrustedAccess = false, checkTrustedContacts = true }
+            }
+        })).Should().BeOfType<CodexThreadItemAgentMessage>().Subject;
+
+        item.Moderation!.Moderated.Should().Be(moderated);
+        item.Moderation.Display!.Action.Should().Be("future-action");
+        item.Moderation.Display.BlockType.Should().Be("notice");
+        item.Moderation.Display.CyberTrustedAccess.Should().BeFalse();
+        item.Moderation.Display.CheckTrustedContacts.Should().BeTrue();
+        item.Raw.GetProperty("moderation").GetProperty("moderated").GetBoolean().Should().Be(moderated);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"moderation\":null}")]
+    [InlineData("{\"moderation\":{\"moderated\":false}}")]
+    [InlineData("{\"moderation\":{\"moderated\":true,\"display\":null}}")]
+    [InlineData("{\"moderation\":{\"moderated\":true,\"display\":{\"action\":\"future\"}}}")]
+    public void AgentMessage_AcceptsOptionalModerationFields(string fields)
+    {
+        var payload = JsonNode.Parse(fields)!.AsObject();
+        payload["id"] = "answer"; payload["type"] = "agentMessage"; payload["text"] = "answer";
+        var item = Parse(payload.ToJsonString()).Should().BeOfType<CodexThreadItemAgentMessage>().Subject;
+        item.Moderation?.Display?.BlockType.Should().BeNull();
+        item.Moderation?.Display?.CyberTrustedAccess.Should().BeNull();
+        item.Moderation?.Display?.CheckTrustedContacts.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("false")]
+    [InlineData("{}")]
+    [InlineData("{\"moderated\":null}")]
+    [InlineData("{\"moderated\":\"true\"}")]
+    [InlineData("{\"moderated\":true,\"display\":{}}")]
+    [InlineData("{\"moderated\":true,\"display\":{\"action\":4}}")]
+    [InlineData("{\"moderated\":true,\"display\":{\"action\":\"future\",\"blockType\":false}}")]
+    [InlineData("{\"moderated\":true,\"display\":{\"action\":\"future\",\"cyberTrustedAccess\":0}}")]
+    [InlineData("{\"moderated\":true,\"display\":{\"action\":\"future\",\"checkTrustedContacts\":\"yes\"}}")]
+    public void AgentMessage_MalformedModerationRetainsRawUnknownItem(string moderation)
+    {
+        var payload = new JsonObject
+        {
+            ["id"] = "answer", ["type"] = "agentMessage", ["text"] = "answer",
+            ["moderation"] = JsonNode.Parse(moderation)
+        };
+        var item = Parse(payload.ToJsonString()).Should().BeOfType<CodexThreadItemUnknown>().Subject;
+        JsonElement.DeepEquals(item.Raw, JsonSerializer.SerializeToElement(payload)).Should().BeTrue();
+    }
+
     public static IEnumerable<object[]> StrictPayloads()
     {
         yield return ["""{"id":"i","type":"userMessage","content":[]}""", "content", ""];
