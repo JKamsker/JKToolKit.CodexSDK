@@ -10,6 +10,13 @@ namespace JKToolKit.CodexSDK.AppServer.Protocol.V2;
 public sealed record class ThreadListParams
 {
     /// <summary>
+    /// Gets whether to restrict local history to the current ChatGPT account.
+    /// </summary>
+    [JsonPropertyName("currentAccountOnly")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool CurrentAccountOnly { get; init; }
+
+    /// <summary>
     /// Gets an optional archived filter.
     /// </summary>
     [JsonPropertyName("archived")]

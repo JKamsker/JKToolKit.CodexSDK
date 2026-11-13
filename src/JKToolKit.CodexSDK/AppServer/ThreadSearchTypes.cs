@@ -8,6 +8,11 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class ThreadSearchOptions
 {
     /// <summary>
+    /// Gets or sets whether to restrict local history to the current ChatGPT account. Defaults to false.
+    /// </summary>
+    public bool CurrentAccountOnly { get; set; }
+
+    /// <summary>
     /// Gets or sets the required content search term.
     /// </summary>
     public required string SearchTerm { get; set; }

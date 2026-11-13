@@ -36,6 +36,7 @@ public sealed partial class CodexAppServerClient
             "thread/search",
             new
             {
+                CurrentAccountOnly = options.CurrentAccountOnly ? (bool?)true : null,
                 options.Cursor,
                 options.Limit,
                 options.SortKey,
