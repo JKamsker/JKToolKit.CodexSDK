@@ -43,7 +43,11 @@ public sealed record class CodexThreadItemAgentMessage(
     string? Phase,
     JsonElement? MemoryCitation,
     JsonElement Raw)
-    : CodexThreadItem(Id, Type, Raw);
+    : CodexThreadItem(Id, Type, Raw)
+{
+    /// <summary>Gets optional moderation and history-display metadata.</summary>
+    public CodexAgentMessageModeration? Moderation { get; init; }
+}
 
 /// <summary>
 /// Represents a proposed plan item.

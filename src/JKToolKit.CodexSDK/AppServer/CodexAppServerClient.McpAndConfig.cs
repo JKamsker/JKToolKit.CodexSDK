@@ -204,6 +204,11 @@ public sealed class AccountReadOptions
 public sealed record class AccountReadResult
 {
     /// <summary>
+    /// Gets the ChatGPT user identifier associated with this response, when available.
+    /// </summary>
+    public string? UserId { get; init; }
+
+    /// <summary>
     /// Gets the raw account object when present.
     /// </summary>
     public JsonElement? Account { get; init; }

@@ -233,6 +233,27 @@ public sealed class AuthAccountConfigWrappersTests
             .Which.PlanType.Should().Be(CodexPlanType.Unknown);
     }
 
+    [Theory]
+    [InlineData("{}", null)]
+    [InlineData("{\"userId\":null}", null)]
+    [InlineData("{\"userId\":\"user-123\"}", "user-123")]
+    public async Task ReadAccountAsync_PreservesOptionalUserId(string fields, string? expected)
+    {
+        var payload = System.Text.Json.Nodes.JsonNode.Parse(fields)!.AsObject();
+        payload["account"] = null;
+        payload["requiresOpenaiAuth"] = true;
+        var rpc = new FakeRpc
+        {
+            AssertMethod = "account/read",
+            Result = JsonSerializer.SerializeToElement(payload)
+        };
+        await using var client = CreateClient(rpc);
+
+        var result = await client.ReadAccountAsync();
+
+        result.UserId.Should().Be(expected);
+    }
+
     [Fact]
     public async Task ReadAccountAsync_MissingRequiredBool_Throws()
     {

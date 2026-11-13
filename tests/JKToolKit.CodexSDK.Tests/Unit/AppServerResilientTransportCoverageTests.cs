@@ -63,6 +63,7 @@ public sealed partial class AppServerResilientTransportCoverageTests
         yield return Case("account/rateLimits/read", c => c.ReadAccountRateLimitsAsync(new AccountRateLimitsReadOptions { SupportsLunaReserve = true, ExcludeResetCreditDetails = false }), """{"supportsLunaReserve":true,"excludeResetCreditDetails":false}""");
         yield return Case("account/logout", c => c.LogoutAccountAsync(), "null");
         yield return Case("model/list", c => c.ListModelsAsync(), "{}", """{"data":[]}""");
+        yield return Case("model/list", c => c.ListModelsAsync(new ModelListOptions { ModelProvider = "configured-provider" }), """{"modelProvider":"configured-provider"}""", """{"data":[]}""");
         yield return Case("model/list", c => c.ListModelsAsync(new ModelListOptions { Limit = 4, Cursor = "m" }), """{"limit":4,"cursor":"m"}""", """{"data":[]}""");
         yield return Case("experimentalFeature/list", c => c.ListExperimentalFeaturesAsync(), "{}", """{"data":[]}""");
         yield return Case("experimentalFeature/list", c => c.ListExperimentalFeaturesAsync(new ExperimentalFeatureListOptions { Limit = 4, Cursor = "f" }), """{"limit":4,"cursor":"f"}""", """{"data":[]}""");
