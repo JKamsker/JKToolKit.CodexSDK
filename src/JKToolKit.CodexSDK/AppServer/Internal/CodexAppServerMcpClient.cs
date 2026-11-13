@@ -59,6 +59,7 @@ internal sealed class CodexAppServerMcpClient
             "mcpResource/read",
             new UpstreamV2.McpResourceReadParams
             {
+                _meta = options.Meta?.ToDictionary(entry => entry.Key, entry => (object)entry.Value),
                 ConnectorId = options.ConnectorId,
                 OriginCallId = options.OriginCallId,
                 Server = options.Server,

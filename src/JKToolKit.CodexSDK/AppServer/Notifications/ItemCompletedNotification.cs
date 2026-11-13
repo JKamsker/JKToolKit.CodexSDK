@@ -25,6 +25,18 @@ public sealed record class ItemCompletedNotification : AppServerNotification
     public JsonElement Item { get; }
 
     /// <summary>
+    /// Gets native content tokens for the completed assistant message, including a sampled footer, when available.
+    /// This completion telemetry is not part of the stored thread item.
+    /// </summary>
+    public ulong? ContentTokenCount =>
+        Params.ValueKind == JsonValueKind.Object &&
+        Params.TryGetProperty("contentTokenCount", out var count) &&
+        count.ValueKind == JsonValueKind.Number &&
+        count.TryGetUInt64(out var value)
+            ? value
+            : null;
+
+    /// <summary>
     /// Initializes a new instance of <see cref="ItemCompletedNotification"/>.
     /// </summary>
     public ItemCompletedNotification(string ThreadId, string TurnId, JsonElement Item, JsonElement Params)
@@ -55,4 +67,3 @@ public sealed record class ItemCompletedNotification : AppServerNotification
             ? t.GetString()
             : null;
 }
-

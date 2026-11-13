@@ -7,6 +7,20 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class ThreadListParamsSerializationTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Serialize_EmitsCurrentAccountOnlyOnlyWhenEnabled(bool enabled)
+    {
+        var json = JsonSerializer.SerializeToElement(
+            new ThreadListParams { CurrentAccountOnly = enabled },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        json.TryGetProperty("currentAccountOnly", out var filter).Should().Be(enabled);
+        if (enabled)
+            filter.GetBoolean().Should().BeTrue();
+    }
+
     [Fact]
     public void Serialize_UsesLimitFieldName_NotPageSize()
     {

@@ -166,6 +166,7 @@ internal sealed partial class CodexAppServerThreadsClient
             "thread/list",
             new ThreadListParams
             {
+                CurrentAccountOnly = options.CurrentAccountOnly,
                 Archived = options.Archived,
                 SectionId = BuildThreadListSectionId(options),
                 ProjectId = BuildThreadListProjectId(options, _experimentalApiEnabled()),

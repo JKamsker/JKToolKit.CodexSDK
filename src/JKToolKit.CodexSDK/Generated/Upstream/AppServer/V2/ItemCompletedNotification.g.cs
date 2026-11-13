@@ -19,6 +19,12 @@ internal partial class ItemCompletedNotification
     [System.Text.Json.Serialization.JsonPropertyName("completedAtMs")]
     public long CompletedAtMs { get; set; } = default!;
 
+    /// <summary>
+    /// Native content tokens for the completed assistant message, including a sampled footer. Null when unavailable. Completion telemetry is not part of the stored thread item.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("contentTokenCount")]
+    public ulong? ContentTokenCount { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("item")]
     public Item Item { get; set; } = new Item();
 

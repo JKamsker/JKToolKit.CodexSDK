@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class McpResourceReadParams
 {
 
+    /// <summary>
+    /// Additional MCP request metadata. Account and turn routing keys are reserved.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("_meta")]
+    public System.Collections.Generic.IDictionary<string, object>? _meta { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("connectorId")]
     public string? ConnectorId { get; set; } = default!;
 

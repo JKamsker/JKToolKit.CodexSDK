@@ -8,6 +8,11 @@ namespace JKToolKit.CodexSDK.AppServer;
 public sealed class McpResourceReadOptions
 {
     /// <summary>
+    /// Gets or sets additional MCP request metadata. Account and turn routing keys are reserved by upstream.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? Meta { get; set; }
+
+    /// <summary>
     /// Gets or sets the configured MCP server name.
     /// </summary>
     public required string Server { get; set; }

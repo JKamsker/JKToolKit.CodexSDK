@@ -16,6 +16,18 @@ public sealed partial class AppServerResilientTransportCoverageTests
 {
     public static IEnumerable<object[]> Requests()
     {
+        yield return Case("thread/list", client => client.ListThreadsAsync(new() { CurrentAccountOnly = true }), """{"currentAccountOnly":true}""", """{"data":[]}""");
+        yield return Case("thread/search", client => client.SearchThreadsAsync(new() { SearchTerm = "planning", CurrentAccountOnly = true }), """{"searchTerm":"planning","currentAccountOnly":true}""", """{"data":[]}""");
+        yield return Case("mcpResource/read", client => client.ReadMcpResourceAsync(new()
+        {
+            Server = "server",
+            Uri = "resource://one",
+            Meta = new Dictionary<string, JsonElement>
+            {
+                ["progressToken"] = JsonSerializer.SerializeToElement(42),
+                ["context"] = JsonSerializer.SerializeToElement(new { label = "test" })
+            }
+        }), """{"server":"server","uri":"resource://one","_meta":{"progressToken":42,"context":{"label":"test"}}}""", """{"contents":[]}""");
         yield return Case("thread/loaded/list", c => c.ListLoadedThreadsAsync(new() { Cursor = "page", Limit = 7 }), """{"cursor":"page","limit":7}""", """{"data":["thread-1"],"nextCursor":"next"}""");
         yield return Case("thread/unsubscribe", c => c.UnsubscribeThreadAsync("thread-1"), """{"threadId":"thread-1"}""", """{"status":"notSubscribed"}""");
         yield return Case("thread/compact/start", c => c.CompactThreadAsync("thread-1"), """{"threadId":"thread-1"}""");

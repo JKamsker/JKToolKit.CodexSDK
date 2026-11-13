@@ -20,6 +20,12 @@ internal partial class ThreadItemsListParams
     public Cursor? Cursor { get; set; } = default!;
 
     /// <summary>
+    /// For a single turn, choose which saved outputs to fetch separately by item ID.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("deferOutput")]
+    public DeferOutput? DeferOutput { get; set; } = default!;
+
+    /// <summary>
     /// Optional item page size.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("limit")]
