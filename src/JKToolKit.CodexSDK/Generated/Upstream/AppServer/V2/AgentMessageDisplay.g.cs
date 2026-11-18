@@ -10,26 +10,11 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// A presentation instruction for Chat to apply to this answer when recovering history.
+/// How Chat should present a recovered answer.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class AgentMessageDisplay
 {
-
-    /// <summary>
-    /// Unknown actions must be left for the producing client to handle.
-    /// </summary>
-    [System.Text.Json.Serialization.JsonPropertyName("action")]
-    public string Action { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("blockType")]
-    public string? BlockType { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("checkTrustedContacts")]
-    public bool? CheckTrustedContacts { get; set; } = default!;
-
-    [System.Text.Json.Serialization.JsonPropertyName("cyberTrustedAccess")]
-    public bool? CyberTrustedAccess { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
