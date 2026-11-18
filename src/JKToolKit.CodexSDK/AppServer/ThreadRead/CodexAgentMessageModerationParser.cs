@@ -17,25 +17,38 @@ internal static class CodexAgentMessageModerationParser
             return false;
 
         CodexAgentMessageDisplay? display = null;
+        CodexAgentMessageVersionedDisplay? versionedDisplay = null;
         if (value.TryGetProperty("display", out var instruction) && instruction.ValueKind != JsonValueKind.Null)
         {
-            if (instruction.ValueKind != JsonValueKind.Object ||
-                !TryGetRequiredString(instruction, "action", out var action) ||
-                !TryGetOptionalString(instruction, "blockType", out var blockType) ||
-                !TryGetOptionalBool(instruction, "cyberTrustedAccess", out var cyberTrustedAccess) ||
-                !TryGetOptionalBool(instruction, "checkTrustedContacts", out var checkTrustedContacts))
-                return false;
-
-            display = new CodexAgentMessageDisplay
+            if (instruction.ValueKind == JsonValueKind.Object &&
+                (instruction.TryGetProperty("version", out _) || instruction.TryGetProperty("mode", out _)))
             {
-                Action = action,
-                BlockType = blockType,
-                CyberTrustedAccess = cyberTrustedAccess,
-                CheckTrustedContacts = checkTrustedContacts
-            };
+                if (!CodexAgentMessageVersionedDisplayParser.TryParse(instruction, out versionedDisplay))
+                    return false;
+            }
+            else
+            {
+                if (instruction.ValueKind != JsonValueKind.Object ||
+                    !TryGetRequiredString(instruction, "action", out var action) ||
+                    !TryGetOptionalString(instruction, "blockType", out var blockType) ||
+                    !TryGetOptionalBool(instruction, "cyberTrustedAccess", out var cyberTrustedAccess) ||
+                    !TryGetOptionalBool(instruction, "checkTrustedContacts", out var checkTrustedContacts))
+                    return false;
+
+                display = new CodexAgentMessageDisplay
+                {
+                    Action = action,
+                    BlockType = blockType,
+                    CyberTrustedAccess = cyberTrustedAccess,
+                    CheckTrustedContacts = checkTrustedContacts
+                };
+            }
         }
 
-        moderation = new CodexAgentMessageModeration { Moderated = moderated.Value, Display = display };
+        moderation = new CodexAgentMessageModeration
+        {
+            Moderated = moderated.Value, Display = display, VersionedDisplay = versionedDisplay
+        };
         return true;
     }
 }

@@ -6,8 +6,11 @@ public sealed record class CodexAgentMessageModeration
     /// <summary>Gets whether the answer was moderated.</summary>
     public required bool Moderated { get; init; }
 
-    /// <summary>Gets optional history-display instructions.</summary>
+    /// <summary>Gets legacy, unversioned history-display instructions from older servers.</summary>
     public CodexAgentMessageDisplay? Display { get; init; }
+
+    /// <summary>Gets versioned history-display instructions. The SDK does not apply presentation actions.</summary>
+    public CodexAgentMessageVersionedDisplay? VersionedDisplay { get; init; }
 }
 
 /// <summary>A history-display instruction; unknown actions belong to the producing client.</summary>
