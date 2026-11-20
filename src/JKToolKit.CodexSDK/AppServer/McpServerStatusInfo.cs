@@ -13,6 +13,11 @@ public sealed record class McpServerStatusInfo
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets the registration scope, not necessarily the execution environment; null for thread-wide or older servers.
+    /// </summary>
+    public string? EnvironmentId { get; init; }
+
+    /// <summary>
     /// Gets the plugin id that owns this MCP server, when upstream reports one.
     /// </summary>
     public string? PluginId { get; init; }

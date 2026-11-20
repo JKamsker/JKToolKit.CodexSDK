@@ -98,4 +98,20 @@ public sealed class ThreadListParamsSerializationTests
 
         json.Should().Contain("\"attachedToThreadId\":\"thr_parent\"");
     }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData(new string[0], "\"includedThreadIds\":[]")]
+    [InlineData(new[] { "thr_1", "thr_2" }, "\"includedThreadIds\":[\"thr_1\",\"thr_2\"]")]
+    public void Serialize_PreservesIncludedThreadIdsSemantics(string[]? ids, string? expected)
+    {
+        var json = JsonSerializer.Serialize(
+            new ThreadListParams { IncludedThreadIds = ids },
+            CodexAppServerClient.CreateDefaultSerializerOptions());
+
+        if (expected is null)
+            json.Should().NotContain("includedThreadIds");
+        else
+            json.Should().Contain(expected);
+    }
 }

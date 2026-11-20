@@ -71,6 +71,13 @@ public sealed class ThreadListOptions
     public IReadOnlyList<string>? ExcludedThreadIds { get; set; }
 
     /// <summary>
+    /// Gets or sets up to 100 thread identifiers to include before pagination. Null leaves results unrestricted;
+    /// an empty list matches nothing. Exclusions still apply. Repeat the same identifiers on every page.
+    /// </summary>
+    /// <remarks>The local store uses indexed metadata for this filter.</remarks>
+    public IReadOnlyList<string>? IncludedThreadIds { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional model provider filter, if supported upstream.
     /// </summary>
     public IReadOnlyList<string>? ModelProviders { get; set; }

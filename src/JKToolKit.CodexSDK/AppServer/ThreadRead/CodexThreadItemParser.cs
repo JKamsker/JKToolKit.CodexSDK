@@ -48,7 +48,7 @@ internal static class CodexThreadItemParser
             "reasoning" => ParseReasoning(id, type, element, raw),
             "commandExecution" => ParseCommandExecution(id, type, element, raw),
             "fileChange" => ParseFileChange(id, type, element, raw),
-            "mcpToolCall" => ParseMcpToolCall(id, type, element, raw),
+            "mcpToolCall" => CodexThreadItemMcpParser.Parse(id, type, element, raw),
             "dynamicToolCall" => ParseDynamicToolCall(id, type, element, raw),
             "functionCallOutput" => ParseFunctionCallOutput(id, type, element, raw),
             "collabAgentToolCall" => ParseCollabAgentToolCall(id, type, element, raw),
@@ -176,31 +176,6 @@ internal static class CodexThreadItemParser
             type,
             changes,
             CodexPatchApplyStatusExtensions.Parse(statusValue),
-            raw);
-    }
-
-    private static CodexThreadItem? ParseMcpToolCall(string id, string type, JsonElement element, JsonElement raw)
-    {
-        if (!TryGetRequiredString(element, JsonFieldNames.Server, out var server) ||
-            !TryGetRequiredString(element, JsonFieldNames.Tool, out var tool) ||
-            !TryGetRequiredString(element, JsonFieldNames.Status, out var statusValue) ||
-            !TryGetRequiredElement(element, JsonFieldNames.Arguments, out var arguments) ||
-            !TryGetOptionalInt64(element, JsonFieldNames.DurationMs, out var durationMs))
-        {
-            return null;
-        }
-
-        var result = element.TryGetProperty(JsonFieldNames.Result, out var resultValue) ? resultValue.Clone() : (JsonElement?)null;
-        return new CodexThreadItemMcpToolCall(
-            id,
-            type,
-            server,
-            tool,
-            CodexMcpToolCallStatusExtensions.Parse(statusValue),
-            arguments,
-            result,
-            ExtractErrorMessage(element),
-            durationMs,
             raw);
     }
 

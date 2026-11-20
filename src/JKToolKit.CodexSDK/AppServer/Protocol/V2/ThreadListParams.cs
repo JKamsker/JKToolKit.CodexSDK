@@ -58,6 +58,10 @@ public sealed record class ThreadListParams
     [JsonPropertyName("excludedThreadIds")]
     public IReadOnlyList<string>? ExcludedThreadIds { get; init; }
 
+    /// <summary>Gets thread identifiers to include before pagination; an empty list matches nothing.</summary>
+    [JsonPropertyName("includedThreadIds")]
+    public IReadOnlyList<string>? IncludedThreadIds { get; init; }
+
     /// <summary>
     /// Gets an optional model provider filter, if supported upstream.
     /// </summary>

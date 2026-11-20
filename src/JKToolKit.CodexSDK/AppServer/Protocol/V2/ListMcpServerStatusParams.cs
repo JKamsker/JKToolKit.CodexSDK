@@ -37,4 +37,8 @@ public sealed record class ListMcpServerStatusParams
     /// </summary>
     [JsonPropertyName(JsonFieldNames.ServerName)]
     public string? ServerName { get; init; }
+
+    /// <summary>Gets the registration scope, requiring a server name and thread id.</summary>
+    [JsonPropertyName(JsonFieldNames.EnvironmentId)]
+    public string? EnvironmentId { get; init; }
 }
