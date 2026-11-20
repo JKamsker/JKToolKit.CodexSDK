@@ -13,6 +13,12 @@ namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 internal partial class McpServerStatusUpdatedNotification
 {
 
+    /// <summary>
+    /// Registration scope, not necessarily the server's execution environment.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("error")]
     public string? Error { get; set; } = default!;
 

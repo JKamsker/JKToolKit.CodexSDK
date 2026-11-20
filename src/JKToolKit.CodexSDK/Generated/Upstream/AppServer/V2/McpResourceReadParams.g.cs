@@ -23,6 +23,12 @@ internal partial class McpResourceReadParams
     public string? ConnectorId { get; set; } = default!;
 
     /// <summary>
+    /// Exact registration scope; omission preserves legacy name-only selection.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
+    /// <summary>
     /// Originating MCP tool call used to select the resource's app.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("originCallId")]

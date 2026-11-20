@@ -19,6 +19,12 @@ internal partial class ThreadRealtimeItem
     [System.Text.Json.Serialization.JsonPropertyName("id")]
     public string Id { get; set; } = default!;
 
+    /// <summary>
+    /// Canonical observation time in Unix milliseconds for eligible voice calls.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("observedAtMs")]
+    public long? ObservedAtMs { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("realtimeSessionId")]
     public string RealtimeSessionId { get; set; } = default!;
 

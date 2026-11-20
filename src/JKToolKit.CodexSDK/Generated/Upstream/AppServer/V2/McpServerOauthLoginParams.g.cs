@@ -19,6 +19,12 @@ internal partial class McpServerOauthLoginParams
     [System.Text.Json.Serialization.JsonPropertyName("clientRegistration")]
     public ClientRegistration? ClientRegistration { get; set; } = default!;
 
+    /// <summary>
+    /// Exact registration scope; omission preserves legacy name-only selection.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 
