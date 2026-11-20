@@ -24,6 +24,10 @@ internal sealed class CodexAppServerMcpClient
     public async Task<McpServerStatusListPage> ListMcpServerStatusAsync(McpServerStatusListOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ValidateOptionalWireValue(options.EnvironmentId, nameof(options.EnvironmentId), nameof(options));
+        if (options.EnvironmentId is not null &&
+            (string.IsNullOrWhiteSpace(options.ServerName) || string.IsNullOrWhiteSpace(options.ThreadId)))
+            throw new ArgumentException("EnvironmentId requires ServerName and ThreadId.", nameof(options));
 
         var result = await _sendRequestAsync(
             "mcpServerStatus/list",
@@ -33,7 +37,8 @@ internal sealed class CodexAppServerMcpClient
                 Limit = options.Limit,
                 Detail = options.Detail?.Value,
                 ThreadId = options.ThreadId,
-                ServerName = options.ServerName
+                ServerName = options.ServerName,
+                EnvironmentId = options.EnvironmentId
             },
             ct);
 
@@ -46,6 +51,7 @@ internal sealed class CodexAppServerMcpClient
         if (string.IsNullOrWhiteSpace(options.Server))
             throw new ArgumentException("Server cannot be empty or whitespace.", nameof(options));
         ValidateOptionalWireValue(options.ThreadId, nameof(options.ThreadId), nameof(options));
+        ValidateOptionalWireValue(options.EnvironmentId, nameof(options.EnvironmentId), nameof(options));
         ValidateOptionalWireValue(options.OriginCallId, nameof(options.OriginCallId), nameof(options));
         ValidateOptionalWireValue(options.ConnectorId, nameof(options.ConnectorId), nameof(options));
         if (options.Target is not null)
@@ -63,6 +69,7 @@ internal sealed class CodexAppServerMcpClient
                 ConnectorId = options.ConnectorId,
                 OriginCallId = options.OriginCallId,
                 Server = options.Server,
+                EnvironmentId = options.EnvironmentId,
                 Target = options.Target is null
                     ? null
                     : new UpstreamV2.McpResourceReadTarget
@@ -91,12 +98,14 @@ internal sealed class CodexAppServerMcpClient
         ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(options.Name))
             throw new ArgumentException("Name cannot be empty or whitespace.", nameof(options));
+        ValidateOptionalWireValue(options.EnvironmentId, nameof(options.EnvironmentId), nameof(options));
 
         var result = await _sendRequestAsync(
             "mcpServer/oauth/login",
             new McpServerOauthLoginParams
             {
                 Name = options.Name,
+                EnvironmentId = options.EnvironmentId,
                 ThreadId = options.ThreadId,
                 ClientRegistration = options.ClientRegistration?.Value,
                 Scopes = options.Scopes,

@@ -19,6 +19,12 @@ internal partial class AccountUpdatedNotification
     [System.Text.Json.Serialization.JsonPropertyName("planType")]
     public PlanType2? PlanType { get; set; } = default!;
 
+    /// <summary>
+    /// Set when initial routing discovery completes for the same authenticated owner.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("reason")]
+    public Reason? Reason { get; set; } = default!;
+
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
     [System.Text.Json.Serialization.JsonExtensionData]

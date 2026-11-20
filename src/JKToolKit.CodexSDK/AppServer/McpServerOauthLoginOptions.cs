@@ -11,6 +11,11 @@ public sealed class McpServerOauthLoginOptions
     public required string Name { get; set; }
 
     /// <summary>
+    /// Gets or sets the exact registration scope. Omit to preserve legacy name-only selection.
+    /// </summary>
+    public string? EnvironmentId { get; set; }
+
+    /// <summary>
     /// Gets or sets the thread id that the OAuth flow belongs to, when scoped to a thread.
     /// </summary>
     public string? ThreadId { get; set; }

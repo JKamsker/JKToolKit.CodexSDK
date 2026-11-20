@@ -30,4 +30,10 @@ public sealed class McpServerStatusListOptions
     /// When paired with <see cref="ThreadId"/>, the app-server reuses that thread's MCP connection.
     /// </summary>
     public string? ServerName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the registration scope. Requires <see cref="ServerName"/> and <see cref="ThreadId"/>.
+    /// Omit to preserve legacy name-only selection.
+    /// </summary>
+    public string? EnvironmentId { get; set; }
 }

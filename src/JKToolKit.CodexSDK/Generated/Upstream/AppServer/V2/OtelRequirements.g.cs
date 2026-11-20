@@ -19,6 +19,12 @@ internal partial class OtelRequirements
     [System.Text.Json.Serialization.JsonPropertyName("exporter")]
     public Exporter? Exporter { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("headers_helper")]
+    public string? Headers_helper { get; set; } = default!;
+
+    [System.Text.Json.Serialization.JsonPropertyName("headers_helper_refresh_interval_ms")]
+    public ulong? Headers_helper_refresh_interval_ms { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("log_agent_responses")]
     public bool? Log_agent_responses { get; set; } = default!;
 

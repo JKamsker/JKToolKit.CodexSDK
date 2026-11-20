@@ -18,6 +18,11 @@ public sealed class McpResourceReadOptions
     public required string Server { get; set; }
 
     /// <summary>
+    /// Gets or sets the exact registration scope. Omit to preserve legacy name-only selection.
+    /// </summary>
+    public string? EnvironmentId { get; set; }
+
+    /// <summary>
     /// Gets or sets the thread identifier that owns the MCP context, when reading through a live thread.
     /// </summary>
     public string? ThreadId { get; set; }

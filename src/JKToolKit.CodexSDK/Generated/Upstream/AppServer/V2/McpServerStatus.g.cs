@@ -18,6 +18,12 @@ internal partial class McpServerStatus
     public McpAuthStatus AuthStatus { get; set; } = default!;
 
     /// <summary>
+    /// Environment that contributed this registration; null for a thread-wide server. Older servers omit this field.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
+    /// <summary>
     /// HTTP origin of the effective configured endpoint, including plugin servers. Excludes credentials, path, query, and fragment; null for non-HTTP transports.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("httpOrigin")]

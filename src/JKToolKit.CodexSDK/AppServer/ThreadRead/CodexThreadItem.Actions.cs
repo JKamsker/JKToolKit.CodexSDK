@@ -57,7 +57,11 @@ public sealed record class CodexThreadItemMcpToolCall(
     string? ErrorMessage,
     long? DurationMs,
     JsonElement Raw)
-    : CodexThreadItem(Id, Type, Raw);
+    : CodexThreadItem(Id, Type, Raw)
+{
+    /// <summary>Gets the MCP registration scope, not necessarily its execution environment.</summary>
+    public string? EnvironmentId { get; init; }
+}
 
 /// <summary>
 /// Represents a dynamic tool call item.

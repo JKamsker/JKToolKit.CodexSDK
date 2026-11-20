@@ -7,6 +7,33 @@ namespace JKToolKit.CodexSDK.Tests.Unit;
 
 public sealed class AppServerThreadItemContractTests
 {
+    [Theory]
+    [InlineData("{}", null)]
+    [InlineData("{\"environmentId\":null}", null)]
+    [InlineData("{\"environmentId\":\"env_docs\"}", "env_docs")]
+    public void McpToolCall_PreservesOptionalRegistrationScope(string fields, string? expected)
+    {
+        var payload = JsonNode.Parse(fields)!.AsObject();
+        payload["id"] = "call_1";
+        payload["type"] = "mcpToolCall";
+        payload["server"] = "docs";
+        payload["tool"] = "search";
+        payload["status"] = "completed";
+        payload["arguments"] = new JsonObject();
+
+        var item = Parse(payload.ToJsonString()).Should().BeOfType<CodexThreadItemMcpToolCall>().Subject;
+        item.EnvironmentId.Should().Be(expected);
+    }
+
+    [Fact]
+    public void McpToolCall_MalformedRegistrationScope_PreservesUnknownItem()
+    {
+        AssertUnknown("""
+            {"id":"i","type":"mcpToolCall","server":"docs","tool":"search",
+             "status":"completed","arguments":{},"environmentId":42}
+            """);
+    }
+
     private static CodexThreadItem Parse(string json)
     {
         using var document = JsonDocument.Parse(json);

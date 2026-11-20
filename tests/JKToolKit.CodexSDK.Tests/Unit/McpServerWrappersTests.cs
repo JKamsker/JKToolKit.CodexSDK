@@ -56,6 +56,7 @@ public sealed class McpServerWrappersTests
                 new
                 {
                     name = "docs",
+                    environmentId = "env_docs",
                     pluginId = "plug_docs",
                     httpOrigin = "https://mcp.example.com",
                     authStatus = "notLoggedIn",
@@ -94,6 +95,7 @@ public sealed class McpServerWrappersTests
                 typed.Detail.Should().Be("toolsAndAuthOnly");
                 typed.ThreadId.Should().Be("thr_1");
                 typed.ServerName.Should().Be("docs");
+                typed.EnvironmentId.Should().Be("env_docs");
             },
             Result = rawResult
         };
@@ -108,6 +110,7 @@ public sealed class McpServerWrappersTests
         var page = await client.ListMcpServerStatusAsync(new McpServerStatusListOptions
         {
             Cursor = "0",
+            EnvironmentId = "env_docs",
             Limit = 10,
             ThreadId = "thr_1",
             ServerName = "docs",
@@ -116,6 +119,7 @@ public sealed class McpServerWrappersTests
 
         page.Servers.Should().HaveCount(1);
         page.Servers[0].Name.Should().Be("docs");
+        page.Servers[0].EnvironmentId.Should().Be("env_docs");
         page.Servers[0].PluginId.Should().Be("plug_docs");
         page.Servers[0].HttpOrigin.Should().Be("https://mcp.example.com");
         page.Servers[0].AuthStatus.Should().Be(McpAuthStatus.NotLoggedIn);
@@ -161,6 +165,7 @@ public sealed class McpServerWrappersTests
                 p.Should().NotBeNull();
                 JsonSerializer.Serialize(p, new JsonSerializerOptions(JsonSerializerDefaults.Web))
                     .Should().Contain("\"server\":\"docs\"")
+                    .And.Contain("\"environmentId\":\"env_docs\"")
                     .And.Contain("\"threadId\":\"thr_1\"")
                     .And.Contain("\"originCallId\":\"call_1\"")
                     .And.Contain("\"connectorId\":\"calendar\"")
@@ -180,6 +185,7 @@ public sealed class McpServerWrappersTests
         var result = await client.ReadMcpResourceAsync(new McpResourceReadOptions
         {
             Server = "docs",
+            EnvironmentId = "env_docs",
             ThreadId = "thr_1",
             OriginCallId = "call_1",
             ConnectorId = "calendar",
@@ -253,6 +259,7 @@ public sealed class McpServerWrappersTests
                 p.Should().BeOfType<McpServerOauthLoginParams>();
                 var typed = (McpServerOauthLoginParams)p!;
                 typed.Name.Should().Be("my-server");
+                typed.EnvironmentId.Should().Be("env_docs");
                 typed.ThreadId.Should().Be("thr_1");
                 typed.ClientRegistration.Should().Be("cimd");
                 typed.TimeoutSecs.Should().Be(30);
@@ -271,6 +278,7 @@ public sealed class McpServerWrappersTests
         var result = await client.StartMcpServerOauthLoginAsync(new McpServerOauthLoginOptions
         {
             Name = "my-server",
+            EnvironmentId = "env_docs",
             ThreadId = "thr_1",
             ClientRegistration = McpServerOauthClientRegistration.Cimd,
             TimeoutSeconds = 30

@@ -35,7 +35,7 @@ internal partial class AppTemplateSummary
     public string Name { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("reason")]
-    public Reason? Reason { get; set; } = default!;
+    public Reason2? Reason { get; set; } = default!;
 
     [System.Text.Json.Serialization.JsonPropertyName("templateId")]
     public string TemplateId { get; set; } = default!;

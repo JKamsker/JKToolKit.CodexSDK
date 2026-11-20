@@ -19,6 +19,12 @@ internal partial class McpServerToolCallParams
     [System.Text.Json.Serialization.JsonPropertyName("arguments")]
     public object? Arguments { get; set; } = default!;
 
+    /// <summary>
+    /// Exact registration scope; omission preserves legacy name-only selection.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("server")]
     public string Server { get; set; } = default!;
 

@@ -25,9 +25,6 @@ internal partial class Project
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = default!;
 
-    [System.Text.Json.Serialization.JsonPropertyName("position")]
-    public long Position { get; set; } = default!;
-
     /// <summary>
     /// Newest non-archived member thread's recency, in Unix seconds; null when none exist.
     /// </summary>

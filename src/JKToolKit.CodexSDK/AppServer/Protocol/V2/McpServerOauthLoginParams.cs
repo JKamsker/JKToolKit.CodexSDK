@@ -14,6 +14,10 @@ public sealed record class McpServerOauthLoginParams
     [JsonPropertyName(JsonFieldNames.Name)]
     public required string Name { get; init; }
 
+    /// <summary>Gets the exact MCP registration scope.</summary>
+    [JsonPropertyName(JsonFieldNames.EnvironmentId)]
+    public string? EnvironmentId { get; init; }
+
     /// <summary>
     /// Gets the thread id that the OAuth flow belongs to, when scoped to a thread.
     /// </summary>

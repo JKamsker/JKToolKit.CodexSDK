@@ -26,6 +26,12 @@ internal partial class ListMcpServerStatusParams
     public Detail? Detail { get; set; } = default!;
 
     /// <summary>
+    /// Select this environment's registration. Requires `serverName` and `threadId`. When omitted, a named request uses the same server as older clients.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("environmentId")]
+    public string? EnvironmentId { get; set; } = default!;
+
+    /// <summary>
     /// Optional page size; defaults to a server-defined value.
     /// </summary>
     [System.Text.Json.Serialization.JsonPropertyName("limit")]

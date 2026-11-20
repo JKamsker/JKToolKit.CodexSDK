@@ -37,6 +37,7 @@ internal static class CodexAppServerClientMcpParsers
                 servers.Add(new McpServerStatusInfo
                 {
                     Name = name,
+                    EnvironmentId = GetStringOrNull(item, JsonFieldNames.EnvironmentId),
                     PluginId = GetStringOrNull(item, JsonFieldNames.PluginId) ?? GetStringOrNull(item, "plugin_id"),
                     HttpOrigin = GetStringOrNull(item, "httpOrigin") ?? GetStringOrNull(item, "http_origin"),
                     AuthStatus = authStatus,
