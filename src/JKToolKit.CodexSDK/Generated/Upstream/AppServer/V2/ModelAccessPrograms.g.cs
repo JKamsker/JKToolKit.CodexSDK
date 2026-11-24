@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// Caller-specific explicit access programs advertised by model discovery.
+/// Caller-specific access programs and Daybreak availability from model discovery.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class ModelAccessPrograms
@@ -22,6 +22,10 @@ internal partial class ModelAccessPrograms
     [System.Text.Json.Serialization.JsonPropertyName("cyber")]
     // TODO(system.text.json): Add ItemConverterType with enum converter when supported
     public System.Collections.Generic.ICollection<CyberAccessProgram> Cyber { get; set; } = new System.Collections.ObjectModel.Collection<CyberAccessProgram>();
+
+    [System.Text.Json.Serialization.JsonPropertyName("daybreakAvailability")]
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<DaybreakAvailability>))]
+    public DaybreakAvailability? DaybreakAvailability { get; set; } = default!;
 
     private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
