@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace JKToolKit.CodexSDK.Generated.Upstream.AppServer.V2;
 
 /// <summary>
-/// A frame holds one or more payloads, at most one per channel. They share one ID, observation time, and seal. V1 requires its only channel, `voice_transcript`.
+/// A frame holds one or more payloads, at most one per channel. They share one ID, observation time, and seal. Currently, `voice_transcript` is required.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "11.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
 internal partial class ThreadRealtimeFrameChannels

@@ -16,6 +16,9 @@ internal partial class AppToolConfig
     [System.Text.Json.Serialization.JsonPropertyName("approval_mode")]
     public Approval_mode? Approval_mode { get; set; } = default!;
 
+    [System.Text.Json.Serialization.JsonPropertyName("approvals_reviewer")]
+    public Approvals_reviewer3? Approvals_reviewer { get; set; } = default!;
+
     [System.Text.Json.Serialization.JsonPropertyName("enabled")]
     public bool? Enabled { get; set; } = default!;
 
